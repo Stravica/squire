@@ -1,0 +1,14 @@
+{
+  "entry": [
+    { "kind": "bin", "path": "core/hooks/pre-tool-use.py" },
+    { "kind": "bin", "path": "core/hooks/user-prompt-submit.py" },
+    { "kind": "bin", "path": "core/tools/secret.py" },
+    { "kind": "bin", "path": "core/tools/lay-down.py" },
+    { "kind": "bin", "path": "core/tools/health.py" }
+  ],
+  "harness": ["tests/fixtures/**"],
+  "runners": [
+    { "files": ["tests/**/*.test.js"], "kind": "nodeTest", "cwd": "project" }
+  ],
+  "suiteCommand": "node --test 'tests/**/*.test.js'"
+}
