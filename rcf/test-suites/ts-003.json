@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:39.251Z",
-  "updatedAt": "2026-11-07T17:40:39.251Z",
+  "updatedAt": "2026-11-07T18:27:42.911Z",
   "purpose": "Plants secrets through the real secret helper, exercises the helper and a consuming tool, and scans every place a secret could leak for any trace of it.",
   "testLevel": "integration",
   "acIds": [
@@ -10,6 +10,21 @@
   "id": "TS-003",
   "usId": "US-1902",
   "title": "Secrets stay in the Keychain and are never shown",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-003-a-secret-stored-in-a-temporary-keychain",
+      "acId": "AC-1902-1",
+      "description": "A secret stored in a temporary Keychain is handed to a tool three times through core/tools/secret.py, with the floor and a failed lookup in the mix; afterwards it is in the Keychain and in no file of the owner's folder, Squire's home or the transcript, as text, base64 or hex.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/secrets.test.js::a secret used through the helper across normal work is in the Keychain and nowhere else"
+    },
+    {
+      "id": "TC-003-the-helper-hands-the-keychain-secret-to",
+      "acId": "AC-1902-2",
+      "description": "The helper hands the Keychain secret to a tool that prints it, and neither output holds it; with the Keychain locked, lacking the secret or unavailable, the helper stops without a prompt, runs nothing, tells the owner what to do and never uses the decoys in a file or the environment.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/secrets.test.js::the helper hands the secret to the tool without showing it, and stops with directions when the Keychain cannot supply it"
+    }
+  ],
   "status": "draft"
 }

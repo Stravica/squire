@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-11-07T18:27:51.150Z",
+  "updatedAt": "2026-11-07T18:28:00.210Z",
+  "purpose": "On a laid-down core, the installed secret helper hands a Keychain secret to a tool that prints it and shows none of it; after the journey and a second lay-down the secret is in the Keychain and nowhere in the owner's folder, Squire's home or the transcript.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-1902-1",
+    "AC-1902-2"
+  ],
+  "id": "TS-022",
+  "usId": "US-1902",
+  "title": "Round 1 journey: a secret through the installed helper",
+  "testCases": [
+    {
+      "id": "TC-022-journey-secret-nowhere-else",
+      "acId": "AC-1902-1",
+      "description": "End to end: after the journey and a second lay-down the secret is in the Keychain and in no file of the owner's folder, Squire's home or the transcript.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    },
+    {
+      "id": "TC-022-journey-secret-never-shown",
+      "acId": "AC-1902-2",
+      "description": "End to end: the installed helper hands the secret to a tool that prints it, and the helper's output holds no trace of it.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    }
+  ],
+  "status": "draft"
+}

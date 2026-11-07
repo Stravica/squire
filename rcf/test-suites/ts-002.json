@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-07T17:40:38.981Z",
+  "updatedAt": "2026-11-07T18:27:42.388Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -13,6 +13,42 @@
   "id": "TS-002",
   "usId": "US-1901",
   "title": "Safety hooks: approval, the Rule of Two, destructive actions and installs",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-002-an-email-send-a-text-message-a-site",
+      "acId": "AC-1901-1",
+      "description": "An email send, a text message, a site deploy and a data post are each blocked by the pre-tool-use hook until the owner's own message says yes to that item, then proceed; drafts proceed without a yes; the session cannot write the floor's ledger, even after a yes; overlays at every core path change nothing.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a send, a publish or a deploy is blocked until the owner says yes to that item, and the session cannot record a yes itself"
+    },
+    {
+      "id": "TC-002-a-yes-lets-its-one-item-proceed-once-and",
+      "acId": "AC-1901-2",
+      "description": "A yes lets its one item proceed once and never covers another; after a no the item stays blocked and the no is not the answer to a new attempt or another item; talk about something else, silence past the time-out and a late yes never approve.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a yes covers one action, a no is never reused, and silence or a late yes never approves"
+    },
+    {
+      "id": "TC-002-a-session-that-has-read-a-web-page-and",
+      "acId": "AC-1901-3",
+      "description": "A session that has read a web page and the owner's profile cannot send, even after a yes; a fresh session holding only the send waits for its own yes; sessions holding two of the three wait only for their yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a job holding untrusted input, private things and an outside action is refused as one job and the split part waits for a yes"
+    },
+    {
+      "id": "TC-002-deleting-an-owner-file-deleting-an-add",
+      "acId": "AC-1901-4",
+      "description": "Deleting an owner file, deleting an add-on, overwriting the profile, moving a file over another and emptying a page are each blocked with the file unchanged until the owner says yes to that item; reading and writing new files proceed.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::deleting, overwriting, moving over or emptying the owner things is blocked until the owner says yes to that item"
+    },
+    {
+      "id": "TC-002-homebrew-formula-and-cask-installs-pip",
+      "acId": "AC-1901-5",
+      "description": "Homebrew formula and cask installs, pip and npm installs, a downloaded install script piped to a shell and an installer package are each refused until the owner says yes to exactly that software; a yes to one install does not cover another.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::installing software or running a downloaded program is refused until the owner says yes to exactly that software"
+    }
+  ],
   "status": "draft"
 }
