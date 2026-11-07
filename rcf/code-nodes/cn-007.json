@@ -1,0 +1,15 @@
+{
+  "cnId": "CN-007",
+  "path": "core/hooks/user-prompt-submit.py#OwnerAnswer",
+  "implementsAcIds": [
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-4",
+    "AC-1901-5"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-07T19:47:18.146Z",
+  "updatedAt": "2026-11-07T19:47:18.146Z"
+}
