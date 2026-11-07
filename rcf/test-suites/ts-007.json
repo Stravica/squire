@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:40.324Z",
+  "updatedAt": "2026-11-07T17:40:40.324Z",
+  "purpose": "Installs Squire from the download under a fresh macOS user on a real Mac and checks that no Terminal window opens at any point. Takes the target host as a parameter.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-201-1"
+  ],
+  "id": "TS-007",
+  "usId": "US-201",
+  "title": "Fresh install with no Terminal",
+  "testCases": [],
+  "status": "draft"
+}

@@ -1,0 +1,16 @@
+{
+  "createdAt": "2026-11-07T17:40:42.198Z",
+  "updatedAt": "2026-11-07T17:40:42.198Z",
+  "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1301-1",
+    "AC-1301-2",
+    "AC-1301-3"
+  ],
+  "id": "TS-014",
+  "usId": "US-1301",
+  "title": "Plan recorded, pacing, no spend beyond the plan, upgrade advice once",
+  "testCases": [],
+  "status": "draft"
+}

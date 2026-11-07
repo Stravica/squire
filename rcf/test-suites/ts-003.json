@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-11-07T17:40:39.251Z",
+  "updatedAt": "2026-11-07T17:40:39.251Z",
+  "purpose": "Plants secrets through the real secret helper, exercises the helper and a consuming tool, and scans every place a secret could leak for any trace of it.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1902-1",
+    "AC-1902-2"
+  ],
+  "id": "TS-003",
+  "usId": "US-1902",
+  "title": "Secrets stay in the Keychain and are never shown",
+  "testCases": [],
+  "status": "draft"
+}

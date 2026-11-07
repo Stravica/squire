@@ -1,0 +1,16 @@
+{
+  "createdAt": "2026-11-07T17:40:41.663Z",
+  "updatedAt": "2026-11-07T17:40:41.663Z",
+  "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-2001-3"
+  ],
+  "id": "TS-012",
+  "usId": "US-2001",
+  "title": "Ticket preview and yes, diagnostics only, receiver privacy and deletion",
+  "testCases": [],
+  "status": "draft"
+}

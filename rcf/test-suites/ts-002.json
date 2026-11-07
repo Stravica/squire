@@ -1,0 +1,18 @@
+{
+  "createdAt": "2026-11-07T17:40:38.981Z",
+  "updatedAt": "2026-11-07T17:40:38.981Z",
+  "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-3",
+    "AC-1901-4",
+    "AC-1901-5"
+  ],
+  "id": "TS-002",
+  "usId": "US-1901",
+  "title": "Safety hooks: approval, the Rule of Two, destructive actions and installs",
+  "testCases": [],
+  "status": "draft"
+}

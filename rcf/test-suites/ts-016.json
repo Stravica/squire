@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:42.743Z",
+  "updatedAt": "2026-11-07T17:40:42.743Z",
+  "purpose": "Runs the real video and audio tools on a captioned video, an uncaptioned video and a local file, and checks no media download is attempted.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1701-1"
+  ],
+  "id": "TS-016",
+  "usId": "US-1701",
+  "title": "Captions and own files work; missing captions never trigger a download",
+  "testCases": [],
+  "status": "draft"
+}

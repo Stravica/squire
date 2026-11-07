@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:40.589Z",
+  "updatedAt": "2026-11-07T17:40:40.589Z",
+  "purpose": "Walks the whole first-run journey under a fresh macOS user, from the download to the first reply from the Squire, as one path. Takes the target host as a parameter.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-201-3"
+  ],
+  "id": "TS-008",
+  "usId": "US-201",
+  "title": "Fresh Mac: installer to first reply",
+  "testCases": [],
+  "status": "draft"
+}
