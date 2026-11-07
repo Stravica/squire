@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:11.997Z",
-  "updatedAt": "2026-11-07T17:40:12.265Z",
+  "updatedAt": "2026-11-07T18:02:36.990Z",
   "asA": "Squire owner",
   "iWant": "one Squire session always running that I can reach from the Claude app on my Mac and on my phone",
   "soThat": "my Squire is there whenever I open the app, without my starting anything",
@@ -19,6 +19,15 @@
       "given": "Squire installed on a Mac, with its session running and the Claude app signed in on the Mac and the phone",
       "when": "The session is restarted, or it crashes",
       "then": "Within two minutes one Squire session is running again and is listed in the Claude app on both the Mac and the phone.",
+      "verification": "external"
+    },
+    {
+      "id": "AC-401-2",
+      "description": "After the laptop sleeps or is closed, Squire's one session comes back and can be reached.",
+      "testable": true,
+      "given": "Squire installed on a laptop, with its session running",
+      "when": "The laptop sleeps or is closed, and is then woken or opened",
+      "then": "Within two minutes exactly one Squire session is running again, and the Squire owner can reach it.",
       "verification": "external"
     }
   ]

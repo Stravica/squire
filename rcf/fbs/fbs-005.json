@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:44.985Z",
-  "updatedAt": "2026-11-07T17:40:44.985Z",
+  "updatedAt": "2026-11-07T18:02:39.358Z",
   "summary": "Areas A5, A13 and A15 to A17. The handover note and /clear prompt, pacing, deep research, app building, and captions and local transcription.",
   "dependsOnFbsIds": [
     "FBS-004"
@@ -11,7 +11,10 @@
     "AC-1301-2",
     "AC-1301-3",
     "AC-1302-1",
-    "AC-1701-1"
+    "AC-1701-1",
+    "AC-501-2",
+    "AC-1302-2",
+    "AC-1701-2"
   ],
   "fbsId": "FBS-005",
   "prdId": "PRD-001",

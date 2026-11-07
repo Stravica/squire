@@ -4,10 +4,27 @@
   "tadId": "TAD-001",
   "version": "0.1.0",
   "status": "proposed",
-  "title": "TODO: name this architectural decision",
-  "context": "TODO: describe the context.",
-  "decision": "TODO: describe the decision.",
-  "consequences": "TODO: describe the consequences.",
+  "title": "Core and the Squire owner's folder kept apart, with one overlay rule",
+  "context": "Squire is replaced whole by each signed release, and a Squire owner's assistant is personal: its name, the profile, memory, files, and the tools and pages it built for them. When the system's own files and the owner's files share one folder, every update has to work around personal files, the assistant can edit the code that keeps it safe, and a hand-kept list of guarded files is the only thing standing between a mistake and the safety rules. Owners still need to change how their Squire behaves, so the two sides must meet somewhere.",
+  "decision": "Core and the Squire owner's folder live apart on the Mac. Core sits in the system's own support location, comes only from a signed release, keeps the current and the previous release for rollback, and is replaced whole on update; the launchd agents run installed copies, never files in the owner's folder. One core config file names core's paths, including the owner's folder; one owner config file in the owner's folder holds only personal facts. Core reads the owner's folder only at named points: the owner config, operator, state, reference and overlay. An overlay is a file under overlay at the same relative path as the core file it changes; it wins, except over the safety rules. Each overlay records the core version it was written against, and after an update that changed the core file under an overlay Squire asks the owner to keep theirs or take the new one; an update never edits an overlay. Add-ons, tools Squire builds for the owner with no core counterpart, live in the owner's folder and core never ships a file there. The instructions the session reads are assembled from core's rules, the owner's identity and the list of active overlays and add-ons.",
+  "consequences": "An update, a rollback or laying core down again leaves the owner's folder byte for byte the same. The safety rules (approval per item, the Rule of Two, nothing deleted, overwritten or installed without a yes, secrets in the Keychain, the privacy guard and the release check) are not overlayable: an overlay at one of their paths is ignored and the health check says so. Every path a script needs comes from the core config, so no script holds a fixed path or a personal name. Merging an owner's overlay with a changed core file is not offered in v0.1: the owner keeps theirs or takes the new one. Because core and its runtime copies come only from a signed release, the assistant's session cannot change them without the owner's yes.",
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T18:03:02.114Z",
+  "alternativesConsidered": [
+    {
+      "name": "One folder, guarded file by file",
+      "summary": "Keep the system's files and the owner's files together and protect the safety files with a list of guarded paths checked at install time.",
+      "reasonNotChosen": "Every update must work around personal files, the session can still edit what the list misses, and the list has to be kept complete by hand."
+    },
+    {
+      "name": "A copy of the repository per owner, synced to a code host",
+      "summary": "Give each owner their own copy of the system and push it to a remote for updates and backup.",
+      "reasonNotChosen": "The owner has no account there, each owner needs a key, and the push is the most dangerous path for the owner's privacy. A nightly backup and a local history cover loss without it."
+    },
+    {
+      "name": "Owners edit core files in place",
+      "summary": "Let behaviour changes be made directly to the installed core files.",
+      "reasonNotChosen": "An update would overwrite the change or have to merge it, and an edit could reach the safety rules."
+    }
+  ]
 }

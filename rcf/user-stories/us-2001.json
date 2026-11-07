@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:16.737Z",
-  "updatedAt": "2026-11-07T17:40:17.553Z",
+  "updatedAt": "2026-11-07T18:02:38.034Z",
   "asA": "Squire owner",
   "iWant": "when Squire cannot fix something, to see exactly what a support ticket will say and send it only if I say yes",
   "soThat": "I get help without giving away anything personal",
@@ -37,6 +37,15 @@
       "given": "Tickets sent from an install",
       "when": "The receiver files them, and the Squire owner later asks for a ticket to be deleted",
       "then": "The install id is random and linked to no person; the receiver stores codes only; after the deletion request the ticket's data is gone end to end.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-4",
+      "description": "A ticket the Squire owner said yes to is kept and retried exactly as approved when sending it fails.",
+      "testable": true,
+      "given": "A ticket the Squire owner has said yes to",
+      "when": "Sending it fails, Squire is offline, or whether it arrived is unclear",
+      "then": "The exact approved ticket is saved and shown as waiting to send; Squire retries it without sending it twice when it can, and never changes it without another yes.",
       "verification": "testOnly"
     }
   ]

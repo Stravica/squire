@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:18.347Z",
-  "updatedAt": "2026-11-07T17:40:19.151Z",
+  "updatedAt": "2026-11-07T18:01:57.194Z",
   "asA": "Squire owner",
   "iWant": "Squire to know my Claude plan and how much I have used, pace itself, never spend beyond my plan without my yes, and tell me once if an upgrade would really help",
   "soThat": "I stay within what I pay for and the choice to pay more is always mine",
@@ -16,9 +16,9 @@
       "id": "AC-1301-1",
       "description": "Squire knows the Squire owner's Claude plan and usage, and paces itself.",
       "testable": true,
-      "given": "The plan the Squire owner declared, and a usage reading above the pacing threshold",
+      "given": "The plan the Squire owner declared, and a usage reading above the pacing threshold: above 80% of the five-hour window or above 70% of the weekly window",
       "when": "A job that can wait comes up",
-      "then": "Squire has recorded the declared plan, defers the job and tells the Squire owner when the allowance resets; when usage is stale or missing, Squire treats it as unknown.",
+      "then": "Squire has recorded the declared plan, defers the job and tells the Squire owner when the allowance resets; above 90% in either window, a heavy job starts only on a second yes; when usage is stale or missing, Squire treats it as unknown.",
       "verification": "testOnly"
     },
     {

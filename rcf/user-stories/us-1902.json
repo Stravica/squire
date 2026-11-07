@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:11.204Z",
-  "updatedAt": "2026-11-07T17:40:11.724Z",
+  "updatedAt": "2026-11-07T18:01:56.929Z",
   "asA": "Squire owner",
   "iWant": "my passwords and keys kept in my Mac's Keychain and fetched only when a tool needs them",
   "soThat": "a secret of mine never lands in a file, a chat, a backup or a ticket, and is never shown",
@@ -23,11 +23,11 @@
     },
     {
       "id": "AC-1902-2",
-      "description": "Secrets are fetched when needed and never shown.",
+      "description": "Secrets are fetched when needed and never shown; without the Keychain, the work stops and the Squire owner is told what to do.",
       "testable": true,
-      "given": "A secret in the Mac's Keychain that a tool needs. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "given": "A secret in the Mac's Keychain that a tool needs, and the same need when the Keychain is locked, unavailable or lacks the secret. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
       "when": "Squire's secret helper fetches it and the tool that needs it runs",
-      "then": "The tool gets the secret, and neither the helper's output nor the tool's output holds any trace of it.",
+      "then": "The tool gets the secret, and neither the helper's output nor the tool's output holds any trace of it. When the Keychain is locked, unavailable or lacks the secret, the operation stops and tells the Squire owner what to do, and never falls back to a file, the chat, a log or a ticket.",
       "verification": "testOnly"
     }
   ]

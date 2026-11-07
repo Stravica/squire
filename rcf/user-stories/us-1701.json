@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:19.957Z",
-  "updatedAt": "2026-11-07T17:40:20.224Z",
+  "updatedAt": "2026-11-07T18:02:38.565Z",
   "asA": "Squire owner",
   "iWant": "Squire to work from YouTube captions and my own recordings",
   "soThat": "I get what I need from a video without any YouTube video being downloaded",
@@ -19,6 +19,15 @@
       "given": "A YouTube video with captions, a YouTube video without captions, and an audio or video file of the Squire owner's own",
       "when": "Squire is asked to work with each",
       "then": "It uses the captions and transcribes the Squire owner's own file on the Mac; for the video without captions it downloads no video or audio and says it cannot.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1701-2",
+      "description": "A missing or unreadable file of the Squire owner's stops the job with an explanation, with nothing downloaded and nothing changed.",
+      "testable": true,
+      "given": "A video or audio job on a file of the Squire owner's that is missing or cannot be read",
+      "when": "Squire is asked to work with it",
+      "then": "The job stops and Squire explains why; nothing is downloaded and no existing file is changed.",
       "verification": "testOnly"
     }
   ]

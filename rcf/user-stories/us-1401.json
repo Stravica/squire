@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-07T17:40:16.461Z",
+  "updatedAt": "2026-11-07T18:02:37.773Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -46,6 +46,15 @@
       "given": "A Squire owner's folder holding a profile, memory, files, the Squire's name and things Squire built for the Squire owner",
       "when": "A signed update installs, and an update that fails its health check is rolled back",
       "then": "The Squire owner's folder hashes the same before the update, after it, and after the rollback.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-5",
+      "description": "An update that cannot finish leaves Squire on a healthy version and the Squire owner's folder unchanged; a Claude Code update made outside Squire is noticed and checked.",
+      "testable": true,
+      "given": "An update that fails to download, times out or is interrupted by a restart of the Mac; and, separately, Claude Code updated outside Squire",
+      "when": "The Mac starts again after the failed or interrupted update, or Squire next runs after Claude Code changed",
+      "then": "Squire starts on the previous healthy version or on the fully installed signed one, tells the Squire owner which, and leaves the Squire owner's folder unchanged. When Claude Code was updated outside Squire, Squire notices, runs its health check, and shows the Squire owner the result and any safe step to recover.",
       "verification": "testOnly"
     }
   ]

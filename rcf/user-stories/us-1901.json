@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-07T17:40:10.932Z",
+  "updatedAt": "2026-11-07T18:01:56.654Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -23,11 +23,11 @@
     },
     {
       "id": "AC-1901-2",
-      "description": "A yes covers one thing, and silence is never a yes.",
+      "description": "A yes covers one thing, a no is never reused, and silence is never a yes.",
       "testable": true,
       "given": "Two actions, A and B, each need the Squire owner's yes. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
-      "when": "The Squire owner says yes to A only, and a request for a yes then goes unanswered until it times out",
-      "then": "A may proceed; B stays blocked; the action whose request timed out is not done and is never recorded as approved.",
+      "when": "The Squire owner says yes to A only, says no to another request, and a request for a yes then goes unanswered until it times out",
+      "then": "A may proceed; B stays blocked; the item the Squire owner said no to stays blocked, and that no is never reused as the answer for another attempt or another item; the action whose request timed out is not done and is never recorded as approved.",
       "verification": "testOnly"
     },
     {
