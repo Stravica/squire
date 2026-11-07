@@ -5,10 +5,13 @@ blocks it, with the reason on stderr for Squire to tell the owner. A call
 the floor cannot class as free waits for the owner's yes to that one call.
 A job that has taken in untrusted input and the owner's private things may
 not also act out in the world. Squire's own files, its config, the
-approvals ledger and the Keychain are never the session's to change or
-read, yes or no. Anything the floor cannot read or trust blocks the call.
+approvals ledger, Claude Code's settings in the owner's folder and the
+Keychain are never the session's to change or read, yes or no. Anything
+the floor cannot read or trust blocks the call.
 """
 
+import fnmatch
+import glob
 import hashlib
 import json
 import os
@@ -69,8 +72,8 @@ class Floor:
     DRAFT_TOOLS = {'mcp__claude_ai_Gmail__create_draft'}
     PRIVATE = ('operator', 'state', 'reference', os.path.join('workspace', 'files'))
 
-    NEVER_FLOOR = ('The session may never change Squire\'s core, Squire\'s home and config or the approvals ledger, '
-                   'yes or no: {what}')
+    NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
+                   'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
     NEVER_KEYCHAIN = ('The session may never read the Keychain, yes or no: a secret reaches a tool only through '
                       'Squire\'s secret helper, and is never shown.')
     ASK = ('Request {id}: this needs the owner\'s yes first: {what}\n'
@@ -120,13 +123,18 @@ class Floor:
             return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked' + (f': {what}' if what else '.')
 
     def settle(self, ledger, session, tool, data, verdict, what, taints):
-        """Decides a call against the ledger, held under its lock."""
+        """Decides a call against the ledger, held under its lock. A web fetch
+        is free until the job holds the owner's private things; from then on
+        its path or host can carry them out as well as its query can, and the
+        floor cannot tell which do, so it is a send."""
         now = time.time()
+        held = ledger.taints(session)
+        if verdict == 'fetch':
+            verdict = 'ask' if held['private'] else 'free'
         if verdict == 'free':
             for kind, source in taints:
                 ledger.taint(session, kind, source, now)
             return 0, ''
-        held = ledger.taints(session)
         if held['untrusted'] and held['private']:
             return 2, self.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']), what=what)
         item = self.item(tool, data)
@@ -156,7 +164,7 @@ class Floor:
         return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
     def judge(self, tool, data):
-        """('free' | 'ask' | 'never', what to say, [(kind, source)] the job takes in when it runs)."""
+        """('free' | 'fetch' | 'ask' | 'never', what to say, [(kind, source)] the job takes in when it runs)."""
         if tool == 'Bash':
             return self.judge_bash(self.field(data, 'command'))
         if tool in ('Read', 'Glob', 'Grep'):
@@ -178,7 +186,7 @@ class Floor:
         if tool == 'WebFetch':
             url = self.field(data, 'url')
             fetched = [('untrusted', f'WebFetch {url}')]
-            return ('ask', f'WebFetch {url}', fetched) if urlsplit(url).query else ('free', '', fetched)
+            return ('ask' if urlsplit(url).query else 'fetch'), f'WebFetch {url}', fetched
         if tool == 'WebSearch':
             return 'free', '', [('untrusted', f'WebSearch {self.field(data, "query")}')]
         if tool in self.DRAFT_TOOLS:
@@ -206,11 +214,14 @@ class Floor:
         if argv[0] == PYTHON and len(argv) >= 2:
             script = self.path(argv[1], strict=False)
             if self.is_core_tool(script, 'secret.py') and argv[2:3] == ['run']:
+                # A tool handed a secret is not read-only, whatever it is: the
+                # run is asked, naming the secret and the command it wraps.
                 rest = argv[3:]
                 wrapped = rest[rest.index('--') + 1:] if '--' in rest else []
                 verdict, what, taints = self.judge_argv(wrapped, plain)
                 name = rest[0] if rest else ''
-                return verdict, what, taints + [('private', f'the secret {name} through Squire\'s secret helper')]
+                return ('never' if verdict == 'never' else 'ask'), what, \
+                    taints + [('private', f'the secret {name} through Squire\'s secret helper')]
             if self.is_core_tool(script, 'health.py') and len(argv) == 2:
                 return 'free', '', []
         words = argv + [t.split('=', 1)[1] for t in argv if '=' in t]
@@ -224,10 +235,19 @@ class Floor:
             return 'ask', '', []
         taints = []
         for word in argv[1:]:
-            path = None if word.startswith('-') else self.path(word, strict=False)
-            if path:
-                taints += self.taints_of(path, ' '.join(argv))
+            if word.startswith('-'):
+                continue
+            for given in self.expand(word):
+                path = self.path(given, strict=False)
+                if path:
+                    taints += self.taints_of(path, ' '.join(argv))
         return 'free', '', taints
+
+    def expand(self, word):
+        """The paths a shell word names: what a glob in it matches, or the word."""
+        if not any(mark in word for mark in '*?['):
+            return [word]
+        return glob.glob(os.path.join(self.cwd, os.path.expanduser(word))) or [word]
 
     def is_free(self, argv):
         command, args = argv[0], argv[1:]
@@ -243,16 +263,25 @@ class Floor:
         return bool(path) and any(path.lower() == os.path.join(core, 'tools', name).lower() for core in self.cores)
 
     def is_floor(self, path):
-        return any(Paths.within(path, floor) for floor in self.floor_paths)
+        return any(Paths.within(path, floor) for floor in self.floor_paths) or self.is_settings(path)
+
+    def is_settings(self, path):
+        """Claude Code's settings for a folder in the owner's: a hook switched
+        off there, or SQUIRE_HOME pointed elsewhere, would leave no floor."""
+        folder, name = os.path.split(path.lower())
+        return os.path.basename(folder) == '.claude' and fnmatch.fnmatchcase(name, 'settings*.json') \
+            and Paths.within(path, self.owner)
 
     def is_keychain(self, path):
         return bool(self.keychain) and Paths.within(path, self.keychain)
 
     def taints_of(self, path, source):
+        """What a read of path takes in: a read whose scope holds the owner's
+        private things or the inbox, a folder above them included, takes them in."""
         found = []
         if any(Paths.overlap(path, private) for private in self.private):
             found.append(('private', source))
-        if Paths.within(path, self.inbox) or self.quarantined(path):
+        if Paths.overlap(path, self.inbox) or self.quarantined(path):
             found.append(('untrusted', source))
         return found
 
