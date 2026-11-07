@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "command": "npx rcf-lite feedback hook stop --harness codex",
+        "timeout": 10
+      }
+    ],
+    "SessionEnd": [
+      {
+        "command": "npx rcf-lite feedback hook session-end --harness codex",
+        "timeout": 5
+      }
+    ],
+    "SessionStart": [
+      {
+        "command": "npx rcf-lite feedback hook session-start --harness codex",
+        "timeout": 5
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "usId": "US-101",
+  "prdId": "PRD-001",
+  "reqId": "REQ-001",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "TODO: name this user story",
+  "asA": "TODO: name the user",
+  "iWant": "TODO: state the want",
+  "soThat": "TODO: state the value",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-101-1",
+      "description": "TODO: describe the first acceptance criterion",
+      "testable": true
+    }
+  ],
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}

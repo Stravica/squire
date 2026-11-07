@@ -1,0 +1,13 @@
+{
+  "adrId": "ADR-001",
+  "prdId": "PRD-001",
+  "tadId": "TAD-001",
+  "version": "0.1.0",
+  "status": "proposed",
+  "title": "TODO: name this architectural decision",
+  "context": "TODO: describe the context.",
+  "decision": "TODO: describe the decision.",
+  "consequences": "TODO: describe the consequences.",
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}

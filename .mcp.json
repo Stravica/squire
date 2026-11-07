@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "rcf": {
+      "command": "npx",
+      "args": [
+        "rcf-lite",
+        "mcp"
+      ]
+    }
+  }
+}

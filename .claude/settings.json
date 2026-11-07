@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx rcf-lite feedback hook stop --harness claude-code",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx rcf-lite feedback hook session-end --harness claude-code",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx rcf-lite feedback hook session-start --harness claude-code",
+            "timeout": 5
+          }
+        ],
+        "matcher": "startup|resume"
+      }
+    ]
+  }
+}

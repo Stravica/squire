@@ -1,0 +1,14 @@
+{
+  "tacId": "TAC-001",
+  "prdId": "PRD-001",
+  "tadId": "TAD-001",
+  "version": "0.1.0",
+  "status": "draft",
+  "name": "TODO: name this component",
+  "purpose": "TODO: state the purpose of this component.",
+  "responsibilities": [
+    "TODO: list at least one responsibility."
+  ],
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}

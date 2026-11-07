@@ -1,0 +1,15 @@
+{
+  "fbsId": "FBS-001",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 1,
+  "executionStatus": "notStarted",
+  "title": "TODO: name this build session",
+  "summary": "TODO: describe what this build session delivers.",
+  "acIds": [
+    "AC-101-1"
+  ],
+  "dependsOnFbsIds": [],
+  "createdAt": "2026-01-01T00:00:00Z",
+  "updatedAt": "2026-01-01T00:00:00Z"
+}

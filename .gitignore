@@ -1,0 +1,16 @@
+# Dependencies and local clutter
+node_modules/
+.DS_Store
+
+# rcf:managed:begin (managed by `rcf doctor`; do not edit inside)
+# rcf init: per-clone operator profile (since 0.6.0)
+rcf/.identity/
+# rcf preflight: credential name-metadata (values never enter the chain) (since 0.7.0)
+.rcf/preflight-secrets.local.json
+# rcf audit view --detach (view-server pid file) (since 0.7.0)
+.rcf/view-server.pid
+# rcf audit view --detach (supervisor log) (since 0.7.0)
+.rcf/view-server.log
+# rcf feedback: local feedback log and outbox (never committed) (since 0.28.0)
+.rcf/feedback/
+# rcf:managed:end
