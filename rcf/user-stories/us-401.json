@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-07T17:40:11.997Z",
+  "updatedAt": "2026-11-07T17:40:12.265Z",
+  "asA": "Squire owner",
+  "iWant": "one Squire session always running that I can reach from the Claude app on my Mac and on my phone",
+  "soThat": "my Squire is there whenever I open the app, without my starting anything",
+  "description": "The session is kept alive by a launchd agent and comes back by itself after a restart or a crash.",
+  "usId": "US-401",
+  "prdId": "PRD-001",
+  "reqId": "REQ-004",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Always on: one session, reachable from the Mac and the phone",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-401-1",
+      "description": "One Squire session stays running and is reachable from the Claude app on the Mac and on the phone.",
+      "testable": true,
+      "given": "Squire installed on a Mac, with its session running and the Claude app signed in on the Mac and the phone",
+      "when": "The session is restarted, or it crashes",
+      "then": "Within two minutes one Squire session is running again and is listed in the Claude app on both the Mac and the phone.",
+      "verification": "external"
+    }
+  ]
+}

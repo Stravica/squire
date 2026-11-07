@@ -1,0 +1,61 @@
+{
+  "createdAt": "2026-11-07T17:40:09.636Z",
+  "updatedAt": "2026-11-07T17:40:10.932Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
+  "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
+  "description": "The safety floor: approval is explicit and for one item, silence is not approval, the Rule of Two always applies, and nothing destructive and no install happens without a yes. These rules are core's and are not overlayable: an overlay in the Squire owner's folder at a safety rule's path is ignored. Publishing and deploying a website meet the first criterion again when websites are built.",
+  "usId": "US-1901",
+  "prdId": "PRD-001",
+  "reqId": "REQ-019",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Safety, always on: nothing is sent, deleted or installed without a yes",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1901-1",
+      "description": "Nothing is sent or goes live without the Squire owner's yes for that item.",
+      "testable": true,
+      "given": "Squire has drafted a message to send, a page to publish or a site to deploy, and the Squire owner has not said yes to it. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire, or a tool it calls, tries to send, publish or deploy it",
+      "then": "The action is blocked and nothing leaves the Mac or goes live; once the Squire owner says yes to that item, it may proceed.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-2",
+      "description": "A yes covers one thing, and silence is never a yes.",
+      "testable": true,
+      "given": "Two actions, A and B, each need the Squire owner's yes. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "The Squire owner says yes to A only, and a request for a yes then goes unanswered until it times out",
+      "then": "A may proceed; B stays blocked; the action whose request timed out is not done and is never recorded as approved.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-3",
+      "description": "Squire never runs a job that mixes untrusted input, the Squire owner's private things and an action out in the world: it splits the job and asks the Squire owner at the join.",
+      "testable": true,
+      "given": "A job that carries all three: untrusted input (such as a web page or an incoming message), access to the Squire owner's private things, and an action out in the world. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire is asked to run it",
+      "then": "The job is refused as one job; Squire splits it so that no part holds all three, and the part after the join waits for the Squire owner's yes.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-4",
+      "description": "Nothing of the Squire owner's is deleted or overwritten without their yes.",
+      "testable": true,
+      "given": "Files in the Squire owner's folder and things Squire built for the Squire owner, and no yes to change them. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire, or a tool it calls, tries to delete, overwrite, move over or empty one of them",
+      "then": "The action is blocked and the file is unchanged; once the Squire owner says yes to that item, it may proceed. Squire's own scratch space is outside this criterion.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-5",
+      "description": "No software is installed without the Squire owner's yes.",
+      "testable": true,
+      "given": "No yes from the Squire owner for a given piece of software. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire, or a tool it calls, tries to install a package or run a downloaded program",
+      "then": "The install or run is refused and nothing is installed; once the Squire owner says yes to exactly that software, it may proceed.",
+      "verification": "testOnly"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-11-07T17:40:11.204Z",
+  "updatedAt": "2026-11-07T17:40:11.724Z",
+  "asA": "Squire owner",
+  "iWant": "my passwords and keys kept in my Mac's Keychain and fetched only when a tool needs them",
+  "soThat": "a secret of mine never lands in a file, a chat, a backup or a ticket, and is never shown",
+  "description": "A secret is first stored through a Mac dialog with a hidden field, never typed into the chat, and later fetched by Squire's secret helper at the moment a tool needs it. These rules are core's and cannot be overlaid.",
+  "usId": "US-1902",
+  "prdId": "PRD-001",
+  "reqId": "REQ-019",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Secrets: kept in the Keychain, fetched at the moment of use, never shown",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1902-1",
+      "description": "The Squire owner's passwords and keys stay in the Mac's Keychain and never appear in a file, a chat or a ticket.",
+      "testable": true,
+      "given": "A secret stored through Squire, and Squire used across its normal work. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "The Squire owner's folder, the conversation history and transcripts, the pages Squire made, the backups and the tickets are scanned for the secret",
+      "then": "The secret is in the Mac's Keychain and nowhere else.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1902-2",
+      "description": "Secrets are fetched when needed and never shown.",
+      "testable": true,
+      "given": "A secret in the Mac's Keychain that a tool needs. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire's secret helper fetches it and the tool that needs it runs",
+      "then": "The tool gets the secret, and neither the helper's output nor the tool's output holds any trace of it.",
+      "verification": "testOnly"
+    }
+  ]
+}
