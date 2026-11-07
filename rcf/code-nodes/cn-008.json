@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-008",
+  "path": "core/tools/secret.py#SecretHelper",
+  "implementsAcIds": [
+    "AC-1902-1",
+    "AC-1902-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-07T19:47:18.412Z",
+  "updatedAt": "2026-11-07T19:47:18.412Z"
+}
