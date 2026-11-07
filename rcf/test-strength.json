@@ -1,10 +1,6 @@
 {
   "entry": [
-    { "kind": "bin", "path": "core/hooks/pre-tool-use.py" },
-    { "kind": "bin", "path": "core/hooks/user-prompt-submit.py" },
-    { "kind": "bin", "path": "core/tools/secret.py" },
-    { "kind": "bin", "path": "core/tools/lay-down.py" },
-    { "kind": "bin", "path": "core/tools/health.py" }
+    { "kind": "module", "path": "tests/fixtures/squire-world.js" }
   ],
   "harness": ["tests/fixtures/**"],
   "runners": [
