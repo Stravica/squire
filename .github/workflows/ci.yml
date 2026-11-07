@@ -28,8 +28,10 @@ jobs:
       - name: Install the chain tooling
         run: pnpm install --frozen-lockfile
 
+      # One test file at a time: files running side by side can race on the
+      # keychain search list.
       - name: Test suite (the stock /usr/bin/python3)
-        run: node --test 'tests/**/*.test.js'
+        run: node --test --test-concurrency=1 'tests/**/*.test.js'
 
       - name: Chain validates
         if: ${{ !cancelled() }}

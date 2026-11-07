@@ -6,4 +6,4 @@ Squire is free and source-available under the PolyForm Noncommercial License 1.0
 
 The requirements chain (requirements, user stories, acceptance criteria and build sequence) lives under `rcf/` and is kept with the rcf-lite tool (`pnpm exec rcf`).
 
-Run the tests on a Mac with `node --test 'tests/**/*.test.js'`; they drive core through the stock `/usr/bin/python3`.
+Run the tests on a Mac with `node --test --test-concurrency=1 'tests/**/*.test.js'`; they drive core through the stock `/usr/bin/python3`, one test file at a time, because test files running side by side can race on the keychain search list.
