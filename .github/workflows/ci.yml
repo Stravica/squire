@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  suite:
+    runs-on: macos-latest
+    steps:
+      # The pull request's own head, not a merge preview: the separation
+      # audit judges the stage prefix of every commit on the branch.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install the chain tooling
+        run: pnpm install --frozen-lockfile
+
+      - name: Test suite (the stock /usr/bin/python3)
+        run: node --test 'tests/**/*.test.js'
+
+      - name: Chain validates
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf define validate
+
+      - name: Coverage of REQ-001
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit coverage REQ-001
+
+      - name: Coverage of REQ-019
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit coverage REQ-019
+
+      - name: Separation of hands
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit separation --base origin/main
+
+      # Generic patterns only. Each is written so it cannot match its own text.
+      - name: Privacy scan
+        if: ${{ !cancelled() }}
+        run: |
+          patterns='/[U]sers/[^/[:space:]]+|-[U]sers-|/[h]ome/[^/[:space:]]+|[A-Z]:\\[U]sers\\|/private/[t]mp/|/var/[f]olders/|\.claude/[p]rojects/|operator/(k[n]owledge|e[x]tensions)/|agents/[^/[:space:]]+/(b[r]iefs|s[t]aging|j[o]urnal)|(^|[^A-Za-z0-9])[dwr]-20[0-9]{2}-[0-9]{2}-[0-9]{2}'
+          if git grep -n -I -i -E "$patterns"; then
+            echo "Privacy scan: a home-directory or estate path is in the tree." >&2
+            exit 1
+          fi
