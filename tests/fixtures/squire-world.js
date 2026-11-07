@@ -260,6 +260,7 @@ const tools = {
     ['NotebookEdit', { notebook_path: notebookPath, cell_id: cellId, new_source: newSource, edit_mode: 'replace' }],
   webFetch: (url) => ['WebFetch', { url, prompt: 'What does this page say?' }],
   webSearch: (query) => ['WebSearch', { query }],
+  grep: (pattern, options = {}) => ['Grep', { pattern, ...options }],
   gmailSend: (to, subject, body) => ['mcp__claude_ai_Gmail__send_message', { to, subject, body }],
   gmailDraft: (to, subject, body) => ['mcp__claude_ai_Gmail__create_draft', { to, subject, body }],
   gmailRead: (threadId) => ['mcp__claude_ai_Gmail__get_thread', { thread_id: threadId }],
@@ -426,6 +427,14 @@ function tracesOf(secret) {
   return Object.entries(forms).map(([name, form]) => ({ name, bytes: Buffer.from(form, 'utf8') }));
 }
 
+// Every piece of the secret: each run of `size` characters in a row from it
+// (four by default). Output holding any one of them holds part of the secret.
+function piecesOf(secret, size = 4) {
+  const pieces = new Set();
+  for (let i = 0; i + size <= secret.length; i += 1) pieces.add(secret.slice(i, i + size));
+  return [...pieces];
+}
+
 // The files, in or under the given places, whose bytes hold the secret as
 // text, base64 or hex; with { everyTrace: true }, in any of tracesOf's forms.
 function filesHolding(places, secret, { everyTrace = false } = {}) {
@@ -452,7 +461,10 @@ function filesHolding(places, secret, { everyTrace = false } = {}) {
 
 // A keychain file of the test's own under the world's folder. The login
 // keychain is never read or written, and the user's keychain search list is
-// left exactly as it was found.
+// left exactly as it was found. The keychain is created, unlocked and set
+// never to lock by itself (no lock on sleep, no timeout), so no later call
+// in the test meets a keychain that locked on its own and raises a password
+// dialog on the Mac; only lockKeychain locks it.
 function makeKeychain(world) {
   const kcPath = path.join(world.root, 'squire-test.keychain-db');
   const password = crypto.randomBytes(16).toString('hex');
@@ -460,6 +472,7 @@ function makeKeychain(world) {
   security(['create-keychain', '-p', password, kcPath]);
   restoreSearchList(searchListBefore);
   security(['unlock-keychain', '-p', password, kcPath]);
+  security(['set-keychain-settings', kcPath]);
   world.keychain = { path: kcPath, password, searchListBefore };
   writeConfig(world, { keychain: kcPath });
   return world.keychain;
@@ -509,6 +522,9 @@ const NEEDS_SECRET = path.join(__dirname, 'tools', 'needs-secret.js');
 // One more careless still: it prints the secret in every encoding, in pieces
 // and amid bytes that are not UTF-8.
 const LEAKS_SECRET = path.join(__dirname, 'tools', 'leaks-secret.js');
+// One that never prints the secret whole, only its start, its end and a
+// piece from its middle, the way a tool shows which key it is using.
+const SHOWS_PART_OF_SECRET = path.join(__dirname, 'tools', 'shows-part-of-secret.js');
 
 // A secret with characters that change under percent-encoding.
 function newSecretWithSymbols() {
@@ -531,6 +547,7 @@ module.exports = {
   PYTHON,
   NEEDS_SECRET,
   LEAKS_SECRET,
+  SHOWS_PART_OF_SECRET,
   FLOOR_ENTRY_POINTS,
   defaultSquireHome,
   makeWorld,
@@ -562,6 +579,7 @@ module.exports = {
   sha256,
   filesHolding,
   tracesOf,
+  piecesOf,
   makeKeychain,
   storeSecret,
   readSecret,

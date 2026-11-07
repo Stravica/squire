@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-07T19:18:56.151Z",
+  "updatedAt": "2026-11-07T20:43:43.706Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -122,7 +122,7 @@
     {
       "id": "TC-002-rule-of-two-classes",
       "acId": "AC-1901-3",
-      "description": "Web pages, web searches, mail read from the mailbox, files under workspace/inbox, quarantined files and unknown tool results are untrusted; reads under operator, state, reference and workspace/files, from a tool or the shell, and a secret through the helper are private; a send, a delete, an install and a web fetch carrying data are outside actions: any one of each in a job is refused as one job, naming the source and the action and saying to split the work, before and after a yes.",
+      "description": "Web pages, web searches, mail read from the mailbox, files under workspace/inbox, quarantined files and unknown tool results are untrusted; reads under operator, state, reference and workspace/files, from a tool or the shell, and a secret through the helper (a run that first waits for the owner's yes, naming the secret) are private; a send, a delete, an install and a web fetch carrying data are outside actions: any one of each in a job is refused as one job, naming the source and the action and saying to split the work, before and after a yes.",
       "status": "pending",
       "testPointer": "tests/acceptance/safety-floor.test.js::every untrusted source, every private thing and every outside action counts toward the Rule of Two"
     },
@@ -139,6 +139,34 @@
       "description": "npx, pnpm dlx, uv tool install, cargo install, gem install, go install, opening a .dmg, .pkg or .app, running a quarantined file, brew upgrade, pip3 install -U, fetching a script and running it in a later call, sudo before any command and a new plist in ~/Library/LaunchAgents are each asked, naming the software, until the owner says yes.",
       "status": "pending",
       "testPointer": "tests/acceptance/safety-floor.test.js::every other way of installing or running new software is asked, naming the software: other package managers, disk images and apps, quarantined files, upgrades, a script fetched earlier, sudo and a new login item"
+    },
+    {
+      "id": "TC-002-further-web-fetch-refused",
+      "acId": "AC-1901-3",
+      "description": "In a job that read a web page and the owner's profile, a WebFetch carrying data in its path, in its host, or no data at all is refused as one job, saying to split the work and naming the source and the host, before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::in a job holding untrusted input and private things, any further web fetch is refused as one job, whether data rides in its path, its host or nowhere"
+    },
+    {
+      "id": "TC-002-fetch-carrying-data-is-a-send",
+      "acId": "AC-1901-1",
+      "description": "In a job that read the owner's profile, a WebFetch carrying data in its path or in its host is blocked, naming the host, until the owner says yes to it, then proceeds.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::in a job holding the owner private things, a web fetch carrying data in its path or its host is a send and waits for the owner yes"
+    },
+    {
+      "id": "TC-002-inbox-read-by-scope-is-untrusted",
+      "acId": "AC-1901-3",
+      "description": "A recursive grep over the owner's folder, the Grep tool in content mode over workspace or the owner's folder, and cat through a glob matching workspace/inbox each proceed and mark the job untrusted: after the owner's profile is read, a send is refused as one job, saying to split the work and naming the read and the recipient, before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a read whose scope takes in the inbox, through a parent folder, a recursive or content search or a glob, makes the job untrusted as a direct read does"
+    },
+    {
+      "id": "TC-002-claude-settings-never-writable",
+      "acId": "AC-1901-1",
+      "description": "A Write, Edit or shell write of .claude/settings.json or .claude/settings.local.json in the owner's folder, in a folder under it or in the Squire home, by any spelling, is blocked before and after a yes, the refusal naming the safety floor.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write Claude Code settings under the owner folder or the Squire home, by any tool, yes or no, and the refusal names the safety floor"
     }
   ],
   "status": "draft"

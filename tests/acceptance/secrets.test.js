@@ -244,3 +244,74 @@ test('with no keychain in the config the helper stops with directions and falls 
     w.assertBlocked(w.attempt(world, s, call), `${what}, even after the owner said yes`);
   }
 });
+
+// ------------------------------------------- round 1 review: part of a secret
+//
+// A tool handed a secret is not read-only, whatever it is: the session picks
+// both the variable that holds the secret and the command that reads it, and
+// a command that takes the variable as its own setting (date reads TZ) prints
+// what it holds. So a run through the helper always waits for the owner's
+// yes, and what comes out of it holds no piece of the secret.
+
+test('a run through the secret helper is never free: the floor asks, naming the secret and the command, whatever command it wraps', { timeout: 120000 }, (t) => {
+  const world = w.makeWorld();
+  t.after(() => w.cleanUp(world));
+  w.plantOverlays(world.owner, [w.CORE]);
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  const helper = path.join(fs.realpathSync(path.join(world.home, 'core')), 'tools', 'secret.py');
+
+  const cases = [
+    ['the clock, with the secret in TZ', `/usr/bin/python3 "${helper}" run bakery-login --as TZ -- date +%Z`, ['bakery-login', 'date +%Z']],
+    ['a listing, with the secret in SITE_TOKEN', `/usr/bin/python3 "${helper}" run site-token --as SITE_TOKEN -- ls workspace`,
+      ['site-token', 'ls workspace']],
+  ];
+  cases.forEach(([what, command, mentions], i) => {
+    const s = `session-helper-run-${i}`;
+    const call = w.tools.bash(command);
+    const r = w.attempt(world, s, call);
+    w.assertBlocked(r, `running ${what} through the helper, with no yes`);
+    for (const m of mentions) {
+      assert.ok(r.stderr.includes(m), `running ${what} through the helper: the request must name ${m}; got ${w.describe(r)}`);
+    }
+    w.ownerSays(world, s, 'yes');
+    w.assertAllowed(w.attempt(world, s, call), `running ${what} through the helper, after the owner said yes to it`);
+  });
+});
+
+test('the helper output holds no piece of the secret, whatever variable the session names and whatever the command prints', { timeout: 120000 }, (t) => {
+  const world = secretsWorld(t);
+  const assertNoPiece = (r, secret, what) => {
+    for (const [stream, text] of [['stdout', r.stdout], ['stderr', r.stderr]]) {
+      const shown = w.piecesOf(secret).filter((piece) => text.includes(piece));
+      assert.equal(shown.length, 0,
+        `${what}: the helper's ${stream} must hold no part of the secret; it shows ${shown.length} of its four-character pieces`);
+    }
+  };
+
+  // The clock takes TZ as its own setting and prints the start of what it holds.
+  const plum = 'PlumTart7plum';
+  w.storeSecret(world.keychain, 'bakery-login', plum);
+  const clock = w.runPython(world, SECRET_HELPER, ['run', 'bakery-login', '--as', 'TZ', '--', 'date', '+%Z'], { timeout: 20000 });
+  assertNoPiece(clock, plum, 'the secret in TZ, with date +%Z run');
+  recordInTranscript(world, clock);
+
+  // A tool that shows the start, the end and a middle piece of its key.
+  const other = w.newSecret();
+  w.storeSecret(world.keychain, 'site-token', other);
+  for (const [name, secret] of [['bakery-login', plum], ['site-token', other]]) {
+    const hashFile = path.join(world.root, `${name}.sha256`);
+    const ranMarker = path.join(world.root, `${name}.ran`);
+    const r = w.runPython(world, SECRET_HELPER,
+      ['run', name, '--as', 'SERVICE_TOKEN', '--', process.execPath, w.SHOWS_PART_OF_SECRET, 'SERVICE_TOKEN', hashFile, ranMarker],
+      { timeout: 20000 });
+    assert.equal(r.status, 0, `the helper must run the tool with the secret ${name}; exit ${r.status}`);
+    assert.equal(fs.readFileSync(hashFile, 'utf8'), w.sha256(secret), `the tool must get the secret ${name} from the Keychain`);
+    assert.match(r.stdout, /status: ok/, `the tool's own output must come through (${name})`);
+    assertNoPiece(r, secret, `a tool showing part of the secret ${name}`);
+    recordInTranscript(world, r);
+  }
+
+  const hits = w.filesHolding(scanSet(world), plum, { everyTrace: true }).concat(w.filesHolding(scanSet(world), other, { everyTrace: true }));
+  assert.deepEqual(hits, [], `the secrets must be nowhere but the Keychain; found in: ${hits.join(', ')}`);
+});
