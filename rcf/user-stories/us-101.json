@@ -17,9 +17,18 @@
       "when": "Squire's core is laid down again, or replaced with a different core",
       "then": "The Squire owner's folder hashes the same before and after: none of its files is changed, removed or rewritten.",
       "verification": "testOnly"
+    },
+    {
+      "id": "AC-101-2",
+      "description": "An overlay at a safety rule's path is ignored, and the health check names it.",
+      "testable": true,
+      "given": "An overlay in the Squire owner's folder at the path of one of core's safety rules",
+      "when": "Squire's health check runs",
+      "then": "The overlay is ignored, so the safety rule behaves exactly as core's, and the health check names the ignored overlay.",
+      "verification": "testOnly"
     }
   ],
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-11-07T17:40:09.376Z",
+  "updatedAt": "2026-11-07T19:03:42.486Z",
   "description": "The layout on the Mac: core in its own place, replaced whole; the Squire owner's folder apart from it. This story carries the foundation part of the promise that updates never touch the Squire owner's folder; the update and rollback part is a criterion of the updates story."
 }

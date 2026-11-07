@@ -8,6 +8,7 @@
   "summary": "Areas A1, A19 and A21. This public repository, fresh; core kept apart from the Squire owner's folder; the safety hooks in force and not overlayable; and a privacy scan that guards every later push.",
   "acIds": [
     "AC-101-1",
+    "AC-101-2",
     "AC-1901-1",
     "AC-1901-2",
     "AC-1901-3",
@@ -18,5 +19,5 @@
   ],
   "dependsOnFbsIds": [],
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-11-07T17:40:43.849Z"
+  "updatedAt": "2026-11-07T19:03:49.107Z"
 }

@@ -1,10 +1,11 @@
 {
   "createdAt": "2026-11-07T17:40:38.715Z",
-  "updatedAt": "2026-11-07T18:27:41.072Z",
+  "updatedAt": "2026-11-07T19:03:49.382Z",
   "purpose": "Lays down and replaces core on a seeded Squire owner's folder through the real install path, and compares the folder's hashes before and after.",
   "testLevel": "integration",
   "acIds": [
-    "AC-101-1"
+    "AC-101-1",
+    "AC-101-2"
   ],
   "id": "TS-001",
   "usId": "US-101",

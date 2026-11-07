@@ -1,10 +1,11 @@
 {
   "createdAt": "2026-11-07T18:27:50.610Z",
-  "updatedAt": "2026-11-07T18:27:58.354Z",
+  "updatedAt": "2026-11-07T19:03:49.644Z",
   "purpose": "Lays core down from a release with the release's own lay-down, runs the installed floor and secret helper against the owner's folder, lays core down again and compares the owner's folder byte for byte. The release is a parameter so the verifier can point it at a packed release.",
   "testLevel": "e2e",
   "acIds": [
-    "AC-101-1"
+    "AC-101-1",
+    "AC-101-2"
   ],
   "id": "TS-020",
   "usId": "US-101",
