@@ -5,3 +5,5 @@ Squire is an AI personal assistant for the Mac, for an owner who is not technica
 Squire is free and source-available under the PolyForm Noncommercial License 1.0.0 (see `LICENSE`). It is not open source.
 
 The requirements chain (requirements, user stories, acceptance criteria and build sequence) lives under `rcf/` and is kept with the rcf-lite tool (`pnpm exec rcf`).
+
+Run the tests on a Mac with `node --test 'tests/**/*.test.js'`; they drive core through the stock `/usr/bin/python3`.
