@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-11-07T17:39:56.348Z",
+  "updatedAt": "2026-11-07T17:39:56.352Z",
+  "description": "Squire runs deep research for the Squire owner. It is a heavy job, so Squire always warns first and waits for a yes.",
+  "category": "functional",
+  "domain": "research",
+  "priority": "must",
+  "tags": [
+    "area:A15"
+  ],
+  "reqId": "REQ-015",
+  "prdId": "PRD-001",
+  "title": "Deep research, always warned first",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "none"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:56.351Z"
+  }
+}

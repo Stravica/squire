@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-11-07T17:39:56.610Z",
+  "updatedAt": "2026-11-07T17:39:56.615Z",
+  "description": "Squire builds small apps for the Squire owner from a one-page brief, following coding standards, through plan, build, test, preview and ship. It is a heavy job, so Squire warns first and waits for a yes.",
+  "category": "functional",
+  "domain": "app-building",
+  "priority": "must",
+  "tags": [
+    "area:A16"
+  ],
+  "reqId": "REQ-016",
+  "prdId": "PRD-001",
+  "title": "Build me an app: a one-page brief, coding standards, plan, build, test, preview, ship",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:56.614Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "webUi",
+        "match": "page"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "page"
+      }
+    ]
+  }
+}

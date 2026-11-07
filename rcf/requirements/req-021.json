@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-11-07T17:39:57.924Z",
+  "updatedAt": "2026-11-07T17:39:57.929Z",
+  "description": "This repository is public from its first commit, carries none of the source assistant's history, runs a privacy scan before every push, and is licensed under PolyForm Noncommercial 1.0.0.",
+  "category": "nonFunctional",
+  "domain": "repository",
+  "priority": "must",
+  "tags": [
+    "area:A21"
+  ],
+  "reqId": "REQ-021",
+  "prdId": "PRD-001",
+  "title": "The public repository: fresh, with a pre-push privacy scan and a resale-stopping licence",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "none"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:57.928Z"
+  }
+}

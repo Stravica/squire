@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-11-07T17:39:54.508Z",
+  "updatedAt": "2026-11-07T17:39:54.512Z",
+  "description": "A recording saved into the voice-notes folder is transcribed on the Mac and handed to Squire. Any page it makes is visible on the Mac only.",
+  "category": "functional",
+  "domain": "voice-notes",
+  "priority": "must",
+  "tags": [
+    "area:A8"
+  ],
+  "reqId": "REQ-008",
+  "prdId": "PRD-001",
+  "title": "Voice notes, transcribed on the Mac",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:54.511Z",
+    "signals": [
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "page"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "visible"
+      }
+    ]
+  }
+}

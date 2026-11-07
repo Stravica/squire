@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-11-07T17:39:57.398Z",
+  "updatedAt": "2026-11-07T17:39:57.403Z",
+  "description": "Squire drafts and never sends without a yes; a yes covers one thing and silence is never a yes; the Rule of Two always applies; nothing destructive and no install happens without a yes; secrets live in the Mac's Keychain; the Squire owner's details are never given to a website. These rules are core's and cannot be overlaid.",
+  "category": "security",
+  "domain": "safety",
+  "priority": "must",
+  "tags": [
+    "area:A19"
+  ],
+  "reqId": "REQ-019",
+  "prdId": "PRD-001",
+  "title": "Safety, always on",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "none"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:57.402Z"
+  }
+}

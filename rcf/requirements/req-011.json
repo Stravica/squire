@@ -1,0 +1,62 @@
+{
+  "createdAt": "2026-11-07T17:39:55.298Z",
+  "updatedAt": "2026-11-07T17:39:55.303Z",
+  "description": "A health check shown as a page, a Restart app in the Dock, a nightly backup of the Squire owner's folder to iCloud Drive, and guided fixes from a known-fixes list before any ticket is offered.",
+  "category": "functional",
+  "domain": "self-care",
+  "priority": "must",
+  "tags": [
+    "area:A11"
+  ],
+  "reqId": "REQ-011",
+  "prdId": "PRD-001",
+  "title": "Looks after itself: health check, one-click restart, nightly iCloud backup, guided fixes",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi",
+      "httpApi",
+      "persistence"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:55.302Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "webUi",
+        "match": "click"
+      },
+      {
+        "source": "title",
+        "shape": "httpApi",
+        "match": "rest"
+      },
+      {
+        "source": "title",
+        "shape": "persistence",
+        "match": "backup"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "show"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "page"
+      },
+      {
+        "source": "description",
+        "shape": "httpApi",
+        "match": "Rest"
+      },
+      {
+        "source": "description",
+        "shape": "persistence",
+        "match": "backup"
+      }
+    ]
+  }
+}

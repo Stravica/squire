@@ -1,0 +1,40 @@
+{
+  "createdAt": "2026-11-07T17:39:57.134Z",
+  "updatedAt": "2026-11-07T17:39:57.139Z",
+  "description": "Squire drives its own browser (Playwright, set up by the installer) in a separate, visible window the Squire owner can watch and take over. It never gives a website the Squire owner's details and never signs in to their accounts without a yes.",
+  "category": "functional",
+  "domain": "browser",
+  "priority": "must",
+  "tags": [
+    "area:A18"
+  ],
+  "reqId": "REQ-018",
+  "prdId": "PRD-001",
+  "title": "A browser it can drive: its own window, never signs in without a yes",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:57.138Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "webUi",
+        "match": "browser"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "browser"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "visible"
+      }
+    ]
+  }
+}

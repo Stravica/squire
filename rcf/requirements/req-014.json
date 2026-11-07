@@ -1,0 +1,36 @@
+{
+  "createdAt": "2026-11-07T17:39:56.086Z",
+  "updatedAt": "2026-11-07T17:39:56.090Z",
+  "description": "Squire's core updates come only from releases signed by Stravica. Squire shows what is new, installs on the Squire owner's yes, runs its health check and puts the previous version back if the check fails. It also notices Claude Code's own updates and runs its health check after them.",
+  "category": "functional",
+  "domain": "updates",
+  "priority": "must",
+  "tags": [
+    "area:A14"
+  ],
+  "reqId": "REQ-014",
+  "prdId": "PRD-001",
+  "title": "Signed updates: plain-words changelog, yes first, health check, rollback",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi",
+      "httpApi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:56.089Z",
+    "signals": [
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "shows"
+      },
+      {
+        "source": "description",
+        "shape": "httpApi",
+        "match": "put"
+      }
+    ]
+  }
+}

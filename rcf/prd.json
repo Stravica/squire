@@ -1,12 +1,69 @@
 {
   "prdId": "PRD-001",
-  "productName": "squire",
+  "productName": "Squire",
   "version": "0.1.0",
   "status": "draft",
-  "problemStatement": "TODO: state the problem this product solves.",
+  "problemStatement": "A person who is not technical has no safe way to run a capable AI personal assistant on their own Mac: today it takes someone technical to install it, keep it running and keep it safe. Squire packages the source assistant, improved and made generic, as a Mac install that such a person sets up alone, on their own Claude plan, with safety on from the start.",
   "objectives": [
-    "TODO: add at least one objective."
+    "A Squire owner who is not technical sets Squire up on a fresh Mac and gets a first reply, without Terminal.",
+    "Nothing is sent, published, deleted, overwritten, installed or spent without the Squire owner's yes for that one thing.",
+    "The Squire owner's secrets stay in the Mac's Keychain, and their personal details never reach a website or a support ticket.",
+    "One Squire session is always running, reachable from the Claude app on the Mac and on the phone.",
+    "Squire looks after itself: signed updates with rollback, a nightly backup, and fixing itself before offering a ticket.",
+    "Squire knows the Squire owner's Claude plan, paces itself and warns before big jobs."
   ],
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T17:39:51.891Z",
+  "executiveSummary": "Squire packages the improved, generic reference assistant for Mac. It is for an owner who is not technical, on macOS 13 or later with 4 GB of memory and a Claude Pro plan or above. The core is free for ever; no paid feature is built in v0.1. Squire is free and source-available under PolyForm Noncommercial 1.0.0, and the Squire owner pays Claude directly. Business tools, paid features and other systems are out, and the maintainer's own platform code never ships.",
+  "targetUsers": [
+    "A Squire owner: a person who is not technical, on a Mac with macOS 13 or later and 4 GB of memory or more, with a Claude Pro plan or above."
+  ],
+  "outOfScope": [
+    "Business tools: invoices, payments, client sign-off, a business hub and client folders.",
+    "Paid add-on packs, a set-it-up-for-me service and any other paid feature.",
+    "Console accounts with usage credits.",
+    "Windows and Linux.",
+    "Downloading YouTube video or audio.",
+    "Local GPU models.",
+    "Merging an owner's overlay with a changed core file (v0.1 offers keep yours or take the new one).",
+    "Admin tools and an admin session.",
+    "A GitHub account, deploy key or git sync on the Squire owner's Mac.",
+    "An encrypted secrets vault file or a .env file (secrets live in the Mac's Keychain).",
+    "Promises about connected services (mail, calendar, documents, design and social tools).",
+    "Ads, selling data and any mark-up on Claude usage.",
+    "Apple notarisation of the installer (parked); releases are signed by Stravica.",
+    "Plain words, short answers and a teach-me mode as criteria: they are reviewed behaviour, not tested."
+  ],
+  "constraints": [
+    "Mac only: macOS 13 or later and 4 GB of memory or more.",
+    "A Squire owner needs a Claude Pro plan or above; the free Claude plan does not include Claude Code.",
+    "Licence: PolyForm Noncommercial 1.0.0. Squire is free and source-available, never described as open source.",
+    "The core is free for ever. No ads, no data sold, no mark-up on Claude usage.",
+    "Squire's code is Python and Swift, run by launchd agents. Node is used only for the development tool and never ships.",
+    "No code from the maintainer's own platform enters this repository.",
+    "Set-up never needs Terminal."
+  ],
+  "inScope": [
+    "A1. Core and the Squire owner's folder kept apart",
+    "A2. The installer, with no Terminal",
+    "A3. The Claude sign-in, with the free-plan wall and the Pro route",
+    "A4. Always on: one session, reachable from the Mac and the phone",
+    "A5. Context watch: the handover note and the /clear prompt",
+    "A6. Gets to know you: profile, house style, learning, teach-me mode, name and personality",
+    "A7. Wake-ups that find their own session",
+    "A8. Voice notes, transcribed on the Mac",
+    "A9. Pages on the Mac only, with the comment panel",
+    "A10. The home dashboard",
+    "A11. Looks after itself: health check, one-click restart, nightly iCloud backup, guided fixes",
+    "A12. Websites: the one-off safe Cloudflare set-up, a deploy-only token, preview first, live on yes",
+    "A13. Knows its Claude plan and paces itself",
+    "A14. Signed updates: plain-words changelog, yes first, health check, rollback",
+    "A15. Deep research, always warned first",
+    "A16. Build me an app: a one-page brief, coding standards, plan, build, test, preview, ship",
+    "A17. Video and audio: YouTube captions and the Squire owner's own files",
+    "A18. A browser it can drive: its own window, never signs in without a yes",
+    "A19. Safety, always on",
+    "A20. Support: self-fix first, ticket preview, the intake and the private tracker",
+    "A21. The public repository: fresh, with a pre-push privacy scan and a resale-stopping licence"
+  ]
 }

@@ -1,0 +1,41 @@
+{
+  "createdAt": "2026-11-07T17:39:53.454Z",
+  "updatedAt": "2026-11-07T17:39:53.458Z",
+  "description": "One Squire session is kept running on the Mac by a launchd agent and can be reached from the Claude app on the Mac and on the phone. After a restart or a crash it comes back by itself.",
+  "category": "functional",
+  "domain": "session",
+  "priority": "must",
+  "tags": [
+    "area:A4"
+  ],
+  "reqId": "REQ-004",
+  "prdId": "PRD-001",
+  "title": "Always on: one session, reachable from the Mac and the phone",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "httpApi",
+      "auth"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:53.457Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "auth",
+        "match": "session"
+      },
+      {
+        "source": "description",
+        "shape": "auth",
+        "match": "session"
+      },
+      {
+        "source": "description",
+        "shape": "httpApi",
+        "match": "rest"
+      }
+    ]
+  }
+}

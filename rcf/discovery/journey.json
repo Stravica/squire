@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "ui": null,
-  "declaredAt": "2026-11-07T17:26:43.489Z",
+  "ui": "none",
+  "declaredAt": "2026-11-07T17:34:08.404Z",
   "declaredBy": null,
   "declaredReason": null,
-  "declaredVia": "init",
+  "declaredVia": "declare",
   "asBuilt": false,
   "screens": [],
   "journeys": [],
