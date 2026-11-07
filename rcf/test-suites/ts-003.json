@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:39.251Z",
-  "updatedAt": "2026-11-07T18:27:42.911Z",
+  "updatedAt": "2026-11-07T19:18:55.891Z",
   "purpose": "Plants secrets through the real secret helper, exercises the helper and a consuming tool, and scans every place a secret could leak for any trace of it.",
   "testLevel": "integration",
   "acIds": [
@@ -14,7 +14,7 @@
     {
       "id": "TC-003-a-secret-stored-in-a-temporary-keychain",
       "acId": "AC-1902-1",
-      "description": "A secret stored in a temporary Keychain is handed to a tool three times through core/tools/secret.py, with the floor and a failed lookup in the mix; afterwards it is in the Keychain and in no file of the owner's folder, Squire's home or the transcript, as text, base64 or hex.",
+      "description": "A secret stored through core/tools/secret.py set, from stdin, is handed to a tool three times through the helper, with the floor asking before the helper runs a tool Squire built for the owner and a failed lookup in the mix; afterwards it is in the Keychain and in no file of the owner's folder, Squire's home, the transcript, TMPDIR, the user's home or core, as text, base64, lower or upper hex or percent-encoded.",
       "status": "pending",
       "testPointer": "tests/acceptance/secrets.test.js::a secret used through the helper across normal work is in the Keychain and nowhere else"
     },
@@ -24,6 +24,34 @@
       "description": "The helper hands the Keychain secret to a tool that prints it, and neither output holds it; with the Keychain locked, lacking the secret or unavailable, the helper stops without a prompt, runs nothing, tells the owner what to do and never uses the decoys in a file or the environment.",
       "status": "pending",
       "testPointer": "tests/acceptance/secrets.test.js::the helper hands the secret to the tool without showing it, and stops with directions when the Keychain cannot supply it"
+    },
+    {
+      "id": "TC-003-set-from-stdin-only",
+      "acId": "AC-1902-1",
+      "description": "core/tools/secret.py set <name> stores the value read from stdin in the Keychain and shows none of it; a value on the command line in any form and an empty line are refused at once with nothing stored; the stored value is in no file in any encoding.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/secrets.test.js::a secret is stored through the helper from stdin, never from the command line and never empty, and lands in the Keychain only"
+    },
+    {
+      "id": "TC-003-every-encoding-nowhere-else",
+      "acId": "AC-1902-1",
+      "description": "After a tool prints the secret as text, base64, lower and upper hex and percent-encoded, split across two writes and amid bytes that are not UTF-8, the secret in any of those encodings is in no file of the owner folder, the Squire home and its logs, the transcript, TMPDIR, the user home or core.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/secrets.test.js::the helper keeps every encoding of the secret out of its output, whole, split across writes or amid bytes that are not UTF-8, and out of every file, while the rest of the tool output comes through"
+    },
+    {
+      "id": "TC-003-every-encoding-never-shown",
+      "acId": "AC-1902-2",
+      "description": "The helper hands the secret to a tool that prints it every way it can, and neither of the helper outputs holds it as text, base64, lower or upper hex or percent-encoded, while the rest of the tool output comes through.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/secrets.test.js::the helper keeps every encoding of the secret out of its output, whole, split across writes or amid bytes that are not UTF-8, and out of every file, while the rest of the tool output comes through"
+    },
+    {
+      "id": "TC-003-no-keychain-configured",
+      "acId": "AC-1902-2",
+      "description": "With keychain absent from the config the helper stops at once with directions naming the Keychain and runs nothing; the session running security find-generic-password -w, security dump-keychain, or reading or printing the keychain file is blocked before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/secrets.test.js::with no keychain in the config the helper stops with directions and falls back to nothing, and the session can never read the Keychain itself, yes or no"
     }
   ],
   "status": "draft"

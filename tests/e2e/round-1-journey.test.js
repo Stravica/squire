@@ -92,6 +92,13 @@ test('on a laid-down core the floor holds through a send, a delete, an install, 
   const again = { coreDir: fs.realpathSync(path.join(world.home, 'core')) };
   w.assertBlocked(w.attempt(world, s, send, again), 'sending the email after core was laid down again', 'alice@example.com');
 
+  // The installed health check names every overlay planted at an installed core path.
+  const health = w.runPython(world, path.join(again.coreDir, 'tools', 'health.py'), []);
+  const planted = Object.keys(w.treeOf(again.coreDir)).filter((rel) => fs.existsSync(path.join(world.owner, 'overlay', rel))).sort();
+  assert.equal(health.status, 1, `the installed health check must exit 1 when overlays sit at core paths; got ${w.describe(health)}`);
+  assert.deepEqual(w.ignoredOverlaysNamed(health.stdout).sort(), planted,
+    `the installed health check must name every overlay planted at a core path; got ${w.describe(health)}`);
+
   // The secret is in the Keychain and nowhere else.
   assert.equal(w.readSecret(world.keychain, 'site-token'), secret, 'the secret must still be in the Keychain');
   const hits = w.filesHolding([world.owner, world.home, world.transcript], secret);

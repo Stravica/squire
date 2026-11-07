@@ -15,7 +15,7 @@
 //   tmp/                    TMPDIR for every product process
 //   transcript.jsonl        the session transcript Claude Code would keep
 
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -26,6 +26,15 @@ const REPO = path.resolve(__dirname, '..', '..');
 const CORE = path.join(REPO, 'core');
 const PYTHON = '/usr/bin/python3';
 const SECURITY = '/usr/bin/security';
+const XATTR = '/usr/bin/xattr';
+
+// The floor's entry points: a release lacking any of them is no release.
+const FLOOR_ENTRY_POINTS = ['hooks/pre-tool-use.py', 'hooks/user-prompt-submit.py', 'tools/secret.py', 'tools/lay-down.py'];
+
+// Where the Squire home is when SQUIRE_HOME is unset.
+function defaultSquireHome(userHome) {
+  return path.join(userHome, 'Library', 'Application Support', 'Squire');
+}
 
 // ---------------------------------------------------------------- the world
 
@@ -55,6 +64,19 @@ function writeConfig(world, changes = {}) {
   fs.writeFileSync(path.join(world.home, 'squire.json'), JSON.stringify(world.config, null, 2) + '\n');
 }
 
+// Writes a Squire home's squire.json exactly as given: an object as JSON, a
+// string as it stands.
+function writeConfigFile(homeDir, content) {
+  fs.mkdirSync(homeDir, { recursive: true });
+  const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2) + '\n';
+  fs.writeFileSync(path.join(homeDir, 'squire.json'), text);
+}
+
+// The approvals ledger: append-only JSON lines in the owner's state folder.
+function ledgerOf(world) {
+  return path.join(world.owner, 'state', 'approvals.jsonl');
+}
+
 function cleanUp(world) {
   if (world.keychain) deleteKeychain(world.keychain);
   fs.rmSync(world.root, { recursive: true, force: true });
@@ -74,6 +96,8 @@ function productEnv(world, extra = {}) {
 }
 
 // Runs one Squire entry point as a process: /usr/bin/python3 <script> <args>.
+// An env value of undefined removes that variable (SQUIRE_HOME: undefined runs
+// the entry point with SQUIRE_HOME unset).
 function runPython(world, script, args = [], { input = '', cwd = world.owner, env = {}, timeout = 30000 } = {}) {
   const r = spawnSync(PYTHON, [script, ...args], {
     input,
@@ -91,6 +115,24 @@ function runPython(world, script, args = [], { input = '', cwd = world.owner, en
   };
 }
 
+// The same, with the outputs as raw bytes, for output that may not be UTF-8.
+function runPythonRaw(world, script, args = [], { input = '', cwd = world.owner, env = {}, timeout = 30000 } = {}) {
+  const r = spawnSync(PYTHON, [script, ...args], { input, cwd, env: productEnv(world, env), timeout });
+  return {
+    status: r.status,
+    signal: r.signal,
+    stdout: r.stdout || Buffer.alloc(0),
+    stderr: r.stderr || Buffer.alloc(0),
+    error: r.error ? String(r.error.message || r.error) : '',
+  };
+}
+
+// Lays core down from a release folder with the given lay-down (by default
+// this repository's), as the installer or an update would run it.
+function layDown(world, releaseDir, { script = path.join(CORE, 'tools', 'lay-down.py'), env = {} } = {}) {
+  return runPython(world, script, [releaseDir], { cwd: world.root, env });
+}
+
 function describe(r) {
   const cut = (s) => (s.length > 600 ? s.slice(0, 600) + '...' : s).trim();
   return `exit ${r.status}${r.signal ? ` (killed by ${r.signal})` : ''}${r.error ? ` (${r.error})` : ''}; ` +
@@ -100,34 +142,67 @@ function describe(r) {
 // ------------------------------------------------------- the hook boundary
 
 // Claude Code runs a hook as a process with the event as JSON on stdin and
-// the project folder (the owner's folder) as the working directory.
-function hook(world, script, event, { coreDir = world.core } = {}) {
-  return runPython(world, path.join(coreDir, 'hooks', script), [], { input: JSON.stringify(event) });
+// the project folder (the owner's folder) as the working directory. The
+// session's working directory (cwd) is both the event's cwd and the
+// process's; env changes the environment as runPython does.
+function hook(world, script, event, { coreDir = world.core, cwd = world.owner, env = {} } = {}) {
+  return runPython(world, path.join(coreDir, 'hooks', script), [], { input: JSON.stringify(event), cwd, env });
 }
 
-// Squire, or a tool it calls, is about to use a tool.
-function attempt(world, session, [toolName, toolInput], opts) {
-  return hook(world, 'pre-tool-use.py', {
+function preToolUseEvent(world, session, [toolName, toolInput], { cwd = world.owner } = {}) {
+  return {
     session_id: session,
     transcript_path: world.transcript,
-    cwd: world.owner,
+    cwd,
     permission_mode: 'default',
     hook_event_name: 'PreToolUse',
     tool_name: toolName,
     tool_input: toolInput,
-  }, opts);
+  };
 }
 
-// The Squire owner sends a message to their Squire.
-function ownerSays(world, session, prompt, opts) {
-  const r = hook(world, 'user-prompt-submit.py', {
+function userPromptEvent(world, session, prompt, { cwd = world.owner } = {}) {
+  return {
     session_id: session,
     transcript_path: world.transcript,
-    cwd: world.owner,
+    cwd,
     permission_mode: 'default',
     hook_event_name: 'UserPromptSubmit',
     prompt,
-  }, opts);
+  };
+}
+
+// Squire, or a tool it calls, is about to use a tool.
+function attempt(world, session, call, opts = {}) {
+  return hook(world, 'pre-tool-use.py', preToolUseEvent(world, session, call, opts), opts);
+}
+
+// Several attempts in one session at the same moment: every hook process is
+// started before any is given its event, and all are waited for.
+function attemptTogether(world, session, calls, { coreDir = world.core, cwd = world.owner, env = {} } = {}) {
+  const runs = calls.map((call) => {
+    const child = spawn(PYTHON, [path.join(coreDir, 'hooks', 'pre-tool-use.py')],
+      { cwd, env: productEnv(world, env), stdio: ['pipe', 'pipe', 'pipe'] });
+    const out = { stdout: '', stderr: '', error: '' };
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (d) => { out.stdout += d; });
+    child.stderr.on('data', (d) => { out.stderr += d; });
+    child.stdin.on('error', () => {});
+    const killer = setTimeout(() => child.kill('SIGKILL'), 30000);
+    const done = new Promise((resolve) => {
+      child.on('error', (e) => { out.error = String(e.message || e); });
+      child.on('close', (status, signal) => { clearTimeout(killer); resolve({ status, signal, ...out }); });
+    });
+    return { child, done, input: JSON.stringify(preToolUseEvent(world, session, call, { cwd })) };
+  });
+  for (const run of runs) run.child.stdin.end(run.input);
+  return Promise.all(runs.map((run) => run.done));
+}
+
+// The Squire owner sends a message to their Squire.
+function ownerSays(world, session, prompt, opts = {}) {
+  const r = hook(world, 'user-prompt-submit.py', userPromptEvent(world, session, prompt, opts), opts);
   assert.equal(r.status, 0, `the owner's message "${prompt}" must reach Squire (the hook exits 0); got ${describe(r)}`);
   return r;
 }
@@ -150,15 +225,45 @@ function assertAllowed(r, what) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// A block reason shows the open request it raised as "request <id>": the id is
+// one word of letters, digits and hyphens holding at least one digit (for
+// example "request 7f3a" or "request r-12"). The owner answers that request,
+// and only that one, with "yes <id>".
+function requestIdIn(reason) {
+  for (const m of reason.matchAll(/\brequest(?:\s+id)?\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9-]*)/gi)) {
+    if (/\d/.test(m[1])) return m[1];
+  }
+  return null;
+}
+
+// The health check names each overlay it ignores on a line of its own:
+//   ignored: overlay/<path relative to the core root> (safety floor)
+// Returns the relative paths it named, in the order named.
+function ignoredOverlaysNamed(stdout) {
+  const named = [];
+  for (const line of stdout.split('\n')) {
+    const m = /^ignored: overlay\/(.+) \(safety floor\)$/.exec(line.trim());
+    if (m) named.push(m[1]);
+  }
+  return named;
+}
+
 // --------------------------------------------------------- tool call shapes
 
 const tools = {
-  bash: (command) => ['Bash', { command, description: 'Squire at work' }],
+  bash: (command, description = 'Squire at work') => ['Bash', { command, description }],
   read: (filePath) => ['Read', { file_path: filePath }],
   write: (filePath, content) => ['Write', { file_path: filePath, content }],
+  edit: (filePath, oldString, newString) => ['Edit', { file_path: filePath, old_string: oldString, new_string: newString }],
+  multiEdit: (filePath, edits) => ['MultiEdit', { file_path: filePath, edits }],
+  notebookEdit: (notebookPath, cellId, newSource) =>
+    ['NotebookEdit', { notebook_path: notebookPath, cell_id: cellId, new_source: newSource, edit_mode: 'replace' }],
   webFetch: (url) => ['WebFetch', { url, prompt: 'What does this page say?' }],
+  webSearch: (query) => ['WebSearch', { query }],
   gmailSend: (to, subject, body) => ['mcp__claude_ai_Gmail__send_message', { to, subject, body }],
   gmailDraft: (to, subject, body) => ['mcp__claude_ai_Gmail__create_draft', { to, subject, body }],
+  gmailRead: (threadId) => ['mcp__claude_ai_Gmail__get_thread', { thread_id: threadId }],
+  mcp: (name, input) => [name, input],
 };
 
 // -------------------------------------------------- the owner's folder
@@ -307,10 +412,24 @@ function sha256(data) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+// Every way a careless tool may print the secret: as text, base64, lower and
+// upper hex and percent-encoded.
+function tracesOf(secret) {
+  const bytes = Buffer.from(secret, 'utf8');
+  const forms = {
+    text: secret,
+    base64: bytes.toString('base64'),
+    lowerHex: bytes.toString('hex'),
+    upperHex: bytes.toString('hex').toUpperCase(),
+    percentEncoded: encodeURIComponent(secret),
+  };
+  return Object.entries(forms).map(([name, form]) => ({ name, bytes: Buffer.from(form, 'utf8') }));
+}
+
 // The files, in or under the given places, whose bytes hold the secret as
-// text, base64 or hex.
-function filesHolding(places, secret) {
-  const needles = [
+// text, base64 or hex; with { everyTrace: true }, in any of tracesOf's forms.
+function filesHolding(places, secret, { everyTrace = false } = {}) {
+  const needles = everyTrace ? tracesOf(secret).map((t) => t.bytes) : [
     Buffer.from(secret, 'utf8'),
     Buffer.from(Buffer.from(secret, 'utf8').toString('base64'), 'utf8'),
     Buffer.from(Buffer.from(secret, 'utf8').toString('hex'), 'utf8'),
@@ -362,6 +481,10 @@ function readSecret(keychain, name) {
   return security(['find-generic-password', '-s', 'squire', '-a', name, '-w', keychain.path]).stdout.replace(/\n$/, '');
 }
 
+function hasSecret(keychain, name) {
+  return spawnSync(SECURITY, ['find-generic-password', '-s', 'squire', '-a', name, keychain.path], { encoding: 'utf8' }).status === 0;
+}
+
 function lockKeychain(keychain) {
   security(['lock-keychain', keychain.path]);
 }
@@ -383,6 +506,20 @@ function security(args) {
 
 // A tool that needs a secret, written as carelessly as a real one can be.
 const NEEDS_SECRET = path.join(__dirname, 'tools', 'needs-secret.js');
+// One more careless still: it prints the secret in every encoding, in pieces
+// and amid bytes that are not UTF-8.
+const LEAKS_SECRET = path.join(__dirname, 'tools', 'leaks-secret.js');
+
+// A secret with characters that change under percent-encoding.
+function newSecretWithSymbols() {
+  return newSecret() + '/+=&?';
+}
+
+// Marks a file as downloaded from the internet, as Safari or a browser would.
+function setQuarantine(file) {
+  const r = spawnSync(XATTR, ['-w', 'com.apple.quarantine', '0083;6730a1b0;Safari;', file], { encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`xattr failed: ${r.stderr}`);
+}
 
 function newSecret() {
   return 'sq-' + crypto.randomBytes(24).toString('hex');
@@ -393,13 +530,25 @@ module.exports = {
   CORE,
   PYTHON,
   NEEDS_SECRET,
+  LEAKS_SECRET,
+  FLOOR_ENTRY_POINTS,
+  defaultSquireHome,
   makeWorld,
   writeConfig,
+  writeConfigFile,
+  ledgerOf,
   cleanUp,
   runPython,
+  runPythonRaw,
+  layDown,
   describe,
+  preToolUseEvent,
+  userPromptEvent,
   attempt,
+  attemptTogether,
   ownerSays,
+  requestIdIn,
+  ignoredOverlaysNamed,
   assertBlocked,
   assertAllowed,
   sleep,
@@ -412,10 +561,14 @@ module.exports = {
   copyTree,
   sha256,
   filesHolding,
+  tracesOf,
   makeKeychain,
   storeSecret,
   readSecret,
+  hasSecret,
   lockKeychain,
   unlockKeychain,
   newSecret,
+  newSecretWithSymbols,
+  setQuarantine,
 };
