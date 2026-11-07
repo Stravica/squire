@@ -6,7 +6,8 @@ Keychain, are fetched at the moment a tool needs them, and are never shown.
 
 run fetches the secret <name> from the Keychain that squire.json names and
 runs the command with the secret in the environment variable <VAR>, passing
-the command's output on with every trace of the secret hidden. When the
+the command's output on with every trace of the secret hidden, down to any
+four of its characters in a row. When the
 Keychain is not set up, locked, missing or lacks the secret, it stops,
 says what to do and runs nothing. A secret is a generic password item with
 service "squire" and the secret's name as its account.
@@ -15,6 +16,7 @@ service "squire" and the secret's name as its account.
 import base64
 import ctypes
 import os
+import re
 import subprocess
 import sys
 from urllib.parse import quote_from_bytes
@@ -26,6 +28,7 @@ SECURITY = '/usr/bin/security'
 class SecretHelper:
     SERVICE = 'squire'
     HIDDEN = b'[secret hidden]'
+    PIECE = 4
     NO_SUCH_KEYCHAIN = -25294
     ITEM_NOT_FOUND = 44
     USAGE = 'use: secret.py run <name> --as <VAR> -- <command> [args...], or secret.py set <name> with the secret on stdin'
@@ -129,12 +132,25 @@ class SecretHelper:
     @classmethod
     def hide(cls, data, secret):
         """The output with the secret hidden as text, base64, lower and upper
-        hex and percent-encoded."""
+        hex and percent-encoded, and with every run of PIECE or more of its
+        characters in a row hidden, as a tool shows part of a key it uses.
+        Every place a form or a piece starts is found in the output as given,
+        so a hidden mark never meets a second pass."""
         forms = {secret, base64.b64encode(secret), secret.hex().encode(), secret.hex().upper().encode(),
                  quote_from_bytes(secret, safe="-_.!~*'()").encode()}
-        for form in sorted(forms, key=len, reverse=True):
-            data = data.replace(form, cls.HIDDEN)
-        return data
+        forms.update(secret[i:i + cls.PIECE] for i in range(len(secret) - cls.PIECE + 1))
+        found = re.compile(b'(?=(' + b'|'.join(re.escape(f) for f in sorted(forms, key=len, reverse=True)) + b'))')
+        spans = []
+        for match in found.finditer(data):
+            if spans and match.start() <= spans[-1][1]:
+                spans[-1][1] = max(spans[-1][1], match.end(1))
+            else:
+                spans.append([match.start(), match.end(1)])
+        out, at = [], 0
+        for start, stop in spans:
+            out += [data[at:start], cls.HIDDEN]
+            at = stop
+        return b''.join(out + [data[at:]])
 
 
 if __name__ == '__main__':
