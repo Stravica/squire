@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -B \"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}/core/hooks/pre-tool-use.py\"",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -B \"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}/core/hooks/user-prompt-submit.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
