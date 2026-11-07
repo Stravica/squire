@@ -1,0 +1,18 @@
+{
+  "createdAt": "2026-11-07T17:40:44.158Z",
+  "updatedAt": "2026-11-07T17:40:44.158Z",
+  "summary": "Areas A4 and A7. The session runner, the Claude sign-in it runs under, and wake-up routing to the Squire owner's own session.",
+  "dependsOnFbsIds": [
+    "FBS-001"
+  ],
+  "acIds": [
+    "AC-401-1",
+    "AC-701-1"
+  ],
+  "fbsId": "FBS-002",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 2,
+  "executionStatus": "notStarted",
+  "title": "Round 2: Session"
+}

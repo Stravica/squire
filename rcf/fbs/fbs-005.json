@@ -1,0 +1,22 @@
+{
+  "createdAt": "2026-11-07T17:40:44.985Z",
+  "updatedAt": "2026-11-07T17:40:44.985Z",
+  "summary": "Areas A5, A13 and A15 to A17. The handover note and /clear prompt, pacing, deep research, app building, and captions and local transcription.",
+  "dependsOnFbsIds": [
+    "FBS-004"
+  ],
+  "acIds": [
+    "AC-501-1",
+    "AC-1301-1",
+    "AC-1301-2",
+    "AC-1301-3",
+    "AC-1302-1",
+    "AC-1701-1"
+  ],
+  "fbsId": "FBS-005",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 5,
+  "executionStatus": "notStarted",
+  "title": "Round 5: Usage/heavy jobs"
+}
