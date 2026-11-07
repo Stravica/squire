@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-07T18:01:56.654Z",
+  "updatedAt": "2026-11-07T20:43:47.899Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -18,7 +18,7 @@
       "testable": true,
       "given": "Squire has drafted a message to send, a page to publish or a site to deploy, and the Squire owner has not said yes to it. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
       "when": "Squire, or a tool it calls, tries to send, publish or deploy it",
-      "then": "The action is blocked and nothing leaves the Mac or goes live; once the Squire owner says yes to that item, it may proceed.",
+      "then": "The action is blocked and nothing is sent, published or deployed; once the Squire owner says yes to that item, it may proceed.",
       "verification": "testOnly"
     },
     {
