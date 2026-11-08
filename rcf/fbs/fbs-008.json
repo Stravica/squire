@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-08T10:58:10.554Z",
-  "updatedAt": "2026-11-08T12:13:15.807Z",
+  "updatedAt": "2026-11-08T15:09:47.674Z",
   "summary": "Area A19. The Rule of Two's untrusted and private marks: a read the safety floor resolves to literal paths is marked by what it reads, a small model is asked about a read the floor cannot resolve, and the Squire owner is asked when neither can say.",
   "dependsOnFbsIds": [
     "FBS-001"
@@ -20,6 +20,7 @@
   "prdId": "PRD-001",
   "bsId": "BS-001",
   "buildOrder": 2,
-  "executionStatus": "notStarted",
-  "title": "Round 1b: the Rule of Two's marks"
+  "executionStatus": "inProgress",
+  "title": "Round 1b: the Rule of Two's marks",
+  "uiBearing": false
 }
