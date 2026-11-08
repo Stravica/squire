@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "head": "5421f3650a251917bf8c040cb2fc985e346489e1",
+  "scope": "reviewVerdict",
+  "criteria": [
+    {
+      "acId": "AC-101-1",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/tools/lay-down.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-101-2",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/tools/health.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1901-1",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/hooks/user-prompt-submit.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1901-2",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/hooks/user-prompt-submit.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1901-4",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/hooks/user-prompt-submit.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1901-5",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/hooks/user-prompt-submit.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1902-1",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/tools/secret.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1902-2",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/tools/secret.py:1:1: unsupported file type .py"
+    }
+  ],
+  "result": "blocked",
+  "totals": {
+    "criteria": 8,
+    "structuralPassed": 0,
+    "mutants": 0,
+    "killed": 0,
+    "survived": 0,
+    "timeout": 0,
+    "notApplicable": 0,
+    "blocked": 8
+  },
+  "wallMs": 70,
+  "node": "v24.14.0"
+}
