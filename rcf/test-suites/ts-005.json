@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:39.795Z",
-  "updatedAt": "2026-11-08T19:30:18.813Z",
+  "updatedAt": "2026-11-08T20:41:13.073Z",
   "purpose": "Runs the installed wake-up router and the session-start hook through their real entry points, against session records and fake session inboxes in a test world: exactly one session of Squire's own is delivered to, and every other case sends nothing and logs why.",
   "testLevel": "integration",
   "acIds": [
@@ -72,6 +72,41 @@
       "description": "End to end on a laid-down core: wake-ups reach the session the installed runner started, and after a restart the new session, never the old.",
       "status": "pending",
       "testPointer": "tests/e2e/round-2-journey.test.js::on a laid-down core the runner starts a session that runs the floor, a wake-up saying yes reaches it without answering its request, and after a settings file appears the new session is the one woken"
+    },
+    {
+      "id": "TC-005-reused-pid-process-gone",
+      "acId": "AC-701-1",
+      "description": "A record whose pid is alive and listening but whose start time is not that process start: nothing sent, the log says the process is gone, the wake-up retrying with one failed attempt.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose process id is alive and listening on its socket but started at another time, nothing is sent, the log says the process is gone and the wake-up waits to be retried"
+    },
+    {
+      "id": "TC-005-listener-not-recorded",
+      "acId": "AC-701-1",
+      "description": "A record whose socket inode and owner match but whose pid is another live process: the peer on the socket is not the recorded pid, so no line is written, the wake-up is not sent and the log says stale.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose socket and owner are its own but whose process is not the one listening on that socket, the router writes nothing on the connection, records the wake-up not sent and the log says the record is stale"
+    },
+    {
+      "id": "TC-005-late-delivered",
+      "acId": "AC-701-1",
+      "description": "A picked wake-up 90 minutes late is delivered once, framed with its due time and its delivery time in local time, and recorded delivered; a second run sends nothing.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a picked wake-up whose time passed while the Mac slept, less than two hours ago, is delivered once with its due time and its delivery time in the framing"
+    },
+    {
+      "id": "TC-005-late-missed",
+      "acId": "AC-701-1",
+      "description": "A picked wake-up 150 minutes late is not sent, recorded missed with one missed attempt, and the log says missed; a second run sends nothing.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a picked wake-up two hours or more past its time is recorded missed, never sent, and the log says missed"
+    },
+    {
+      "id": "TC-005-late-across-midnight",
+      "acId": "AC-701-1",
+      "description": "Just after local midnight a wake-up picked 75 minutes earlier, the day before, is delivered with its due time, and one picked 150 minutes earlier is missed.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::just after midnight a wake-up picked for the evening before goes when it is under two hours late, and one more than two hours late is missed"
     }
   ],
   "status": "draft"

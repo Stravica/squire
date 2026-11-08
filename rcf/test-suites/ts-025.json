@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-08T19:15:34.839Z",
-  "updatedAt": "2026-11-08T19:29:48.674Z",
+  "updatedAt": "2026-11-08T20:41:11.758Z",
   "purpose": "Runs the installed session runner, the session-start and config-change hooks and lay-down through their real entry points, in a test world with a fake Claude Code at the place it installs itself: the config folder, the environment, the claude location, the server's arguments, the check before each start, settings files in the Squire owner's folder, resume, the session record and the launchd agents.",
   "testLevel": "integration",
   "acIds": [
@@ -100,6 +100,41 @@
       "description": "End to end on a laid-down core: the installed runner starts a session whose SessionStart hook records it and in which a send is asked; a settings file appearing restarts it.",
       "status": "pending",
       "testPointer": "tests/e2e/round-2-journey.test.js::on a laid-down core the runner starts a session that runs the floor, a wake-up saying yes reaches it without answering its request, and after a settings file appears the new session is the one woken"
+    },
+    {
+      "id": "TC-025-session-record-listener",
+      "acId": "AC-401-3",
+      "description": "The SessionStart hook, run by the process that listens on the session socket, records that process as the pid, its start time in UTC to the second, and the socket owner.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the session record names the process listening on the messaging socket, its start time in UTC as the system reports it, and the socket owner"
+    },
+    {
+      "id": "TC-025-no-socket-no-record",
+      "acId": "AC-401-3",
+      "description": "With a messaging socket path where no socket is and none appears, the SessionStart hook writes no session record, prints nothing and exits 0 within its wait.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the SessionStart hook given a messaging socket path where no socket is and none appears writes no session record, prints nothing and lets the session start within its wait"
+    },
+    {
+      "id": "TC-025-floor-digests",
+      "acId": "AC-401-3",
+      "description": "A floor hook with one harmless line added, or core settings and the config folder settings changed alike, differs from the digest lay-down recorded: no session, and the health check names the file.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::before each start the runner compares core settings and every floor hook with the digests lay-down recorded: a hook with one line added, or core settings and the config folder settings changed alike, starts no session and the health check names the file"
+    },
+    {
+      "id": "TC-025-marks-kept-every-source",
+      "acId": "AC-401-3",
+      "description": "A job holding untrusted input and private things keeps both through a SessionStart under its own id from compact, resume, startup, clear and an unknown source: a send stays refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the SessionStart hook never removes the marks of a job: one holding untrusted input and private things keeps both through compact, resume, startup, clear and an unknown source under its own id"
+    },
+    {
+      "id": "TC-025-startup-job-seen",
+      "acId": "AC-401-3",
+      "description": "Startup writes the job record, so a quiet session resumed under the same id is a job the floor has seen: a send is asked with a request id, not refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::a session started and then resumed under the same id with nothing done is a job the floor has seen: a send in it is asked, not refused as one job"
     }
   ],
   "status": "draft"

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-08T19:15:35.105Z",
-  "updatedAt": "2026-11-08T19:36:53.221Z",
+  "updatedAt": "2026-11-08T20:41:13.859Z",
   "purpose": "Runs the installed wake-up router against fake session inboxes in a test world: each delivery failure recorded with its reason and retry state and delivered nowhere else, the retry rule over seeded past attempts, and a line written but never acknowledged recorded unknown and never retried.",
   "testLevel": "integration",
   "acIds": [
@@ -65,6 +65,27 @@
       "description": "A retry re-runs the identity check: a changed session or two records means not delivered, and the log says why.",
       "status": "pending",
       "testPointer": "tests/acceptance/wake-ups.test.js::a retry re-runs the identity check: with the record now naming a different session, or two records, the retry is not delivered and the log says why"
+    },
+    {
+      "id": "TC-026-process-gone-before-socket",
+      "acId": "AC-701-2",
+      "description": "The record is read first and its process checked before its socket: with both gone the failed attempt names the process gone, not the missing socket.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose process is gone and whose socket is gone too, the failed attempt names the process gone, not the missing socket"
+    },
+    {
+      "id": "TC-026-last-retry-every-reason",
+      "acId": "AC-701-2",
+      "description": "Three failed attempts (process gone, missing socket, no record) and no session: the last retry fails, the state is failed with four attempts, and the log line names every reason.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::after three failed attempts with no session the last retry fails, the wake-up is recorded failed with four attempts and its log line names every reason"
+    },
+    {
+      "id": "TC-026-state-unwritable",
+      "acId": "AC-701-2",
+      "description": "With wake-ups/ unwritable the attempt cannot be recorded before the line: nothing is sent, the router exits non-zero and the log says the state could not be written.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::when the wake-up state cannot be written nothing is sent, the router exits non-zero and the log says the state could not be written"
     }
   ],
   "status": "draft"
