@@ -129,7 +129,11 @@ class Delivery:
                 return 'failed', self.TIMEOUT
             except OSError as e:
                 return 'failed', f'connection failed ({e.strerror or type(e).__name__})'
-            if sock.getsockopt(self.SOL_LOCAL, self.LOCAL_PEERPID) != self.record.get('pid'):
+            try:
+                peer = sock.getsockopt(self.SOL_LOCAL, self.LOCAL_PEERPID)
+            except OSError as e:
+                return 'failed', f'connection failed ({e.strerror or type(e).__name__})'
+            if peer != self.record.get('pid'):
                 return 'not sent', 'stale record (another process listens on its socket)'
             token = json.dumps({'type': 'auth', 'token': self.record.get('token')}, separators=(',', ':'))
             user = json.dumps({'type': 'user', 'message': {'role': 'user', 'content': content}}, separators=(',', ':'))
