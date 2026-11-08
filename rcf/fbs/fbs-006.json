@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:45.256Z",
-  "updatedAt": "2026-11-07T17:40:45.256Z",
+  "updatedAt": "2026-11-08T10:58:03.745Z",
   "summary": "Areas A8 to A10, A12 and A18. Safe publishing, the visible browser, local pages with comments, the home dashboard and voice notes. Needs a test Cloudflare account.",
   "dependsOnFbsIds": [
     "FBS-005"
@@ -15,7 +15,7 @@
   "fbsId": "FBS-006",
   "prdId": "PRD-001",
   "bsId": "BS-001",
-  "buildOrder": 6,
+  "buildOrder": 7,
   "executionStatus": "notStarted",
   "title": "Round 6: Websites/carried features"
 }

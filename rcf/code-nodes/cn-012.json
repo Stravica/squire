@@ -1,0 +1,14 @@
+{
+  "cnId": "CN-012",
+  "path": "core/hooks/pre-tool-use.py#SmallModel",
+  "implementsAcIds": [
+    "AC-1901-8",
+    "AC-1901-10",
+    "AC-1901-13"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-08T13:10:18.792Z",
+  "updatedAt": "2026-11-08T13:10:18.792Z"
+}

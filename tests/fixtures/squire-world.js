@@ -27,9 +27,32 @@ const CORE = path.join(REPO, 'core');
 const PYTHON = '/usr/bin/python3';
 const SECURITY = '/usr/bin/security';
 const XATTR = '/usr/bin/xattr';
+// The PATH every product process gets: the Mac's own folders, and no claude.
+const PRODUCT_PATH = '/usr/bin:/bin:/usr/sbin:/sbin';
 
 // The floor's entry points: a release lacking any of them is no release.
 const FLOOR_ENTRY_POINTS = ['hooks/pre-tool-use.py', 'hooks/user-prompt-submit.py', 'tools/secret.py', 'tools/lay-down.py'];
+
+// The places outside the world where the floor looks for the claude command
+// line. On a Mac that has one at either, a test could reach a real model, so
+// no test runs there.
+const HOST_CLAUDE_LOCATIONS = ['/usr/local/bin/claude', '/opt/homebrew/bin/claude'];
+
+function refuseOnHostWithClaude() {
+  for (const location of HOST_CLAUDE_LOCATIONS) {
+    let found = false;
+    try {
+      fs.lstatSync(location);
+      found = true;
+    } catch (e) {
+      if (e.code !== 'ENOENT') found = true;
+    }
+    if (found) {
+      throw new Error(`this Mac has a claude command line at ${location}, where Squire's floor looks for one; ` +
+        'the tests refuse to run here, so that none of them can reach a real model');
+    }
+  }
+}
 
 // Where the Squire home is when SQUIRE_HOME is unset.
 function defaultSquireHome(userHome) {
@@ -39,6 +62,7 @@ function defaultSquireHome(userHome) {
 // ---------------------------------------------------------------- the world
 
 function makeWorld({ approvalTimeoutSeconds = 600 } = {}) {
+  refuseOnHostWithClaude();
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'squire-test-')));
   const world = {
     root,
@@ -84,7 +108,7 @@ function cleanUp(world) {
 
 function productEnv(world, extra = {}) {
   return {
-    PATH: '/usr/bin:/bin:/usr/sbin:/sbin',
+    PATH: PRODUCT_PATH,
     HOME: world.userHome,
     TMPDIR: world.tmp,
     LANG: 'en_GB.UTF-8',
@@ -541,6 +565,116 @@ function newSecret() {
   return 'sq-' + crypto.randomBytes(24).toString('hex');
 }
 
+// --------------------------------------------- a stand-in for claude
+
+// The floor may ask a small model about a read it cannot resolve, through the
+// claude command line, which it looks for only in fixed places:
+// ~/.local/bin/claude (where Claude Code's installer lays it, as a link),
+// /usr/local/bin/claude and /opt/homebrew/bin/claude; never on PATH. No test
+// ever reaches a real model: HOME is the world's, so in the default world no
+// claude can be found, and makeWorld refuses to run on a Mac with one at
+// either of the other two. A test that wants one installs this fake, a Node
+// script named claude, by default at ~/.local/bin/claude under the world's
+// user home (or in the folder it is told, as a decoy first on the hook's
+// PATH, say). Options:
+//   dir      the folder the fake's claude goes in
+//   id       a name for a second fake, with its own behaviour and records
+//   linkTo   lay claude in dir as a link to the script at this path
+//   mode     the script's mode (0o755 unless told)
+//
+// What the fake does is set per test, and can be changed between calls:
+//   { answer: 'no' }                         prints that text and exits 0
+//   { answer: 'no', delayMs: 3300 }          the same, after a wait
+//   { answer: 'no', thenHang: true }         prints that text, then hangs
+//                                            without exiting
+//   { hang: true }                           never answers, never exits
+//   { hangWithChild: true }                  starts a child that holds its
+//                                            stdout open, then hangs
+//   { hangWithEscapedChild: true }           starts a child in a session of
+//                                            its own (outside the fake's
+//                                            process group) that holds its
+//                                            stdout open, then hangs
+//   { fail: 'API Error: ...', exitCode: 1 }  prints that on stderr and exits
+// A hung fake and its child ignore SIGTERM, as a stuck process may.
+//
+// Every call appends one JSON line to claude-calls.jsonl in the world (or
+// claude-calls-<id>.jsonl): its argv, what it read on stdin, its cwd, its own
+// process id, its child's process id (and whether the child left its group),
+// and the names of the environment variables it was given.
+function installFakeClaude(world, behaviour, { dir = path.join(world.userHome, '.local', 'bin'), id = '', linkTo = null, mode = 0o755 } = {}) {
+  const suffix = id ? `-${id}` : '';
+  const configFile = path.join(world.root, `fake-claude${suffix}.json`);
+  const callsFile = path.join(world.root, `claude-calls${suffix}.jsonl`);
+  fs.mkdirSync(dir, { recursive: true });
+  const script = `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const { spawn } = require('child_process');
+const how = JSON.parse(fs.readFileSync(${JSON.stringify(configFile)}, 'utf8'));
+const record = (extra) => fs.appendFileSync(${JSON.stringify(callsFile)}, JSON.stringify({
+  argv: process.argv.slice(2), stdin, cwd: process.cwd(), pid: process.pid,
+  envNames: Object.keys(process.env).sort(), at: Date.now(), ...extra }) + '\\n');
+let stdin = '';
+let started = false;
+const hang = () => { process.on('SIGTERM', () => {}); setInterval(() => {}, 1000); };
+function run() {
+  if (started) return;
+  started = true;
+  if (how.hangWithChild || how.hangWithEscapedChild) {
+    const escaped = Boolean(how.hangWithEscapedChild);
+    const child = spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"],
+      { stdio: ['ignore', 'inherit', 'inherit'], detached: escaped });
+    record({ childPid: child.pid, childEscaped: escaped });
+    return hang();
+  }
+  record({ childPid: null });
+  if (how.hang) return hang();
+  if (how.fail !== undefined) { process.stderr.write(how.fail + '\\n'); process.exit(how.exitCode || 1); }
+  if (how.thenHang) {
+    setTimeout(() => { process.stdout.write(how.answer); hang(); }, how.delayMs || 0);
+    return undefined;
+  }
+  setTimeout(() => { process.stdout.write(how.answer); process.exit(0); }, how.delayMs || 0);
+}
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (d) => { stdin += d; });
+process.stdin.on('end', run);
+process.stdin.on('error', run);
+setTimeout(run, 1500);
+`;
+  const bin = path.join(dir, 'claude');
+  const scriptFile = linkTo || bin;
+  fs.mkdirSync(path.dirname(scriptFile), { recursive: true });
+  fs.writeFileSync(scriptFile, script);
+  fs.chmodSync(scriptFile, mode);
+  if (linkTo) fs.symlinkSync(linkTo, bin);
+  const fake = {
+    bin,
+    dir,
+    script: scriptFile,
+    // The hook's environment with the fake's folder first on PATH (where the
+    // floor never looks for claude, so it serves a decoy).
+    env: { PATH: `${dir}:${PRODUCT_PATH}` },
+    set(next) { fs.writeFileSync(configFile, JSON.stringify(next)); },
+    calls() {
+      return fs.existsSync(callsFile)
+        ? fs.readFileSync(callsFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
+    },
+  };
+  fake.set(behaviour);
+  return fake;
+}
+
+// True once no process has this id (a process reaped or never started).
+function processGone(pid) {
+  try {
+    process.kill(pid, 0);
+    return false;
+  } catch (e) {
+    return e.code === 'ESRCH';
+  }
+}
+
 module.exports = {
   REPO,
   CORE,
@@ -559,6 +693,7 @@ module.exports = {
   runPythonRaw,
   layDown,
   describe,
+  hook,
   preToolUseEvent,
   userPromptEvent,
   attempt,
@@ -589,4 +724,8 @@ module.exports = {
   newSecret,
   newSecretWithSymbols,
   setQuarantine,
+  PRODUCT_PATH,
+  installFakeClaude,
+  processGone,
+  HOST_CLAUDE_LOCATIONS,
 };

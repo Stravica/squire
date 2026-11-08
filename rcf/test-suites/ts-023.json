@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-11-08T11:25:24.293Z",
+  "updatedAt": "2026-11-08T11:25:34.192Z",
+  "purpose": "On a laid-down core with overlays at every core path and the small model stubbed at the process boundary, a read the model clears runs free and a later send is only asked, and a read it is unsure about is asked, allowed, and then a send is refused as one job.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-1901-6",
+    "AC-1901-8"
+  ],
+  "id": "TS-023",
+  "usId": "US-1901",
+  "title": "Round 1b journey: the Rule of Two's marks on the installed floor",
+  "testCases": [
+    {
+      "id": "TC-023-journey-unsure-read-asked-then-refused",
+      "acId": "AC-1901-6",
+      "description": "End to end on a laid-down core: a read of the inbox the model is unsure about is asked, allowed by the owner, and a later send is refused as one job, naming the read and the send.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1b-journey.test.js::on a laid-down core a read the small model clears runs free and a later send is only asked, and a read it is unsure about is asked, allowed, and then a send is refused as one job"
+    },
+    {
+      "id": "TC-023-journey-cleared-read-then-asked-send",
+      "acId": "AC-1901-8",
+      "description": "End to end on a laid-down core: a read of the drafts the model clears with a no runs free after one call, and a later send is asked, not refused.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1b-journey.test.js::on a laid-down core a read the small model clears runs free and a later send is only asked, and a read it is unsure about is asked, allowed, and then a send is refused as one job"
+    }
+  ],
+  "status": "draft"
+}

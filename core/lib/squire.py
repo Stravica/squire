@@ -7,6 +7,7 @@ Standard library only; run by /usr/bin/python3.
 import fcntl
 import json
 import os
+import unicodedata
 
 
 class SquireError(Exception):
@@ -14,7 +15,8 @@ class SquireError(Exception):
 
 
 class Paths:
-    """Paths judged the way the Mac sees them: links resolved, case folded."""
+    """Paths judged the way the Mac sees them: links resolved, names folded
+    as the volume folds them."""
 
     @staticmethod
     def canonical(path, cwd):
@@ -24,10 +26,19 @@ class Paths:
         return os.path.realpath(path)
 
     @staticmethod
+    def fold(path):
+        """A path as the Mac's volume compares it. The volume folds case in
+        full and the Unicode forms of a name alike: the long s opens s, the
+        sharp s ss, an accent composed or not the same file. str.lower does
+        neither, so the fold is the decomposed form, case-folded, decomposed
+        again."""
+        return unicodedata.normalize('NFD', unicodedata.normalize('NFD', path).casefold())
+
+    @staticmethod
     def within(path, parent):
-        """True when path is parent or lies inside it. The Mac's volume is
-        case-insensitive, so case is folded on both sides."""
-        child, parent = path.lower(), parent.lower().rstrip('/')
+        """True when path is parent or lies inside it, both sides folded as
+        the volume folds them."""
+        child, parent = Paths.fold(path), Paths.fold(parent).rstrip('/')
         return child == parent or child.startswith(parent + '/')
 
     @staticmethod
@@ -87,12 +98,13 @@ class Ledger:
 
     Records: a request for a yes ({type: request, id, session, item, at});
     the owner's answer ({type: answer, request, session, answer, at}); a yes
-    used up ({type: use, request, at}); and what a job has taken in
-    ({type: taint, session, kind, source, at}). A record that cannot be read
-    makes the whole ledger untrusted.
+    used up ({type: use, request, at}); what a job has taken in
+    ({type: taint, session, kind, source, at}); and a small-model call the
+    floor made for a job ({type: model, session, at}). A record that cannot
+    be read makes the whole ledger untrusted.
     """
 
-    KINDS = {'request', 'answer', 'use', 'taint'}
+    KINDS = {'request', 'answer', 'use', 'taint', 'model'}
 
     def __init__(self, path):
         self.path = path
@@ -170,3 +182,10 @@ class Ledger:
     def taint(self, session, kind, source, now):
         if source not in self.taints(session).get(kind, []):
             self.append({'type': 'taint', 'session': session, 'kind': kind, 'source': source, 'at': now})
+
+    def model_calls(self, session):
+        """How many small-model calls the floor has made for this job."""
+        return len(self._of('model', session=session))
+
+    def model_call(self, session, now):
+        self.append({'type': 'model', 'session': session, 'at': now})

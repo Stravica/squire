@@ -1,0 +1,43 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "3063203a1984007dbe977c17847683c4afbaf6cc",
+  "fbsIds": [
+    "FBS-008"
+  ],
+  "touchedAcIds": [
+    "AC-1901-3",
+    "AC-1901-6",
+    "AC-1901-7",
+    "AC-1901-8",
+    "AC-1901-9",
+    "AC-1901-10",
+    "AC-1901-11",
+    "AC-1901-12",
+    "AC-1901-13"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1901-7",
+      "text": "Class 1, buyer harm. core/hooks/pre-tool-use.py:158 keeps a word literal for any Unicode letter, so :572 resolves the read as free, and :649-653 compares the resolved path with str.lower (core/lib/squire.py:30), not the case folding of the Mac volume. Probe at 3063203 (hook as a process, fixture world, fake claude answering yes): Bash \"cat workſpace/inbox/offer.eml\" (U+017F long s; zsh reads the inbox through it on APFS) exits 0 with no model call and no untrusted mark; in a job that read operator/profile.md, a later Gmail send is asked (exit 2, request id), not refused as one job. \"cat ſtate/now.md\" likewise sets no private mark. A read the floor cannot show stays outside the inbox runs unmarked."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1901-9",
+      "text": "Class 1, buyer harm. core/hooks/pre-tool-use.py:423 with :649-653 (the same comparison as the shell finding): a Read of <owner>/workſpace/inbox/offer.eml (U+017F) is free and leaves no untrusted mark; in a job that read operator/profile.md, a later Gmail send is asked (exit 2, request id), not refused as one job, while Read of the same file by its own spelling is marked untrusted."
+    },
+    {
+      "id": "F-3",
+      "locus": "build",
+      "acId": "AC-1901-7",
+      "text": "Class 1, the hook runs past core hook timeout. core/hooks/pre-tool-use.py:666-668, reached from :653 for every resolved recursive read, scans the whole tree with /usr/bin/find -xattrname and no time bound. Probe at 3063203: \"grep -r flour <tree>\" and \"find <tree> -name invoice\" over a 2.7 million file tree holding no quarantined file (find alone took 62.7 s) ran the hook to the 30 second limit core settings give it (killed at 30,003 ms and 30,002 ms); with onFailure block the call is blocked with no request id, so the read can neither run nor be approved. Base 2485e27 checked only the path and the folders above it."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-08T13:40:06.829Z"
+}
