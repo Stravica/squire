@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-08T11:19:29.201Z",
+  "updatedAt": "2026-11-08T12:13:09.375Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -100,6 +100,33 @@
       "given": "An unresolved plain read while the small model answers slowly, never answers, or leaves a child holding its output open; a few such reads in one job, a run of them, or reads in two jobs at once. The floor's hook runs with the time limit core's Claude Code settings give it.",
       "when": "Squire tries the read",
       "then": "Within 12 seconds of the call the read runs or waits for the Squire owner's yes, and the model's process and every process it started are gone; core's settings give the hook a time limit of at least 22 seconds, 10 seconds beyond that budget.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-11",
+      "description": "When Squire cannot show that a call stays inside the Mac, in a job holding untrusted input and the Squire owner's private things, the call is refused as one job, yes or no.",
+      "testable": true,
+      "given": "A job holding untrusted input and the Squire owner's private things, and a call Squire cannot show stays inside the Mac: a tool it does not know, a program, or a command outside the ones it knows. This is the Squire owner's ruling for the outside actions Squire cannot decide: the Rule of Two's refusal stands for them. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire tries the call, and the Squire owner then says yes to it",
+      "then": "The call is refused as one job, before and after the yes, naming the untrusted source and the call and saying the work must be split.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-12",
+      "description": "When Squire cannot tell what a tool reads, it asks the Squire owner first, and a call the Squire owner allows counts as untrusted input and as the Squire owner's private things.",
+      "testable": true,
+      "given": "A job in which Squire calls a tool it does not know, so it cannot tell what the tool reads, and the job does not already hold untrusted input and the Squire owner's private things (in a job that holds both, the Rule of Two refuses the call as one job). This is the Squire owner's ruling for the tools Squire cannot decide. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire tries the call, and the Squire owner then says yes to it",
+      "then": "The call waits for the Squire owner's yes, naming the tool. After the yes it runs, and the job holds untrusted input and the Squire owner's private things, so a send in that job is refused as one job, naming the tool and the send.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-13",
+      "description": "When Squire cannot show that the small model answered within its deadline, for any reason, the read waits for the Squire owner's yes within 12 seconds, as when no model is asked.",
+      "testable": true,
+      "given": "An unresolved plain read on a Mac where the claude command line can be found, and a small model that Squire cannot show answered within its deadline, whatever the reason: it hangs, it answers and does not exit, or it starts a process that leaves the model's process group and holds its output open. This is the Squire owner's ruling for the delays Squire cannot decide. The floor's hook runs with the time limit core's Claude Code settings give it.",
+      "when": "Squire tries the read",
+      "then": "Within 12 seconds of the call the read waits for the Squire owner's yes, as when no model is asked, and the small model's own process is gone; a process the model started that left its group does not hold the read up.",
       "verification": "testOnly"
     }
   ]
