@@ -15,7 +15,10 @@
 //                            Control" in advance
 //   H/sessions/<id>.json     one record per session, written by the
 //                            SessionStart hook: {sessionId, socket,
-//                            socketInode, token, pid, source, recordedAt}
+//                            socketInode, socketOwner, token, pid,
+//                            pidStartedAt, source, recordedAt}; pid is the
+//                            process listening on the socket, the hook's
+//                            parent, and pidStartedAt its start in UTC
 //   H/wake-ups/<id>.json     one state per wake-up: {id, text, session,
 //                            attempts: [{at, outcome, reason}], state}
 //   H/logs/wake-ups.log      one line per wake-up outcome, with its reason
@@ -93,8 +96,9 @@ const ENVIRONMENT_FORBIDDEN = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', '
 // The session process does what Claude Code's does for Squire's floor: it
 // binds a messaging socket in the world, reads $CLAUDE_CONFIG_DIR/settings.json
 // and runs every SessionStart hook in it as Claude Code runs a command hook
-// (/bin/sh -c, the event on stdin), with CLAUDE_CODE_MESSAGING_SOCKET and
-// CLAUDE_CODE_MESSAGING_TOKEN set; it keeps its session id across a restart in
+// (/bin/sh -c, the event on stdin; the shell runs the one command in its own
+// place, so the hook's parent is the session process, the socket's listener),
+// with CLAUDE_CODE_MESSAGING_SOCKET and CLAUDE_CODE_MESSAGING_TOKEN set; it keeps its session id across a restart in
 // the same world (source "resume"), as a real server brings its session back.
 // A line posted on its socket is taken as Claude Code takes it: every line read
 // until the sender closes its side, then the connection closed; a
@@ -321,9 +325,13 @@ async function startInbox(world, name, mode = 'accept') {
   const socket = path.join(dir, `${name}.sock`);
   const record = path.join(world.root, `inbox-${name}.jsonl`);
   for (const f of [record, `${record}.ready`]) fs.rmSync(f, { force: true });
+  for (const f of fs.readdirSync(world.root)) {
+    if (f.startsWith(`inbox-${name}.jsonl.cmd.`)) fs.rmSync(path.join(world.root, f), { force: true });
+  }
   const child = spawn(w.PYTHON, ['-B', FAKE_INBOX, socket, record, mode], { stdio: 'ignore' });
   const ready = await waitFor(() => fs.existsSync(`${record}.ready`), 10000, 20);
   if (!ready) throw new Error(`the fake inbox ${name} (${mode}) did not start`);
+  let commandsSent = 0;
   const inbox = {
     name,
     mode,
@@ -334,6 +342,24 @@ async function startInbox(world, name, mode = 'accept') {
       const byId = new Map();
       for (const e of readJsonLines(record)) byId.set(e.connection, e);
       return [...byId.values()];
+    },
+    // The connections that came in on one socket path.
+    connectionsOn(socketPath) { return inbox.connections().filter((c) => c.socket === socketPath); },
+    // Asks the inbox process to run a command as its own child (and first,
+    // with bind, to listen on a new socket path instead of its own); returns
+    // { status, stdout, stderr, error } once the command has run.
+    async run({ argv, input = '', env, cwd, bind = null, timeoutSeconds = 60 }) {
+      commandsSent += 1;
+      const n = commandsSent;
+      const file = `${record}.cmd.${n}.json`;
+      fs.writeFileSync(`${file}.tmp`, JSON.stringify({ bind, run: { argv, input, env, cwd, timeout: timeoutSeconds } }));
+      fs.renameSync(`${file}.tmp`, file);
+      const resultFile = `${record}.cmd.${n}.result.json`;
+      const done = await waitFor(() => fs.existsSync(resultFile), (timeoutSeconds + 10) * 1000, 20);
+      if (!done) return { status: null, signal: null, stdout: '', stderr: '', error: `the fake inbox ${name} did not run the command` };
+      if (bind) inbox.socket = bind;
+      const r = JSON.parse(fs.readFileSync(resultFile, 'utf8'));
+      return { status: r.status, signal: null, stdout: r.stdout || '', stderr: r.stderr || '', error: r.status === null ? 'timed out' : '' };
     },
     lines() { return inbox.connections().flatMap((c) => c.lines); },
     // The {"type":"user"} lines it was given, parsed.
@@ -351,36 +377,75 @@ async function startInbox(world, name, mode = 'accept') {
 
 // ----------------------------------------------- session records
 
+// A process's start, in the design record's form: /bin/ps -o lstart= read
+// with LC_ALL=C and TZ=UTC0, written as ISO 8601 UTC to the second
+// (2026-11-08T20:30:07Z), so it reads the same whatever the locale or time
+// zone. null when no process has that id.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function startTimeOf(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return null;
+  const r = spawnSync('/bin/ps', ['-o', 'lstart=', '-p', String(pid)], { encoding: 'utf8', env: { LC_ALL: 'C', TZ: 'UTC0', PATH: '/usr/bin:/bin' } });
+  const parts = (r.stdout || '').trim().split(/\s+/);
+  if (r.status !== 0 || parts.length !== 5) return null;
+  const [, mon, day, hms, year] = parts;
+  const [h, m, sec] = hms.split(':').map(Number);
+  const at = Date.UTC(Number(year), MONTHS.indexOf(mon), Number(day), h, m, sec);
+  return Number.isNaN(at) ? null : new Date(at).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 // Writes a session record into the Squire home in the form the design record
-// names, as the SessionStart hook would have written it. socketInode defaults
-// to the inode of the file at socket, when there is one.
+// names, as the SessionStart hook would have written it. socketInode and
+// socketOwner default to the inode and owner of the file at socket, when
+// there is one (the owner otherwise to this user); pidStartedAt to the start
+// of the process pid names, so a seeded record of a live process passes the
+// identity check.
 function seedSessionRecord(world, { sessionId, socket, token = crypto.randomBytes(16).toString('hex'), pid,
-  socketInode, source = 'startup', ...extra }) {
+  socketInode, socketOwner, pidStartedAt, source = 'startup', ...extra }) {
   let inode = socketInode;
-  if (inode === undefined) {
-    try { inode = fs.statSync(socket).ino; } catch (e) { inode = null; }
-  }
-  const record = { sessionId, socket, socketInode: inode, token, pid, source, recordedAt: Date.now() / 1000, ...extra };
+  let owner = socketOwner;
+  let st = null;
+  try { st = fs.statSync(socket); } catch (e) { st = null; }
+  if (inode === undefined) inode = st ? st.ino : null;
+  if (owner === undefined) owner = st ? st.uid : process.getuid();
+  const started = pidStartedAt === undefined ? startTimeOf(pid) : pidStartedAt;
+  const record = { sessionId, socket, socketInode: inode, socketOwner: owner, token, pid, pidStartedAt: started, source,
+    recordedAt: Date.now() / 1000, ...extra };
   fs.mkdirSync(sessionsDir(world), { recursive: true });
   fs.writeFileSync(path.join(sessionsDir(world), `${sessionId}.json`), JSON.stringify(record, null, 2) + '\n');
   return record;
 }
 
-// Runs the real SessionStart hook for a session, as Claude Code would at the
-// session's start, with the session's messaging socket and token in its
-// environment. The hook's parent is this test's process, which stands in for
-// the session's process.
-function recordSessionByHook(world, { sessionId, source = 'startup', socket, token = crypto.randomBytes(16).toString('hex'),
-  coreDir = world.core, env = {} }) {
-  const event = {
-    session_id: sessionId, transcript_path: world.transcript, cwd: world.owner,
-    hook_event_name: 'SessionStart', source,
-  };
-  const r = w.runPython(world, path.join(coreDir, 'hooks', 'session-start.py'), [], {
-    input: JSON.stringify(event), cwd: world.owner,
-    env: { CLAUDE_CODE_MESSAGING_SOCKET: socket, CLAUDE_CODE_MESSAGING_TOKEN: token, CLAUDE_PROJECT_DIR: world.owner, ...env },
+function sessionStartEvent(world, sessionId, source) {
+  return { session_id: sessionId, transcript_path: world.transcript, cwd: world.owner, hook_event_name: 'SessionStart', source };
+}
+
+// Runs the real SessionStart hook from this test's process with no messaging
+// socket in its environment: for the cases that need the floor's job records
+// and no session record (a hook given no socket writes none).
+function recordSessionByHook(world, { sessionId, source = 'startup', coreDir = world.core, env = {} }) {
+  return w.runPython(world, path.join(coreDir, 'hooks', 'session-start.py'), [], {
+    input: JSON.stringify(sessionStartEvent(world, sessionId, source)), cwd: world.owner,
+    env: { CLAUDE_PROJECT_DIR: world.owner, ...env },
   });
-  return { ...r, token };
+}
+
+// Runs the real SessionStart hook as Claude Code runs it for a session: from
+// the session's process, the one listening on the messaging socket (here a
+// fake inbox), as that process's child, with the socket and token in its
+// environment. With bind, the inbox first listens on a new socket path, as
+// one session process does after /clear (a new id, socket and token); with
+// socket, the hook is given that path instead of the inbox's own.
+async function recordSessionFromInbox(world, inbox, { sessionId, source = 'startup', token = crypto.randomBytes(16).toString('hex'),
+  bind = null, socket: given = null, coreDir = world.core, env = {} }) {
+  const socket = given || bind || inbox.socket;
+  const r = await inbox.run({
+    argv: [w.PYTHON, '-B', path.join(coreDir, 'hooks', 'session-start.py')],
+    input: JSON.stringify(sessionStartEvent(world, sessionId, source)),
+    cwd: world.owner,
+    env: w.productEnv(world, { CLAUDE_CODE_MESSAGING_SOCKET: socket, CLAUDE_CODE_MESSAGING_TOKEN: token, CLAUDE_PROJECT_DIR: world.owner, ...env }),
+    bind,
+  });
+  return { ...r, token, socket };
 }
 
 function sessionRecords(world) {
@@ -467,8 +532,10 @@ module.exports = {
   health,
   filesWithContent,
   startInbox,
+  startTimeOf,
   seedSessionRecord,
   recordSessionByHook,
+  recordSessionFromInbox,
   sessionRecords,
   deadPid,
   fireWakeUp,

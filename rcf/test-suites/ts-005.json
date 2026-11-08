@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:39.795Z",
-  "updatedAt": "2026-11-08T20:41:13.073Z",
+  "updatedAt": "2026-11-08T20:47:39.364Z",
   "purpose": "Runs the installed wake-up router and the session-start hook through their real entry points, against session records and fake session inboxes in a test world: exactly one session of Squire's own is delivered to, and every other case sends nothing and logs why.",
   "testLevel": "integration",
   "acIds": [
@@ -22,7 +22,7 @@
       "acId": "AC-701-1",
       "description": "With no record nothing is sent, even to a live session in the world, and the log says so.",
       "status": "pending",
-      "testPointer": "tests/acceptance/wake-ups.test.js::with no session record nothing is sent, even to a live session in the world, and the log says there is no record"
+      "testPointer": "tests/acceptance/wake-ups.test.js::with no session record nothing is sent, even to a live session in the world, the log says there is no record, and the retry reaches the one Squire session once there is one"
     },
     {
       "id": "TC-005-two-records-not-sent",
@@ -36,7 +36,7 @@
       "acId": "AC-701-1",
       "description": "With one record whose process is gone nothing is sent and the log says so.",
       "status": "pending",
-      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose process is gone nothing is sent, even though a session listens on its socket, and the log says the process is gone"
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose process is gone nothing is sent, even though a session listens on its socket, the log says the process is gone, and the retry reaches the session once it is back under the same id"
     },
     {
       "id": "TC-005-stale-record-not-sent",

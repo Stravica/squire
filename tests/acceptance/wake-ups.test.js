@@ -98,13 +98,29 @@ test('with exactly one session record, its process alive and its socket its own,
   assert.equal(state.session, record.sessionId, 'the state must name the session it was delivered to');
 });
 
-test('with no session record nothing is sent, even to a live session in the world, and the log says there is no record', { timeout: 60000 }, async (t) => {
+test('with no session record nothing is sent, even to a live session in the world, the log says there is no record, and the retry reaches the one Squire session once there is one', { timeout: 60000 }, async (t) => {
   const world = wakeWorld(t);
   const stray = await inbox(t, world, 'Squire');
   s.fireWakeUp(world, 'Time for the morning brief.');
   assertNothingSent([stray], 'no record');
   assertLogSays(world, /no record/i, 'no record');
-  assert.equal(onlyState(world, 'no record').state, 'not sent', 'a wake-up with no record must be recorded not sent');
+  let state = onlyState(world, 'no record');
+  assert.equal(state.state, 'retrying', `no record is a failed delivery: the wake-up must wait for a retry (retrying); got ${JSON.stringify(state)}`);
+  assert.equal(state.session, null, `a wake-up whose first attempt found no record is aimed at no session (session null); got ${JSON.stringify(state)}`);
+  assert.equal(state.attempts.length, 1, `one attempt must be recorded; got ${JSON.stringify(state.attempts)}`);
+  assert.equal(state.attempts[0].outcome, 'failed', `the attempt's outcome must be failed; got ${JSON.stringify(state.attempts[0])}`);
+  assert.match(state.attempts[0].reason || '', /no record/i, `the attempt must say there was no record; got ${JSON.stringify(state.attempts[0])}`);
+
+  // One session of Squire's own appears; the scheduler's next run retries.
+  const { box, record } = await ownSession(t, world);
+  s.seedWakeUp(world, { ...state, attempts: state.attempts.map((a) => ({ ...a, at: minutesAgo(2) })) });
+  const r = s.runDueWakeUps(world);
+  assert.equal(r.status, 0, `the scheduler's run must exit 0; got ${w.describe(r)}`);
+  assertDeliveredTo(box, record, 'Time for the morning brief.', 'the retry once one session of Squire own is there');
+  assertNothingSent([stray], 'the retry: the session with no record');
+  state = s.wakeUpStates(world).find((x) => x.id === state.id);
+  assert.equal(state.state, 'delivered', `the retried wake-up must be recorded delivered; got ${JSON.stringify(state)}`);
+  assert.equal(state.attempts.length, 2, `the retry must be recorded as a second attempt; got ${JSON.stringify(state.attempts)}`);
 });
 
 test('with more than one session record nothing is sent to either and the log says there is more than one', { timeout: 60000 }, async (t) => {
@@ -117,13 +133,48 @@ test('with more than one session record nothing is sent to either and the log sa
   assert.equal(onlyState(world, 'two records').state, 'not sent', 'a wake-up with two records must be recorded not sent');
 });
 
-test('with one record whose process is gone nothing is sent, even though a session listens on its socket, and the log says the process is gone', { timeout: 60000 }, async (t) => {
+// A failed attempt the router recorded: the wake-up waits for a retry.
+function assertRetrying(state, sessionId, reason, what) {
+  assert.equal(state.state, 'retrying', `${what}: a failed delivery must wait for a retry (retrying); got ${JSON.stringify(state)}`);
+  assert.equal(state.session, sessionId, `${what}: the state must name the session it was aimed at; got ${JSON.stringify(state)}`);
+  assert.equal(state.attempts.length, 1, `${what}: one attempt must be recorded; got ${JSON.stringify(state.attempts)}`);
+  assert.equal(state.attempts[0].outcome, 'failed', `${what}: the attempt's outcome must be failed; got ${JSON.stringify(state.attempts[0])}`);
+  assert.match(state.attempts[0].reason || '', reason, `${what}: the attempt must say why (${reason}); got ${JSON.stringify(state.attempts[0])}`);
+}
+
+test('with one record whose process is gone nothing is sent, even though a session listens on its socket, the log says the process is gone, and the retry reaches the session once it is back under the same id', { timeout: 60000 }, async (t) => {
   const world = wakeWorld(t);
   const { box } = await ownSession(t, world, { pid: s.deadPid() });
   s.fireWakeUp(world, 'Time for the morning brief.');
   assertNothingSent([box], 'a record whose process is gone');
   assertLogSays(world, /gone/i, 'a record whose process is gone');
-  assert.equal(onlyState(world, 'a record whose process is gone').state, 'not sent', 'the wake-up must be recorded not sent');
+  let state = onlyState(world, 'a record whose process is gone');
+  assertRetrying(state, 'session-own', /gone/i, 'a record whose process is gone');
+
+  // The session back under the same id, as a restart resumes it: a new
+  // process and socket, its record replacing the old one.
+  await box.stop();
+  const back = await ownSession(t, world, { name: 'back', sessionId: 'session-own', source: 'resume' });
+  s.seedWakeUp(world, { ...state, attempts: state.attempts.map((a) => ({ ...a, at: minutesAgo(2) })) });
+  const r = s.runDueWakeUps(world);
+  assert.equal(r.status, 0, `the scheduler's run must exit 0; got ${w.describe(r)}`);
+  assertDeliveredTo(back.box, back.record, 'Time for the morning brief.', 'the retry with the session back under the same id');
+  state = s.wakeUpStates(world).find((x) => x.id === state.id);
+  assert.equal(state.state, 'delivered', `the retried wake-up must be recorded delivered; got ${JSON.stringify(state)}`);
+  assert.equal(state.attempts.length, 2, `the retry must be recorded as a second attempt; got ${JSON.stringify(state.attempts)}`);
+});
+
+test('with one record whose process id is alive and listening on its socket but started at another time, nothing is sent, the log says the process is gone and the wake-up waits to be retried', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  const box = await inbox(t, world, 'own');
+  const started = s.startTimeOf(box.pid);
+  assert.ok(started, 'premise: the start of the session process can be read');
+  const anotherTime = new Date(Date.parse(started) - 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  s.seedSessionRecord(world, { sessionId: 'session-own', socket: box.socket, pid: box.pid, pidStartedAt: anotherTime });
+  s.fireWakeUp(world, 'Time for the morning brief.');
+  assertNothingSent([box], 'a record whose process id now belongs to a process started at another time');
+  assertLogSays(world, /gone/i, 'a record whose process id was reused');
+  assertRetrying(onlyState(world, 'a record whose process id was reused'), 'session-own', /gone/i, 'a record whose process id was reused');
 });
 
 test('with one stale record, whose socket path now holds a different socket, nothing is sent and the log says the record is stale', { timeout: 60000 }, async (t) => {
@@ -134,6 +185,19 @@ test('with one stale record, whose socket path now holds a different socket, not
   s.fireWakeUp(world, 'Time for the morning brief.');
   assertNothingSent([box], 'a stale record');
   assertLogSays(world, /stale/i, 'a stale record');
+});
+
+test('with one record whose socket and owner are its own but whose process is not the one listening on that socket, the router writes nothing on the connection, records the wake-up not sent and the log says the record is stale', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  const own = await inbox(t, world, 'own');
+  // Another live process the test started, recorded with its own start.
+  const other = await inbox(t, world, 'other');
+  s.seedSessionRecord(world, { sessionId: 'session-own', socket: own.socket, pid: other.pid });
+  s.fireWakeUp(world, 'Time for the morning brief.');
+  assertNothingSent([own, other], 'a record whose process is not the socket listener (not even the auth line)');
+  assertLogSays(world, /stale/i, 'a record whose process is not the socket listener');
+  assert.equal(onlyState(world, 'a record whose process is not the socket listener').state, 'not sent',
+    'a stale record is an identity failure: the wake-up must be recorded not sent');
 });
 
 test('never by name: a record calling itself Squire whose identity fails is not delivered to', { timeout: 60000 }, async (t) => {
@@ -150,19 +214,23 @@ test('after a clear or a restart the SessionStart hook leaves one record, that o
   // A session from before a crash, whose process is gone.
   const crashed = await inbox(t, world, 'old');
   s.seedSessionRecord(world, { sessionId: 'session-before-crash', socket: crashed.socket, pid: s.deadPid() });
-  // A session the same process ran before a /clear.
-  const before = await inbox(t, world, 'pre');
-  let r = s.recordSessionByHook(world, { sessionId: 'session-before-clear', socket: before.socket });
+  // One session process, which runs the SessionStart hook: before a /clear
+  // it listens on one socket.
+  const session = await inbox(t, world, 'pre');
+  const beforeSocket = session.socket;
+  let r = await s.recordSessionFromInbox(world, session, { sessionId: 'session-before-clear' });
   assert.equal(r.status, 0, `the SessionStart hook must let the session start; got ${w.describe(r)}`);
-  // The same process after /clear: a new id and a new socket.
-  const after = await inbox(t, world, 'new');
-  r = s.recordSessionByHook(world, { sessionId: 'session-after-clear', socket: after.socket, source: 'clear' });
+  // The same process after /clear: a new id, a new socket and a new token.
+  const afterSocket = path.join(world.root, 's', 'new.sock');
+  r = await s.recordSessionFromInbox(world, session, { sessionId: 'session-after-clear', source: 'clear', bind: afterSocket });
   assert.equal(r.status, 0, `the SessionStart hook must let the cleared session start; got ${w.describe(r)}`);
   const records = s.sessionRecords(world).map((x) => x.sessionId);
   assert.deepEqual(records, ['session-after-clear'], `only the new session's record may be left; found ${JSON.stringify(records)}`);
   s.fireWakeUp(world, 'Time for the morning brief.');
-  assertDeliveredTo(after, { token: r.token }, 'Time for the morning brief.', 'the session after a clear');
-  assertNothingSent([crashed, before], 'the old sessions');
+  const cleared = { name: 'the session after a clear', connections: () => session.connectionsOn(afterSocket) };
+  assertDeliveredTo(cleared, { token: r.token }, 'Time for the morning brief.', 'the session after a clear');
+  assert.deepEqual(session.connectionsOn(beforeSocket), [], `nothing may reach the socket from before the clear; it was given ${JSON.stringify(session.connectionsOn(beforeSocket))}`);
+  assertNothingSent([crashed], 'the session from before the crash');
 });
 
 test('a wake-up the Squire owner picked is delivered by the scheduler run once its time has come today, once only, and one not yet due is not', { timeout: 240000 }, async (t) => {
@@ -185,6 +253,92 @@ test('a wake-up the Squire owner picked is delivered by the scheduler run once i
   assert.equal(r.status, 0, `a second scheduler run must exit 0; got ${w.describe(r)}`);
   assert.equal(box.connections().length, 1, `a picked wake-up goes once a day; the second run sent it again: ${JSON.stringify(box.connections())}`);
   if (later) assert.ok(!userContents(box).some((c) => c.includes('Not yet.')), 'a picked wake-up not yet due must not be sent');
+});
+
+// The late window. The router's local time is its process's, TZ when set:
+// each case runs it in a whole-hour fixed-offset zone (Etc/GMT-N is N hours
+// east of UTC, the sign reversed) chosen from the current UTC hour so that
+// the local hour is the one the case needs, and never waits for the clock.
+const pad = (n) => String(n).padStart(2, '0');
+const hhmm = (minutes) => { const m = ((minutes % 1440) + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
+function zoneWithLocalHour(hour, at) {
+  let offset = (((hour - new Date(at).getUTCHours()) % 24) + 24) % 24;
+  if (offset > 14) offset -= 24;
+  return { tz: offset === 0 ? 'Etc/GMT' : offset > 0 ? `Etc/GMT-${offset}` : `Etc/GMT+${-offset}`, offset };
+}
+const localMinuteOfDay = (offset, at = Date.now()) => { const d = new Date(at + offset * 3600000); return d.getUTCHours() * 60 + d.getUTCMinutes(); };
+
+// A picked wake-up delivered with its due time and the local minute of the
+// run in its framing.
+function assertFramedLate(content, due, minutesOfRun, what) {
+  assert.ok(content.startsWith('Squire wake-up:'), `${what}: the content must start "Squire wake-up:"; got ${JSON.stringify(content)}`);
+  assert.ok(content.includes(`due ${hhmm(due)}`), `${what}: the framing must hold its due time (due ${hhmm(due)}); got ${JSON.stringify(content)}`);
+  assert.ok(minutesOfRun.some((m) => content.includes(`delivered ${hhmm(m)}`)),
+    `${what}: the framing must hold the local time it was delivered (delivered ${minutesOfRun.map(hhmm).join(' or ')}); got ${JSON.stringify(content)}`);
+}
+
+function assertMissed(world, state, due, what) {
+  assert.ok(state, `${what}: a state must be kept in wake-ups/ in the Squire home; found ${JSON.stringify(s.wakeUpStates(world))}`);
+  assert.equal(state.state, 'missed', `${what}: the state must be missed; got ${JSON.stringify(state)}`);
+  assert.equal(state.attempts.length, 1, `${what}: one attempt must be recorded; got ${JSON.stringify(state.attempts)}`);
+  assert.equal(state.attempts[0].outcome, 'missed', `${what}: the attempt's outcome must be missed; got ${JSON.stringify(state.attempts[0])}`);
+  assert.ok((state.attempts[0].reason || '').includes(hhmm(due)), `${what}: the attempt's reason must name its due time ${hhmm(due)}; got ${JSON.stringify(state.attempts[0])}`);
+}
+
+test('a picked wake-up whose time passed while the Mac slept, less than two hours ago, is delivered once with its due time and its delivery time in the framing', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  const at = Date.now();
+  const { tz, offset } = zoneWithLocalHour(12, at);
+  const due = localMinuteOfDay(offset, at) - 90;
+  setOwnerWakeUps(world, [`${hhmm(due)} Look over the orders.`]);
+  const { box, record } = await ownSession(t, world);
+  const before = localMinuteOfDay(offset);
+  let r = s.runDueWakeUps(world, { env: { TZ: tz } });
+  const after = localMinuteOfDay(offset);
+  assert.equal(r.status, 0, `the scheduler's run must exit 0; got ${w.describe(r)}`);
+  const content = assertDeliveredTo(box, record, 'Look over the orders.', 'a picked wake-up 90 minutes late');
+  assertFramedLate(content, due, [before, after], 'a picked wake-up 90 minutes late');
+  assert.equal(onlyState(world, 'a picked wake-up 90 minutes late').state, 'delivered', 'the wake-up must be recorded delivered');
+  r = s.runDueWakeUps(world, { env: { TZ: tz } });
+  assert.equal(box.connections().length, 1, `a picked wake-up goes once per due date; the second run sent it again: ${JSON.stringify(box.connections())}`);
+});
+
+test('a picked wake-up two hours or more past its time is recorded missed, never sent, and the log says missed', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  const at = Date.now();
+  const { tz, offset } = zoneWithLocalHour(12, at);
+  const due = localMinuteOfDay(offset, at) - 150;
+  setOwnerWakeUps(world, [`${hhmm(due)} Look over the orders.`]);
+  const { box } = await ownSession(t, world);
+  s.runDueWakeUps(world, { env: { TZ: tz } });
+  assertNothingSent([box], 'a picked wake-up 150 minutes late');
+  assertMissed(world, s.wakeUpStates(world)[0], due, 'a picked wake-up 150 minutes late');
+  assertLogSays(world, /missed/i, 'a picked wake-up 150 minutes late');
+  s.runDueWakeUps(world, { env: { TZ: tz } });
+  assertNothingSent([box], 'a missed wake-up at the next run');
+  assert.equal(onlyState(world, 'a missed wake-up at the next run').attempts.length, 1, 'a missed wake-up is never tried again that due date');
+});
+
+test('just after midnight a wake-up picked for the evening before goes when it is under two hours late, and one more than two hours late is missed', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  const at = Date.now();
+  const { tz, offset } = zoneWithLocalHour(0, at);
+  const now = localMinuteOfDay(offset, at);
+  const dueSoon = now - 75;
+  const dueLong = now - 150;
+  setOwnerWakeUps(world, [`${hhmm(dueSoon)} Check the oven.`, `${hhmm(dueLong)} Close the till.`]);
+  const { box, record } = await ownSession(t, world);
+  const before = localMinuteOfDay(offset);
+  const r = s.runDueWakeUps(world, { env: { TZ: tz } });
+  const after = localMinuteOfDay(offset);
+  assert.equal(r.status, 0, `the scheduler's run must exit 0; got ${w.describe(r)}`);
+  const content = assertDeliveredTo(box, record, 'Check the oven.', 'a wake-up picked for the evening before, 75 minutes late');
+  assertFramedLate(content, dueSoon, [before, after], 'a wake-up picked for the evening before, 75 minutes late');
+  assert.ok(!userContents(box).some((c) => c.includes('Close the till.')), 'a wake-up 150 minutes late must not be sent');
+  const states = s.wakeUpStates(world);
+  assert.equal((states.find((x) => (x.text || '').includes('Check the oven.')) || {}).state, 'delivered',
+    `the wake-up 75 minutes late must be recorded delivered; got ${JSON.stringify(states)}`);
+  assertMissed(world, states.find((x) => (x.text || '').includes('Close the till.')), dueLong, 'a wake-up picked for the evening before, 150 minutes late');
 });
 
 // ------------------------------------------------------ delivery failures
@@ -229,6 +383,32 @@ test('a rejected token is a failed delivery: delivered nowhere else, recorded wi
 test('a timeout before the line is written is a failed delivery: delivered nowhere else, recorded with its reason and its retry state', { timeout: 90000 }, async (t) => {
   const world = wakeWorld(t);
   await assertFailedDelivery(t, world, { mode: 'stall', reason: /time/i, what: 'a timeout before the line is written' });
+});
+
+test('with one record whose process is gone and whose socket is gone too, the failed attempt names the process gone, not the missing socket', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  s.seedSessionRecord(world, { sessionId: 'session-own', socket: path.join(world.root, 's', 'gone.sock'), pid: s.deadPid(), socketInode: 1 });
+  s.fireWakeUp(world, 'Time for the morning brief.');
+  const state = onlyState(world, 'a record whose process and socket are both gone');
+  assertRetrying(state, 'session-own', /gone/i, 'a record whose process and socket are both gone');
+  assert.doesNotMatch(state.attempts[0].reason, /missing/i, `the process is checked before the socket: the reason must be the process gone, not the missing socket; got ${JSON.stringify(state.attempts[0])}`);
+  assertLogSays(world, /gone/i, 'a record whose process and socket are both gone');
+});
+
+test('when the wake-up state cannot be written nothing is sent, the router exits non-zero and the log says the state could not be written', { timeout: 60000 }, async (t) => {
+  const world = w.makeWorld();
+  const states = s.wakeUpsDir(world);
+  // Registered first so it runs before the world is cleaned up.
+  t.after(() => { try { fs.chmodSync(states, 0o700); } catch (e) { /* not made */ } });
+  t.after(() => { s.killFakes(world); w.cleanUp(world); });
+  setOwnerWakeUps(world, []);
+  const { box } = await ownSession(t, world);
+  fs.mkdirSync(states, { recursive: true });
+  fs.chmodSync(states, 0o500);
+  const r = s.fireWakeUp(world, 'Time for the morning brief.');
+  assertNothingSent([box], 'a wake-up whose state cannot be written');
+  assert.ok(r.status !== 0, `the router must exit non-zero when it cannot write the state; got ${w.describe(r)}`);
+  assertLogSays(world, /could not be written/i, 'a wake-up whose state cannot be written');
 });
 
 test('a line written but not acknowledged within the deadline is recorded unknown and never retried', { timeout: 90000 }, async (t) => {
@@ -302,6 +482,27 @@ test('heavy: after three failed attempts the third retry inside ten minutes is d
   state = s.wakeUpStates(world).find((x) => x.id === 'wake-late');
   assert.equal(state.attempts.length, 1, `no retry may be recorded after ten minutes; got ${JSON.stringify(state.attempts)}`);
   assert.equal(state.state, 'failed', `a wake-up past its ten minutes must be recorded failed; got ${JSON.stringify(state)}`);
+});
+
+test('after three failed attempts with no session the last retry fails, the wake-up is recorded failed with four attempts and its log line names every reason', { timeout: 60000 }, async (t) => {
+  const world = wakeWorld(t);
+  s.seedWakeUp(world, {
+    id: 'wake-last-retry', text: 'Time for the morning brief.', session: 'session-own', state: 'retrying',
+    attempts: [
+      { at: minutesAgo(7), outcome: 'failed', reason: 'process gone' },
+      { at: minutesAgo(5), outcome: 'failed', reason: 'missing socket' },
+      { at: minutesAgo(3), outcome: 'failed', reason: 'no record' },
+    ],
+  });
+  s.runDueWakeUps(world);
+  const state = s.wakeUpStates(world).find((x) => x.id === 'wake-last-retry');
+  assert.equal(state.attempts.length, 4, `the last retry must be recorded as a fourth attempt; got ${JSON.stringify(state.attempts)}`);
+  assert.equal(state.attempts[3].outcome, 'failed', `the last retry, with no session, must fail; got ${JSON.stringify(state.attempts[3])}`);
+  assert.match(state.attempts[3].reason || '', /no record/i, `the last retry must say there was no record; got ${JSON.stringify(state.attempts[3])}`);
+  assert.equal(state.state, 'failed', `after the last retry fails the wake-up must be recorded failed; got ${JSON.stringify(state)}`);
+  const log = s.wakeUpLog(world);
+  assert.ok(log.some((l) => /gone/i.test(l) && /missing/i.test(l) && /no record/i.test(l)),
+    `the failed wake-up's log line must name every attempt's reason (process gone, missing socket, no record); the log holds ${JSON.stringify(log)}`);
 });
 
 test('a retry re-runs the identity check: with the record now naming a different session, or two records, the retry is not delivered and the log says why', { timeout: 60000 }, async (t) => {

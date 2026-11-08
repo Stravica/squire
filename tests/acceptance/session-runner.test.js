@@ -234,6 +234,34 @@ test('before each start the runner checks the floor: with core settings or a flo
   assert.deepEqual(opened, [], `the runner must never start a sign-in itself; it ran ${JSON.stringify(opened.map((c) => c.argv))}`);
 });
 
+test('before each start the runner compares core settings and every floor hook with the digests lay-down recorded: a hook with one line added, or core settings and the config folder settings changed alike, starts no session and the health check names the file', { timeout: 300000 }, async (t) => {
+  const cases = ['pre-tool-use.py', 'user-prompt-submit.py', 'session-start.py', 'config-change.py'].map((hook) => [
+    `the ${hook} hook with one harmless line added`,
+    (world) => fs.appendFileSync(path.join(s.installedCore(world), 'hooks', hook), '\n# one harmless line\n'),
+    new RegExp(hook.replace(/\./g, '\\.')),
+  ]);
+  // Only the digest can see this one: the config folder's settings still
+  // equal core's, and every file is there.
+  cases.push(['core settings and the config folder settings changed alike, the PreToolUse hook taken out of both', (world) => {
+    const coreSettings = path.join(s.installedCore(world), 'settings.json');
+    const settings = JSON.parse(fs.readFileSync(coreSettings, 'utf8'));
+    delete settings.hooks.PreToolUse;
+    const text = JSON.stringify(settings, null, 2) + '\n';
+    fs.writeFileSync(coreSettings, text);
+    fs.mkdirSync(s.configDir(world), { recursive: true });
+    fs.writeFileSync(path.join(s.configDir(world), 'settings.json'), text);
+  }, /settings\.json/]);
+  for (const [what, changeIt, mention] of cases) {
+    const { world, fake } = sessionWorld(t);
+    changeIt(world);
+    const runner = runnerFor(t, world);
+    await assertNoSession(world, runner, fake, mention, what);
+    const signIns = fake.calls().filter((c) => c.argv.includes('login') || c.argv.includes('setup-token'));
+    assert.deepEqual(signIns, [], `${what}: no sign-in may be started; the runner ran ${JSON.stringify(signIns.map((c) => c.argv))}`);
+    await runner.stop();
+  }
+});
+
 test('no session starts while a Claude Code settings file sits in the owner folder: the runner moves it into the Squire home, keeps its content, names it in the health check, and only then starts the session', { timeout: 90000 }, async (t) => {
   const { world, fake } = sessionWorld(t);
   const planted = path.join(world.owner, '.claude', 'settings.local.json');
@@ -350,7 +378,7 @@ test('a resumed session the floor has never seen starts its job holding untruste
   t.after(() => w.cleanUp(world));
   const send = (n) => tools.gmailSend(`someone${n}@example.com`, 'Saturday', 'The cake is ready.');
   const startSession = (sessionId, source) => {
-    const r = s.recordSessionByHook(world, { sessionId, source, socket: path.join(world.root, 's', `${sessionId}.sock`) });
+    const r = s.recordSessionByHook(world, { sessionId, source });
     assert.equal(r.status, 0, `the SessionStart hook must let the session start (exit 0) for source ${source}; got ${w.describe(r)}`);
   };
 
@@ -366,6 +394,7 @@ test('a resumed session the floor has never seen starts its job holding untruste
   // Resumed under an id the ledger knows (a server restart brings the same
   // session back): the job keeps what it had, here nothing, so a send is asked.
   const known = 'session-resumed-known';
+  startSession(known, 'startup');
   r = w.attempt(world, known, send(2));
   assert.ok(w.requestIdIn(r.stderr), `a first send in a fresh job must be asked; got ${w.describe(r)}`);
   startSession(known, 'resume');
@@ -384,12 +413,47 @@ test('a resumed session the floor has never seen starts its job holding untruste
   }
 });
 
+test('the SessionStart hook never removes the marks of a job: one holding untrusted input and private things keeps both through compact, resume, startup, clear and an unknown source under its own id', { timeout: 120000 }, (t) => {
+  const world = w.makeWorld();
+  t.after(() => w.cleanUp(world));
+  const sessionId = 'session-marked';
+  const send = tools.gmailSend('someone@example.com', 'Saturday', 'The cake is ready.');
+  // Both marks, as round 1b gives them: the owner's profile read (private
+  // things), then a web search (untrusted input).
+  w.assertAllowed(w.attempt(world, sessionId, tools.read(path.join(world.owner, 'operator', 'profile.md'))), 'reading the owner profile');
+  w.assertAllowed(w.attempt(world, sessionId, tools.webSearch('wholesale flour prices')), 'a web search');
+  let r = w.attempt(world, sessionId, send);
+  w.assertBlocked(r, 'premise: a send in a job holding both');
+  assert.match(r.stderr, /split/i, `premise: a send in a job holding both must be refused as one job; got ${w.describe(r)}`);
+  for (const source of ['compact', 'resume', 'startup', 'clear', 'a-source-the-hook-does-not-know']) {
+    const h = s.recordSessionByHook(world, { sessionId, source });
+    assert.equal(h.status, 0, `the SessionStart hook must let the session go on (exit 0) for source ${source}; got ${w.describe(h)}`);
+    r = w.attempt(world, sessionId, send);
+    w.assertBlocked(r, `a send after a SessionStart with source ${source} under the job's own id`);
+    assert.match(r.stderr, /split/i, `after a SessionStart with source ${source} under its own id the job must keep both marks, so a send is refused as one job; got ${w.describe(r)}`);
+  }
+});
+
+test('a session started and then resumed under the same id with nothing done is a job the floor has seen: a send in it is asked, not refused as one job', { timeout: 60000 }, (t) => {
+  const world = w.makeWorld();
+  t.after(() => w.cleanUp(world));
+  const sessionId = 'session-quiet';
+  for (const source of ['startup', 'resume']) {
+    const h = s.recordSessionByHook(world, { sessionId, source });
+    assert.equal(h.status, 0, `the SessionStart hook must let the session start (exit 0) for source ${source}; got ${w.describe(h)}`);
+  }
+  const r = w.attempt(world, sessionId, tools.gmailSend('someone@example.com', 'Saturday', 'The cake is ready.'));
+  w.assertBlocked(r, 'a send in a quiet session after it resumed');
+  assert.ok(w.requestIdIn(r.stderr), `a send in a session the floor saw start must be asked, with a request id; got ${w.describe(r)}`);
+  assert.doesNotMatch(r.stderr, /split/i, `startup writes the job record, so the resumed job is one the floor has seen and must not be refused as one job; got ${w.describe(r)}`);
+});
+
 test('the SessionStart hook records the session id, its messaging socket and token in the Squire home and never in the owner folder, and core settings run it as Claude Code does', { timeout: 60000 }, async (t) => {
   const world = w.makeWorld();
   t.after(() => w.cleanUp(world));
   const inbox = await s.startInbox(world, 'session-a');
   t.after(() => inbox.stop());
-  const r = s.recordSessionByHook(world, { sessionId: 'session-recorded', socket: inbox.socket });
+  const r = await s.recordSessionFromInbox(world, inbox, { sessionId: 'session-recorded' });
   assert.equal(r.status, 0, `the SessionStart hook must let the session start; got ${w.describe(r)}`);
   assert.equal(r.stdout, '', `the SessionStart hook must add nothing to the session's context; it printed ${JSON.stringify(r.stdout)}`);
   const records = s.sessionRecords(world);
@@ -398,7 +462,7 @@ test('the SessionStart hook records the session id, its messaging socket and tok
   assert.equal(rec.sessionId, 'session-recorded', 'the record must hold the session id');
   assert.equal(rec.socket, inbox.socket, 'the record must hold the messaging socket from CLAUDE_CODE_MESSAGING_SOCKET');
   assert.equal(rec.token, r.token, 'the record must hold the token from CLAUDE_CODE_MESSAGING_TOKEN');
-  assert.equal(rec.pid, process.pid, 'the record must hold the session process: the hook\'s parent');
+  assert.equal(rec.pid, inbox.pid, 'the record must hold the session process, the one listening on the socket: the hook\'s parent');
   assert.equal(rec.socketInode, fs.statSync(inbox.socket).ino, 'the record must hold the socket\'s identity on disk (its inode)');
   assert.deepEqual(w.filesHolding([world.owner], r.token), [], 'nothing in the owner folder may hold the session token');
 
@@ -408,15 +472,52 @@ test('the SessionStart hook records the session id, its messaging socket and tok
   const handlers = ((settings.hooks || {}).SessionStart || []).flatMap((g) => g.hooks || []).filter((h) => h.type === 'command');
   assert.ok(handlers.length >= 1, `core's settings must run a SessionStart hook; got ${JSON.stringify(settings.hooks && settings.hooks.SessionStart)}`);
   const event = { session_id: 'session-from-settings', transcript_path: world.transcript, cwd: world.owner, hook_event_name: 'SessionStart', source: 'startup' };
+  // Run by the session's process, as Claude Code runs a command hook.
   for (const h of handlers) {
-    spawnSync('/bin/sh', ['-c', h.command], {
-      input: JSON.stringify(event), cwd: world.owner, encoding: 'utf8',
+    await inbox.run({
+      argv: ['/bin/sh', '-c', h.command], input: JSON.stringify(event), cwd: world.owner,
       env: w.productEnv(world, { CLAUDE_CODE_MESSAGING_SOCKET: inbox.socket, CLAUDE_CODE_MESSAGING_TOKEN: 'token-from-settings' }),
     });
   }
   const fromSettings = s.sessionRecords(world).find((x) => x.sessionId === 'session-from-settings');
   assert.ok(fromSettings && fromSettings.token === 'token-from-settings',
     `run from core's settings as Claude Code runs it, the installed SessionStart hook must record the session; records: ${JSON.stringify(s.sessionRecords(world).map((x) => x.sessionId))}`);
+});
+
+test('the session record names the process listening on the messaging socket, its start time in UTC as the system reports it, and the socket owner', { timeout: 60000 }, async (t) => {
+  const world = w.makeWorld();
+  t.after(() => w.cleanUp(world));
+  const inbox = await s.startInbox(world, 'session-a');
+  t.after(() => inbox.stop());
+  const started = s.startTimeOf(inbox.pid);
+  assert.ok(started, 'premise: the start of the session process can be read');
+  // The same whatever the time zone the hook runs in.
+  for (const [sessionId, env] of [['session-identity', {}], ['session-identity-elsewhere', { TZ: 'Etc/GMT-9' }]]) {
+    const r = await s.recordSessionFromInbox(world, inbox, { sessionId, env });
+    assert.equal(r.status, 0, `the SessionStart hook must let the session start; got ${w.describe(r)}`);
+    const rec = s.sessionRecords(world).find((x) => x.sessionId === sessionId);
+    assert.ok(rec, `the session must be recorded; records: ${JSON.stringify(s.sessionRecords(world).map((x) => x.sessionId))}`);
+    assert.equal(rec.pid, inbox.pid, `the record must hold the process listening on the socket (the hook's parent); got ${rec.pid}`);
+    assert.equal(rec.pidStartedAt, started,
+      `the record must hold that process's start as ISO 8601 UTC to the second (pidStartedAt), whatever the hook's time zone (${env.TZ || 'unset'}); got ${JSON.stringify(rec.pidStartedAt)}`);
+    assert.equal(rec.socketOwner, process.getuid(), `the record must hold the socket's owner (socketOwner, its uid); got ${JSON.stringify(rec.socketOwner)}`);
+    assert.equal(rec.socketInode, fs.statSync(inbox.socket).ino, 'the record must hold the socket\'s inode');
+  }
+});
+
+test('the SessionStart hook given a messaging socket path where no socket is and none appears writes no session record, prints nothing and lets the session start within its wait', { timeout: 60000 }, async (t) => {
+  const world = w.makeWorld();
+  t.after(() => w.cleanUp(world));
+  // The session process; the path the hook is given holds no socket.
+  const inbox = await s.startInbox(world, 'session-a');
+  t.after(() => inbox.stop());
+  const started = Date.now();
+  const r = await s.recordSessionFromInbox(world, inbox, { sessionId: 'session-no-socket', socket: path.join(world.root, 's', 'never.sock') });
+  const took = Date.now() - started;
+  assert.equal(r.status, 0, `with no socket at the path the SessionStart hook must still let the session start (exit 0); got ${w.describe(r)}`);
+  assert.equal(r.stdout, '', `the SessionStart hook must add nothing to the session's context; it printed ${JSON.stringify(r.stdout)}`);
+  assert.ok(took <= 15000, `the hook must give up on a socket that never appears within its wait of at most 10 seconds, and 5 more; it took ${took} ms`);
+  assert.deepEqual(s.sessionRecords(world), [], `with no socket there may be no session record; found ${JSON.stringify(s.sessionRecords(world))}`);
 });
 
 test('lay-down writes the two launchd agents that run the installed runner and wake-up router from the Squire home, the runner kept alive and started at load, and loads neither into the domain of whoever runs the tests', { timeout: 60000 }, (t) => {

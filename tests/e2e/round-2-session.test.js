@@ -17,9 +17,13 @@
 //
 // What is observed (no surface outside a running session lists an
 // account's Remote Control sessions): Squire's runner agent loaded, one
-// session record whose process is alive, one Remote Control server, and the
-// server's own registration and connected state in logs/session.log in the
-// Squire home. The listing in the Claude app on the phone, and putting the
+// session record whose process is alive and whose socket accepts a
+// connection, one Remote Control server, and the server's own registration
+// and connected state in logs/session.log in the Squire home. Connected is
+// the status word Connected with no disconnection line after it (the design
+// record's words, from Claude Code's own: Reconnecting or disconnected, in
+// either case); a "·" alone, the banner and the session's name line never
+// count. The listing in the Claude app on the phone, and putting the
 // target to sleep or closing its lid, are by-hand steps of the release Verify.
 
 const { test } = require('node:test');
@@ -42,7 +46,7 @@ function onTarget(command, { input = '', timeout = 60000 } = {}) {
 
 // Read-only: what Squire's session looks like on the target, as JSON.
 const LOOK = String.raw`
-import glob, json, os, plistlib, pwd, subprocess, sys
+import glob, json, os, plistlib, pwd, socket, subprocess, sys
 home = os.environ.get('SQUIRE_HOME') or os.path.expanduser('~/Library/Application Support/Squire')
 uid = os.getuid()
 offset = int(sys.argv[1]) if len(sys.argv) > 1 else 0
@@ -77,7 +81,21 @@ for f in sorted(glob.glob(os.path.join(home, 'sessions', '*.json'))):
             alive = True
         except OSError:
             alive = False
-    records.append({'sessionId': rec.get('sessionId'), 'pid': pid, 'alive': alive})
+    records.append({'sessionId': rec.get('sessionId'), 'pid': pid, 'alive': alive, 'path': rec.get('socket')})
+# The one record's socket: connected to with a 2-second timeout and closed at
+# once, nothing sent.
+for r in records:
+    path = r.pop('path')
+    if len(records) == 1 and isinstance(path, str):
+        sk = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sk.settimeout(2)
+        try:
+            sk.connect(path)
+            r['socketAccepts'] = True
+        except (OSError, socket.timeout):
+            r['socketAccepts'] = False
+        finally:
+            sk.close()
 out['records'] = records
 ps = subprocess.run(['/bin/ps', '-x', '-o', 'pid=,ppid=,command='], capture_output=True, text=True).stdout
 out['servers'] = [{'pid': int(l.split()[0]), 'ppid': int(l.split()[1])} for l in ps.splitlines()
@@ -100,6 +118,20 @@ function look(offset = 0) {
   return JSON.parse(r.stdout.trim().split('\n').pop());
 }
 
+// A disconnection line, in the design record's words (taken from Claude
+// Code 2.1.319's own strings).
+const DISCONNECTION = /\b(reconnecting|disconnected)\b/i;
+
+// The status word Connected in this output, with no disconnection line after
+// the last one.
+function connectedIn(text) {
+  let last = -1;
+  for (const m of text.matchAll(/\bConnected\b/g)) last = m.index;
+  return last >= 0 && !DISCONNECTION.test(text.slice(last));
+}
+
+const socketAccepts = (state) => state.records.length === 1 && state.records[0].socketAccepts === true;
+
 function refuseOwnUser(state) {
   assert.ok(!(state.uid === process.getuid() && state.host === os.hostname()),
     'the target is the user running these tests on this machine; a release-Verify test never runs Squire\'s session there');
@@ -116,8 +148,9 @@ function assertRunning(state, what) {
 }
 
 // Within two minutes of an event, exactly one session runs again: one record,
-// its process alive and new, one server, and the server's own registration
-// and connected state written after the event.
+// its process alive and new and its socket accepting a connection, one
+// server, and the server's own registration and Connected written after the
+// event with no disconnection line after it.
 async function assertBackWithinTwoMinutes(before, what) {
   const oldPid = before.records[0] && before.records[0].pid;
   const end = Date.now() + TWO_MINUTES;
@@ -126,11 +159,11 @@ async function assertBackWithinTwoMinutes(before, what) {
     state = look(before.logSize);
     const live = state.records.filter((r) => r.alive);
     if (state.records.length === 1 && live.length === 1 && live[0].pid !== oldPid && state.servers.length === 1
-      && /Session started/.test(state.logSince) && /Connected|·/.test(state.logSince)) return state;
+      && /Session started/.test(state.logSince) && connectedIn(state.logSince) && socketAccepts(state)) return state;
     if (Date.now() >= end) break;
     await sleep(5000);
   }
-  assert.fail(`${what}: within two minutes exactly one Squire session must be running again, registered and connected; ` +
+  assert.fail(`${what}: within two minutes exactly one Squire session must be running again, registered and connected (Connected since the event, no disconnection line after it, the record's socket accepting a connection); ` +
     `records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
 }
 
@@ -196,13 +229,16 @@ test('after the target sleeps or its lid is closed and it wakes, within two minu
   for (;;) {
     state = look(first.logSize);
     const live = state.records.filter((r) => r.alive);
-    // Connected again after the wake, or never shown as disconnected since
-    // and still connected.
-    const connected = /Connected|·/.test(state.logSince)
-      || (!/disconnect|reconnect|offline|error/i.test(state.logSince) && /Connected|·/.test(state.logTail));
+    // Connected again after the wake with no disconnection line after it, or
+    // the Connected from before the sleep standing with no disconnection line
+    // logged since (a quiet, connected server prints nothing new); either way
+    // the record's socket accepts a connection. Text from before the sleep
+    // alone never passes.
+    const connected = socketAccepts(state)
+      && (connectedIn(state.logSince) || (connectedIn(state.logTail) && !DISCONNECTION.test(state.logSince)));
     if (state.records.length === 1 && live.length === 1 && state.servers.length === 1 && connected) break;
     if (Date.now() >= deadline) {
-      assert.fail(`within two minutes of the wake exactly one Squire session must be running and connected, so the Squire owner can reach it; ` +
+      assert.fail(`within two minutes of the wake exactly one Squire session must be running and connected (Connected with no disconnection line after it, the record's socket accepting a connection), so the Squire owner can reach it; ` +
         `records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
     }
     await sleep(5000);
