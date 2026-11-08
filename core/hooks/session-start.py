@@ -14,7 +14,8 @@ the session id, the socket with its inode and owner, the token, the session
 process (the hook's parent, the one listening on the socket) and that
 process's start, the source and the time. No socket, no record. It removes
 the records of sessions whose process is gone and any earlier record of its
-own session process.
+own session process. Once the session process that ran it is gone, it
+writes nothing more.
 """
 
 import json
@@ -45,26 +46,34 @@ class SessionStart:
             return
         config = Config()
         now = time.time()
+        parent = os.getppid()
+        if not cls.alive(parent):
+            return
         with Ledger(config.ledger_path) as ledger:
             if source in cls.CLEAN:
                 ledger.job(session, source, now)
             elif not ledger.seen(session):
                 for kind in ('untrusted', 'private'):
                     ledger.taint(session, kind, cls.UNPLACED, now)
-        cls.record(config.home, session, source)
+        cls.record(config.home, session, source, parent)
+
+    @staticmethod
+    def alive(parent):
+        """The session process that ran the hook is still there. Once it is
+        gone the hook is launchd's child (process 1) and writes nothing more."""
+        return parent != 1 and os.getppid() == parent
 
     @classmethod
-    def record(cls, home, session, source):
+    def record(cls, home, session, source, pid):
         from squire import Process
 
         socket_path = os.environ.get('CLAUDE_CODE_MESSAGING_SOCKET')
         token = os.environ.get('CLAUDE_CODE_MESSAGING_TOKEN')
         if not socket_path or not token or session in ('.', '..') or os.path.basename(session) != session:
             return
-        found = cls.socket(socket_path)
+        found = cls.socket(socket_path, pid)
         if found is None:
             return
-        pid = os.getppid()
         record = {'sessionId': session, 'socket': socket_path, 'socketInode': found.st_ino, 'socketOwner': found.st_uid,
                   'token': token, 'pid': pid, 'pidStartedAt': Process.started_at(pid), 'source': source,
                   'recordedAt': time.time()}
@@ -86,6 +95,8 @@ class SessionStart:
                     os.unlink(os.path.join(folder, name))
                 except OSError:
                     pass
+        if not cls.alive(pid):
+            return
         fd, tmp = tempfile.mkstemp(prefix='.session-', dir=folder)
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
             json.dump(record, f, indent=2)
@@ -93,10 +104,11 @@ class SessionStart:
         os.replace(tmp, os.path.join(folder, session + '.json'))
 
     @classmethod
-    def socket(cls, path):
-        """The socket at path, waited for; None when none appears in time."""
+    def socket(cls, path, parent):
+        """The socket at path, waited for; None when none appears in time, or
+        the session process is gone."""
         end = time.monotonic() + cls.SOCKET_WAIT
-        while True:
+        while cls.alive(parent):
             try:
                 found = os.stat(path)
                 if stat.S_ISSOCK(found.st_mode):
@@ -106,6 +118,7 @@ class SessionStart:
             if time.monotonic() >= end:
                 return None
             time.sleep(0.1)
+        return None
 
 
 if __name__ == '__main__':
