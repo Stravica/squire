@@ -1,0 +1,21 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "b7d363e0d04a514ab032cdd1d3cc9e8cf140288c",
+  "fbsIds": [
+    "FBS-001"
+  ],
+  "result": "PASS",
+  "suite": {
+    "pass": 78,
+    "fail": 0,
+    "skip": 0,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2, Apple M5, macOS 26.3.1 (25D2128), /usr/bin/python3 3.9.6, node v24.14.0, pnpm 10.32.1; fresh clone served 4027edd (reviewed head b7d363e), pnpm install --frozen-lockfile; node --test --test-concurrency=1 'tests/**/*.test.js'; temporary keychain fixtures only; fake claude only",
+  "node": "v24.14.0",
+  "reason": null,
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-08T16:19:49.475Z"
+}
