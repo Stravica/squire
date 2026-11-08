@@ -180,6 +180,7 @@ class Runner:
         self.log = os.path.join(self.home, 'logs', 'session.log')
         self.settings = OwnerSettings(self.owner, self.home)
         self.server = None
+        self.lock = None
         self.offset = 0
         self.started = 0.0
 
@@ -193,15 +194,16 @@ class Runner:
         except SquireError as e:
             sys.stderr.write(f'runner: no session: {e}.\n')
             return 1
-        lock = os.open(os.path.join(runner.home, 'runner.lock'), os.O_RDWR | os.O_CREAT, 0o600)
+        runner.lock = os.open(os.path.join(runner.home, 'runner.lock'), os.O_RDWR | os.O_CREAT, 0o600)
         try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(runner.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             sys.stderr.write('runner: another runner holds this Squire home; this one exits.\n')
             return 1
         # Asked to stop (launchd sends SIGTERM): the session goes with the runner.
         for signum in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
             signal.signal(signum, signal.default_int_handler)
+        signal.signal(signal.SIGCHLD, runner.server_ended)
         try:
             return runner.run()
         except KeyboardInterrupt:
@@ -223,7 +225,7 @@ class Runner:
             if not problems and not claude.signed_in(self.home):
                 problems = ['no session: Claude Code is not signed in for Squire; the owner signs in once with '
                             'Squire\'s Claude Code config folder (claude-config in the Squire home)']
-            self.save(problems=problems)
+            self.write_json(self.state_file, {'problems': problems})
             if problems:
                 return 1
             self.start(claude)
@@ -273,7 +275,10 @@ class Runner:
                 cwd=self.owner, env=claude.env, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
                 start_new_session=True)
         self.started = time.monotonic()
-        self.save(server={'pid': self.server.pid, 'startedAt': Process.started_at(self.server.pid)})
+        # The server, kept in the lock file the runner holds.
+        record = json.dumps({'pid': self.server.pid, 'startedAt': Process.started_at(self.server.pid)}).encode('utf-8')
+        os.ftruncate(self.lock, 0)
+        os.pwrite(self.lock, record, 0)
 
     def watch(self):
         """Until the session must stop: 'settings', 'replace' or 'died'."""
@@ -331,32 +336,33 @@ class Runner:
             pass
         server.wait()
 
+    def server_ended(self, signum, frame):
+        """A server that dies takes its session process with it at once, not
+        at the next look: the session, left running in the group, would
+        otherwise outlive it."""
+        server = self.server
+        if server is not None and server.poll() is not None:
+            try:
+                os.killpg(server.pid, signal.SIGKILL)
+            except OSError:
+                pass
+
     def stop_leftover(self):
         """A server left running by a runner that was killed outright is
-        stopped, its process group with it. The record names the server and
-        its start, so a record of a server long gone matches no process."""
+        stopped, its process group with it. The lock file names the last
+        server and its start, so a server long gone matches no process."""
         from squire import Process
 
-        server = self.load().get('server')
+        try:
+            server = json.loads(os.pread(self.lock, 4096, 0).decode('utf-8') or '{}')
+        except (OSError, ValueError):
+            server = None
         if isinstance(server, dict) and isinstance(server.get('startedAt'), str) \
                 and Process.started_at(server.get('pid')) == server['startedAt']:
             try:
                 os.killpg(server['pid'], signal.SIGKILL)
             except OSError:
                 pass
-
-    def load(self):
-        try:
-            with open(self.state_file, encoding='utf-8') as f:
-                state = json.load(f)
-            return state if isinstance(state, dict) else {}
-        except (OSError, ValueError):
-            return {}
-
-    def save(self, **changes):
-        state = self.load()
-        state.update(changes)
-        self.write_json(self.state_file, state)
 
     @staticmethod
     def write_json(path, data):
