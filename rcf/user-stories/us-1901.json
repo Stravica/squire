@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-07T20:43:47.899Z",
+  "updatedAt": "2026-11-08T10:04:08.086Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -34,7 +34,7 @@
       "id": "AC-1901-3",
       "description": "Squire never runs a job that mixes untrusted input, the Squire owner's private things and an action out in the world: it splits the job and asks the Squire owner at the join.",
       "testable": true,
-      "given": "A job that carries all three: untrusted input (such as a web page or an incoming message), access to the Squire owner's private things, and an action out in the world. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "given": "A job that carries all three: untrusted input (such as a web page or an incoming message), access to the Squire owner's private things, and an action out in the world. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them. (Note 2026-11-07: moved from round 1 to round 2 after a second review finding that word-based detection of inbox reads is incomplete; round 2 defines the resolve-or-ask read rule.)",
       "when": "Squire is asked to run it",
       "then": "The job is refused as one job; Squire splits it so that no part holds all three, and the part after the join waits for the Squire owner's yes.",
       "verification": "testOnly"

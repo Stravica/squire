@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:44.158Z",
-  "updatedAt": "2026-11-07T18:02:39.087Z",
+  "updatedAt": "2026-11-08T10:04:07.808Z",
   "summary": "Areas A4 and A7. The session runner, the Claude sign-in it runs under, and wake-up routing to the Squire owner's own session.",
   "dependsOnFbsIds": [
     "FBS-001"
@@ -9,7 +9,8 @@
     "AC-401-1",
     "AC-701-1",
     "AC-401-2",
-    "AC-701-2"
+    "AC-701-2",
+    "AC-1901-3"
   ],
   "fbsId": "FBS-002",
   "prdId": "PRD-001",
