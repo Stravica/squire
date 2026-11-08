@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-08T13:56:40.145Z",
+  "updatedAt": "2026-11-08T14:33:31.617Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -427,6 +427,20 @@
       "description": "Premise first: the long s spelling ſtate/approvals.jsonl opens the approvals ledger itself, else skipped with the reason. A Write and an Edit of the ledger by that spelling are each blocked before and after a yes, naming the safety floor, with no request id: refused as a file of the floor, never asked.",
       "status": "pending",
       "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write the approvals ledger by a spelling the disk folds, the long s in state, by Write or Edit, yes or no, and the refusal names the safety floor and asks nothing"
+    },
+    {
+      "id": "TC-002-settings-long-s-never-writable",
+      "acId": "AC-1901-1",
+      "description": "Premise first: the long s spelling .claude/ſettings.json opens the owner settings file itself, else skipped with the reason. A Write and an Edit of it, a Write of a new .claude/ſettings.local.json and a shell write of .claude/ſettings.json are each blocked before and after a yes, naming the safety floor, with no request id.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write Claude Code settings in the owner folder by a spelling the disk folds, the long s in settings, by Write, Edit or the shell, yes or no, and the refusal names the safety floor and asks nothing"
+    },
+    {
+      "id": "TC-002-ledger-name-long-s-shell-never-writable",
+      "acId": "AC-1901-1",
+      "description": "Premise first: state/approvalſ.jsonl opens the approvals ledger itself, else skipped with the reason. Appending to it after cd state, emptying it with truncate after cd state, and appending to it through a shell variable naming the folder are each blocked before and after a yes, naming the safety floor, with no request id.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write the approvals ledger from the shell by a name the disk folds, the long s in approvals, where the floor cannot resolve its folder, yes or no, and the refusal names the safety floor and asks nothing"
     }
   ],
   "status": "draft"
