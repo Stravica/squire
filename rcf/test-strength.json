@@ -6,5 +6,5 @@
   "runners": [
     { "files": ["tests/**/*.test.js"], "kind": "nodeTest", "cwd": "project" }
   ],
-  "suiteCommand": "node --test 'tests/**/*.test.js'"
+  "suiteCommand": "node --test --test-concurrency=1 'tests/**/*.test.js'"
 }

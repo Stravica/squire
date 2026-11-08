@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:45.523Z",
-  "updatedAt": "2026-11-07T18:02:39.887Z",
+  "updatedAt": "2026-11-08T10:58:03.474Z",
   "summary": "Area A20, the receiving end: the intake on the product site, the private tracker and daily triage, with the ticket criteria proven against the live receiver. Built in the site's repository, before the release Verify.",
   "dependsOnFbsIds": [
     "FBS-004"
@@ -15,7 +15,7 @@
   "fbsId": "FBS-007",
   "prdId": "PRD-001",
   "bsId": "BS-001",
-  "buildOrder": 7,
+  "buildOrder": 8,
   "executionStatus": "notStarted",
   "title": "Round 7: Ticket receiver"
 }
