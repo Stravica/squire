@@ -275,9 +275,9 @@ test('typical: a wake-up that failed once is retried by the scheduler run with t
   assert.equal(state.attempts.length, 2, `the retry must be recorded as a second attempt; got ${JSON.stringify(state.attempts)}`);
 });
 
-test('heavy: across a session restart the third retry inside ten minutes is delivered, and there is never a fourth retry or one after ten minutes', { timeout: 90000 }, async (t) => {
+test('heavy: after three failed attempts the third retry inside ten minutes is delivered, and there is never a fourth retry or one after ten minutes', { timeout: 90000 }, async (t) => {
   const world = wakeWorld(t);
-  // The first attempt and two retries failed while the session restarted.
+  // The first attempt and two retries failed: the session refused them.
   seedFailed(world, 'wake-third-retry', [9, 7, 5]);
   const { box, record } = await ownSession(t, world, { sessionId: 'session-own' });
   s.runDueWakeUps(world);

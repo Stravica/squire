@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-08T19:15:35.105Z",
-  "updatedAt": "2026-11-08T19:29:48.137Z",
+  "updatedAt": "2026-11-08T19:36:53.221Z",
   "purpose": "Runs the installed wake-up router against fake session inboxes in a test world: each delivery failure recorded with its reason and retry state and delivered nowhere else, the retry rule over seeded past attempts, and a line written but never acknowledged recorded unknown and never retried.",
   "testLevel": "integration",
   "acIds": [
@@ -57,7 +57,7 @@
       "acId": "AC-701-2",
       "description": "Heavy: the third retry inside ten minutes is delivered; never a fourth retry, and none after ten minutes.",
       "status": "pending",
-      "testPointer": "tests/acceptance/wake-ups.test.js::heavy: across a session restart the third retry inside ten minutes is delivered, and there is never a fourth retry or one after ten minutes"
+      "testPointer": "tests/acceptance/wake-ups.test.js::heavy: after three failed attempts the third retry inside ten minutes is delivered, and there is never a fourth retry or one after ten minutes"
     },
     {
       "id": "TC-026-retry-rechecks-identity",
