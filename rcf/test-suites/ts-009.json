@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:40.865Z",
+  "updatedAt": "2026-11-07T17:40:40.865Z",
+  "purpose": "Sets a name and personality through the real set-up path, then starts afresh and updates, and checks they are unchanged and reach the session that answers.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-601-1"
+  ],
+  "id": "TS-009",
+  "usId": "US-601",
+  "title": "Name and personality survive a fresh start and an update",
+  "testCases": [],
+  "status": "draft"
+}

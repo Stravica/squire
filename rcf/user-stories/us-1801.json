@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-11-07T17:40:21.031Z",
+  "updatedAt": "2026-11-07T17:40:21.563Z",
+  "asA": "Squire owner",
+  "iWant": "Squire's own browser, in a window I can watch and take over, that never gives a website my details or signs in to my accounts without my yes",
+  "soThat": "Squire can use the web for me without exposing me",
+  "description": "The driven browser runs in its own visible window, separate from the Squire owner's browser.",
+  "usId": "US-1801",
+  "prdId": "PRD-001",
+  "reqId": "REQ-018",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "A browser it drives: none of the Squire owner's details, no sign-in without a yes",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1801-1",
+      "description": "Squire never gives a website the Squire owner's details.",
+      "testable": true,
+      "given": "A website that asks for personal details (name, email address, postal address, phone number, card number)",
+      "when": "Squire's browser fills in the page",
+      "then": "The browser supplies none of the Squire owner's details.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1801-2",
+      "description": "Squire's browser signs in to the Squire owner's accounts only on their yes, and the Squire owner can watch it and take over.",
+      "testable": true,
+      "given": "Squire's browser reaches a sign-in page and the Squire owner has not said yes to that sign-in",
+      "when": "Squire tries to go on",
+      "then": "The browser stops and does not sign in until the yes; its window is visible on the Mac, and the Squire owner can take over in it.",
+      "verification": "testOnly"
+    }
+  ]
+}

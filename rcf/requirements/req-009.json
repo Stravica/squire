@@ -1,0 +1,35 @@
+{
+  "createdAt": "2026-11-07T17:39:54.771Z",
+  "updatedAt": "2026-11-07T17:39:54.775Z",
+  "description": "Squire makes pages for the Squire owner and serves them on the Mac only, with a comment panel for the Squire owner's notes.",
+  "category": "functional",
+  "domain": "pages",
+  "priority": "must",
+  "tags": [
+    "area:A9"
+  ],
+  "reqId": "REQ-009",
+  "prdId": "PRD-001",
+  "title": "Pages on the Mac only, with the comment panel",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:54.774Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "webUi",
+        "match": "Page"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "page"
+      }
+    ]
+  }
+}

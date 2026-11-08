@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-11-07T17:40:41.132Z",
+  "updatedAt": "2026-11-07T17:40:41.132Z",
+  "purpose": "Runs the scheduled backup job on a seeded folder and checks copies and archives; injects a known fault and checks the known fix runs, with the required yes, before any ticket is offered.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1101-1",
+    "AC-1101-2"
+  ],
+  "id": "TS-010",
+  "usId": "US-1101",
+  "title": "Nightly backup and self-fix first",
+  "testCases": [],
+  "status": "draft"
+}

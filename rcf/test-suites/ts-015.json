@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:42.477Z",
+  "updatedAt": "2026-11-07T17:40:42.477Z",
+  "purpose": "Starts each heavy job class through the real entry points, with and without a yes and at high usage, and checks no path bypasses the warning and the yes.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1302-1"
+  ],
+  "id": "TS-015",
+  "usId": "US-1302",
+  "title": "Heavy jobs cannot start without a warning and a yes",
+  "testCases": [],
+  "status": "draft"
+}

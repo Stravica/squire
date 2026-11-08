@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-07T17:40:21.829Z",
+  "updatedAt": "2026-11-07T17:40:22.097Z",
+  "asA": "Squire owner",
+  "iWant": "the pages Squire makes for me visible on my Mac only",
+  "soThat": "nobody else on my network or the internet can see them",
+  "description": "Pages, the home dashboard and voice-note pages are all served by the one page server on the Mac.",
+  "usId": "US-901",
+  "prdId": "PRD-001",
+  "reqId": "REQ-009",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Pages on the Mac only",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-901-1",
+      "description": "The pages Squire makes can be seen on the Squire owner's Mac only.",
+      "testable": true,
+      "given": "Squire's page server running",
+      "when": "A page is requested from the Mac itself and from another machine",
+      "then": "The request from the Mac succeeds; another machine cannot connect.",
+      "verification": "testOnly"
+    }
+  ]
+}

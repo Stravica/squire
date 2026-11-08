@@ -1,0 +1,43 @@
+{
+  "createdAt": "2026-11-07T17:40:18.347Z",
+  "updatedAt": "2026-11-07T18:01:57.194Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to know my Claude plan and how much I have used, pace itself, never spend beyond my plan without my yes, and tell me once if an upgrade would really help",
+  "soThat": "I stay within what I pay for and the choice to pay more is always mine",
+  "description": "The Squire owner declares the plan tier; Squire reads usage from Claude Code. Defaults: pacing above 80% of the five-hour window and above 70% of the weekly window; stale or missing usage counts as unknown.",
+  "usId": "US-1301",
+  "prdId": "PRD-001",
+  "reqId": "REQ-013",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Plan awareness: knows the plan, paces itself, never spends beyond it",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1301-1",
+      "description": "Squire knows the Squire owner's Claude plan and usage, and paces itself.",
+      "testable": true,
+      "given": "The plan the Squire owner declared, and a usage reading above the pacing threshold: above 80% of the five-hour window or above 70% of the weekly window",
+      "when": "A job that can wait comes up",
+      "then": "Squire has recorded the declared plan, defers the job and tells the Squire owner when the allowance resets; above 90% in either window, a heavy job starts only on a second yes; when usage is stale or missing, Squire treats it as unknown.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1301-2",
+      "description": "Squire never spends beyond the Squire owner's plan without their yes.",
+      "testable": true,
+      "given": "No yes from the Squire owner to spend beyond the plan",
+      "when": "Squire, or a tool it calls, tries to turn on usage credits or to pick a model that needs usage credits",
+      "then": "Both are blocked.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1301-3",
+      "description": "When an upgrade would really help, Squire says so once and leaves the choice to the Squire owner.",
+      "testable": true,
+      "given": "Mostly requested work, and either three five-hour limits reached in a week or one weekly limit reached in a month",
+      "when": "The trigger is met, and the Squire owner later says no to the advice",
+      "then": "Squire gives the advice once, never before the trigger, and changes nothing about the plan itself; after a no it does not give it again for a month.",
+      "verification": "testOnly"
+    }
+  ]
+}

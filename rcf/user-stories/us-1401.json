@@ -1,0 +1,61 @@
+{
+  "createdAt": "2026-11-07T17:40:15.412Z",
+  "updatedAt": "2026-11-07T18:02:37.773Z",
+  "asA": "Squire owner",
+  "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
+  "soThat": "an update can never hurt my Squire or touch my things",
+  "description": "The update journey: the weekly check, the signature and file checks, the changelog page, install on a yes, the health check, and rollback on a failed check. This story carries the update and rollback part of the promise that updates never touch the Squire owner's folder; the foundation part is a criterion of the core and owner folder story.",
+  "usId": "US-1401",
+  "prdId": "PRD-001",
+  "reqId": "REQ-014",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Updates: signed, explained, on a yes, rolled back if they fail",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1401-1",
+      "description": "Squire installs only updates signed by Stravica.",
+      "testable": true,
+      "given": "A release whose signature is missing, made with a different key, or does not match the release",
+      "when": "Squire's update check fetches and checks it",
+      "then": "The release is refused and nothing on the Mac changes; a release correctly signed with Stravica's release key may be offered to the Squire owner.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-2",
+      "description": "Squire explains what an update changes and installs it only on the Squire owner's yes.",
+      "testable": true,
+      "given": "A signed update is ready",
+      "when": "Squire offers it and the Squire owner has not said yes",
+      "then": "The release's changelog is shown first and core stays unchanged; on the Squire owner's yes the update installs.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-3",
+      "description": "If an update fails its health check, Squire restores the previous version by itself.",
+      "testable": true,
+      "given": "An update that fails Squire's health check once installed",
+      "when": "Squire installs it on the Squire owner's yes",
+      "then": "The previous version is running again with no one acting, and Squire tells the Squire owner it rolled the update back.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-4",
+      "description": "An update, and a rollback, never touch the Squire owner's folder or what Squire built for the Squire owner.",
+      "testable": true,
+      "given": "A Squire owner's folder holding a profile, memory, files, the Squire's name and things Squire built for the Squire owner",
+      "when": "A signed update installs, and an update that fails its health check is rolled back",
+      "then": "The Squire owner's folder hashes the same before the update, after it, and after the rollback.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-5",
+      "description": "An update that cannot finish leaves Squire on a healthy version and the Squire owner's folder unchanged; a Claude Code update made outside Squire is noticed and checked.",
+      "testable": true,
+      "given": "An update that fails to download, times out or is interrupted by a restart of the Mac; and, separately, Claude Code updated outside Squire",
+      "when": "The Mac starts again after the failed or interrupted update, or Squire next runs after Claude Code changed",
+      "then": "Squire starts on the previous healthy version or on the fully installed signed one, tells the Squire owner which, and leaves the Squire owner's folder unchanged. When Claude Code was updated outside Squire, Squire notices, runs its health check, and shows the Squire owner the result and any safe step to recover.",
+      "verification": "testOnly"
+    }
+  ]
+}

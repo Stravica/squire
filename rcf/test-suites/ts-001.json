@@ -1,0 +1,51 @@
+{
+  "createdAt": "2026-11-07T17:40:38.715Z",
+  "updatedAt": "2026-11-07T19:18:38.963Z",
+  "purpose": "Lays down and replaces core on a seeded Squire owner's folder through the real install path, and compares the folder's hashes before and after.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-101-1",
+    "AC-101-2"
+  ],
+  "id": "TS-001",
+  "usId": "US-101",
+  "title": "Core replacement leaves the Squire owner's folder unchanged",
+  "testCases": [
+    {
+      "id": "TC-001-core-is-laid-down-laid-down-again-and",
+      "acId": "AC-101-1",
+      "description": "Core is laid down, laid down again and replaced with a different core through core/tools/lay-down.py; the core matches each release file for file and the owner's folder is byte for byte the same each time, down to modification times and inodes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/core-owner-split.test.js::laying core down again or replacing it with a different core leaves the owner folder byte for byte the same"
+    },
+    {
+      "id": "TC-001-overlay-health-names-every-core-overlay",
+      "acId": "AC-101-2",
+      "description": "With overlays planted at every core path (and at overlay/core/<path> and add-ons at core paths, which overlay nothing), core/tools/health.py names each overlay at a core path once as 'ignored: overlay/<path> (safety floor)' and exits 1, and a send is still blocked until the owner's yes; with only the Monday briefing overlay, which has no core file under it, it names none and exits 0.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/overlay-health.test.js::the health check names every overlay at a core path, one line each, and the floor ignores them; with none it names none"
+    },
+    {
+      "id": "TC-001-bad-release-refused",
+      "acId": "AC-101-1",
+      "description": "After a good lay-down, a release lacking any of the floor entry points, the installed core given as the release (by its path, its real path or a link), the Squire home, and a release inside the Squire home (or a link to it) are each refused by lay-down with exit 1 and a reason; the installed core stays where it was, unchanged, and the owner folder is unchanged.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/core-owner-split.test.js::a release missing a floor entry point, or one that is or lies inside the installed core or the Squire home, is refused and changes nothing"
+    },
+    {
+      "id": "TC-001-overlapping-layout-refused",
+      "acId": "AC-101-1",
+      "description": "An owner folder inside the installed core (named directly or through a link) and a Squire home inside the owner folder (named directly or through a link) are each refused by lay-down with exit 1 and a reason; the installed core and the owner folder are unchanged.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/core-owner-split.test.js::lay-down refuses a layout where the owner folder and core overlap, inside each other or through a link, and changes nothing"
+    },
+    {
+      "id": "TC-001-installed-core-is-a-copy",
+      "acId": "AC-101-1",
+      "description": "After laying down a release, the installed core lives inside the Squire home with no link out of it, and changing, adding and removing files in the release folder leaves the installed core file for file the same.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/core-owner-split.test.js::the installed core is a copy inside the Squire home: changing the release afterwards leaves it unchanged"
+    }
+  ],
+  "status": "draft"
+}

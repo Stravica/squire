@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-07T17:40:20.500Z",
+  "updatedAt": "2026-11-07T17:40:20.768Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to set up my Cloudflare account once so nothing there can cost me money, and to put sites live only when I say yes",
+  "soThat": "a website never costs me money or goes live by surprise",
+  "description": "The website journey: the one-off safe set-up, the deploy-only token, a preview, and live on a yes. Live on a yes is the safety story's criterion that nothing is sent or goes live without the Squire owner's yes, met again here for websites.",
+  "usId": "US-1201",
+  "prdId": "PRD-001",
+  "reqId": "REQ-012",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Websites: a safe Cloudflare set-up, preview first, live on yes",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1201-1",
+      "description": "After the one-off Cloudflare set-up, everything that could cost the Squire owner money there is switched off and a spend guard is on.",
+      "testable": true,
+      "given": "A Cloudflare account set up through Squire's one-off set-up",
+      "when": "The account's settings are read after set-up",
+      "then": "Every paid feature is off, the spend guard is on, and the short-lived set-up token has been removed.",
+      "verification": "testOnly"
+    }
+  ]
+}

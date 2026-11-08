@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-11-07T17:40:17.817Z",
+  "updatedAt": "2026-11-07T18:02:37.513Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to save where we are and ask me to type /clear at a natural pause when a conversation gets long",
+  "soThat": "long conversations stay quick and nothing is lost",
+  "description": "The context watch: Squire notices a long conversation (high context use or compaction), writes its handover note, asks for /clear at a natural pause, and picks up from the note.",
+  "usId": "US-501",
+  "prdId": "PRD-001",
+  "reqId": "REQ-005",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Fresh start: a handover note, then /clear at a good moment",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-501-1",
+      "description": "A long conversation gets a handover note and a timely /clear prompt, and nothing is lost.",
+      "testable": true,
+      "given": "A conversation past Squire's context threshold, with work in progress",
+      "when": "Squire reaches a natural pause, and the Squire owner then types /clear",
+      "then": "The handover note is saved before the /clear prompt is shown, and after /clear Squire picks up the work in progress from it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-501-2",
+      "description": "A handover note saved before a late /clear, or before the laptop is closed, survives, and the work carries on without loss.",
+      "testable": true,
+      "given": "Squire has saved a handover note and asked the Squire owner to type /clear",
+      "when": "The /clear comes much later, or the laptop is closed before it comes",
+      "then": "The handover note survives, the /clear prompt comes back at a later natural pause, and after /clear the work resumes from the note with nothing lost.",
+      "verification": "testOnly"
+    }
+  ]
+}

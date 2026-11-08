@@ -4,17 +4,31 @@
   "reqId": "REQ-001",
   "version": "0.1.0",
   "status": "draft",
-  "title": "TODO: name this user story",
-  "asA": "TODO: name the user",
-  "iWant": "TODO: state the want",
-  "soThat": "TODO: state the value",
+  "title": "Core and the Squire owner's folder kept apart",
+  "asA": "Squire owner",
+  "iWant": "my folder (my profile, memory, files, my Squire's name and what it built for me) kept apart from Squire's own core",
+  "soThat": "replacing Squire's core can never change or lose anything of mine",
   "acceptanceCriteria": [
     {
       "id": "AC-101-1",
-      "description": "TODO: describe the first acceptance criterion",
-      "testable": true
+      "description": "Replacing Squire's core never touches the Squire owner's folder or what Squire built for the Squire owner.",
+      "testable": true,
+      "given": "A Squire owner's folder holding a profile, memory, files, the Squire's name and things Squire built for the Squire owner",
+      "when": "Squire's core is laid down again, or replaced with a different core",
+      "then": "The Squire owner's folder hashes the same before and after: none of its files is changed, removed or rewritten.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-101-2",
+      "description": "An overlay at a safety rule's path is ignored, and the health check names it.",
+      "testable": true,
+      "given": "An overlay in the Squire owner's folder at the path of one of core's safety rules",
+      "when": "Squire's health check runs",
+      "then": "The overlay is ignored, so the safety rule behaves exactly as core's, and the health check names the ignored overlay.",
+      "verification": "testOnly"
     }
   ],
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T19:03:42.486Z",
+  "description": "The layout on the Mac: core in its own place, replaced whole; the Squire owner's folder apart from it. This story carries the foundation part of the promise that updates never touch the Squire owner's folder; the update and rollback part is a criterion of the updates story."
 }

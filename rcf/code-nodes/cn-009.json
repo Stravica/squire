@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-009",
+  "path": "core/tools/lay-down.py#LayDown",
+  "implementsAcIds": [
+    "AC-101-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-07T19:47:18.678Z",
+  "updatedAt": "2026-11-07T19:47:18.678Z"
+}

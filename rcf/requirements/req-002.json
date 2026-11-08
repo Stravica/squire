@@ -1,0 +1,47 @@
+{
+  "createdAt": "2026-11-07T17:39:52.930Z",
+  "updatedAt": "2026-11-07T17:39:52.938Z",
+  "description": "One download sets Squire up on the Mac from start to finish without Terminal: the Mac check, one yes for what will be installed, Apple's developer tools, Claude Code, the Claude sign-in, naming the Squire, the folders, the always-on session, the phone, the Keychain, the browser, the nightly backup, wake-ups, voice notes, the health check and the guided first conversation. The installer also sets Claude Code's auto-compact window.",
+  "category": "functional",
+  "domain": "installer",
+  "priority": "must",
+  "tags": [
+    "area:A2"
+  ],
+  "reqId": "REQ-002",
+  "prdId": "PRD-001",
+  "title": "The installer, with no Terminal",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi",
+      "auth",
+      "persistence"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:52.937Z",
+    "signals": [
+      {
+        "source": "description",
+        "shape": "auth",
+        "match": "sign-in"
+      },
+      {
+        "source": "description",
+        "shape": "auth",
+        "match": "session"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "browser"
+      },
+      {
+        "source": "description",
+        "shape": "persistence",
+        "match": "backup"
+      }
+    ]
+  }
+}

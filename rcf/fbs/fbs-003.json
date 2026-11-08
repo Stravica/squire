@@ -1,0 +1,24 @@
+{
+  "createdAt": "2026-11-07T17:40:44.442Z",
+  "updatedAt": "2026-11-07T18:02:38.827Z",
+  "summary": "Areas A2, A3, A6 and A11. The guided install with the eligibility refusal, onboarding and the Squire's name and personality, the nightly backup, restart and the Claude Code settings. The fresh-Mac journey runs from the installer to the Squire's first reply. Self-fix first is defined before the self-fix build.",
+  "dependsOnFbsIds": [
+    "FBS-002"
+  ],
+  "acIds": [
+    "AC-201-1",
+    "AC-201-2",
+    "AC-201-3",
+    "AC-601-1",
+    "AC-1101-1",
+    "AC-1101-2",
+    "AC-1901-5",
+    "AC-201-4"
+  ],
+  "fbsId": "FBS-003",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 3,
+  "executionStatus": "notStarted",
+  "title": "Round 3: Installer"
+}

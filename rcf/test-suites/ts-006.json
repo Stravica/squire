@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:40.059Z",
+  "updatedAt": "2026-11-07T17:40:40.059Z",
+  "purpose": "Runs the real installer against fresh and conflicting Claude Code configurations (top-level, per-model, environment, command line), reads the effective window, and checks that the health check reports drift.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-201-2"
+  ],
+  "id": "TS-006",
+  "usId": "US-201",
+  "title": "Installer sets and the health check guards the auto-compact window",
+  "testCases": [],
+  "status": "draft"
+}

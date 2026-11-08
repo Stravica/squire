@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:43.008Z",
+  "updatedAt": "2026-11-07T17:40:43.008Z",
+  "purpose": "Runs the real one-off set-up against a test Cloudflare account, never a live one, and reads the account's settings to check paid features, the spend guard and the removal of the set-up token.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1201-1"
+  ],
+  "id": "TS-017",
+  "usId": "US-1201",
+  "title": "Safe Cloudflare set-up",
+  "testCases": [],
+  "status": "draft"
+}

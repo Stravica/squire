@@ -4,11 +4,33 @@
   "tadId": "TAD-001",
   "version": "0.1.0",
   "status": "draft",
-  "name": "TODO: name this component",
-  "purpose": "TODO: state the purpose of this component.",
+  "name": "The safety floor",
+  "purpose": "Keep Squire's safety rules in force mechanically, outside the conversation, so that no instruction the model reads, no content it processes and no overlay in the owner's folder can change them.",
   "responsibilities": [
-    "TODO: list at least one responsibility."
+    "Hooks that Claude Code runs outside the conversation on every tool call block a send, publish, deploy, delete, overwrite, install or run of a downloaded program unless the Squire owner's yes for exactly that item is recorded.",
+    "An approvals ledger in the owner's state folder records each request for a yes and each answer: a yes names one item and expires, a request that times out is never recorded as a yes, and a no is never reused as the answer for another attempt or another item.",
+    "The Rule of Two: a job that mixes untrusted input, access to the owner's private things and an action out in the world is refused as one job, and the part after the join waits for the owner's yes.",
+    "A secrets helper keeps the owner's passwords and keys in the Mac's Keychain and fetches one at the moment a tool needs it, so no output, file, transcript, page, backup or ticket holds a trace of it; when the Keychain cannot supply it, the work stops and the owner is told what to do.",
+    "The floor is core's and is not overlayable: an overlay at one of its paths is ignored, and the health check says so."
   ],
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T18:03:07.376Z",
+  "interfaces": [
+    {
+      "name": "Hook process",
+      "kind": "event",
+      "description": "Reads Claude Code's hook event as JSON on standard input; exit code 2 with the reason on standard error blocks the tool call."
+    },
+    {
+      "name": "Secrets helper",
+      "kind": "cliCommand",
+      "description": "Stores a secret through a Mac dialog with a hidden field, and runs a tool with the secret it needs, keeping every trace of the secret out of the output."
+    },
+    {
+      "name": "Approvals ledger",
+      "kind": "fileFormat",
+      "description": "Kept in the owner's state folder; written only by the floor."
+    }
+  ],
+  "tradeoffs": "Rules enforced by hooks hold whatever the model is told, but every outward action now waits for the owner, and the floor must recognise each kind of send, publish, deploy, delete, overwrite and install it guards."
 }

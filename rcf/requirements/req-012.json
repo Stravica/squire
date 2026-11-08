@@ -1,0 +1,47 @@
+{
+  "createdAt": "2026-11-07T17:39:55.560Z",
+  "updatedAt": "2026-11-07T17:39:55.565Z",
+  "description": "Squire sets up the Squire owner's Cloudflare account once, safely: anything that could cost money is switched off and a spend guard is on. It then deploys with a deploy-only token, shows a preview first and puts a site live only on the Squire owner's yes.",
+  "category": "functional",
+  "domain": "websites",
+  "priority": "must",
+  "tags": [
+    "area:A12"
+  ],
+  "reqId": "REQ-012",
+  "prdId": "PRD-001",
+  "title": "Websites: the one-off safe Cloudflare set-up, a deploy-only token, preview first, live on yes",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi",
+      "httpApi",
+      "auth"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:55.564Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "auth",
+        "match": "token"
+      },
+      {
+        "source": "description",
+        "shape": "auth",
+        "match": "token"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "shows"
+      },
+      {
+        "source": "description",
+        "shape": "httpApi",
+        "match": "put"
+      }
+    ]
+  }
+}

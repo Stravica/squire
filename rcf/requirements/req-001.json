@@ -1,13 +1,16 @@
 {
   "reqId": "REQ-001",
   "prdId": "PRD-001",
-  "title": "TODO: name this requirement",
-  "description": "TODO: describe this requirement.",
-  "category": "functional",
-  "domain": "todo",
+  "title": "Core and the Squire owner's folder kept apart",
+  "description": "Squire's core and the Squire owner's folder live apart on the Mac. Core is replaced whole by each release. The Squire owner's folder holds everything personal (profile, memory, files, the Squire's name and what Squire built for them) and is never touched by an update. One core config file holds core's paths; one owner config file holds only personal facts. An overlay in the Squire owner's folder changes core behaviour at named points, except the safety rules, which cannot be overlaid.",
+  "category": "technical",
+  "domain": "core-layout",
   "priority": "must",
   "version": "0.1.0",
   "status": "draft",
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T17:39:52.677Z",
+  "tags": [
+    "area:A1"
+  ]
 }

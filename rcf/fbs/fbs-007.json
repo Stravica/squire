@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-11-07T17:40:45.523Z",
+  "updatedAt": "2026-11-07T18:02:39.887Z",
+  "summary": "Area A20, the receiving end: the intake on the product site, the private tracker and daily triage, with the ticket criteria proven against the live receiver. Built in the site's repository, before the release Verify.",
+  "dependsOnFbsIds": [
+    "FBS-004"
+  ],
+  "notes": "The intake's protection measures (edge limits, a human check, revocable install identity, an 8 KB schema, deduplication, budgets, overflow and a kill switch; no shared install key) are candidates for this round's DEFINE, not criteria until ruled in.",
+  "acIds": [
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-2001-3",
+    "AC-2001-4"
+  ],
+  "fbsId": "FBS-007",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 7,
+  "executionStatus": "notStarted",
+  "title": "Round 7: Ticket receiver"
+}

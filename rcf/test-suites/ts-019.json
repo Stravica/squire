@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:43.541Z",
+  "updatedAt": "2026-11-07T17:40:43.541Z",
+  "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-901-1"
+  ],
+  "id": "TS-019",
+  "usId": "US-901",
+  "title": "Pages answer on the Mac only",
+  "testCases": [],
+  "status": "draft"
+}

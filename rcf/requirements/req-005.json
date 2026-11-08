@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-11-07T17:39:53.714Z",
+  "updatedAt": "2026-11-07T17:39:53.718Z",
+  "description": "When a conversation gets long, Squire saves a handover note and asks the Squire owner, at a natural pause, to type /clear; the next conversation picks up from the note.",
+  "category": "functional",
+  "domain": "context",
+  "priority": "must",
+  "tags": [
+    "area:A5"
+  ],
+  "reqId": "REQ-005",
+  "prdId": "PRD-001",
+  "title": "Context watch: the handover note and the /clear prompt",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "httpApi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:53.717Z",
+    "signals": [
+      {
+        "source": "description",
+        "shape": "httpApi",
+        "match": "get"
+      }
+    ]
+  }
+}

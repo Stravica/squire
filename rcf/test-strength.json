@@ -1,0 +1,10 @@
+{
+  "entry": [
+    { "kind": "module", "path": "tests/fixtures/squire-world.js" }
+  ],
+  "harness": ["tests/fixtures/**"],
+  "runners": [
+    { "files": ["tests/**/*.test.js"], "kind": "nodeTest", "cwd": "project" }
+  ],
+  "suiteCommand": "node --test 'tests/**/*.test.js'"
+}

@@ -3,13 +3,21 @@
   "prdId": "PRD-001",
   "bsId": "BS-001",
   "buildOrder": 1,
-  "executionStatus": "notStarted",
-  "title": "TODO: name this build session",
-  "summary": "TODO: describe what this build session delivers.",
+  "executionStatus": "complete",
+  "title": "Round 1: Foundation",
+  "summary": "Areas A1, A19 and A21. This public repository, fresh; core kept apart from the Squire owner's folder; the safety hooks in force and not overlayable; and a privacy scan that guards every later push.",
   "acIds": [
-    "AC-101-1"
+    "AC-101-1",
+    "AC-101-2",
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-4",
+    "AC-1901-5",
+    "AC-1902-1",
+    "AC-1902-2"
   ],
   "dependsOnFbsIds": [],
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-08T10:19:45.370Z",
+  "uiBearing": false
 }

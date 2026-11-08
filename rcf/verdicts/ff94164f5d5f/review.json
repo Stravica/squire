@@ -1,0 +1,31 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "ff94164f5d5fe8ac62f9b3c0a1bd8df1da3a695a",
+  "fbsIds": [
+    "FBS-001"
+  ],
+  "touchedAcIds": [
+    "AC-101-1",
+    "AC-101-2",
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-3",
+    "AC-1901-4",
+    "AC-1901-5",
+    "AC-1902-1",
+    "AC-1902-2"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1901-3",
+      "text": "core/hooks/pre-tool-use.py:237-250 marks a Bash read untrusted only from the words it is given, with a glob expanded by Python's non-recursive glob.glob (line 250) and no brace expansion, so the round 1 finding F-2 (a read that takes in workspace/inbox through a parent folder or a glob leaves the job unmarked) holds only for the test's spellings. Probe at ff94164 through the hook, cwd the owner folder: grep -ri order with no file operand (the Mac's BSD grep searches the working folder and prints the planted offer.eml line), cat **/offer.eml (zsh, the shell Claude Code runs Bash commands in on the Mac, reads workspace/inbox/offer.eml; glob.glob treats ** as * and matches nothing, so the word stands as a literal path outside the inbox) and cat workspace/{inbox,drafts}/offer.eml (brace expansion, zsh and bash) each exit 0 with no untrusted mark in the ledger; after the profile read a send to someone@example.net is asked (Request r-6, r-7, r-8) instead of refused as one job, so one yes sends what the injected mail asked for. The prior spellings (grep -ri order ., the Grep tool, cat workspace/inbo?/offer.eml) are now refused as one job. Breaks AC-1901-3."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-07T21:12:36.857Z"
+}

@@ -1,0 +1,52 @@
+{
+  "createdAt": "2026-11-07T17:40:16.737Z",
+  "updatedAt": "2026-11-07T18:02:38.034Z",
+  "asA": "Squire owner",
+  "iWant": "when Squire cannot fix something, to see exactly what a support ticket will say and send it only if I say yes",
+  "soThat": "I get help without giving away anything personal",
+  "description": "The ticket journey: a failed self-fix, a ticket of allow-listed diagnostics, an exact preview including the install's identity details, a yes or a no, the intake on the product site, the private tracker and daily triage. A ticket the intake cannot take yet is saved on the Mac and sent later. The receiving end is built in the site's repository; until it exists, the ticket criteria are proven against a local stand-in intake.",
+  "usId": "US-2001",
+  "prdId": "PRD-001",
+  "reqId": "REQ-020",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Support tickets: previewed, sent on a yes, diagnostics only, anonymous",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-2001-1",
+      "description": "A support ticket is sent only on the Squire owner's yes, after a preview showing exactly what will be sent.",
+      "testable": true,
+      "given": "A ticket Squire has built and previewed, including the install's identity details",
+      "when": "The Squire owner says yes, or says no or does not answer",
+      "then": "On a yes, the bytes posted equal the bytes previewed, identity details included; on a no or no answer, nothing is posted.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-2",
+      "description": "A support ticket holds diagnostics about Squire and the Mac only, never the Squire owner's personal details.",
+      "testable": true,
+      "given": "Personal details planted in the Squire owner's folder, in error messages and in paths (names, email addresses, phone and card numbers)",
+      "when": "Squire builds a ticket and it is sent",
+      "then": "The ticket carries only allow-listed diagnostic fields, and none of the planted details appears in it or anywhere it is sent.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-3",
+      "description": "Tickets never make the Squire owner identifiable, the receiver keeps nothing beyond codes, and a ticket's data is deleted at the Squire owner's request.",
+      "testable": true,
+      "given": "Tickets sent from an install",
+      "when": "The receiver files them, and the Squire owner later asks for a ticket to be deleted",
+      "then": "The install id is random and linked to no person; the receiver stores codes only; after the deletion request the ticket's data is gone end to end.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-4",
+      "description": "A ticket the Squire owner said yes to is kept and retried exactly as approved when sending it fails.",
+      "testable": true,
+      "given": "A ticket the Squire owner has said yes to",
+      "when": "Sending it fails, Squire is offline, or whether it arrived is unclear",
+      "then": "The exact approved ticket is saved and shown as waiting to send; Squire retries it without sending it twice when it can, and never changes it without another yes.",
+      "verification": "testOnly"
+    }
+  ]
+}

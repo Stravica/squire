@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:39.515Z",
+  "updatedAt": "2026-11-07T17:40:39.515Z",
+  "purpose": "Restarts and crashes the session on a real Mac and checks that the Claude app on the Mac and on the phone lists it again within two minutes. Takes the target host as a parameter.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-401-1"
+  ],
+  "id": "TS-004",
+  "usId": "US-401",
+  "title": "Session restart and crash recovery on a real Mac and phone",
+  "testCases": [],
+  "status": "draft"
+}

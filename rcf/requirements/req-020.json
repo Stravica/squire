@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-11-07T17:39:57.661Z",
+  "updatedAt": "2026-11-07T17:39:57.666Z",
+  "description": "Squire fixes itself first. If that fails it offers a ticket of diagnostics only, shows exactly what will be sent, and sends it on a yes to the intake on the product site, which files it in a private tracker for daily triage. A ticket the intake cannot take yet is saved on the Mac and sent later. No shared key ships in any install.",
+  "category": "functional",
+  "domain": "support",
+  "priority": "must",
+  "tags": [
+    "area:A20"
+  ],
+  "reqId": "REQ-020",
+  "prdId": "PRD-001",
+  "title": "Support: self-fix first, ticket preview, the intake and the private tracker",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:57.665Z",
+    "signals": [
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "shows"
+      }
+    ]
+  }
+}

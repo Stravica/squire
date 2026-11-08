@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:39.795Z",
+  "updatedAt": "2026-11-07T17:40:39.795Z",
+  "purpose": "Fires real wake-ups on a running Squire and checks delivery with one session, and that nothing is sent with no session or two candidate sessions. Takes the target host as a parameter.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-701-1"
+  ],
+  "id": "TS-005",
+  "usId": "US-701",
+  "title": "Wake-up delivery, absent session and ambiguous sessions",
+  "testCases": [],
+  "status": "draft"
+}

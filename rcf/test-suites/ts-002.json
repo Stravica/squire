@@ -1,0 +1,173 @@
+{
+  "createdAt": "2026-11-07T17:40:38.981Z",
+  "updatedAt": "2026-11-07T20:43:43.706Z",
+  "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-3",
+    "AC-1901-4",
+    "AC-1901-5"
+  ],
+  "id": "TS-002",
+  "usId": "US-1901",
+  "title": "Safety hooks: approval, the Rule of Two, destructive actions and installs",
+  "testCases": [
+    {
+      "id": "TC-002-an-email-send-a-text-message-a-site",
+      "acId": "AC-1901-1",
+      "description": "An email send, a text message, a site deploy and a data post are each blocked by the pre-tool-use hook until the owner's own message says yes to that item, then proceed; drafts proceed without a yes; the session cannot write the floor's ledger, even after a yes; overlays at every core path change nothing.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a send, a publish or a deploy is blocked until the owner says yes to that item, and the session cannot record a yes itself"
+    },
+    {
+      "id": "TC-002-a-yes-lets-its-one-item-proceed-once-and",
+      "acId": "AC-1901-2",
+      "description": "A yes lets its one item proceed once and never covers another; after a no the item stays blocked and the no is not the answer to a new attempt or another item; talk about something else, silence past the time-out and a late yes never approve.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a yes covers one action, a no is never reused, and silence or a late yes never approves"
+    },
+    {
+      "id": "TC-002-a-session-that-has-read-a-web-page-and",
+      "acId": "AC-1901-3",
+      "description": "A session that has read a web page and the owner's profile cannot send, even after a yes; a fresh session holding only the send waits for its own yes; sessions holding two of the three wait only for their yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a job holding untrusted input, private things and an outside action is refused as one job and the split part waits for a yes"
+    },
+    {
+      "id": "TC-002-deleting-an-owner-file-deleting-an-add",
+      "acId": "AC-1901-4",
+      "description": "Deleting an owner file, deleting an add-on, overwriting the profile, moving a file over another and emptying a page are each blocked with the file unchanged until the owner says yes to that item; reading and writing new files proceed.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::deleting, overwriting, moving over or emptying the owner things is blocked until the owner says yes to that item"
+    },
+    {
+      "id": "TC-002-homebrew-formula-and-cask-installs-pip",
+      "acId": "AC-1901-5",
+      "description": "Running a tool Squire built for the owner, Homebrew formula and cask installs, pip and npm installs, a downloaded install script piped to a shell and an installer package are each refused until the owner says yes to exactly that software; a yes to one install does not cover another; listing and asking about software stay free.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::installing software or running a downloaded program is refused until the owner says yes to exactly that software"
+    },
+    {
+      "id": "TC-002-settings-run-the-installed-floor",
+      "acId": "AC-1901-1",
+      "description": "core/settings.json, laid down byte for byte, run as Claude Code documents its hooks: every tool use runs the installed pre-tool-use.py and every owner message the installed user-prompt-submit.py, as /usr/bin/python3 and never a python3 on PATH, under SQUIRE_HOME or the default Squire home when it is unset; a send through the settings waits for the owner yes given through them; a missing, unreadable or hung pre-tool-use.py blocks even a read.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the Claude Code settings in core run the installed floor with /usr/bin/python3 on every tool use and every owner message, and a missing, unreadable or hung floor blocks the call"
+    },
+    {
+      "id": "TC-002-every-send-route-is-asked",
+      "acId": "AC-1901-1",
+      "description": "Read-only commands, alone or joined, stay free; an unknown tool, a browser click, an encoded command, python opening a socket, sh -c, eval, ssh with a command, git push, an AppleScript send, curl with data and no -X, curl -G with data, wget --post-data, scp, rsync to a host, nc, a send joined by ; or && or inside $(...), /usr/bin/curl and env X=1 curl are each blocked naming the target until the owner says yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a send by any route is asked, naming its target: unknown and browser tools, encoded, nested and joined commands, other network tools and other spellings of curl"
+    },
+    {
+      "id": "TC-002-config-found-or-sends-blocked",
+      "acId": "AC-1901-1",
+      "description": "With SQUIRE_HOME unset the floor uses the config in the default Squire home under HOME; a missing timeout means 600 seconds and an unknown key is ignored; a config that is missing, not JSON, without ownerFolder, with a relative ownerFolder, or with a timeout of 0, \"600\" or above 86400 blocks a send with a reason naming squire.json, before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the floor reads its config from the default Squire home when SQUIRE_HOME is unset, and blocks every send when the config is missing or wrong"
+    },
+    {
+      "id": "TC-002-bad-event-or-ledger-fails-closed",
+      "acId": "AC-1901-1",
+      "description": "An event that is not JSON, empty, without tool_name or for another hook is blocked with exit 2, a reason and no traceback; with the approvals ledger corrupt or unreadable a send stays blocked even after the owner yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::an event the floor cannot read, or a ledger it cannot read or trust, blocks the call with a reason and never a traceback"
+    },
+    {
+      "id": "TC-002-floor-paths-never-writable",
+      "acId": "AC-1901-1",
+      "description": "Writing, editing, copying over, deleting or rewriting from the shell the installed core, the Squire home config or any new file in the Squire home, directly or through a link in the owner folder, and writing, editing, emptying, replacing, moving, deleting or sed-editing the approvals ledger and the floor job records, through .., a case-changed spelling or a link pointed at them, are blocked before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write the installed core, the Squire home or its config, the approvals ledger or the floor job records, by any path or tool, yes or no"
+    },
+    {
+      "id": "TC-002-owner-folder-through-a-link",
+      "acId": "AC-1901-4",
+      "description": "With ownerFolder configured as a link, deleting and overwriting owner files by their real paths are asked and a new file is free; a request times out on the 2 seconds of the core config, never the 999999 of the owner squire.json.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::with the owner folder configured through a link, a delete or overwrite by the real path is still asked, and the request times out on the core timeout, never the owner timeout"
+    },
+    {
+      "id": "TC-002-yes-covers-exactly-its-call",
+      "acId": "AC-1901-2",
+      "description": "The same call is the same item whatever the order of its keys or the Bash description; one Bash call is one item; a body changed after the yes is blocked; a consumed yes is gone; in five rounds two attempts started at once after one yes let exactly one through.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a yes covers exactly the call it answered: a changed body voids it, a consumed yes is gone, and two attempts at once after one yes let exactly one through"
+    },
+    {
+      "id": "TC-002-bare-yes-needs-one-open-request",
+      "acId": "AC-1901-2",
+      "description": "Each block reason shows its request id as request <id>; with two requests open a bare yes answers neither and the next block reason lists both ids; yes <id> answers that request only; with one left open a bare yes answers it.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a bare yes answers only when one request is open: with two open it answers neither, the next block lists both, and yes with a request id answers that one"
+    },
+    {
+      "id": "TC-002-only-the-owner-answers",
+      "acId": "AC-1901-2",
+      "description": "The session piping or feeding a forged yes into the installed user-prompt-submit.py, or running lay-down, is blocked before and after a yes and the pending send stays blocked; \"yes, but not that one\", a yes with nothing open, a yes in another session, a yes left unused past the timeout and a yes the ledger could not record approve nothing.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::only the owner message itself answers: a forged answer or a lay-down run by the session is blocked, and a qualified yes, a yes with nothing open, a yes from another session, an expired yes or an unrecorded yes approve nothing"
+    },
+    {
+      "id": "TC-002-incoming-message-is-untrusted",
+      "acId": "AC-1901-3",
+      "description": "A job that read workspace/inbox/offer.eml and the owner profile cannot send: the refusal names the message, the recipient and says the work must be split, and a yes does not change it.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::an incoming message is untrusted input: reading it and the owner profile and then sending is refused as one job, naming the message and the send and saying the work must be split"
+    },
+    {
+      "id": "TC-002-rule-of-two-classes",
+      "acId": "AC-1901-3",
+      "description": "Web pages, web searches, mail read from the mailbox, files under workspace/inbox, quarantined files and unknown tool results are untrusted; reads under operator, state, reference and workspace/files, from a tool or the shell, and a secret through the helper (a run that first waits for the owner's yes, naming the secret) are private; a send, a delete, an install and a web fetch carrying data are outside actions: any one of each in a job is refused as one job, naming the source and the action and saying to split the work, before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::every untrusted source, every private thing and every outside action counts toward the Rule of Two"
+    },
+    {
+      "id": "TC-002-other-tools-are-asked",
+      "acId": "AC-1901-4",
+      "description": "git clean, git reset --hard, sed -i, cp over, chmod, a move to the Trash, a rename away (naming both paths), Edit, MultiEdit and NotebookEdit, overwriting the owner squire.json, state/now.md, an overlay and .history/HEAD, a Write over an empty file, ln -sf over a link, dd, a shell >, python3 -c, a case-changed spelling and relative paths from a cwd outside the owner folder are each asked naming the file, which is unchanged until the yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::changing an owner file by any other tool or command is asked, and the file is unchanged until the yes"
+    },
+    {
+      "id": "TC-002-other-installs-are-asked",
+      "acId": "AC-1901-5",
+      "description": "npx, pnpm dlx, uv tool install, cargo install, gem install, go install, opening a .dmg, .pkg or .app, running a quarantined file, brew upgrade, pip3 install -U, fetching a script and running it in a later call, sudo before any command and a new plist in ~/Library/LaunchAgents are each asked, naming the software, until the owner says yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::every other way of installing or running new software is asked, naming the software: other package managers, disk images and apps, quarantined files, upgrades, a script fetched earlier, sudo and a new login item"
+    },
+    {
+      "id": "TC-002-further-web-fetch-refused",
+      "acId": "AC-1901-3",
+      "description": "In a job that read a web page and the owner's profile, a WebFetch carrying data in its path, in its host, or no data at all is refused as one job, saying to split the work and naming the source and the host, before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::in a job holding untrusted input and private things, any further web fetch is refused as one job, whether data rides in its path, its host or nowhere"
+    },
+    {
+      "id": "TC-002-fetch-carrying-data-is-a-send",
+      "acId": "AC-1901-1",
+      "description": "In a job that read the owner's profile, a WebFetch carrying data in its path or in its host is blocked, naming the host, until the owner says yes to it, then proceeds.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::in a job holding the owner private things, a web fetch carrying data in its path or its host is a send and waits for the owner yes"
+    },
+    {
+      "id": "TC-002-inbox-read-by-scope-is-untrusted",
+      "acId": "AC-1901-3",
+      "description": "A recursive grep over the owner's folder, the Grep tool in content mode over workspace or the owner's folder, and cat through a glob matching workspace/inbox each proceed and mark the job untrusted: after the owner's profile is read, a send is refused as one job, saying to split the work and naming the read and the recipient, before and after a yes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a read whose scope takes in the inbox, through a parent folder, a recursive or content search or a glob, makes the job untrusted as a direct read does"
+    },
+    {
+      "id": "TC-002-claude-settings-never-writable",
+      "acId": "AC-1901-1",
+      "description": "A Write, Edit or shell write of .claude/settings.json or .claude/settings.local.json in the owner's folder, in a folder under it or in the Squire home, by any spelling, is blocked before and after a yes, the refusal naming the safety floor.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write Claude Code settings under the owner folder or the Squire home, by any tool, yes or no, and the refusal names the safety floor"
+    }
+  ],
+  "status": "draft"
+}

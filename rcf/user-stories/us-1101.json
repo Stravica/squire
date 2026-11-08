@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-11-07T17:40:14.622Z",
+  "updatedAt": "2026-11-07T17:40:15.151Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to back up my folder every night and to fix what it can by itself before asking me to send a ticket",
+  "soThat": "I lose nothing and rarely need help",
+  "description": "The health check shown as a page, the Restart app, the nightly backup to iCloud Drive, and guided fixes from the known-fixes list.",
+  "usId": "US-1101",
+  "prdId": "PRD-001",
+  "reqId": "REQ-011",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Looks after itself: a nightly backup, and fixing itself first",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1101-1",
+      "description": "The Squire owner's folder is backed up to iCloud Drive every night.",
+      "testable": true,
+      "given": "A file added to and a file removed from the Squire owner's folder since the last backup",
+      "when": "The nightly backup runs",
+      "then": "The new file is copied into the iCloud backup folder, and the removed file is moved to a dated archive folder in the backup, never deleted.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1101-2",
+      "description": "Squire tries to fix a problem itself before anything else.",
+      "testable": true,
+      "given": "A fault the health check detects that has a fix on the known-fixes list",
+      "when": "Squire handles the fault",
+      "then": "Squire applies the known fix, with the Squire owner's yes where the fix changes anything, checks that it worked, and offers no ticket; a ticket is offered only when the fix does not work.",
+      "verification": "testOnly"
+    }
+  ]
+}

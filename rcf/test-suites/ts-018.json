@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-11-07T17:40:43.274Z",
+  "updatedAt": "2026-11-07T17:40:43.274Z",
+  "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1801-1",
+    "AC-1801-2"
+  ],
+  "id": "TS-018",
+  "usId": "US-1801",
+  "title": "No details to websites; no sign-in without a yes; visible window and takeover",
+  "testCases": [],
+  "status": "draft"
+}

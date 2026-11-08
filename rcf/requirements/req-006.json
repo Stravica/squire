@@ -1,0 +1,46 @@
+{
+  "createdAt": "2026-11-07T17:39:53.975Z",
+  "updatedAt": "2026-11-07T17:39:53.979Z",
+  "description": "Squire gets to know the Squire owner through a guided first conversation and keeps a profile, a house style and a learning log. The Squire owner names their Squire and gives it a personality, which it keeps. Plain words, short answers and a teach-me mode are reviewed behaviour, not criteria.",
+  "category": "functional",
+  "domain": "persona",
+  "priority": "must",
+  "tags": [
+    "area:A6"
+  ],
+  "reqId": "REQ-006",
+  "prdId": "PRD-001",
+  "title": "Gets to know you: profile, house style, learning, teach-me mode, name and personality",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "webUi",
+      "httpApi"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:53.977Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "httpApi",
+        "match": "Get"
+      },
+      {
+        "source": "title",
+        "shape": "webUi",
+        "match": "style"
+      },
+      {
+        "source": "description",
+        "shape": "httpApi",
+        "match": "get"
+      },
+      {
+        "source": "description",
+        "shape": "webUi",
+        "match": "style"
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-07T17:40:41.931Z",
+  "updatedAt": "2026-11-07T17:40:41.931Z",
+  "purpose": "Drives a session past the context threshold with seeded work, checks the handover is written before the prompt, and checks the seeded work is recovered after /clear.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-501-1"
+  ],
+  "id": "TS-013",
+  "usId": "US-501",
+  "title": "Handover saved before the /clear prompt; work recovered after /clear",
+  "testCases": [],
+  "status": "draft"
+}

@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-11-07T17:39:55.825Z",
+  "updatedAt": "2026-11-07T17:39:55.829Z",
+  "description": "Squire records the plan the Squire owner declares, reads usage against it and paces its work. It warns before heavy jobs, never spends beyond the plan without a yes, and says once when an upgrade would really help.",
+  "category": "functional",
+  "domain": "plan",
+  "priority": "must",
+  "tags": [
+    "area:A13"
+  ],
+  "reqId": "REQ-013",
+  "prdId": "PRD-001",
+  "title": "Knows its Claude plan and paces itself",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "none"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:55.828Z"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-11-07T17:40:19.425Z",
+  "updatedAt": "2026-11-07T18:02:38.294Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to tell me before a big job (deep research, building an app or a site, video work) and wait for my yes",
+  "soThat": "a big job never uses up my allowance without my say",
+  "description": "The heavy-job journey: classify the job, read usage, warn, yes or no, run. It serves deep research, build me an app, video and audio work and site builds. Default: above 90% usage in either window a heavy job needs a second yes.",
+  "usId": "US-1302",
+  "prdId": "PRD-001",
+  "reqId": "REQ-013",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Heavy jobs: warned first, started on a yes",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1302-1",
+      "description": "Before a big job, Squire warns the Squire owner and waits for their yes.",
+      "testable": true,
+      "given": "A heavy job: deep research, building an app, building a site, or video and audio work",
+      "when": "The job is about to start",
+      "then": "Squire warns the Squire owner first and the job starts only on a yes; above 90% usage in either window it needs a second yes; no path starts it without the yes.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1302-2",
+      "description": "A heavy job the Squire owner approved ends with a visible result, or keeps its work when it fails; shipping an app still needs its own yes.",
+      "testable": true,
+      "given": "Approved deep research, and an approved one-page brief for an app",
+      "when": "The job runs, and the network fails, the job times out or a step of the build fails",
+      "then": "Approved research ends with a result the Squire owner can see; a network or time-out failure is explained and the work so far is kept so it can resume. An approved app brief runs through plan, build, test and preview; a failure keeps the work; shipping the app still needs its own yes.",
+      "verification": "testOnly"
+    }
+  ]
+}

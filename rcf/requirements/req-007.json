@@ -1,0 +1,40 @@
+{
+  "createdAt": "2026-11-07T17:39:54.235Z",
+  "updatedAt": "2026-11-07T17:39:54.239Z",
+  "description": "Check-ins the Squire owner picks reach the Squire owner's own session through a documented way of finding it. When the session cannot be found with certainty, nothing is sent and the log says why.",
+  "category": "functional",
+  "domain": "wake-ups",
+  "priority": "must",
+  "tags": [
+    "area:A7"
+  ],
+  "reqId": "REQ-007",
+  "prdId": "PRD-001",
+  "title": "Wake-ups that find their own session",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "auth"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-07T17:39:54.238Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "auth",
+        "match": "session"
+      },
+      {
+        "source": "description",
+        "shape": "auth",
+        "match": "session"
+      },
+      {
+        "source": "description",
+        "shape": "auth",
+        "match": "session"
+      }
+    ]
+  }
+}

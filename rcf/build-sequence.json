@@ -3,9 +3,9 @@
   "prdId": "PRD-001",
   "version": "0.1.0",
   "status": "draft",
-  "title": "Initial build sequence",
-  "buildPhilosophy": "TODO: describe the build philosophy.",
+  "title": "Squire v0.1 build sequence",
+  "buildPhilosophy": "Seven rounds, built one at a time and in order, each a build spec here (Round 1 to Round 7). Every round runs DEFINE, BUILD, REVIEW, TEST and FINALISE. A criterion is scheduled in more than one round when a later round builds another surface of the same promise.",
   "generationStrategy": "dependencyFirst",
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T17:39:52.405Z"
 }

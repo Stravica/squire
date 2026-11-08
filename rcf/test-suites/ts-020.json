@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-11-07T18:27:50.610Z",
+  "updatedAt": "2026-11-07T19:18:39.223Z",
+  "purpose": "Lays core down from a release with the release's own lay-down, runs the installed floor and secret helper against the owner's folder, lays core down again and compares the owner's folder byte for byte. The release is a parameter so the verifier can point it at a packed release.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-101-1",
+    "AC-101-2"
+  ],
+  "id": "TS-020",
+  "usId": "US-101",
+  "title": "Round 1 journey: core laid down twice beside the owner's folder",
+  "testCases": [
+    {
+      "id": "TC-020-journey-lay-down-twice",
+      "acId": "AC-101-1",
+      "description": "End to end: core laid down from the release and laid down again after the floor has run leaves the owner's folder, the floor's records included, byte for byte the same.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    },
+    {
+      "id": "TC-020-journey-health-names-overlays",
+      "acId": "AC-101-2",
+      "description": "End to end: after core is laid down again, the installed health check names every overlay planted at an installed core path and exits 1, while the installed floor still blocks the send.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    }
+  ],
+  "status": "draft"
+}

@@ -4,13 +4,33 @@
   "version": "0.1.0",
   "status": "draft",
   "systemOverview": {
-    "executiveSummary": "TODO: one-paragraph system overview.",
-    "systemPurpose": "TODO: state the system purpose.",
-    "architecturalApproach": "TODO: state the architectural approach.",
+    "executiveSummary": "Squire is a kept-alive Claude Code session on the Squire owner's Mac, set up by an installer and looked after by launchd agents. Core (Squire's own code and rules) comes only from releases signed by Stravica and is replaced whole; the Squire owner's folder holds everything personal and is never touched by an update.",
+    "systemPurpose": "Give a Squire owner who is not technical a safe, always-on AI personal assistant on their own Mac and their own Claude plan.",
+    "architecturalApproach": "Python and Swift, run by launchd agents; Node is used only for the development tool and never ships. Core and the Squire owner's folder are kept apart: core is replaced whole by a signed release and rolled back if its health check fails, and the Squire owner's folder is read at named points, where an overlay may change core behaviour except the safety rules. The safety rules (approval per item, the Rule of Two, nothing destructive and no install without a yes, secrets in the Mac's Keychain) are enforced by core's hooks. Pages are served on the Mac only. Support tickets carry allow-listed diagnostics to an intake on the product site; no shared key ships in any install.",
     "keyCapabilities": [
-      "TODO: list at least one key capability."
+      "A1. Core and the Squire owner's folder kept apart",
+      "A2. The installer, with no Terminal",
+      "A3. The Claude sign-in, with the free-plan wall and the Pro route",
+      "A4. Always on: one session, reachable from the Mac and the phone",
+      "A5. Context watch: the handover note and the /clear prompt",
+      "A6. Gets to know you: profile, house style, learning, teach-me mode, name and personality",
+      "A7. Wake-ups that find their own session",
+      "A8. Voice notes, transcribed on the Mac",
+      "A9. Pages on the Mac only, with the comment panel",
+      "A10. The home dashboard",
+      "A11. Looks after itself: health check, one-click restart, nightly iCloud backup, guided fixes",
+      "A12. Websites: the one-off safe Cloudflare set-up, a deploy-only token, preview first, live on yes",
+      "A13. Knows its Claude plan and paces itself",
+      "A14. Signed updates: plain-words changelog, yes first, health check, rollback",
+      "A15. Deep research, always warned first",
+      "A16. Build me an app: a one-page brief, coding standards, plan, build, test, preview, ship",
+      "A17. Video and audio: YouTube captions and the Squire owner's own files",
+      "A18. A browser it can drive: its own window, never signs in without a yes",
+      "A19. Safety, always on",
+      "A20. Support: self-fix first, ticket preview, the intake and the private tracker",
+      "A21. The public repository: fresh, with a pre-push privacy scan and a resale-stopping licence"
     ]
   },
   "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "updatedAt": "2026-11-07T17:39:52.144Z"
 }

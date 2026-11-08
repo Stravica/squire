@@ -1,0 +1,16 @@
+{
+  "cnId": "CN-004",
+  "path": "core/lib/squire.py#Ledger",
+  "implementsAcIds": [
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-3",
+    "AC-1901-4",
+    "AC-1901-5"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-07T19:47:17.310Z",
+  "updatedAt": "2026-11-07T19:47:17.310Z"
+}

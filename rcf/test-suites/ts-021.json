@@ -1,0 +1,54 @@
+{
+  "createdAt": "2026-11-07T18:27:50.874Z",
+  "updatedAt": "2026-11-07T18:27:59.682Z",
+  "purpose": "On a laid-down core with overlays at every core path, the installed hooks block a send until the owner's yes and allow it once, block a delete and an install, refuse a send in a job that read the web and the owner's profile, refuse the session rewriting the floor or Squire's config, and still block after core is laid down again.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-1901-1",
+    "AC-1901-2",
+    "AC-1901-3",
+    "AC-1901-4",
+    "AC-1901-5"
+  ],
+  "id": "TS-021",
+  "usId": "US-1901",
+  "title": "Round 1 journey: the installed floor in force",
+  "testCases": [
+    {
+      "id": "TC-021-journey-send-waits-for-yes",
+      "acId": "AC-1901-1",
+      "description": "End to end: on the installed floor an email send is blocked until the owner's yes, then proceeds; the session cannot rewrite the installed floor or Squire's config.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    },
+    {
+      "id": "TC-021-journey-one-yes-one-send",
+      "acId": "AC-1901-2",
+      "description": "End to end: one yes lets the send proceed once; the same send again is blocked, and still blocked after core is laid down again.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    },
+    {
+      "id": "TC-021-journey-rule-of-two",
+      "acId": "AC-1901-3",
+      "description": "End to end: a session that read a web page and the owner's profile cannot send.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    },
+    {
+      "id": "TC-021-journey-delete-waits",
+      "acId": "AC-1901-4",
+      "description": "End to end: deleting an owner file is blocked on the installed floor.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    },
+    {
+      "id": "TC-021-journey-install-waits",
+      "acId": "AC-1901-5",
+      "description": "End to end: installing software is blocked on the installed floor.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-1-journey.test.js::on a laid-down core the floor holds through a send, a delete, an install, a secret and a second lay-down"
+    }
+  ],
+  "status": "draft"
+}
