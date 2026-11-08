@@ -263,13 +263,13 @@ class Floor:
 
     # The reads the floor resolves to literal paths, by command: its options
     # that take no value, the options that take the next word, and the
-    # option that makes it read a folder's whole tree. find has its own.
+    # options that make it read a folder's whole tree. find has its own.
     READS = {
         'cat': ('benstuv', '', ''),
         'head': ('', 'nc', ''),
         'tail': ('r', 'nc', ''),
         'wc': ('lwcm', '', ''),
-        'grep': ('riclnhHvwxosqEF', 'e', 'r'),
+        'grep': ('riclnhHvwxosqEF', 'e', 'rR'),
         'ls': ('laAh1RtrSdF', '', 'R'),
         'stat': ('lsxq', 'f', ''),
         'file': ('biIh', '', ''),
@@ -499,30 +499,42 @@ class Floor:
         free = self.is_free(argv) and not elsewhere
         if (not free or not plain) and any(self.is_floor(p) for p in paths):
             return 'never', self.NEVER_FLOOR, []
+        # Every word of a program, or of a read the list cannot resolve, may
+        # be a path: each literal path in it keeps its mark. A program's word
+        # marks the job where it names the inbox or a private folder, or a
+        # path in one; a folder holding them marks only a read.
+        every = argv[1:] + [Word(t.split('=', 1)[1], getattr(t, 'literal', True)) for t in argv[1:] if '=' in t]
         if argv[0] == 'cd':
-            return 'model', '', []
+            return 'model', '', self.marks(argv, every, holding=False)
         if not free:
-            return ('read' if elsewhere else 'ask'), '', []
-        verdict, scope = self.reach(argv)
+            return ('read', '', []) if elsewhere else ('ask', '', self.marks(argv, every, holding=False))
+        verdict, operands, recursive = self.reach(argv)
+        if verdict == 'model' and argv[0] not in self.TEXT:
+            operands = every
+        return verdict, '', self.marks(argv, operands, recursive)
+
+    def marks(self, argv, words, recursive=False, holding=True):
+        """What these words take in as paths: a literal word is its path, an
+        unresolved one the paths its glob matches; an empty word is none."""
         taints = []
-        for word, recursive in scope:
+        for word in words:
             for given in ([word] if getattr(word, 'literal', True) else self.expand(word)):
-                path = self.path(given, strict=False)
+                path = self.path(given, strict=False) if given else None
                 if path:
-                    taints += self.taints_of(path, ' '.join(argv), recursive)
-        return verdict, '', taints
+                    taints += self.taints_of(path, ' '.join(argv), recursive, holding)
+        return taints
 
     def reach(self, argv):
         """A command on the free set, by the list: ('free' when the list
-        resolves it, else 'model'; [(word, recursive)] the operands it reads
-        as paths). Words that are not paths (a pattern, text to print) are
-        never among them."""
+        resolves it, else 'model'; the operands it reads as paths; whether it
+        reads their whole trees). Words that are not paths (a pattern, text
+        to print) are never among them."""
         command, args = argv[0], argv[1:]
         clear = all(getattr(word, 'literal', True) for word in argv)
         if command in self.TEXT:
-            return ('free' if clear and self.text_known(command, args) else 'model'), []
+            return ('free' if clear and self.text_known(command, args) else 'model'), [], False
         if command in ('brew', 'pip3'):
-            return 'free', []
+            return 'free', [], False
         if command == 'find':
             return self.reach_find(args, clear)
         flags, valued, tree = self.READS[command]
@@ -535,6 +547,7 @@ class Floor:
             else:
                 # Past the first operand, a word beginning with - is unresolved.
                 known = known and not operands
+                recursive = recursive or not word.startswith('--') and any(letter in tree for letter in word[1:])
                 if command == 'grep' and word == '--':
                     ended = True
                 elif command in ('head', 'tail') and word[1:].isdigit():
@@ -544,7 +557,7 @@ class Floor:
                     if word == '-e':
                         pattern = args[i]
                 elif len(word) > 1 and all(letter in flags for letter in word[1:]):
-                    recursive = recursive or bool(tree) and tree in word
+                    pass
                 else:
                     known = False
             i += 1
@@ -556,7 +569,7 @@ class Floor:
             known = known and bool(operands)
         if command == 'ls' and not operands:
             operands = [Word('.')]
-        return ('free' if known and clear else 'model'), [(word, recursive) for word in operands]
+        return ('free' if known and clear else 'model'), operands, recursive
 
     def reach_find(self, args, clear):
         """find: its folders first, then an expression of the listed
@@ -570,7 +583,7 @@ class Floor:
             if takes is None or i + takes >= len(args):
                 known = False
             i += 1 + (takes or 0)
-        return ('free' if known and clear else 'model'), [(word, True) for word in paths]
+        return ('free' if known and clear else 'model'), paths, True
 
     def text_known(self, command, args):
         """echo, printf, pwd and date read no file: only their listed options,
@@ -627,14 +640,16 @@ class Floor:
     def is_keychain(self, path):
         return bool(self.keychain) and Paths.within(path, self.keychain)
 
-    def taints_of(self, path, source, recursive=False):
+    def taints_of(self, path, source, recursive=False, holding=True):
         """What a read of path takes in: a read whose scope holds the owner's
-        private things or the inbox, a folder above them included, takes them
-        in; so does a read of anything downloaded from the internet."""
+        private things or the inbox, a folder above them included (unless
+        holding is False), takes them in; so does a read of anything
+        downloaded from the internet."""
         found = []
-        if any(Paths.overlap(path, private) for private in self.private):
+        near = Paths.overlap if holding else Paths.within
+        if any(near(path, private) for private in self.private):
             found.append(('private', source))
-        if Paths.overlap(path, self.inbox) or self.quarantined(path, recursive):
+        if near(path, self.inbox) or self.quarantined(path, recursive):
             found.append(('untrusted', source))
         return found
 
@@ -650,7 +665,7 @@ class Floor:
             above.append(os.path.dirname(above[-1]))
         runs = [['/usr/bin/xattr', '-s', '-p', cls.QUARANTINE] + above]
         if recursive and os.path.isdir(path):
-            runs.append(['/usr/bin/xattr', '-r', '-s', '-p', cls.QUARANTINE, path])
+            runs.append(['/usr/bin/find', path, '-xattrname', cls.QUARANTINE, '-print', '-quit'])
         for argv in runs:
             r = subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             if r.stdout:
