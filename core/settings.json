@@ -23,6 +23,29 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -B \"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}/core/hooks/session-start.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -B \"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}/core/hooks/config-change.py\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
-  }
+  },
+  "crossSessionInbound": "accept"
 }
