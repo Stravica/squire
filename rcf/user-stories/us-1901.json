@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-08T10:58:22.813Z",
+  "updatedAt": "2026-11-08T11:19:29.201Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -55,6 +55,51 @@
       "given": "No yes from the Squire owner for a given piece of software. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
       "when": "Squire, or a tool it calls, tries to install a package or run a downloaded program",
       "then": "The install or run is refused and nothing is installed; once the Squire owner says yes to exactly that software, it may proceed.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-6",
+      "description": "When Squire cannot tell that a read stays out of the inbox, it asks the Squire owner first, and a read the Squire owner allows counts as untrusted input and as the Squire owner's private things.",
+      "testable": true,
+      "given": "A job in which Squire reads with a command or tool whose reach it cannot resolve to literal paths outside the inbox (a pattern, a brace, a variable, a change of folder, a search with no folder named, an option it does not know), and no small model has cleared the read; or a job in which Squire runs a program (a script, an interpreter, a redirect, a command outside the ones it knows). This is the Squire owner's ruling for reads Squire cannot decide. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire tries the read or the program, and the Squire owner then says yes to it",
+      "then": "The read or the program waits for the Squire owner's yes, naming the command. After the yes, the read runs and the job holds untrusted input and the Squire owner's private things, so a send in that job is refused as one job, naming the read and the send. The program runs and the job holds the Squire owner's private things, and a later send in that job waits for its own yes, its question naming the program.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-7",
+      "description": "Squire works out where a read reaches from the literal paths in it, and marks the job by what the read takes in, without asking anyone.",
+      "testable": true,
+      "given": "A read by a command Squire knows, with options Squire knows, whose paths are written out (absolute, from the home folder, or relative to the working folder of the moment), including through a link, a parent folder or another spelling of the same path. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire runs the read",
+      "then": "It runs without a yes and without asking a model. A read that reaches only outside the inbox does not make the job hold untrusted input (it holds the Squire owner's private things where the read reaches into them, as before), so a later send waits only for its own yes; a read that reaches the inbox, a file in it or a folder holding it makes the job hold untrusted input, as a direct read of the inbox does. Words that are not paths, such as a search pattern or text to print, never count as paths.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-8",
+      "description": "For a plain read Squire cannot resolve, Squire may ask a small model one question about the inbox, and only a clear answer lets the read run without the Squire owner's yes.",
+      "testable": true,
+      "given": "A plain read (no redirection, substitution, subshell or background job; only commands Squire knows and changes of folder) whose reach Squire cannot resolve, on a Mac where the claude command line can be found. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire tries the read",
+      "then": "Squire asks a small model, with its tools and hooks turned off, whether the command, run from the working folder, reads anything under the inbox, giving it the command and the working folder and nothing else. A bare no lets the read run without a yes, and the job holds the Squire owner's private things but not untrusted input; a bare yes lets it run as an inbox read, and the job holds both. Unsure, any other answer, no answer, an error, a timeout, no claude command line or no network leaves the read waiting for the Squire owner's yes, as when no model is asked. The answer never changes a refusal, a send, a delete, an install or a write, never reaches a program run, and never removes a mark.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-9",
+      "description": "Every tool Squire reads with is marked by the same rule as the shell.",
+      "testable": true,
+      "given": "A read by the Read, Grep or Glob tool, or by another tool that can return files or file names (Monitor, LSP), over the inbox, a folder outside it that holds none of the Squire owner's private things, a private folder, or a path relative to the working folder of the moment. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire runs it",
+      "then": "A read resolved to the inbox, a file in it or a folder holding it makes the job hold untrusted input; a read resolved outside it runs without a yes and makes the job hold the Squire owner's private things only where it reaches them; a read Squire cannot resolve (a Glob pattern that is absolute or climbs out of its folder, and every Monitor or LSP call) waits for the Squire owner's yes, and once allowed the job holds untrusted input and private things. A tool Squire does not know still counts as untrusted input.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-10",
+      "description": "Asking the small model never holds Squire up: an unresolved read gets its outcome within 12 seconds, and no model process outlives it.",
+      "testable": true,
+      "given": "An unresolved plain read while the small model answers slowly, never answers, or leaves a child holding its output open; a few such reads in one job, a run of them, or reads in two jobs at once. The floor's hook runs with the time limit core's Claude Code settings give it.",
+      "when": "Squire tries the read",
+      "then": "Within 12 seconds of the call the read runs or waits for the Squire owner's yes, and the model's process and every process it started are gone; core's settings give the hook a time limit of at least 22 seconds, 10 seconds beyond that budget.",
       "verification": "testOnly"
     }
   ]
