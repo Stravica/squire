@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "head": "b7d363e0d04a514ab032cdd1d3cc9e8cf140288c",
+  "scope": "reviewVerdict",
+  "criteria": [
+    {
+      "acId": "AC-1901-1",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/hooks/user-prompt-submit.py:1:1: unsupported file type .py"
+    }
+  ],
+  "result": "blocked",
+  "totals": {
+    "criteria": 1,
+    "structuralPassed": 0,
+    "mutants": 0,
+    "killed": 0,
+    "survived": 0,
+    "timeout": 0,
+    "notApplicable": 0,
+    "blocked": 1
+  },
+  "wallMs": 67,
+  "node": "v24.14.0"
+}

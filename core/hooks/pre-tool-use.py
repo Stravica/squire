@@ -474,7 +474,7 @@ class Floor:
         kinds = {v[0] for v in verdicts}
         if shell.plain and kinds <= {'free'}:
             return 'free', '', taints
-        if os.path.basename(self.config.ledger_path).lower() in command.lower():
+        if Paths.fold(os.path.basename(self.config.ledger_path)) in Paths.fold(command):
             return 'never', self.NEVER_FLOOR.format(what=command), []
         if shell.plain and kinds <= {'free', 'model'}:
             return 'model', command, taints
@@ -649,8 +649,9 @@ class Floor:
 
     def is_settings(self, path):
         """Claude Code's settings for a folder in the owner's: a hook switched
-        off there, or SQUIRE_HOME pointed elsewhere, would leave no floor."""
-        folder, name = os.path.split(path.lower())
+        off there, or SQUIRE_HOME pointed elsewhere, would leave no floor.
+        Its name is folded as the volume folds it."""
+        folder, name = os.path.split(Paths.fold(path))
         return os.path.basename(folder) == '.claude' and fnmatch.fnmatchcase(name, 'settings*.json') \
             and Paths.within(path, self.owner)
 

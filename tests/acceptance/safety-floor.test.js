@@ -693,6 +693,71 @@ test('the session can never write the approvals ledger by a spelling the disk fo
   });
 });
 
+// Shows that the disk opens the folded spelling as the real file, or skips,
+// naming why, on a volume that does not fold. True when the test may go on.
+function foldedSpellingOpens(t, real, folded) {
+  let foldedStat;
+  try {
+    foldedStat = fs.statSync(folded);
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      t.skip(`the volume holding the test world does not fold the long s (U+017F) to s: ${folded} names no file`);
+      return false;
+    }
+    throw e;
+  }
+  assert.equal(foldedStat.ino, fs.statSync(real).ino,
+    `the premise: on this volume ${folded} must open ${real} itself; it opened inode ${foldedStat.ino}`);
+  return true;
+}
+
+// Refused as a file of the floor before and after a yes: blocked, naming the
+// safety floor, with no request the owner could answer.
+function refusedAsFloorFile(world, s, call, what) {
+  for (const when of ['with no yes', 'even after the owner said yes']) {
+    if (when !== 'with no yes') w.ownerSays(world, s, 'yes');
+    const r = w.attempt(world, s, call);
+    w.assertBlocked(r, `${what}, ${when}`);
+    assert.equal(w.requestIdIn(r.stderr), null,
+      `${what}, ${when}: a file of the floor is refused, never asked; got a request the owner could answer: ${w.describe(r)}`);
+    assert.match(r.stderr, /floor/i, `${what}, ${when}: the refusal must name the safety floor; got ${w.describe(r)}`);
+  }
+}
+
+test('the session can never write Claude Code settings in the owner folder by a spelling the disk folds, the long s in settings, by Write, Edit or the shell, yes or no, and the refusal names the safety floor and asks nothing', { timeout: 120000 }, (t) => {
+  const world = floorWorld(t);
+  const o = (rel) => path.join(world.owner, rel);
+  fs.mkdirSync(o('.claude'), { recursive: true });
+  fs.writeFileSync(o('.claude/settings.json'), '{}\n');
+  const folded = o('.claude/\u017Fettings.json');
+  if (!foldedSpellingOpens(t, o('.claude/settings.json'), folded)) return;
+  const off = JSON.stringify({ disableAllHooks: true });
+  const cases = [
+    ['writing .claude/settings.json by the long s', tools.write(folded, off)],
+    ['editing .claude/settings.json by the long s', tools.edit(folded, '{}', off)],
+    ['writing a new .claude/settings.local.json by the long s', tools.write(o('.claude/\u017Fettings.local.json'), off)],
+    ['writing .claude/settings.json by the long s from the shell', tools.bash(`echo '${off}' > .claude/\u017Fettings.json`)],
+  ];
+  cases.forEach(([what, call], i) => refusedAsFloorFile(world, `session-settings-long-s-${i}`, call, what));
+});
+
+test('the session can never write the approvals ledger from the shell by a name the disk folds, the long s in approvals, where the floor cannot resolve its folder, yes or no, and the refusal names the safety floor and asks nothing', { timeout: 120000 }, (t) => {
+  const world = floorWorld(t);
+  // The floor keeps its ledger once a request is raised.
+  w.assertBlocked(w.attempt(world, 'session-ledger-name-records', tools.gmailSend('alice@example.com', 'Order', 'Ready.')),
+    'sending an email', 'alice@example.com');
+  const ledger = w.ledgerOf(world);
+  assert.ok(fs.existsSync(ledger), 'the approvals ledger is state/approvals.jsonl in the owner folder');
+  if (!foldedSpellingOpens(t, ledger, path.join(world.owner, 'state', 'approval\u017F.jsonl'))) return;
+  const name = 'approval\u017F.jsonl';
+  const cases = [
+    ['appending to the ledger by the long s after a change of folder', tools.bash(`cd state && echo '{"answer":"yes"}' >> ${name}`)],
+    ['emptying the ledger by the long s after a change of folder', tools.bash(`cd state && truncate -s 0 ${name}`)],
+    ['appending to the ledger by the long s through a shell variable', tools.bash(`D=state; echo '{"answer":"yes"}' >> "$D/${name}"`)],
+  ];
+  cases.forEach(([what, call], i) => refusedAsFloorFile(world, `session-ledger-name-long-s-${i}`, call, what));
+});
+
 test('with the owner folder configured through a link, a delete or overwrite by the real path is still asked, and the request times out on the core timeout, never the owner timeout', { timeout: 120000 }, async (t) => {
   const world = floorWorld(t, { approvalTimeoutSeconds: 2 });
   const linked = path.join(world.root, 'owner-link');
