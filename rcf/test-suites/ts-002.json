@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-08T12:24:19.205Z",
+  "updatedAt": "2026-11-08T13:56:40.145Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -385,6 +385,48 @@
       "description": "In a job holding both marks, from a web page and the profile or from one allowed unresolved read with no claude found, an unknown search tool, a program that only prints and osascript are each refused as one job, before and after a yes.",
       "status": "pending",
       "testPointer": "tests/acceptance/rule-of-two-marks.test.js::when Squire cannot show that a call stays inside the Mac, in a job holding untrusted input and private things it is refused as one job, yes or no: a tool it does not know, a program that only prints and a command outside the ones it knows"
+    },
+    {
+      "id": "TC-002-long-s-shell-inbox-marks-untrusted",
+      "acId": "AC-1901-7",
+      "description": "Premise first: on the test volume the long s spelling workſpace/inbox/offer.eml (U+017F) opens the planted mail itself, else the test skips with the reason. Then cat by that spelling runs free with no model asked, and the job holds untrusted input: after a profile read a send is refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a shell read of the planted mail by a spelling the disk folds, the long s in workspace, runs free with no model asked and leaves the job holding untrusted input"
+    },
+    {
+      "id": "TC-002-long-s-shell-state-marks-private",
+      "acId": "AC-1901-7",
+      "description": "Premise first: the long s spelling ſtate/now.md opens the owner state file itself, else skipped with the reason. Then cat by that spelling runs free with no model asked, and the job holds private things and no untrusted input: after a web search a send is refused as one job, after a profile read only asked.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a shell read of the owner state by a spelling the disk folds, the long s in state, runs free with no model asked and leaves the job holding private things and no untrusted input"
+    },
+    {
+      "id": "TC-002-long-s-inbox-then-profile-send-refused",
+      "acId": "AC-1901-7",
+      "description": "Premise first, as above. In one job: cat of the planted mail by the long s and a read of the owner profile each run free, then a send is refused as one job, yes or no, naming the read and the send; no model is asked.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::after a shell read of the planted mail by the long s and a read of the owner profile, a send is refused as one job, naming the read and the send"
+    },
+    {
+      "id": "TC-002-unwalkable-tree-asked-within-budget",
+      "acId": "AC-1901-7",
+      "description": "A small tree of empty folders resolves as before (a recursive grep is free, unmarked, and untrusted once a quarantined file sits deep in it). A tree of empty folders sized from a measured slice so that a full walk by /usr/bin/find, asking each entry for the download mark, does not finish inside 12 seconds (shown in the test, enlarged if it does), with nothing quarantined: grep -r over it gets its outcome within 12 seconds, asked with a request id, not blocked; after the yes it runs within 12 seconds and a send is refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a recursive read of a literal folder too large to walk for download marks inside the 12-second budget is asked within 12 seconds, never blocked by the time limit, and once allowed the job holds untrusted input and private things, while a tree small enough to walk resolves as before"
+    },
+    {
+      "id": "TC-002-long-s-read-tool-marks-untrusted",
+      "acId": "AC-1901-9",
+      "description": "Premise first, as above. A Read of the planted mail by the long s spelling runs free with no model asked and the job holds untrusted input; in one job that Read and a read of the owner profile leave a send refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a Read of the planted mail by a spelling the disk folds, the long s in workspace, runs free with no model asked and leaves the job holding untrusted input, so after a read of the owner profile a send is refused as one job"
+    },
+    {
+      "id": "TC-002-ledger-long-s-never-writable",
+      "acId": "AC-1901-1",
+      "description": "Premise first: the long s spelling ſtate/approvals.jsonl opens the approvals ledger itself, else skipped with the reason. A Write and an Edit of the ledger by that spelling are each blocked before and after a yes, naming the safety floor, with no request id: refused as a file of the floor, never asked.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write the approvals ledger by a spelling the disk folds, the long s in state, by Write or Edit, yes or no, and the refusal names the safety floor and asks nothing"
     }
   ],
   "status": "draft"

@@ -652,6 +652,47 @@ test('the session can never write the installed core, the Squire home or its con
   });
 });
 
+// The Mac's disk (APFS) folds the long s (U+017F) to s, as it folds case, so
+// ſtate/approvals.jsonl opens the floor's own ledger. The test first shows
+// that premise on the volume the world lives on, and skips, naming why, on a
+// volume that does not fold.
+test('the session can never write the approvals ledger by a spelling the disk folds, the long s in state, by Write or Edit, yes or no, and the refusal names the safety floor and asks nothing', { timeout: 120000 }, (t) => {
+  const world = floorWorld(t);
+  // The floor keeps its ledger once a request is raised.
+  w.assertBlocked(w.attempt(world, 'session-ledger-records', tools.gmailSend('alice@example.com', 'Order', 'Ready.')),
+    'sending an email', 'alice@example.com');
+  const ledger = w.ledgerOf(world);
+  assert.ok(fs.existsSync(ledger), 'the approvals ledger is state/approvals.jsonl in the owner folder');
+  const folded = path.join(world.owner, '\u017Ftate', 'approvals.jsonl');
+  let foldedStat;
+  try {
+    foldedStat = fs.statSync(folded);
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      t.skip(`the volume holding the test world does not fold the long s (U+017F) to s: ${folded} names no file`);
+      return;
+    }
+    throw e;
+  }
+  assert.equal(foldedStat.ino, fs.statSync(ledger).ino,
+    `the premise: on this volume ${folded} must open the approvals ledger itself; it opened inode ${foldedStat.ino}`);
+  const cases = [
+    ['writing the approvals ledger by the long s', tools.write(folded, '{"answer":"yes"}\n')],
+    ['editing the approvals ledger by the long s', tools.edit(folded, '"', '\'')],
+  ];
+  cases.forEach(([what, call], i) => {
+    const s = `session-ledger-long-s-${i}`;
+    for (const when of ['with no yes', 'even after the owner said yes']) {
+      if (when !== 'with no yes') w.ownerSays(world, s, 'yes');
+      const r = w.attempt(world, s, call);
+      w.assertBlocked(r, `${what}, ${when}`);
+      assert.equal(w.requestIdIn(r.stderr), null,
+        `${what}, ${when}: a file of the floor is refused, never asked; got a request the owner could answer: ${w.describe(r)}`);
+      assert.match(r.stderr, /floor/i, `${what}, ${when}: the refusal must name the safety floor; got ${w.describe(r)}`);
+    }
+  });
+});
+
 test('with the owner folder configured through a link, a delete or overwrite by the real path is still asked, and the request times out on the core timeout, never the owner timeout', { timeout: 120000 }, async (t) => {
   const world = floorWorld(t, { approvalTimeoutSeconds: 2 });
   const linked = path.join(world.root, 'owner-link');

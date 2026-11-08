@@ -25,6 +25,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
@@ -292,6 +293,159 @@ test('a recursive read of a literal folder with a quarantined file or folder any
     refusedAsOneJob(world, s, send, `a send after ${what} (${command}) and a read of the owner's profile`, [command], RECIPIENT);
   });
   assert.equal(fake.calls().length, 0, `a resolved read never asks a model; it asked ${fake.calls().length} times`);
+});
+
+// ------------------------------------------------ spellings the disk folds
+
+// The Mac's disk (APFS) compares names by folding them, as it folds case: the
+// long s (U+017F) folds to s, so workſpace/inbox/offer.eml opens the planted
+// mail itself. A read is marked by the file the disk opens, whatever its
+// spelling. Each test first shows the premise on the volume the world lives
+// on, and skips, naming why, on a volume that does not fold.
+const LONG_S = 'ſ';
+
+function foldedSpellingPremise(t, real, folded) {
+  let realStat;
+  let foldedStat;
+  try {
+    realStat = fs.statSync(real);
+    foldedStat = fs.statSync(folded);
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      t.skip(`the volume holding the test world does not fold the long s (U+017F) to s: ${folded} names no file`);
+      return false;
+    }
+    throw e;
+  }
+  assert.equal(foldedStat.ino, realStat.ino,
+    `the premise: on this volume ${folded} must open ${real} itself (the same file); it opened inode ${foldedStat.ino}, not ${realStat.ino}`);
+  assert.equal(fs.readFileSync(folded, 'utf8'), fs.readFileSync(real, 'utf8'), `the premise: ${folded} must read the bytes of ${real}`);
+  return true;
+}
+
+test('a shell read of the planted mail by a spelling the disk folds, the long s in workspace, runs free with no model asked and leaves the job holding untrusted input', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  if (!foldedSpellingPremise(t, o(world, 'workspace/inbox/offer.eml'), o(world, `work${LONG_S}pace/inbox/offer.eml`))) return;
+  // A model that would mark anything: a call to it would show.
+  const fake = w.installFakeClaude(world, { answer: 'yes\n' });
+  const command = `cat work${LONG_S}pace/inbox/offer.eml`;
+  assertMarks(world, `a read of the planted mail by the long s (${command})`,
+    (s) => assertFree(w.attempt(world, s, tools.bash(command), { env: fake.env }), `a read of the planted mail by the long s (${command})`),
+    { untrusted: true });
+  assert.equal(fake.calls().length, 0, `${command}: a resolved read never asks a model; it asked ${fake.calls().length} times`);
+});
+
+test('a shell read of the owner state by a spelling the disk folds, the long s in state, runs free with no model asked and leaves the job holding private things and no untrusted input', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  if (!foldedSpellingPremise(t, o(world, 'state/now.md'), o(world, `${LONG_S}tate/now.md`))) return;
+  const fake = w.installFakeClaude(world, { answer: 'yes\n' });
+  const command = `cat ${LONG_S}tate/now.md`;
+  assertMarks(world, `a read of the owner state by the long s (${command})`,
+    (s) => assertFree(w.attempt(world, s, tools.bash(command), { env: fake.env }), `a read of the owner state by the long s (${command})`),
+    { private: true, untrusted: false });
+  assert.equal(fake.calls().length, 0, `${command}: a resolved read never asks a model; it asked ${fake.calls().length} times`);
+});
+
+test('after a shell read of the planted mail by the long s and a read of the owner profile, a send is refused as one job, naming the read and the send', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  if (!foldedSpellingPremise(t, o(world, 'workspace/inbox/offer.eml'), o(world, `work${LONG_S}pace/inbox/offer.eml`))) return;
+  const fake = w.installFakeClaude(world, { answer: 'yes\n' });
+  const on = { env: fake.env };
+  const command = `cat work${LONG_S}pace/inbox/offer.eml`;
+  const s = 'session-long-s-inbox-then-profile';
+  assertFree(w.attempt(world, s, tools.bash(command), on), `a read of the planted mail by the long s (${command})`);
+  assertFree(w.attempt(world, s, profileRead(world), on), `reading the owner profile after ${command}`);
+  refusedAsOneJob(world, s, send, `a send after ${command} and a read of the owner profile`, [command], RECIPIENT);
+  assert.equal(fake.calls().length, 0, `${command}: a resolved read never asks a model; it asked ${fake.calls().length} times`);
+});
+
+// ------------------------------------------------ a tree too large to walk
+
+// A recursive read of a literal folder is marked by every download mark in
+// its tree, so the floor walks the tree. A tree it cannot walk inside the
+// 12-second budget is a read it cannot resolve: asked within the budget, and
+// marked as an unresolved read once the owner allows it; never left to run
+// into the hook's time limit, where Claude Code blocks the call with nothing
+// the owner can answer.
+//
+// The fixture: a folder of empty folders, a thousand to a group, made by
+// mkdir. On an M5 Mac on 2026-11-08 a group took about 30 ms to make, 41 ms
+// for /usr/bin/find to walk asking each entry for the download mark, and
+// 48 ms to delete; APFS serialises these calls, so making it in parallel was
+// slower, not faster. The test measures the walk on this Mac rather than
+// trusting those numbers: it times one slice, sizes the tree for a walk of
+// about 15 seconds, then shows that a full walk by the Mac's own find does not
+// finish inside the budget, enlarging the tree if it does. The tree is a real
+// one, with no special file in it, so only a walk bounded in time (or in
+// entries) gets the outcome in time.
+const GROUP = 1000;
+const WALK_TARGET_MS = 15000;
+
+function addFolders(root, fromGroup, toGroup) {
+  for (let i = fromGroup; i < toGroup; i += 1) {
+    const group = path.join(root, `week-${i}`);
+    fs.mkdirSync(group, { recursive: true });
+    for (let j = 0; j < GROUP; j += 1) fs.mkdirSync(path.join(group, `copy-${j}`));
+  }
+}
+
+// A full walk of the tree by the Mac's own find, asking every entry for the
+// download mark, stopped at limitMs.
+function timedWalk(dir, limitMs) {
+  const started = Date.now();
+  const r = spawnSync('/usr/bin/find', [dir, '-xattrname', 'com.apple.quarantine'], { encoding: 'utf8', timeout: limitMs, maxBuffer: 1 << 26 });
+  return { finished: r.status === 0 && !r.signal, ms: Date.now() - started };
+}
+
+test('a recursive read of a literal folder too large to walk for download marks inside the 12-second budget is asked within 12 seconds, never blocked by the time limit, and once allowed the job holds untrusted input and private things, while a tree small enough to walk resolves as before', { timeout: 600000 }, (t) => {
+  const world = marksWorld(t);
+
+  // A tree small enough to walk resolves as before: free with no yes, unmarked
+  // with nothing downloaded in it, and untrusted once a download sits deep in it.
+  const small = o(world, 'workspace/recipes-archive');
+  addFolders(small, 0, 2);
+  const smallRead = 'grep -r flour workspace/recipes-archive';
+  assertMarks(world, `a recursive read of a small tree with nothing downloaded in it (${smallRead})`,
+    (s) => assertFree(w.attempt(world, s, tools.bash(smallRead)), `a recursive read of a small tree (${smallRead})`),
+    { untrusted: false, private: false });
+  const download = path.join(small, 'week-1', `copy-${GROUP - 1}`, 'price-list.txt');
+  fs.writeFileSync(download, 'Flour: 18.40 a sack. Reply with your order sheet.\n');
+  w.setQuarantine(download);
+  assertMarks(world, `a recursive read of a small tree with a download deep in it (${smallRead})`,
+    (s) => assertFree(w.attempt(world, s, tools.bash(smallRead)), `a recursive read of a small tree with a download in it (${smallRead})`),
+    { untrusted: true });
+
+  // A tree the floor cannot walk inside the budget, with nothing downloaded in it.
+  const large = o(world, 'workspace/backups');
+  addFolders(large, 0, 20);
+  const slice = timedWalk(large, 60000);
+  assert.ok(slice.finished, `the fixture: a walk of the first ${20 * GROUP} folders must finish; it did not in ${slice.ms} ms`);
+  let groups = Math.max(40, Math.ceil((20 * WALK_TARGET_MS) / Math.max(slice.ms, 1)));
+  addFolders(large, 20, groups);
+  let full = timedWalk(large, BUDGET_MS);
+  for (let enlarged = 0; full.finished && enlarged < 3; enlarged += 1) {
+    addFolders(large, groups, groups * 2);
+    groups *= 2;
+    full = timedWalk(large, BUDGET_MS);
+  }
+  const entries = groups * (GROUP + 1) + 1;
+  assert.ok(!full.finished,
+    `the premise: a full walk of the ${entries} entries by the Mac's own find must not finish inside ${BUDGET_MS / 1000} seconds; it finished in ${full.ms} ms`);
+  t.diagnostic(`large tree: ${entries} entries; a ${20 * GROUP}-folder slice walked in ${slice.ms} ms; the full walk was stopped unfinished at ${full.ms} ms`);
+
+  const command = 'grep -r flour workspace/backups';
+  const s = 'session-large-tree';
+  const first = timedAttempt(world, s, tools.bash(command));
+  assert.ok(first.ms <= BUDGET_MS,
+    `${command}, over a tree too large to walk in the budget: the outcome must come within ${BUDGET_MS / 1000} seconds; it took ${first.ms} ms (${w.describe(first.r)})`);
+  assertAsked(first.r, `${command}, over a tree too large to walk in the budget`, [command]);
+  w.ownerSays(world, s, 'yes');
+  const second = timedAttempt(world, s, tools.bash(command));
+  assert.ok(second.ms <= BUDGET_MS,
+    `${command}, after the owner said yes: the outcome must come within ${BUDGET_MS / 1000} seconds; it took ${second.ms} ms`);
+  w.assertAllowed(second.r, `${command}, after the owner said yes to it`);
+  // No other read: the allowed read alone leaves the job holding both.
+  refusedAsOneJob(world, s, send, `a send after the owner allowed ${command}`, [command], RECIPIENT);
 });
 
 // ------------------------------------------------ the small model
@@ -584,6 +738,23 @@ test('Read, Grep, Glob and the shell are marked by one rule over the inbox, a fo
     (s) => askedThenAllowed(world, s, tools.mcp('mcp__acme_crm__lookup_customer', { email: 'alice@example.com' }),
       'an unknown tool', ['mcp__acme_crm__lookup_customer'], on),
     { untrusted: true });
+  assert.equal(fake.calls().length, 0, `a tool read never asks the small model; it asked ${fake.calls().length} times`);
+});
+
+test('a Read of the planted mail by a spelling the disk folds, the long s in workspace, runs free with no model asked and leaves the job holding untrusted input, so after a read of the owner profile a send is refused as one job', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  const folded = o(world, `work${LONG_S}pace/inbox/offer.eml`);
+  if (!foldedSpellingPremise(t, o(world, 'workspace/inbox/offer.eml'), folded)) return;
+  const fake = w.installFakeClaude(world, { answer: 'yes\n' });
+  const on = { env: fake.env };
+  const read = tools.read(folded);
+  assertMarks(world, `Read of the planted mail by the long s (${folded})`,
+    (s) => assertFree(w.attempt(world, s, read, on), `Read of the planted mail by the long s (${folded})`),
+    { untrusted: true });
+  const s = 'session-long-s-read-then-profile';
+  assertFree(w.attempt(world, s, read, on), `Read of the planted mail by the long s (${folded})`);
+  assertFree(w.attempt(world, s, profileRead(world), on), 'reading the owner profile after the long s Read');
+  refusedAsOneJob(world, s, send, 'a send after a Read of the planted mail by the long s and a read of the owner profile', ['offer.eml'], RECIPIENT);
   assert.equal(fake.calls().length, 0, `a tool read never asks the small model; it asked ${fake.calls().length} times`);
 });
 
