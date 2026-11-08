@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:39.795Z",
-  "updatedAt": "2026-11-08T19:15:35.368Z",
+  "updatedAt": "2026-11-08T19:30:18.813Z",
   "purpose": "Runs the installed wake-up router and the session-start hook through their real entry points, against session records and fake session inboxes in a test world: exactly one session of Squire's own is delivered to, and every other case sends nothing and logs why.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,70 @@
   "id": "TS-005",
   "usId": "US-701",
   "title": "Wake-up delivery, absent session and ambiguous sessions",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-005-own-session-delivered",
+      "acId": "AC-701-1",
+      "description": "With exactly one record, its process alive and its socket its own, the wake-up is delivered there on Claude Code's line format and recorded delivered.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with exactly one session record, its process alive and its socket its own, a wake-up is delivered to that session on the Claude Code line format and recorded delivered"
+    },
+    {
+      "id": "TC-005-no-record-not-sent",
+      "acId": "AC-701-1",
+      "description": "With no record nothing is sent, even to a live session in the world, and the log says so.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with no session record nothing is sent, even to a live session in the world, and the log says there is no record"
+    },
+    {
+      "id": "TC-005-two-records-not-sent",
+      "acId": "AC-701-1",
+      "description": "With more than one record nothing is sent and the log says so.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with more than one session record nothing is sent to either and the log says there is more than one"
+    },
+    {
+      "id": "TC-005-process-gone-not-sent",
+      "acId": "AC-701-1",
+      "description": "With one record whose process is gone nothing is sent and the log says so.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose process is gone nothing is sent, even though a session listens on its socket, and the log says the process is gone"
+    },
+    {
+      "id": "TC-005-stale-record-not-sent",
+      "acId": "AC-701-1",
+      "description": "With one stale record nothing is sent and the log says so.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one stale record, whose socket path now holds a different socket, nothing is sent and the log says the record is stale"
+    },
+    {
+      "id": "TC-005-never-by-name",
+      "acId": "AC-701-1",
+      "description": "A record calling itself Squire whose identity fails is not delivered to.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::never by name: a record calling itself Squire whose identity fails is not delivered to"
+    },
+    {
+      "id": "TC-005-record-replaced-after-clear",
+      "acId": "AC-701-1",
+      "description": "After a clear or a restart one record is left, the new session's, and the wake-up reaches it and not the old one.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::after a clear or a restart the SessionStart hook leaves one record, that of the new session, and a wake-up reaches that session and not the old one"
+    },
+    {
+      "id": "TC-005-picked-wake-up-due-once",
+      "acId": "AC-701-1",
+      "description": "A wake-up the owner picked is delivered once its time has come, once a day only, and one not yet due is not.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a wake-up the Squire owner picked is delivered by the scheduler run once its time has come today, once only, and one not yet due is not"
+    },
+    {
+      "id": "TC-005-journey-wake-new-session",
+      "acId": "AC-701-1",
+      "description": "End to end on a laid-down core: wake-ups reach the session the installed runner started, and after a restart the new session, never the old.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-2-journey.test.js::on a laid-down core the runner starts a session that runs the floor, a wake-up saying yes reaches it without answering its request, and after a settings file appears the new session is the one woken"
+    }
+  ],
   "status": "draft"
 }
