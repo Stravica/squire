@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-08T12:13:09.375Z",
+  "updatedAt": "2026-11-08T13:56:55.633Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -72,7 +72,7 @@
       "testable": true,
       "given": "A read by a command Squire knows, with options Squire knows, whose paths are written out (absolute, from the home folder, or relative to the working folder of the moment), including through a link, a parent folder or another spelling of the same path. Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
       "when": "Squire runs the read",
-      "then": "It runs without a yes and without asking a model. A read that reaches only outside the inbox does not make the job hold untrusted input (it holds the Squire owner's private things where the read reaches into them, as before), so a later send waits only for its own yes; a read that reaches the inbox, a file in it or a folder holding it makes the job hold untrusted input, as a direct read of the inbox does. Words that are not paths, such as a search pattern or text to print, never count as paths.",
+      "then": "It runs without a yes and without asking a model, its outcome within 12 seconds of the call. A read that reaches only outside the inbox does not make the job hold untrusted input (it holds the Squire owner's private things where the read reaches into them, as before), so a later send waits only for its own yes; a read that reaches the inbox, a file in it or a folder holding it makes the job hold untrusted input, as a direct read of the inbox does. Words that are not paths, such as a search pattern or text to print, never count as paths. A recursive read of a folder too large for Squire to search for downloaded files within those 12 seconds is a read Squire cannot resolve: it waits for the Squire owner's yes, and once allowed the job holds untrusted input and the Squire owner's private things.",
       "verification": "testOnly"
     },
     {
