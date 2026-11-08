@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-08T19:15:35.105Z",
+  "updatedAt": "2026-11-08T19:15:35.105Z",
+  "purpose": "Runs the installed wake-up router against fake session inboxes in a test world: each delivery failure recorded with its reason and retry state and delivered nowhere else, the retry rule over seeded past attempts, and a line written but never acknowledged recorded unknown and never retried.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-701-2"
+  ],
+  "id": "TS-026",
+  "usId": "US-701",
+  "title": "Wake-up delivery failures",
+  "testCases": [],
+  "status": "draft"
+}

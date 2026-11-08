@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-08T19:15:34.839Z",
+  "updatedAt": "2026-11-08T19:15:34.839Z",
+  "purpose": "Runs the installed session runner, the session-start and config-change hooks and lay-down through their real entry points, in a test world with a fake Claude Code at the place it installs itself: the config folder, the environment, the claude location, the server's arguments, the check before each start, settings files in the Squire owner's folder, resume, the session record and the launchd agents.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-401-3"
+  ],
+  "id": "TS-025",
+  "usId": "US-401",
+  "title": "The launch contract",
+  "testCases": [],
+  "status": "draft"
+}

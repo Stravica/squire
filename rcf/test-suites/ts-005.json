@@ -1,7 +1,7 @@
 {
   "createdAt": "2026-11-07T17:40:39.795Z",
-  "updatedAt": "2026-11-08T18:34:31.753Z",
-  "purpose": "Fires real wake-ups on a running Squire and checks delivery with one session, and that nothing is sent with no session or two candidate sessions. Takes the target host as a parameter.",
+  "updatedAt": "2026-11-08T19:15:35.368Z",
+  "purpose": "Runs the installed wake-up router and the session-start hook through their real entry points, against session records and fake session inboxes in a test world: exactly one session of Squire's own is delivered to, and every other case sends nothing and logs why.",
   "testLevel": "integration",
   "acIds": [
     "AC-701-1"

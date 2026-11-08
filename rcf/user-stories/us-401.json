@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:11.997Z",
-  "updatedAt": "2026-11-07T18:02:36.990Z",
+  "updatedAt": "2026-11-08T19:15:21.542Z",
   "asA": "Squire owner",
   "iWant": "one Squire session always running that I can reach from the Claude app on my Mac and on my phone",
   "soThat": "my Squire is there whenever I open the app, without my starting anything",
@@ -29,6 +29,15 @@
       "when": "The laptop sleeps or is closed, and is then woken or opened",
       "then": "Within two minutes exactly one Squire session is running again, and the Squire owner can reach it.",
       "verification": "external"
+    },
+    {
+      "id": "AC-401-3",
+      "description": "Every session Squire starts runs Squire's safety floor; when the floor cannot be put in place, no session starts and the health check says why.",
+      "testable": true,
+      "given": "Squire installed on a Mac",
+      "when": "Squire starts its session, or something would let the session run without Squire's safety floor",
+      "then": "Every session Squire starts runs Squire's safety floor; when the floor cannot be put in place, no session starts and the health check says why.",
+      "verification": "testOnly"
     }
   ]
 }

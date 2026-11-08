@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-08T19:15:34.565Z",
+  "updatedAt": "2026-11-08T19:15:34.565Z",
+  "purpose": "Walks a sleep or lid-close and the next wake on a running Squire, end to end through the product's real entry points on a target Mac. Takes the target host as a parameter (SQUIRE_TARGET_HOST, an SSH destination, or RCF_TARGET_URL); without one it skips with the line 'external: needs a target host' and never passes.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-401-2"
+  ],
+  "id": "TS-024",
+  "usId": "US-401",
+  "title": "Sleep and wake on a target Mac",
+  "testCases": [],
+  "status": "draft"
+}
