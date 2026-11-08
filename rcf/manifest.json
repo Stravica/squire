@@ -13,5 +13,115 @@
   "bs": {
     "id": "BS-001",
     "path": "build-sequence.json"
-  }
+  },
+  "baselineAcOptOuts": [
+    {
+      "id": "boo-2026-11-08-001",
+      "createdAt": "2026-11-08T21:00:15.089Z",
+      "baselineKey": "httpApi.contentType",
+      "scope": "req",
+      "reason": "REQ-004 is a launchd session runner reached over a Unix socket and the Claude app; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.contentType) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:15.089Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-002",
+      "createdAt": "2026-11-08T21:00:15.352Z",
+      "baselineKey": "httpApi.errorEnvelope",
+      "scope": "req",
+      "reason": "REQ-004 is a launchd session runner reached over a Unix socket and the Claude app; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.errorEnvelope) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:15.352Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-003",
+      "createdAt": "2026-11-08T21:00:15.612Z",
+      "baselineKey": "httpApi.rateLimitDisclosure",
+      "scope": "req",
+      "reason": "REQ-004 is a launchd session runner reached over a Unix socket and the Claude app; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.rateLimitDisclosure) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:15.612Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-004",
+      "createdAt": "2026-11-08T21:00:15.870Z",
+      "baselineKey": "httpApi.authBoundary",
+      "scope": "req",
+      "reason": "REQ-004 is a launchd session runner reached over a Unix socket and the Claude app; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.authBoundary) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:15.870Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-005",
+      "createdAt": "2026-11-08T21:00:16.131Z",
+      "baselineKey": "auth.emptyTokenRejection",
+      "scope": "req",
+      "reason": "REQ-004 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.emptyTokenRejection) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:16.131Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-006",
+      "createdAt": "2026-11-08T21:00:16.389Z",
+      "baselineKey": "auth.htmlLoginPage",
+      "scope": "req",
+      "reason": "REQ-004 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.htmlLoginPage) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:16.389Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-007",
+      "createdAt": "2026-11-08T21:00:16.676Z",
+      "baselineKey": "auth.postLogout",
+      "scope": "req",
+      "reason": "REQ-004 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.postLogout) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:16.676Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-008",
+      "createdAt": "2026-11-08T21:00:16.938Z",
+      "baselineKey": "auth.sessionCookieShape",
+      "scope": "req",
+      "reason": "REQ-004 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.sessionCookieShape) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:16.938Z",
+      "reqId": "REQ-004"
+    },
+    {
+      "id": "boo-2026-11-08-009",
+      "createdAt": "2026-11-08T21:00:17.209Z",
+      "baselineKey": "auth.emptyTokenRejection",
+      "scope": "req",
+      "reason": "REQ-007 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.emptyTokenRejection) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:17.209Z",
+      "reqId": "REQ-007"
+    },
+    {
+      "id": "boo-2026-11-08-010",
+      "createdAt": "2026-11-08T21:00:17.468Z",
+      "baselineKey": "auth.htmlLoginPage",
+      "scope": "req",
+      "reason": "REQ-007 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.htmlLoginPage) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:17.468Z",
+      "reqId": "REQ-007"
+    },
+    {
+      "id": "boo-2026-11-08-011",
+      "createdAt": "2026-11-08T21:00:17.727Z",
+      "baselineKey": "auth.postLogout",
+      "scope": "req",
+      "reason": "REQ-007 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.postLogout) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:17.727Z",
+      "reqId": "REQ-007"
+    },
+    {
+      "id": "boo-2026-11-08-012",
+      "createdAt": "2026-11-08T21:00:17.988Z",
+      "baselineKey": "auth.sessionCookieShape",
+      "scope": "req",
+      "reason": "REQ-007 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.sessionCookieShape) does not apply to this requirement",
+      "operatorAckAt": "2026-11-08T21:00:17.988Z",
+      "reqId": "REQ-007"
+    }
+  ]
 }
