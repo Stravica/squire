@@ -231,11 +231,15 @@ test('with no keychain in the config the helper stops with directions and falls 
   // would put the value in the transcript.
   w.writeConfig(world);
   const kc = world.keychain.path;
+  // A keychain that does not exist, in the world's own folder: a test never
+  // names the Mac's default keychain or search list, even in a call the floor
+  // must refuse.
+  const missing = path.join(world.root, 'no-such.keychain-db');
   const s = 'session-keychain';
   for (const [what, call] of [
-    ['the session fetching a secret with security', w.tools.bash('security find-generic-password -s squire -a site-token -w')],
+    ['the session fetching a secret with security', w.tools.bash(`security find-generic-password -s squire -a site-token -w "${missing}"`)],
     ['the session fetching a secret from the configured keychain', w.tools.bash(`/usr/bin/security find-generic-password -s squire -a site-token -w "${kc}"`)],
-    ['the session dumping the Keychain', w.tools.bash('security dump-keychain -d')],
+    ['the session dumping the Keychain', w.tools.bash(`security dump-keychain -d "${missing}"`)],
     ['the session reading the keychain file', w.tools.read(kc)],
     ['the session printing the keychain file', w.tools.bash(`cat "${kc}"`)],
   ]) {

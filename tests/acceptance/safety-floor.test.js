@@ -1061,11 +1061,14 @@ test('a read whose scope takes in the inbox, through a parent folder, a recursiv
       ['inbox', 'offer.eml', 'Grep']],
     ['the Grep tool over the owner\'s folder in content mode', tools.grep('order', { output_mode: 'content', '-i': true }),
       ['inbox', 'offer.eml', 'Grep']],
-    ['cat through a glob that matches the inbox', tools.bash('cat workspace/inbo?/offer.eml'), ['inbox', 'inbo?', 'offer.eml']],
+    // A glob is a read the floor cannot resolve to literal paths: it is asked,
+    // and once the owner says yes it runs and marks the job (round 1b).
+    ['cat through a glob that matches the inbox', tools.bash('cat workspace/inbo?/offer.eml'), ['inbox', 'inbo?', 'offer.eml'], 'inbo?'],
   ];
-  reads.forEach(([what, read, sources], i) => {
+  reads.forEach(([what, read, sources, asked], i) => {
     const s = `session-inbox-scope-${i}`;
-    w.assertAllowed(w.attempt(world, s, read), what);
+    if (asked) blockedUntilYes(world, s, read, what, asked);
+    else w.assertAllowed(w.attempt(world, s, read), what);
     w.assertAllowed(w.attempt(world, s, profile), 'reading the owner\'s profile');
     refusedAsOneJobIn(world, s, send, `sending, in a job that took in the inbox by ${what} and read the owner's profile`,
       sources, 'someone@example.net');

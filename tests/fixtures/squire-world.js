@@ -27,6 +27,8 @@ const CORE = path.join(REPO, 'core');
 const PYTHON = '/usr/bin/python3';
 const SECURITY = '/usr/bin/security';
 const XATTR = '/usr/bin/xattr';
+// The PATH every product process gets: the Mac's own folders, and no claude.
+const PRODUCT_PATH = '/usr/bin:/bin:/usr/sbin:/sbin';
 
 // The floor's entry points: a release lacking any of them is no release.
 const FLOOR_ENTRY_POINTS = ['hooks/pre-tool-use.py', 'hooks/user-prompt-submit.py', 'tools/secret.py', 'tools/lay-down.py'];
@@ -84,7 +86,7 @@ function cleanUp(world) {
 
 function productEnv(world, extra = {}) {
   return {
-    PATH: '/usr/bin:/bin:/usr/sbin:/sbin',
+    PATH: PRODUCT_PATH,
     HOME: world.userHome,
     TMPDIR: world.tmp,
     LANG: 'en_GB.UTF-8',
@@ -541,6 +543,88 @@ function newSecret() {
   return 'sq-' + crypto.randomBytes(24).toString('hex');
 }
 
+// --------------------------------------------- a stand-in for claude
+
+// The floor may ask a small model about a read it cannot resolve, through the
+// claude command line. No test ever reaches a real model: in the default
+// world PATH holds only the Mac's own folders and HOME is the world's, so no
+// claude can be found. A test that wants one installs this fake, a Node
+// script named claude, first on the hook's PATH (or wherever it is told).
+//
+// What the fake does is set per test, and can be changed between calls:
+//   { answer: 'no' }                         prints that text and exits 0
+//   { answer: 'no', delayMs: 3300 }          the same, after a wait
+//   { hang: true }                           never answers, never exits
+//   { hangWithChild: true }                  starts a child that holds its
+//                                            stdout open, then hangs
+//   { fail: 'API Error: ...', exitCode: 1 }  prints that on stderr and exits
+// A hung fake and its child ignore SIGTERM, as a stuck process may.
+//
+// Every call appends one JSON line to claude-calls.jsonl in the world: its
+// argv, what it read on stdin, its cwd, its own process id, its child's
+// process id, and the names of the environment variables it was given.
+function installFakeClaude(world, behaviour, { dir = path.join(world.root, 'fake-claude-bin') } = {}) {
+  const configFile = path.join(world.root, 'fake-claude.json');
+  const callsFile = path.join(world.root, 'claude-calls.jsonl');
+  fs.mkdirSync(dir, { recursive: true });
+  const script = `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const { spawn } = require('child_process');
+const how = JSON.parse(fs.readFileSync(${JSON.stringify(configFile)}, 'utf8'));
+const record = (extra) => fs.appendFileSync(${JSON.stringify(callsFile)}, JSON.stringify({
+  argv: process.argv.slice(2), stdin, cwd: process.cwd(), pid: process.pid,
+  envNames: Object.keys(process.env).sort(), at: Date.now(), ...extra }) + '\\n');
+let stdin = '';
+let started = false;
+const hang = () => { process.on('SIGTERM', () => {}); setInterval(() => {}, 1000); };
+function run() {
+  if (started) return;
+  started = true;
+  if (how.hangWithChild) {
+    const child = spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"],
+      { stdio: ['ignore', 'inherit', 'inherit'] });
+    record({ childPid: child.pid });
+    return hang();
+  }
+  record({ childPid: null });
+  if (how.hang) return hang();
+  if (how.fail !== undefined) { process.stderr.write(how.fail + '\\n'); process.exit(how.exitCode || 1); }
+  setTimeout(() => { process.stdout.write(how.answer); process.exit(0); }, how.delayMs || 0);
+}
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (d) => { stdin += d; });
+process.stdin.on('end', run);
+process.stdin.on('error', run);
+setTimeout(run, 1500);
+`;
+  const bin = path.join(dir, 'claude');
+  fs.writeFileSync(bin, script, { mode: 0o755 });
+  const fake = {
+    bin,
+    dir,
+    // The hook's environment with the fake first on PATH.
+    env: { PATH: `${dir}:${PRODUCT_PATH}` },
+    set(next) { fs.writeFileSync(configFile, JSON.stringify(next)); },
+    calls() {
+      return fs.existsSync(callsFile)
+        ? fs.readFileSync(callsFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
+    },
+  };
+  fake.set(behaviour);
+  return fake;
+}
+
+// True once no process has this id (a process reaped or never started).
+function processGone(pid) {
+  try {
+    process.kill(pid, 0);
+    return false;
+  } catch (e) {
+    return e.code === 'ESRCH';
+  }
+}
+
 module.exports = {
   REPO,
   CORE,
@@ -589,4 +673,7 @@ module.exports = {
   newSecret,
   newSecretWithSymbols,
   setQuarantine,
+  PRODUCT_PATH,
+  installFakeClaude,
+  processGone,
 };

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-08T11:19:38.378Z",
+  "updatedAt": "2026-11-08T11:28:12.199Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -162,7 +162,7 @@
     {
       "id": "TC-002-inbox-read-by-scope-is-untrusted",
       "acId": "AC-1901-3",
-      "description": "A recursive grep over the owner's folder, the Grep tool in content mode over workspace or the owner's folder, and cat through a glob matching workspace/inbox each proceed and mark the job untrusted: after the owner's profile is read, a send is refused as one job, saying to split the work and naming the read and the recipient, before and after a yes.",
+      "description": "A recursive grep over the owner's folder and the Grep tool in content mode over workspace or the owner's folder each proceed and mark the job untrusted; cat through a glob matching workspace/inbox, a read the floor cannot resolve, is asked and after the owner's yes proceeds and marks the job; after the owner's profile is read, a send is refused as one job, saying to split the work and naming the read and the recipient, before and after a yes.",
       "status": "pending",
       "testPointer": "tests/acceptance/safety-floor.test.js::a read whose scope takes in the inbox, through a parent folder, a recursive or content search or a glob, makes the job untrusted as a direct read does"
     },
@@ -172,6 +172,132 @@
       "description": "A Write, Edit or shell write of .claude/settings.json or .claude/settings.local.json in the owner's folder, in a folder under it or in the Squire home, by any spelling, is blocked before and after a yes, the refusal naming the safety floor.",
       "status": "pending",
       "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write Claude Code settings under the owner folder or the Squire home, by any tool, yes or no, and the refusal names the safety floor"
+    },
+    {
+      "id": "TC-002-unresolved-read-asked-then-marked",
+      "acId": "AC-1901-6",
+      "description": "Each review spelling aimed at the planted mail from the owner's folder (a recursive grep with no folder named, zsh **, a brace, a glob, a cd then a relative path, a pipe, a shell variable), with no claude found, is asked naming the command; after the owner's yes it runs, and a send in that job, with no other read, is refused as one job naming the read and the send.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a read Squire cannot resolve is asked first, and once the owner allows it the job holds untrusted input and private things, so a send is refused as one job"
+    },
+    {
+      "id": "TC-002-off-list-reads-asked",
+      "acId": "AC-1901-6",
+      "description": "A grep pattern file by --file and by an attached -f, an ls option the floor does not know, and the review spellings aimed only at the drafts (a glob, a brace, a cd, a variable, a recursive grep with no folder named from the drafts) are each asked, then after a yes run and leave the job refused for a send.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::reads off the list are asked too: a pattern file, an option Squire does not know, and the same spellings aimed only outside the inbox"
+    },
+    {
+      "id": "TC-002-allowed-program-marks-private",
+      "acId": "AC-1901-6",
+      "description": "python3 -c opening a draft and a read with a redirect are asked; after the owner's yes each runs, a later send is asked with its question naming the program, and the job holds the owner's private things and no untrusted input.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a program the owner allows to run leaves the job holding private things, and a later send is asked, its question naming the program"
+    },
+    {
+      "id": "TC-002-non-path-words-never-mark",
+      "acId": "AC-1901-7",
+      "description": "A grep pattern, a grep -e pattern, echo and printf naming the inbox or the planted mail are free, leave the job holding nothing, and ask no model.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::words that are not paths never mark a read: a search pattern or text to print naming the inbox leaves the job holding no untrusted input, with no model asked"
+    },
+    {
+      "id": "TC-002-resolved-reads-marked-by-reach",
+      "acId": "AC-1901-7",
+      "description": "Regression guard: reads of the drafts, an absolute path and a file outside the owner's folder are free and unmarked; reads of operator/ and workspace/files/ are free and private; a path through .., a link in workspace/files, a relative path from inside the inbox, a recursive grep of workspace and a case-changed spelling mark the job untrusted; a literal inbox path in an allowed program still marks it; no model is asked.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a read resolved to literal paths runs free with no model asked and is marked by what it reaches: outside unmarked, private folders private, the inbox by any spelling untrusted"
+    },
+    {
+      "id": "TC-002-model-no-clears-read",
+      "acId": "AC-1901-8",
+      "description": "With the model answering a bare no (any case, with spaces), a glob, a brace, a cd and a variable aimed at the drafts run free after one model call per attempt, and the job holds private things and no untrusted input.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a clear no from the small model lets an unresolved plain read run without a yes, and the job still holds private things"
+    },
+    {
+      "id": "TC-002-model-yes-confirms-mark",
+      "acId": "AC-1901-8",
+      "description": "With the model answering yes, cat **/offer.eml runs free after one call, and a send in that job is refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a clear yes from the small model lets the read run as an inbox read, and the job holds untrusted input and private things"
+    },
+    {
+      "id": "TC-002-model-unclear-or-failing-asked",
+      "acId": "AC-1901-8",
+      "description": "Unsure, a sentence, another word, empty output, an error exit, an offline error, a no after the deadline and no claude found each leave a brace read of the inbox asked; after the yes it runs and a send is refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::any answer but a bare yes or no, and every failure to answer, leaves an unresolved read asked, and once allowed the job holds untrusted input and private things"
+    },
+    {
+      "id": "TC-002-model-never-touches-the-rest",
+      "acId": "AC-1901-8",
+      "description": "Regression guard: with the model saying no to everything, python3 -c, node -e, sh -c, a redirect into workspace/files and a command substitution are asked with no model call; a glob over a quarantined download marks the job untrusted; a send, a delete, an install, a write to Squire's config and a Rule of Two refusal are unchanged with no model call; a job already marked stays marked after a read the model clears.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::with the small model saying no to everything, programs are asked without it, a quarantined download stays untrusted, outside actions are unchanged and a marked job stays marked"
+    },
+    {
+      "id": "TC-002-model-given-command-and-folder-only",
+      "acId": "AC-1901-8",
+      "description": "Each unresolved read makes one model call whose argv and input hold the command and the working folder and none of the planted mail or the owner's profile, with -p, --safe-mode, --setting-sources \"\", --tools \"\" and --model haiku.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::the small model is asked one question with its tools and hooks turned off, given the command and the working folder and nothing from the owner folder"
+    },
+    {
+      "id": "TC-002-model-found-under-home",
+      "acId": "AC-1901-8",
+      "description": "With PATH holding only the Mac's own folders, the floor finds claude at ~/.local/bin/claude under the hook's home and asks it once.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::with no claude on the hook PATH the floor finds the one its installer puts under the home folder"
+    },
+    {
+      "id": "TC-002-unresolved-tools-asked-then-marked",
+      "acId": "AC-1901-9",
+      "description": "A Glob pattern climbing out of the drafts, an absolute Glob pattern, a Monitor call and an LSP call are each asked naming the tool; after a yes each runs and a send in that job is refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a Glob pattern that is absolute or climbs out of its folder, and every Monitor or LSP call, is asked, and once allowed the job holds untrusted input and private things"
+    },
+    {
+      "id": "TC-002-tools-marked-by-one-rule",
+      "acId": "AC-1901-9",
+      "description": "Regression guard: Read, Grep (path, glob filter, no path, each output mode), Glob (pattern and path) and the shell over the inbox mark untrusted, over the drafts are free and unmarked, over a private folder mark private, and by a path relative to a working folder in the inbox mark untrusted; an unknown tool stays untrusted; no model is asked.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::Read, Grep, Glob and the shell are marked by one rule over the inbox, a folder outside it, a private folder and a path relative to the working folder, with no model asked, and an unknown tool stays untrusted"
+    },
+    {
+      "id": "TC-002-hook-time-limit-holds-budget",
+      "acId": "AC-1901-10",
+      "description": "Regression guard: core's settings, parsed as Claude Code reads them, give every floor hook for Bash, Read, Grep, Glob and Monitor a time limit of at least 22 seconds, the 12-second budget and a 10-second margin.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::core settings give the floor hook a time limit at least 10 seconds beyond the 12-second budget for an unresolved read"
+    },
+    {
+      "id": "TC-002-typical-reads-within-budget",
+      "acId": "AC-1901-10",
+      "description": "Typical profile: three unresolved reads in one job, the model answering no after 3.3 seconds, each make one call and run free within 12 seconds.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::typical: with the model answering after the measured median, each of a few unresolved reads in a job gets its outcome within 12 seconds"
+    },
+    {
+      "id": "TC-002-slow-or-hung-model-killed",
+      "acId": "AC-1901-10",
+      "description": "Heavy profile: a no after 11 seconds, a hung model and a hung model with a child holding its output open each leave the read asked within 12 seconds, and every recorded model process is gone by then.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::heavy: an answer past the deadline, a hung model and a model whose child holds its output open each leave the read asked within 12 seconds, with no model process left"
+    },
+    {
+      "id": "TC-002-run-and-concurrent-reads-within-budget",
+      "acId": "AC-1901-10",
+      "description": "Heavy profile: three unresolved reads in a row in one job and two jobs asking at once, with the model hung holding a child, each get their outcome within 12 seconds and leave no model process.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::heavy: a run of unresolved reads in one job, and reads in two jobs at once, each get their outcome within 12 seconds, with no model process left"
+    },
+    {
+      "id": "TC-002-web-search-refused-in-a-mixed-job",
+      "acId": "AC-1901-3",
+      "description": "In a job that read a web page and the owner's profile, a web search is refused as one job naming the search, before and after a yes; in a job holding only one of the two, or neither, a web search carrying the profile's words stays free.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::in a job holding untrusted input and private things a web search is refused as one job, naming the search, and in a job without both it stays free whatever its words"
     }
   ],
   "status": "draft"
