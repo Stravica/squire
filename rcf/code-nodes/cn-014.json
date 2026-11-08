@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-014",
+  "path": "core/tools/runner.py#FloorCheck",
+  "implementsAcIds": [
+    "AC-401-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-08T21:22:25.086Z",
+  "updatedAt": "2026-11-08T21:22:25.086Z"
+}

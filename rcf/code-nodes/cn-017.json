@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-017",
+  "path": "core/hooks/session-start.py#SessionStart",
+  "implementsAcIds": [
+    "AC-401-3",
+    "AC-701-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-08T21:22:25.935Z",
+  "updatedAt": "2026-11-08T21:22:25.935Z"
+}
