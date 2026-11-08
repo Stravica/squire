@@ -280,6 +280,11 @@ class Floor:
     # The commands that read no file: the options each may take.
     TEXT = {'echo': {'-n'}, 'printf': set(), 'pwd': {'-L', '-P'}, 'date': {'-u'}}
     QUARANTINE = 'com.apple.quarantine'
+    # A call has its outcome within 12 seconds, and the small model may take
+    # 10 of them; the walks of one call's trees for download marks share one
+    # second. A tree not walked in that time is a read the floor cannot
+    # resolve.
+    WALK = 1.0
 
     NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
                    'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
@@ -304,6 +309,7 @@ class Floor:
         self.keychain = Paths.canonical(config.keychain, cwd) if config.keychain else None
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
         self.inbox = os.path.join(self.owner, 'workspace', 'inbox')
+        self.walk_left = self.WALK
 
     @classmethod
     def handle(cls, raw):
@@ -420,7 +426,13 @@ class Floor:
                 source = f'Glob {pattern}'
                 return 'ask', f'Glob {json.dumps(data, sort_keys=True, ensure_ascii=False)}', \
                     [('untrusted', source), ('private', source)]
-            return 'free', '', self.taints_of(path, f'{tool} {given}', recursive=tool != 'Read')
+            source = f'{tool} {given}'
+            taints = self.taints_of(path, source, recursive=tool != 'Read')
+            if any(kind == 'unresolved' for kind, _ in taints):
+                # A tree too large to walk for download marks in time.
+                return 'ask', f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}', \
+                    [('untrusted', source), ('private', source)]
+            return 'free', '', taints
         if tool in ('Write', 'Edit', 'MultiEdit', 'NotebookEdit'):
             given = self.field(data, 'notebook_path' if tool == 'NotebookEdit' else 'file_path')
             path = self.path(given)
@@ -511,7 +523,12 @@ class Floor:
         verdict, operands, recursive = self.reach(argv)
         if verdict == 'model' and argv[0] not in self.TEXT:
             operands = every
-        return verdict, '', self.marks(argv, operands, recursive)
+        taints = self.marks(argv, operands, recursive)
+        if any(kind == 'unresolved' for kind, _ in taints):
+            # A tree too large to walk for download marks in time: a read the
+            # floor cannot resolve, the owner's to allow, never the model's.
+            return 'read', '', [t for t in taints if t[0] != 'unresolved']
+        return verdict, '', taints
 
     def marks(self, argv, words, recursive=False, holding=True):
         """What these words take in as paths: a literal word is its path, an
@@ -644,33 +661,45 @@ class Floor:
         """What a read of path takes in: a read whose scope holds the owner's
         private things or the inbox, a folder above them included (unless
         holding is False), takes them in; so does a read of anything
-        downloaded from the internet."""
+        downloaded from the internet. A tree the floor cannot walk in time
+        is ('unresolved', source)."""
         found = []
         near = Paths.overlap if holding else Paths.within
         if any(near(path, private) for private in self.private):
             found.append(('private', source))
-        if near(path, self.inbox) or self.quarantined(path, recursive):
+        downloaded = near(path, self.inbox) or self.quarantined(path, recursive)
+        if downloaded is None:
+            found.append(('unresolved', source))
+        elif downloaded:
             found.append(('untrusted', source))
         return found
 
-    @classmethod
-    def quarantined(cls, path, recursive=False):
+    def quarantined(self, path, recursive=False):
         """Downloaded from the internet, as the Mac marks it: the path or a
         folder above it, or, for a recursive read, anything in its tree, the
-        links inside it not followed."""
+        links inside it not followed. None when the tree is not walked in
+        the time this call's walks have left."""
         if not os.path.lexists(path):
             return False
         above = [path]
         while os.path.dirname(above[-1]) != above[-1]:
             above.append(os.path.dirname(above[-1]))
-        runs = [['/usr/bin/xattr', '-s', '-p', cls.QUARANTINE] + above]
-        if recursive and os.path.isdir(path):
-            runs.append(['/usr/bin/find', path, '-xattrname', cls.QUARANTINE, '-print', '-quit'])
-        for argv in runs:
-            r = subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            if r.stdout:
-                return True
-        return False
+        quiet = {'stdin': subprocess.DEVNULL, 'stdout': subprocess.PIPE, 'stderr': subprocess.DEVNULL}
+        if subprocess.run(['/usr/bin/xattr', '-s', '-p', self.QUARANTINE] + above, **quiet).stdout:
+            return True
+        if not (recursive and os.path.isdir(path)):
+            return False
+        if self.walk_left <= 0:
+            return None
+        started = time.monotonic()
+        try:
+            walk = subprocess.run(['/usr/bin/find', path, '-xattrname', self.QUARANTINE, '-print', '-quit'],
+                                  timeout=self.walk_left, **quiet)
+        except subprocess.TimeoutExpired:
+            return None
+        finally:
+            self.walk_left -= time.monotonic() - started
+        return bool(walk.stdout)
 
     def path(self, given, strict=True):
         try:
