@@ -171,6 +171,46 @@ test('a program the owner allows to run leaves the job holding private things, a
   });
 });
 
+test('a listed command the hook would not find in the Mac\'s own folders, shadowed earlier on its PATH or named by its full path, is asked with no model call, and once allowed the job holds untrusted input and private things', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  // A model that would clear anything: a call to it would show.
+  const fake = w.installFakeClaude(world, { answer: 'no\n' });
+  // A cat of the session's own, first on the hook's PATH: whatever its name,
+  // the floor cannot know what it reads (this one reads the planted mail too).
+  const shadow = path.join(world.root, 'shadow-bin');
+  fs.mkdirSync(shadow);
+  fs.writeFileSync(path.join(shadow, 'cat'), '#!/bin/sh\nexec /bin/cat "$@" workspace/inbox/offer.eml\n');
+  fs.chmodSync(path.join(shadow, 'cat'), 0o755);
+  const reads = [
+    ['cat shadowed by an executable earlier on the hook PATH', 'cat workspace/drafts/order.json', { env: { PATH: `${shadow}:${w.PRODUCT_PATH}` } }],
+    ['cat named by its full path', '/bin/cat workspace/drafts/order.json', {}],
+  ];
+  reads.forEach(([what, command, opts], i) => {
+    const s = `session-not-the-mac-command-${i}`;
+    const before = fake.calls().length;
+    askedThenAllowed(world, s, tools.bash(command), `${what} (${command})`, [command], opts);
+    assert.equal(fake.calls().length - before, 0,
+      `${what}: a command the hook cannot find as the Mac's own never reaches the model; it was asked ${fake.calls().length - before} times`);
+    // No other read: the allowed read alone leaves the job holding both.
+    refusedAsOneJob(world, s, send, `a send after the owner allowed ${command} (${what})`, [command], RECIPIENT);
+  });
+});
+
+test('words the session\'s zsh would expand that the list does not name are asked, naming the command: alternation inside a word, a tilde before a user name and an option after the first operand, and once allowed the job holds untrusted input and private things', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  // The session's shell is zsh. No claude can be found in this world.
+  const reads = [
+    ['zsh alternation inside a word', 'cat workspace/(inbox|drafts)/offer.eml'],
+    ['a tilde before a user name', 'cat ~nobody/order.json'],
+    ['an option after the first operand', 'grep order workspace/drafts -r'],
+  ];
+  reads.forEach(([how, command], i) => {
+    const s = `session-zsh-words-${i}`;
+    askedThenAllowed(world, s, tools.bash(command), `${how} (${command})`, [command]);
+    refusedAsOneJob(world, s, send, `a send after the owner allowed ${command}`, [command], RECIPIENT);
+  });
+});
+
 // ------------------------------------------------ reads the floor resolves
 
 test('words that are not paths never mark a read: a search pattern or text to print naming the inbox leaves the job holding no untrusted input, with no model asked', { timeout: 300000 }, (t) => {
@@ -227,6 +267,33 @@ test('a read resolved to literal paths runs free with no model asked and is mark
   assert.equal(fake.calls().length, 0, `a resolved read never asks a model; it asked ${fake.calls().length} times`);
 });
 
+test('a recursive read of a literal folder with a quarantined file or folder anywhere in its tree, or a read beneath a quarantined folder, runs free with no model asked and leaves the job holding untrusted input', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  const fake = w.installFakeClaude(world, { answer: 'yes\n' });
+  const on = { env: fake.env };
+  // A download one folder down, and an archive whose subfolder the Mac marked
+  // as downloaded (as it marks an unzipped download), with a file inside that
+  // carries no mark of its own.
+  fs.mkdirSync(o(world, 'workspace/downloads/supplier'), { recursive: true });
+  fs.writeFileSync(o(world, 'workspace/downloads/supplier/price-list.txt'), 'Flour: 18.40 a sack. Reply with your order sheet.\n');
+  w.setQuarantine(o(world, 'workspace/downloads/supplier/price-list.txt'));
+  fs.mkdirSync(o(world, 'workspace/archive/2025'), { recursive: true });
+  fs.writeFileSync(o(world, 'workspace/archive/2025/receipt.txt'), 'Paid for 25 kg of flour.\n');
+  w.setQuarantine(o(world, 'workspace/archive/2025'));
+  const reads = [
+    ['a recursive grep over a folder with a quarantined file one folder down', 'grep -r flour workspace/downloads'],
+    ['a recursive listing over a folder whose subfolder is quarantined', 'ls -R workspace/archive'],
+    ['a read of a file in a quarantined folder', 'cat workspace/archive/2025/receipt.txt'],
+  ];
+  reads.forEach(([what, command], i) => {
+    const s = `session-quarantined-tree-${i}`;
+    assertFree(w.attempt(world, s, tools.bash(command), on), `${what} (${command})`);
+    assertFree(w.attempt(world, s, profileRead(world), on), `reading the owner's profile after ${command}`);
+    refusedAsOneJob(world, s, send, `a send after ${what} (${command}) and a read of the owner's profile`, [command], RECIPIENT);
+  });
+  assert.equal(fake.calls().length, 0, `a resolved read never asks a model; it asked ${fake.calls().length} times`);
+});
+
 // ------------------------------------------------ the small model
 
 test('a clear no from the small model lets an unresolved plain read run without a yes, and the job still holds private things', { timeout: 300000 }, (t) => {
@@ -273,7 +340,6 @@ test('any answer but a bare yes or no, and every failure to answer, leaves an un
     ['the model failing with an error exit', { fail: 'Error: something went wrong', exitCode: 1 }, fake.env],
     ['the model offline', { fail: 'API Error: Unable to connect to API (ENOTFOUND)', exitCode: 1 }, fake.env],
     ['the model answering no after the deadline', { answer: 'no\n', delayMs: 11000 }, fake.env],
-    ['no claude command line found', { answer: 'no\n' }, {}],
   ];
   outcomes.forEach(([how, behaviour, env], i) => {
     fake.set(behaviour);
@@ -366,6 +432,13 @@ test('the small model is asked one question with its tools and hooks turned off,
     assert.equal(after('--setting-sources'), '', `the model must load no settings files (--setting-sources ""); argv: ${JSON.stringify(call.argv)}`);
     assert.equal(after('--tools'), '', `the model must have no tools (--tools ""); argv: ${JSON.stringify(call.argv)}`);
     assert.equal(after('--model'), 'haiku', `the model must be the small model (--model haiku); argv: ${JSON.stringify(call.argv)}`);
+    assert.ok(call.argv.includes('--strict-mcp-config'), `the model must load no MCP servers (--strict-mcp-config); argv: ${JSON.stringify(call.argv)}`);
+    assert.ok(call.argv.includes('--no-session-persistence'),
+      `the call must leave nothing in the owner's Claude history (--no-session-persistence); argv: ${JSON.stringify(call.argv)}`);
+    assert.equal(after('--output-format'), 'text', `the model must answer as plain text (--output-format text); argv: ${JSON.stringify(call.argv)}`);
+    const rule = after('--system-prompt');
+    assert.ok(typeof rule === 'string' && rule.trim().length > 0,
+      `the model must be given its one-word rule (a non-empty --system-prompt); argv: ${JSON.stringify(call.argv)}`);
   });
 });
 
@@ -376,6 +449,85 @@ test('with no claude on the hook PATH the floor finds the one its installer puts
   assertFree(w.attempt(world, 'session-installed-claude', tools.bash(command)), `${command}, the installed model answering no`);
   assert.equal(fake.calls().length, 1,
     `${command}: with PATH holding only the Mac's own folders the floor must find claude at ~/.local/bin/claude and ask it once; it asked ${fake.calls().length} times`);
+});
+
+test('a literal inbox path keeps its mark when the small model clears the unresolved word beside it, so a send is refused as one job', { timeout: 120000 }, (t) => {
+  const world = marksWorld(t);
+  const fake = w.installFakeClaude(world, { answer: 'no\n' });
+  const command = 'cat workspace/inbox/offer.eml workspace/dr?fts/order.json';
+  const s = 'session-literal-beside-unresolved';
+  assertFree(w.attempt(world, s, tools.bash(command), { env: fake.env }), `${command}, the model answering no`);
+  assert.equal(fake.calls().length, 1, `${command}: the floor must ask the small model once about the word it cannot resolve; it asked ${fake.calls().length} times`);
+  // No other read: the literal inbox path keeps the untrusted mark, and the
+  // read the model cleared still leaves the private mark.
+  refusedAsOneJob(world, s, send, `a send after ${command}, which names the planted mail`, [command], RECIPIENT);
+});
+
+test('the floor never runs a claude found on the hook PATH: with a decoy there and none where Claude Code installs it, the decoy is never asked, the read is asked, and once allowed the job holds untrusted input and private things', { timeout: 120000 }, (t) => {
+  const world = marksWorld(t);
+  // A decoy that would clear anything, first on the hook's PATH; nothing at
+  // ~/.local/bin/claude, /usr/local/bin/claude or /opt/homebrew/bin/claude.
+  const decoy = w.installFakeClaude(world, { answer: 'no\n' }, { dir: path.join(world.root, 'decoy-bin'), id: 'decoy' });
+  const command = 'cat workspace/dr?fts/order.json';
+  const s = 'session-decoy-only';
+  askedThenAllowed(world, s, tools.bash(command), `${command}, with a decoy claude first on the hook PATH and none where the floor looks`,
+    [command], { env: decoy.env });
+  assert.equal(decoy.calls().length, 0, `a claude found on the hook PATH is never run; the decoy was asked ${decoy.calls().length} times`);
+  refusedAsOneJob(world, s, send, `a send after the owner allowed ${command}`, [command], RECIPIENT);
+});
+
+test('the floor runs the claude its installer lays under the home folder as a link, and only that one, even with a decoy first on the hook PATH', { timeout: 120000 }, (t) => {
+  const world = marksWorld(t);
+  // A decoy whose answer would leave the read asked, first on the hook's PATH.
+  const decoy = w.installFakeClaude(world, { answer: 'unsure\n' }, { dir: path.join(world.root, 'decoy-bin'), id: 'decoy' });
+  // As Claude Code's installer lays it: ~/.local/bin/claude a link to the
+  // version it installed, elsewhere under the home folder.
+  const fake = w.installFakeClaude(world, { answer: 'no\n' },
+    { linkTo: path.join(world.userHome, '.local', 'share', 'claude', 'versions', '2.1.319') });
+  const command = 'cat workspace/dr?fts/order.json';
+  assertFree(w.attempt(world, 'session-installed-link', tools.bash(command), { env: decoy.env }), `${command}, the installed claude answering no`);
+  assert.equal(fake.calls().length, 1,
+    `${command}: the floor must ask the claude at ~/.local/bin/claude, a link to its installed version, once; it asked ${fake.calls().length} times`);
+  assert.equal(decoy.calls().length, 0, `a claude found on the hook PATH is never run; the decoy was asked ${decoy.calls().length} times`);
+});
+
+test('a claude under the home folder that anyone on the Mac may change is never run, and the read is asked', { timeout: 120000 }, (t) => {
+  const world = marksWorld(t);
+  const fake = w.installFakeClaude(world, { answer: 'no\n' }, { mode: 0o777 });
+  const command = 'cat workspace/dr?fts/order.json';
+  assertAsked(w.attempt(world, 'session-world-writable-claude', tools.bash(command)),
+    `${command}, with ~/.local/bin/claude writable by anyone on the Mac`, [command]);
+  assert.equal(fake.calls().length, 0, `a claude anyone may change is never run; it was asked ${fake.calls().length} times`);
+});
+
+test('at most three small-model calls in a job: from the fourth unresolved read on the owner is asked with no model call, and the fourth, once allowed, leaves the job holding untrusted input and private things', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  const fake = w.installFakeClaude(world, { answer: 'no\n' });
+  const on = { env: fake.env };
+  const s = 'session-three-calls';
+  // Five unresolved plain reads in one job, each aimed only outside the inbox.
+  const reads = [
+    'cat workspace/dr?fts/order.json',
+    'cat workspace/{drafts,pages}/order.json',
+    'cd workspace/drafts && cat order.json',
+    'cat "$PWD"/workspace/drafts/order.json',
+    'ls workspace/p*',
+  ];
+  reads.slice(0, 3).forEach((command, i) => {
+    const before = fake.calls().length;
+    assertFree(w.attempt(world, s, tools.bash(command), on), `unresolved read ${i + 1} of the job (${command}), the model answering no`);
+    assert.equal(fake.calls().length - before, 1,
+      `unresolved read ${i + 1} of the job (${command}): the floor must ask the small model once; it asked ${fake.calls().length - before} times`);
+  });
+  const fourth = w.attempt(world, s, tools.bash(reads[3]), on);
+  assertAsked(fourth, `unresolved read 4 of the job (${reads[3]}), after the three calls a job may make`, [reads[3]]);
+  assertAsked(w.attempt(world, s, tools.bash(reads[4]), on), `unresolved read 5 of the job (${reads[4]})`, [reads[4]]);
+  assert.equal(fake.calls().length, 3, `a job makes at most three small-model calls, whatever their answers; it made ${fake.calls().length}`);
+  // Two requests are open: the owner answers the fourth by naming it.
+  w.ownerSays(world, s, `yes ${w.requestIdIn(fourth.stderr)}`);
+  w.assertAllowed(w.attempt(world, s, tools.bash(reads[3]), on), `unresolved read 4 (${reads[3]}), after the owner said yes to it`);
+  assert.equal(fake.calls().length, 3, `a job makes at most three small-model calls; it made ${fake.calls().length}`);
+  refusedAsOneJob(world, s, send, `a send after the owner allowed ${reads[3]}`, [reads[3]], RECIPIENT);
 });
 
 // ------------------------------------------------ every read-shaped tool
@@ -433,6 +585,49 @@ test('Read, Grep, Glob and the shell are marked by one rule over the inbox, a fo
       'an unknown tool', ['mcp__acme_crm__lookup_customer'], on),
     { untrusted: true });
   assert.equal(fake.calls().length, 0, `a tool read never asks the small model; it asked ${fake.calls().length} times`);
+});
+
+test('when Squire cannot tell what a tool reads it is asked, naming the tool, and once allowed the job holds untrusted input and private things, so a send is refused as one job', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  // Tools Squire does not know, carrying none of the features of the names
+  // the other tests use.
+  const calls = [
+    ['ReadMcpResourceTool', tools.mcp('ReadMcpResourceTool', { server: 'docs', uri: 'docs://handbook/ordering' })],
+    ['mcp__docs__fetch_page', tools.mcp('mcp__docs__fetch_page', { page: 'ordering' })],
+  ];
+  calls.forEach(([name, call], i) => {
+    const s = `session-undecided-tool-${i}`;
+    askedThenAllowed(world, s, call, `a call to ${name}, a tool Squire does not know`, [name]);
+    // No other read: the allowed call alone leaves the job holding both.
+    refusedAsOneJob(world, s, send, `a send after the owner allowed ${name}`, [name], RECIPIENT);
+  });
+});
+
+// A subagent's own tool calls reach the hook under its parent's session_id,
+// carrying the agent_id and agent_type fields Claude Code's hooks reference
+// documents for a call made inside a subagent, and are judged one by one;
+// the Agent tool that starts the subagent reads nothing itself.
+test('a subagent works inside its parent\'s job: the Agent tool that starts it is free and leaves no mark, and its own read of the inbox leaves the parent\'s later profile read and send refused as one job', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  const agent = tools.mcp('Agent', {
+    description: 'Check the post',
+    prompt: 'Read the newest mail in the inbox and tell me what it asks for.',
+    subagent_type: 'general-purpose',
+  });
+  assertMarks(world, 'the Agent tool starting a subagent',
+    (s) => assertFree(w.attempt(world, s, agent), 'the Agent tool starting a subagent'),
+    { untrusted: false, private: false });
+  const s = 'session-parent-of-subagent';
+  assertFree(w.attempt(world, s, agent), 'the Agent tool starting a subagent');
+  const subagentRead = {
+    ...w.preToolUseEvent(world, s, tools.read(o(world, 'workspace/inbox/offer.eml'))),
+    agent_id: 'a7f3c19e2b4d',
+    agent_type: 'general-purpose',
+    tool_use_id: 'toolu_01SubagentRead',
+  };
+  assertFree(w.hook(world, 'pre-tool-use.py', subagentRead), 'the subagent reading the planted mail, under its parent\'s session');
+  assertFree(w.attempt(world, s, profileRead(world)), 'the parent reading the owner\'s profile');
+  refusedAsOneJob(world, s, send, 'a send in the parent\'s job after its subagent read the inbox and the parent read the profile', ['offer.eml'], RECIPIENT);
 });
 
 // ------------------------------------------------ the 12-second budget
@@ -544,6 +739,42 @@ test('heavy: a run of unresolved reads in one job, and reads in two jobs at once
   assert.deepEqual(left, [], `two jobs asking at once: no model process may outlive the calls; still running: ${left.join(', ')}`);
 });
 
+test('when Squire cannot show the small model answered within its deadline, because it left a process outside its group holding its output open or answered and never exited, the read is asked within 12 seconds and the model process is gone', { timeout: 300000 }, async (t) => {
+  const world = marksWorld(t);
+  const fake = w.installFakeClaude(world, { answer: 'no\n' });
+  const command = 'head -q workspace/drafts/order.json';
+  // A process that left the model's group is a leak to report, not a safety
+  // hole: the floor's own deadline decides. The test reports it and kills it.
+  const escaped = [];
+  t.after(() => {
+    for (const pid of escaped) {
+      try { process.kill(pid, 'SIGKILL'); } catch (e) { /* already gone */ }
+    }
+  });
+  const cases = [
+    ['the model starting a child in a session of its own that holds its output open, then hanging', { hangWithEscapedChild: true }],
+    ['the model printing a bare no and then hanging without exiting', { answer: 'no\n', thenHang: true }],
+  ];
+  for (const [i, [how, behaviour]] of cases.entries()) {
+    fake.set(behaviour);
+    const before = fake.calls().length;
+    const { r, started, ms } = timedAttempt(world, `session-undecided-delay-${i}`, tools.bash(command), { env: fake.env });
+    const made = fake.calls().slice(before);
+    for (const call of made) if (call.childEscaped && call.childPid) escaped.push(call.childPid);
+    assertAsked(r, `${command}, ${how}`, [command]);
+    assert.ok(ms <= BUDGET_MS, `${command}, ${how}: the outcome must come within ${BUDGET_MS / 1000} seconds; it took ${ms} ms`);
+    assert.equal(made.length, 1, `${command}, ${how}: the floor must have asked the small model once; it asked ${made.length} times`);
+    const left = await untilGone([made[0].pid], started + BUDGET_MS);
+    assert.deepEqual(left, [], `${command}, ${how}: the model's own process may not outlive the call; still running after ${BUDGET_MS / 1000} seconds: ${left.join(', ')}`);
+    for (const call of made) {
+      if (call.childEscaped && call.childPid && !w.processGone(call.childPid)) {
+        t.diagnostic(`${how}: process ${call.childPid}, started by the model in a session of its own, outlived the call; ` +
+          'a leak to report, not a hole, since the floor\'s deadline decided; the test kills it');
+      }
+    }
+  }
+});
+
 // ------------------------------------------------ the web search
 
 test('in a job holding untrusted input and private things a web search is refused as one job, naming the search, and in a job without both it stays free whatever its words', { timeout: 120000 }, (t) => {
@@ -564,4 +795,36 @@ test('in a job holding untrusted input and private things a web search is refuse
     for (const call of first) assertFree(w.attempt(world, s, call), `${what}: its read`);
     assertFree(w.attempt(world, s, tools.webSearch(carried)), `a web search carrying the profile's words, in ${what}`);
   });
+});
+
+// ------------------------------------------------ outside calls Squire cannot decide
+
+test('when Squire cannot show that a call stays inside the Mac, in a job holding untrusted input and private things it is refused as one job, yes or no: a tool it does not know, a program that only prints and a command outside the ones it knows', { timeout: 300000 }, (t) => {
+  const world = marksWorld(t);
+  // Calls carrying none of the features of the sends, installs and fetches
+  // the other tests name: nothing in them says they leave the Mac, and
+  // Squire cannot show that they stay on it.
+  const calls = [
+    ['a search-shaped tool Squire does not know', tools.mcp('mcp__news__search', { query: 'flour prices this week' }), 'mcp__news__search'],
+    ['a program that only prints', tools.bash('python3 -c "print(1)"'), 'python3 -c "print(1)"'],
+    ['a command outside the ones Squire knows', tools.bash("osascript -e 'return 1'"), "osascript -e 'return 1'"],
+  ];
+  // The job comes to hold both marks two ways: from a web page and the
+  // owner's profile, and from one read the owner allowed that Squire could
+  // not resolve, in a world where no claude can be found.
+  const jobs = [
+    ['a job that read a web page and the owner\'s profile', 'session-undecided-call-web', (s) => {
+      assertFree(w.attempt(world, s, tools.webFetch('https://example.com/wholesale-offer')), 'reading a web page');
+      assertFree(w.attempt(world, s, profileRead(world)), 'reading the owner\'s profile');
+    }, ['example.com/wholesale-offer']],
+    ['a job in which the owner allowed a read Squire could not resolve', 'session-undecided-call-read', (s) => {
+      askedThenAllowed(world, s, tools.bash('grep -ri order'), 'a recursive grep with no folder named (grep -ri order)', ['grep -ri order']);
+    }, ['grep -ri order']],
+  ];
+  for (const [job, s, holdBoth, sources] of jobs) {
+    holdBoth(s);
+    for (const [what, call, mention] of calls) {
+      refusedAsOneJob(world, s, call, `${what}, in ${job}`, sources, mention);
+    }
+  }
 });

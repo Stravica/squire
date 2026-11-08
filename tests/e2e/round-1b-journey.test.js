@@ -3,8 +3,8 @@
 // Round 1b's journey, end to end on a laid-down core: core is laid down into
 // a Squire home beside the owner's folder, and from then on only the
 // INSTALLED hooks run, as Claude Code would run them. The small model is the
-// fixture's fake claude, first on the hook's PATH; no test reaches a real
-// model.
+// fixture's fake claude, at ~/.local/bin/claude under the world's home folder,
+// where the floor looks; no test reaches a real model.
 //
 // The target is a parameter: SQUIRE_RELEASE_DIR names the core release to lay
 // down (a release folder holding hooks/, tools/ and the rest of core). Unset,
