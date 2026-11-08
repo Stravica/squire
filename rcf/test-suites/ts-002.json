@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-08T12:21:47.914Z",
+  "updatedAt": "2026-11-08T12:24:19.205Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -307,14 +307,14 @@
       "acId": "AC-1901-6",
       "description": "With a shadow cat first on the hook PATH, cat of a draft is asked with no model call, allowed, and a later send is refused as one job; /bin/cat of a draft the same.",
       "status": "pending",
-      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a listed command the hook would not find in the Mac's own folders, shadowed earlier on its PATH or named by its full path, is asked with no model call, and once allowed the job holds untrusted input and private things"
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a listed command the hook would not find in /bin or /usr/bin, shadowed earlier on its PATH or named by its full path, is asked with no model call, and once allowed the job holds untrusted input and private things"
     },
     {
       "id": "TC-002-zsh-words-off-the-list-asked",
       "acId": "AC-1901-6",
       "description": "In the default world, zsh alternation inside a word, a tilde before a user name and an option after the first operand are each asked naming the command, allowed, and a later send is refused as one job.",
       "status": "pending",
-      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::words the session's zsh would expand that the list does not name are asked, naming the command: alternation inside a word, a tilde before a user name and an option after the first operand, and once allowed the job holds untrusted input and private things"
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::words zsh would expand in the session that the list does not name are asked, naming the command: alternation inside a word, a tilde before a user name and an option after the first operand, and once allowed the job holds untrusted input and private things"
     },
     {
       "id": "TC-002-quarantine-anywhere-in-tree-marks",
@@ -370,7 +370,7 @@
       "acId": "AC-1901-9",
       "description": "The Agent tool is free and leaves no mark; a subagent's Read of the planted mail under the parent's session_id, with the subagent fields, leaves the parent's later profile read and send refused as one job.",
       "status": "pending",
-      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a subagent works inside its parent's job: the Agent tool that starts it is free and leaves no mark, and its own read of the inbox leaves the parent's later profile read and send refused as one job"
+      "testPointer": "tests/acceptance/rule-of-two-marks.test.js::a subagent works inside the job of its parent: the Agent tool that starts it is free and leaves no mark, and its own read of the inbox leaves a later profile read and send by the parent refused as one job"
     },
     {
       "id": "TC-002-undecided-delay-asked-in-budget",

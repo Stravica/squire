@@ -171,7 +171,7 @@ test('a program the owner allows to run leaves the job holding private things, a
   });
 });
 
-test('a listed command the hook would not find in the Mac\'s own folders, shadowed earlier on its PATH or named by its full path, is asked with no model call, and once allowed the job holds untrusted input and private things', { timeout: 300000 }, (t) => {
+test('a listed command the hook would not find in /bin or /usr/bin, shadowed earlier on its PATH or named by its full path, is asked with no model call, and once allowed the job holds untrusted input and private things', { timeout: 300000 }, (t) => {
   const world = marksWorld(t);
   // A model that would clear anything: a call to it would show.
   const fake = w.installFakeClaude(world, { answer: 'no\n' });
@@ -196,7 +196,7 @@ test('a listed command the hook would not find in the Mac\'s own folders, shadow
   });
 });
 
-test('words the session\'s zsh would expand that the list does not name are asked, naming the command: alternation inside a word, a tilde before a user name and an option after the first operand, and once allowed the job holds untrusted input and private things', { timeout: 300000 }, (t) => {
+test('words zsh would expand in the session that the list does not name are asked, naming the command: alternation inside a word, a tilde before a user name and an option after the first operand, and once allowed the job holds untrusted input and private things', { timeout: 300000 }, (t) => {
   const world = marksWorld(t);
   // The session's shell is zsh. No claude can be found in this world.
   const reads = [
@@ -607,7 +607,7 @@ test('when Squire cannot tell what a tool reads it is asked, naming the tool, an
 // carrying the agent_id and agent_type fields Claude Code's hooks reference
 // documents for a call made inside a subagent, and are judged one by one;
 // the Agent tool that starts the subagent reads nothing itself.
-test('a subagent works inside its parent\'s job: the Agent tool that starts it is free and leaves no mark, and its own read of the inbox leaves the parent\'s later profile read and send refused as one job', { timeout: 300000 }, (t) => {
+test('a subagent works inside the job of its parent: the Agent tool that starts it is free and leaves no mark, and its own read of the inbox leaves a later profile read and send by the parent refused as one job', { timeout: 300000 }, (t) => {
   const world = marksWorld(t);
   const agent = tools.mcp('Agent', {
     description: 'Check the post',
