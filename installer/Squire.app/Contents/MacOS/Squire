@@ -98,6 +98,19 @@ sq_out() {
   return $rc
 }
 
+# sq_reading <seconds> <command> [args...]: a bounded call whose output, as
+# it was printed with only its own trailing newline dropped, is REPLY.
+sq_reading() {
+  local bound=$1 chunk
+  shift
+  sq_bounded $bound $SQ_TMP/out "$@"
+  local rc=$?
+  REPLY=
+  while sysread chunk; do REPLY+=$chunk; done <$SQ_TMP/out
+  REPLY=${REPLY%$'\n'}
+  return $rc
+}
+
 sq_plutil() {
   sq_out 30 $SQ_ROOT/usr/bin/plutil "$@"
 }
@@ -168,10 +181,12 @@ sq_tools_present() {
 }
 
 # The Mac check, before any write: every failing condition named, in order.
+# Each reading is taken as printed, only its own trailing newline dropped: a
+# reading that is not then a version, or a whole number, is refused.
 sq_mac_check() {
   local -a said groups
   local v mem major
-  if sq_out 30 $SQ_ROOT/usr/bin/sw_vers -productVersion && v=${REPLY//[[:space:]]/} && [[ $v == <->(.<->)# ]]; then
+  if sq_reading 30 $SQ_ROOT/usr/bin/sw_vers -productVersion && v=$REPLY && [[ $v == <->(.<->)# ]]; then
     major=${v%%.*}
     if (( ${#major} > 6 || 10#$major < 13 )); then
       said+=("This Mac runs macOS $v, and Squire needs macOS 13 or later. Update macOS in System Settings, then open Squire again.")
@@ -179,7 +194,7 @@ sq_mac_check() {
   else
     said+=("Squire could not read this Mac's macOS version, so it cannot tell whether it is macOS 13 or later. Check for updates in System Settings, then open Squire again.")
   fi
-  if sq_out 30 $SQ_ROOT/usr/sbin/sysctl -n hw.memsize && mem=${REPLY//[[:space:]]/} && [[ $mem == <-> && ${#mem} -le 18 ]]; then
+  if sq_reading 30 $SQ_ROOT/usr/sbin/sysctl -n hw.memsize && mem=$REPLY && [[ $mem == <-> && ${#mem} -le 18 ]]; then
     if (( 10#$mem < 4294967296 )); then
       said+=("This Mac has less than 4 GB of memory, and Squire needs 4 GB or more.")
     fi
