@@ -7,7 +7,10 @@ into backupFolder (the iCloud Drive folder "Squire Backup" by default). The
 backup holds current/, the owner's folder as at the last run, and
 archive/<run time>/: a file removed from the owner's folder, and a changed
 file's earlier copy, move there. Nothing in the backup is ever deleted or
-overwritten. Links are copied as links, never followed.
+overwritten. Links are copied as links, never followed. Each copy is written
+at the top of the destination and renamed into place, so the backup's own
+half-written copies never sit among the owner's files; one left by a stopped
+run is removed at the next run's start.
 
 A destination that is absent, not writable or full, or an owner's folder
 that cannot be listed, is a failed run: nothing is counted done, the job
@@ -109,17 +112,20 @@ class Backup:
             os.makedirs(self.current, mode=0o700, exist_ok=True)
         except OSError as e:
             raise BackupFailed(self.why(e, self.current))
-        self.clean(self.current)
+        self.clean()
 
-    def clean(self, folder):
-        """Half-written copies left by a run that was stopped."""
-        for parent, dirs, files in os.walk(folder):
-            for name in files:
-                if name.startswith(self.PARTIAL):
-                    try:
-                        os.unlink(os.path.join(parent, name))
-                    except OSError:
-                        pass
+    def clean(self):
+        """Half-written copies left by a run that was stopped. The backup
+        writes its copies at the top of the destination, beside current/ and
+        archive/, never among the owner's files, so a file in the owner's
+        folder of any name is backed up like any other."""
+        try:
+            names = os.listdir(self.destination)
+        except OSError:
+            return
+        for name in names:
+            if name.startswith(self.PARTIAL):
+                self.discard(os.path.join(self.destination, name))
 
     def run(self):
         self.copy_tree(self.owner, self.current, '')
@@ -165,8 +171,7 @@ class Backup:
         for name in names:
             self.copy_entry(os.path.join(source, name), os.path.join(target, name), os.path.join(rel, name) if rel else name)
         for name in sorted(present - set(names)):
-            if not name.startswith(self.PARTIAL):
-                self.keep(os.path.join(target, name), os.path.join(rel, name) if rel else name)
+            self.keep(os.path.join(target, name), os.path.join(rel, name) if rel else name)
 
     def copy_entry(self, source, target, rel):
         try:
@@ -207,19 +212,19 @@ class Backup:
             self.not_copied.append(rel)
 
     def copy_file(self, source, target, rel, st, there):
-        """Copies through a partial file beside the target. A read that fails,
-        or a source that changed while it was read, is not copied; a write
-        that fails fails the run."""
+        """Copies through a partial file at the top of the destination, then
+        a rename into place. A read that fails, or a source that changed while
+        it was read, is not copied; a write that fails fails the run."""
         try:
             src = os.open(source, os.O_RDONLY | os.O_NOFOLLOW)
         except OSError:
             self.not_copied.append(rel)
             return
         try:
-            out, tmp = tempfile.mkstemp(prefix=self.PARTIAL, dir=os.path.dirname(target))
+            out, tmp = tempfile.mkstemp(prefix=self.PARTIAL, dir=self.destination)
         except OSError as e:
             os.close(src)
-            raise BackupFailed(self.why(e, os.path.dirname(target)))
+            raise BackupFailed(self.why(e, self.destination))
         copied = False
         try:
             copied = self.pour(src, out, target)
