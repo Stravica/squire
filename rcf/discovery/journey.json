@@ -1,12 +1,230 @@
 {
   "version": 1,
-  "ui": "none",
-  "declaredAt": "2026-11-07T17:34:08.404Z",
+  "ui": "light",
+  "declaredAt": "2026-11-09T12:57:50.308Z",
   "declaredBy": null,
   "declaredReason": null,
   "declaredVia": "declare",
   "asBuilt": false,
-  "screens": [],
-  "journeys": [],
+  "screens": [
+    {
+      "id": "SCR-001",
+      "slug": "system-settings",
+      "title": null,
+      "wireframe": null,
+      "references": []
+    },
+    {
+      "id": "SCR-002",
+      "slug": "installer-window",
+      "title": null,
+      "wireframe": null,
+      "references": []
+    },
+    {
+      "id": "SCR-003",
+      "slug": "browser-sign-in",
+      "title": null,
+      "wireframe": null,
+      "references": []
+    },
+    {
+      "id": "SCR-004",
+      "slug": "apple-tools-dialog",
+      "title": null,
+      "wireframe": null,
+      "references": []
+    },
+    {
+      "id": "SCR-005",
+      "slug": "claude-code-web",
+      "title": null,
+      "wireframe": null,
+      "references": []
+    }
+  ],
+  "journeys": [
+    {
+      "id": "JNY-001",
+      "slug": "first-run",
+      "actor": "A Squire owner on their own Mac",
+      "goal": "From opening the download to the first reply from their own Squire, without Terminal",
+      "source": "rcf/discovery/first-run.journey",
+      "steps": [
+        {
+          "id": "JNY-001-001",
+          "slug": "open-download",
+          "kind": "entry",
+          "screenId": "SCR-001",
+          "label": "Open the downloaded Squire app; macOS stops it once and the owner clicks Open Anyway in System Settings, Privacy and Security",
+          "next": [
+            "JNY-001-002"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-002",
+          "slug": "mac-check",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The Mac check: macOS 13 or later, 4 GB of memory, and Apple's command line tools present or installable by this user; a Mac that fails is refused here, before any change",
+          "next": [
+            "JNY-001-003"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-003",
+          "slug": "declare-plan",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The owner says which Claude plan they have; a plan below Pro is refused here, before any change",
+          "next": [
+            "JNY-001-004"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-004",
+          "slug": "one-yes",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "One yes for everything set-up installs: Claude Code with its own background updates, Apple's command line tools with the system's administrator password prompt, Squire and its background jobs; a no installs nothing",
+          "next": [
+            "JNY-001-005"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-005",
+          "slug": "install-claude-code",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "Claude Code, by its maker's installer, unless it is already there",
+          "next": [
+            "JNY-001-006"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-006",
+          "slug": "sign-in",
+          "kind": "step",
+          "screenId": "SCR-003",
+          "label": "The Claude sign-in in the default browser, into Squire's own Claude Code config folder",
+          "next": [
+            "JNY-001-007"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-007",
+          "slug": "plan-read",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The plan read from the sign-in; a plan below Pro stops set-up and undoes what set-up added; a plan Squire cannot read is asked of the owner",
+          "next": [
+            "JNY-001-008"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-008",
+          "slug": "apple-tools",
+          "kind": "step",
+          "screenId": "SCR-004",
+          "label": "Apple's command line tools, by Apple's own dialog, unless they are already there",
+          "next": [
+            "JNY-001-009"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-009",
+          "slug": "name-squire",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "Naming the Squire and giving it a personality",
+          "next": [
+            "JNY-001-010"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-010",
+          "slug": "owner-folder",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The owner's folder, ~/Squire unless the owner picks another",
+          "next": [
+            "JNY-001-011"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-011",
+          "slug": "lay-down",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "Squire laid down: the always-on session and the wake-ups",
+          "next": [
+            "JNY-001-012"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-012",
+          "slug": "backup",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The nightly backup job",
+          "next": [
+            "JNY-001-013"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-013",
+          "slug": "health",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The health check",
+          "next": [
+            "JNY-001-014"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-014",
+          "slug": "phone",
+          "kind": "step",
+          "screenId": "SCR-002",
+          "label": "The phone: how to install the Claude app; optional, and the phone can join later",
+          "next": [
+            "JNY-001-015"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-001-015",
+          "slug": "first-reply",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "The guided first conversation at claude.ai/code in the default browser, and the Squire's first reply",
+          "next": [],
+          "returnsTo": null
+        }
+      ],
+      "interruptions": {
+        "lostSignal": "JNY-001-005",
+        "closedTab": "JNY-001-006",
+        "expiredLink": "JNY-001-006",
+        "deadBattery": "JNY-001-015",
+        "switchedDevice": "JNY-001-014",
+        "lostEmail": "notApplicable:Squire set-up sends no email and no emailed link; every step runs on the Mac itself"
+      },
+      "stepHighWaterMark": 15
+    }
+  ],
   "review": null
 }

@@ -1,0 +1,25 @@
+# The first-run journey: from opening Squire's download to the Squire's first reply.
+# The record (journey.json) is minted from this file by rcf discover journey add.
+# Each failure branch answers to the set-up criterion: an unsupported Mac, a plan
+# below Pro, a failed or interrupted download, a cancelled, timed-out or offline
+# sign-in, no phone, and the laptop closed during the first conversation.
+
+# Journey: first-run
+actor: A Squire owner on their own Mac
+goal: From opening the download to the first reply from their own Squire, without Terminal
+- entry open-download @system-settings Open the downloaded Squire app; macOS stops it once and the owner clicks Open Anyway in System Settings, Privacy and Security
+- step mac-check @installer-window The Mac check: macOS 13 or later, 4 GB of memory, and Apple's command line tools present or installable by this user; a Mac that fails is refused here, before any change
+- step declare-plan @installer-window The owner says which Claude plan they have; a plan below Pro is refused here, before any change
+- step one-yes @installer-window One yes for everything set-up installs: Claude Code with its own background updates, Apple's command line tools with the system's administrator password prompt, Squire and its background jobs; a no installs nothing
+- step install-claude-code @installer-window Claude Code, by its maker's installer, unless it is already there
+- step sign-in @browser-sign-in The Claude sign-in in the default browser, into Squire's own Claude Code config folder
+- step plan-read @installer-window The plan read from the sign-in; a plan below Pro stops set-up and undoes what set-up added; a plan Squire cannot read is asked of the owner
+- step apple-tools @apple-tools-dialog Apple's command line tools, by Apple's own dialog, unless they are already there
+- step name-squire @installer-window Naming the Squire and giving it a personality
+- step owner-folder @installer-window The owner's folder, ~/Squire unless the owner picks another
+- step lay-down @installer-window Squire laid down: the always-on session and the wake-ups
+- step backup @installer-window The nightly backup job
+- step health @installer-window The health check
+- step phone @installer-window The phone: how to install the Claude app; optional, and the phone can join later
+- exit first-reply @claude-code-web The guided first conversation at claude.ai/code in the default browser, and the Squire's first reply
+interruptions: lostSignal=install-claude-code, closedTab=sign-in, expiredLink=sign-in, deadBattery=first-reply, switchedDevice=phone, lostEmail=notApplicable:Squire set-up sends no email and no emailed link; every step runs on the Mac itself
