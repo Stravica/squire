@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-066",
+  "path": "installer/Squire.app/Contents/MacOS/Squire#sq_claude_found",
+  "implementsAcIds": [
+    "AC-201-6"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:43:02.468Z",
+  "updatedAt": "2026-11-09T16:43:02.468Z"
+}

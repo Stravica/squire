@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-031",
+  "path": "core/lib/squire.py#ClaudeSignIn",
+  "implementsAcIds": [
+    "AC-201-8",
+    "AC-1101-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:26.211Z",
+  "updatedAt": "2026-11-09T16:41:26.211Z"
+}

@@ -41,13 +41,25 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec rcf audit coverage REQ-001
 
+      - name: Coverage of REQ-002
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit coverage REQ-002
+
       - name: Coverage of REQ-004
         if: ${{ !cancelled() }}
         run: pnpm exec rcf audit coverage REQ-004
 
+      - name: Coverage of REQ-006
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit coverage REQ-006
+
       - name: Coverage of REQ-007
         if: ${{ !cancelled() }}
         run: pnpm exec rcf audit coverage REQ-007
+
+      - name: Coverage of REQ-011
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit coverage REQ-011
 
       - name: Coverage of REQ-019
         if: ${{ !cancelled() }}

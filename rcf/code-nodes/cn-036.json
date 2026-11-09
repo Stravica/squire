@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-036",
+  "path": "core/tools/backup.py#BackupFailed",
+  "implementsAcIds": [
+    "AC-1101-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:38.286Z",
+  "updatedAt": "2026-11-09T16:41:38.286Z"
+}

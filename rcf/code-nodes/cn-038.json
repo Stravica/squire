@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-038",
+  "path": "core/tools/wake-up.py#SignInWarning",
+  "implementsAcIds": [
+    "AC-201-8"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:42.643Z",
+  "updatedAt": "2026-11-09T16:41:42.643Z"
+}

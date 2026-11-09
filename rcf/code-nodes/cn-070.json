@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-070",
+  "path": "installer/Squire.app/Contents/MacOS/Squire#sq_signed_in",
+  "implementsAcIds": [
+    "AC-201-4",
+    "AC-201-6"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:43:11.699Z",
+  "updatedAt": "2026-11-09T16:43:11.699Z"
+}
