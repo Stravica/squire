@@ -1,11 +1,13 @@
 {
   "createdAt": "2026-11-09T13:28:40.809Z",
-  "updatedAt": "2026-11-09T13:45:25.449Z",
+  "updatedAt": "2026-11-09T15:16:29.967Z",
   "purpose": "Runs Squire's real set-up app at its entry point and the steps behind it in a test world with fakes for the Mac's commands, Claude Code's installer and the owner's answers: each listed problem is explained, keeps what is done and the owner's things, and resumes or repairs one installation; a step whose result cannot be confirmed runs again and is never counted done.",
   "testLevel": "integration",
   "acIds": [
     "AC-201-4",
-    "AC-201-6"
+    "AC-201-6",
+    "AC-201-7",
+    "AC-201-8"
   ],
   "id": "TS-027",
   "usId": "US-201",
@@ -192,6 +194,90 @@
       "description": "Apple's tools still reporting that they install are not counted done, and a re-run runs that step again from its start",
       "status": "pending",
       "testPointer": "tests/acceptance/installer.test.js::Apple's tools still reporting that they install are not counted done, and a re-run runs that step again from its start"
+    },
+    {
+      "id": "TC-027-hostile-sw-vers-never-called",
+      "acId": "AC-201-4",
+      "description": "a hostile sw_vers first on the PATH the app is opened with is never called: the Mac check reads the system's own answer and macOS 12 is refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a hostile sw_vers first on the PATH the app is opened with is never called: the Mac check reads the system's own answer and macOS 12 is refused"
+    },
+    {
+      "id": "TC-027-undo-over-partial-install-every-byte",
+      "acId": "AC-201-4",
+      "description": "a plan found below Pro over a partial install of Claude Code already there leaves every byte that was there as it was, restores what the installer changed and takes away everything set-up added",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan found below Pro over a partial install of Claude Code already there leaves every byte that was there as it was, restores what the installer changed and takes away everything set-up added"
+    },
+    {
+      "id": "TC-027-undo-keeps-foreign-file-in-created-folder",
+      "acId": "AC-201-4",
+      "description": "a file another app writes inside a folder set-up created is kept by the undo, and that folder is kept and named on the stopped window",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a file another app writes inside a folder set-up created is kept by the undo, and that folder is kept and named on the stopped window"
+    },
+    {
+      "id": "TC-027-failed-undo-step-named-never-as-found",
+      "acId": "AC-201-4",
+      "description": "an undo step that fails, signing Squire's config folder out, is named on the stopped window, stays in the record, and the window never says the Mac is as set-up found it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::an undo step that fails, signing Squire's config folder out, is named on the stopped window, stays in the record, and the window never says the Mac is as set-up found it"
+    },
+    {
+      "id": "TC-027-bad-record-set-aside-never-adopted",
+      "acId": "AC-201-6",
+      "description": "a set-up record that does not parse, is cut short, or holds wrong types and out-of-order step ids is set aside, never adopted, and set-up runs again from the start",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a set-up record that does not parse, is cut short, or holds wrong types and out-of-order step ids is set aside, never adopted, and set-up runs again from the start"
+    },
+    {
+      "id": "TC-027-second-set-up-other-tmpdir-already-running",
+      "acId": "AC-201-4",
+      "description": "a second set-up opened with a different temporary folder still exits at once, saying set-up is already running, and changes nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a second set-up opened with a different temporary folder still exits at once, saying set-up is already running, and changes nothing"
+    },
+    {
+      "id": "TC-027-owner-folder-problems-pause-byte-for-byte",
+      "acId": "AC-201-4",
+      "description": "a ~/Squire that is a file, a link into Documents or not writable, or an owner's squire.json that does not parse, pauses set-up naming it and is left byte for byte",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a ~/Squire that is a file, a link into Documents or not writable, or an owner's squire.json that does not parse, pauses set-up naming it and is left byte for byte"
+    },
+    {
+      "id": "TC-027-health-step-done-with-cannot-confirm-line",
+      "acId": "AC-201-4",
+      "description": "an unreadable managed settings file on an otherwise healthy Mac lets set-up finish, and its ready window carries the cannot-confirm line",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::an unreadable managed settings file on an otherwise healthy Mac lets set-up finish, and its ready window carries the cannot-confirm line"
+    },
+    {
+      "id": "TC-027-unreadable-mac-fact-refused-before-change",
+      "acId": "AC-201-7",
+      "description": "a Mac fact set-up cannot read (sw_vers failing, sw_vers printing no version, a memory reading that is not a number) is refused before any change, naming it and the way on",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a Mac fact set-up cannot read (sw_vers failing, sw_vers printing no version, a memory reading that is not a number) is refused before any change, naming it and the way on"
+    },
+    {
+      "id": "TC-027-sign-in-ending-warned-once-a-day",
+      "acId": "AC-201-8",
+      "description": "a sign-in that ends within seven days gets one wake-up through Squire's session naming the day and the one action, and a second run that day sends none",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a sign-in that ends within seven days gets one wake-up through Squire's session naming the day and the one action, and a second run that day sends none"
+    },
+    {
+      "id": "TC-027-sign-in-far-or-unreadable-no-warning",
+      "acId": "AC-201-8",
+      "description": "a sign-in that ends in more than seven days, or whose end cannot be read, gets no wake-up and no sign-in",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a sign-in that ends in more than seven days, or whose end cannot be read, gets no wake-up and no sign-in"
+    },
+    {
+      "id": "TC-027-sign-in-again-on-yes-into-config-only",
+      "acId": "AC-201-8",
+      "description": "on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else"
     }
   ],
   "status": "draft"

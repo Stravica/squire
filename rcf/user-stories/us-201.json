@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:13.053Z",
-  "updatedAt": "2026-11-09T13:28:00.914Z",
+  "updatedAt": "2026-11-09T15:01:48.091Z",
   "asA": "Squire owner",
   "iWant": "to set Squire up on my Mac from one download, one step at a time, without ever opening Terminal",
   "soThat": "I can install and start using my own assistant without technical help",
@@ -64,6 +64,24 @@
       "given": "Set-up on a Mac where the result of a step cannot be confirmed: Claude Code's launcher is present but the version it points to is incomplete, or Apple's tools still report that they are installing",
       "when": "Squire's set-up reaches that step, or is run again after it",
       "then": "Squire runs the step again from its start and does not record it as done until its result is confirmed; a later run never skips it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-7",
+      "description": "When set-up cannot read a fact about the Mac it needs, it refuses before changing anything, saying what it could not read and the way on.",
+      "testable": true,
+      "given": "A Mac whose facts set-up must read cannot be read: its macOS version reading is missing, fails or is not a version, its memory reading is missing, fails or is not a whole number, or, with Apple's tools absent, the list of the user's groups cannot be read",
+      "when": "The Squire owner opens Squire's download",
+      "then": "Set-up refuses before it changes anything on the Mac, names what it could not read and the way on, and never asks the owner for that fact or assumes it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-8",
+      "description": "Before Squire's Claude sign-in ends, Squire warns its owner and, on the owner's yes, signs in again with no Terminal.",
+      "testable": true,
+      "given": "Squire set up, with its Claude sign-in due to end within seven days, and the day it ends readable without touching the sign-in's secret",
+      "when": "Squire's background run checks the sign-in, and the Squire owner says yes to signing in again",
+      "then": "Squire tells the owner through its own session, at most once a day, the day the sign-in ends and the one action to take; on the owner's yes it runs the sign-in again into Squire's own Claude Code configuration, opening the browser's sign-in page, with no Terminal and nothing else.",
       "verification": "testOnly"
     }
   ]

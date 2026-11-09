@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-09T13:45:25.955Z",
+  "updatedAt": "2026-11-09T15:16:27.430Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -476,6 +476,20 @@
       "description": "after the one yes nothing outside the named list is installed",
       "status": "pending",
       "testPointer": "tests/acceptance/installer.test.js::after the one yes nothing outside the named list is installed"
+    },
+    {
+      "id": "TC-002-hostile-commands-and-tokens-never-reach",
+      "acId": "AC-1901-5",
+      "description": "a hostile osascript and curl first on the PATH the app is opened with are never called, the one yes is asked through the system's own windows, and the token variables the app is opened with reach no claude call",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a hostile osascript and curl first on the PATH the app is opened with are never called, the one yes is asked through the system's own windows, and the token variables the app is opened with reach no claude call"
+    },
+    {
+      "id": "TC-002-record-alone-never-consent",
+      "acId": "AC-1901-5",
+      "description": "a set-up record that lists every step done, with no yes in the approvals ledger, still gets the one yes asked before anything installs",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a set-up record that lists every step done, with no yes in the approvals ledger, still gets the one yes asked before anything installs"
     }
   ],
   "status": "draft"

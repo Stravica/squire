@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:40.324Z",
-  "updatedAt": "2026-11-09T13:45:34.139Z",
+  "updatedAt": "2026-11-09T15:02:20.797Z",
   "purpose": "Installs Squire from the download under a fresh macOS user on a real Mac and checks that no Terminal window opens at any point. Takes the target host as a parameter.",
   "testLevel": "e2e",
   "acIds": [
@@ -11,11 +11,11 @@
   "title": "Fresh install with no Terminal",
   "testCases": [
     {
-      "id": "TC-007-first-run-journey-fresh-mac-user-from-download",
-      "acId": "AC-201-3",
-      "description": "the first-run journey on a fresh Mac user: from the download, every set-up step runs in order without Terminal, and the owner gets a first reply from their Squire, named",
+      "id": "TC-007-setting-squire-up-from-download-fresh-mac-user",
+      "acId": "AC-201-1",
+      "description": "setting Squire up from the download on a fresh Mac user opens no Terminal window: every new window belongs to set-up, the browser, System Settings, Apple's tools dialog or the Claude app",
       "status": "pending",
-      "testPointer": "tests/e2e/round-3-install.test.js::the first-run journey on a fresh Mac user: from the download, every set-up step runs in order without Terminal, and the owner gets a first reply from their Squire, named"
+      "testPointer": "tests/e2e/round-3-install.test.js::setting Squire up from the download on a fresh Mac user opens no Terminal window: every new window belongs to set-up, the browser, System Settings, Apple's tools dialog or the Claude app"
     }
   ],
   "status": "draft"

@@ -1,11 +1,12 @@
 {
   "createdAt": "2026-11-07T17:40:41.132Z",
-  "updatedAt": "2026-11-09T13:45:33.753Z",
+  "updatedAt": "2026-11-09T15:16:32.094Z",
   "purpose": "Runs the scheduled backup job on a seeded folder and checks copies and archives; injects a known fault and checks the known fix runs, with the required yes, before any ticket is offered.",
   "testLevel": "integration",
   "acIds": [
     "AC-1101-1",
-    "AC-1101-2"
+    "AC-1101-2",
+    "AC-1101-3"
   ],
   "id": "TS-010",
   "usId": "US-1101",
@@ -56,16 +57,16 @@
     {
       "id": "TC-010-changed-floor-file-named-fix-offered-fix-runs",
       "acId": "AC-1101-2",
-      "description": "a changed floor file is named and its fix offered; the fix runs only after the owner's yes, lays core down again from the release, and the check then finds it gone",
+      "description": "a changed floor file is named and its fix asked for; after the owner's yes the session still cannot make it, and the scheduler's next run lays core down again from the release and the check finds it gone",
       "status": "pending",
-      "testPointer": "tests/acceptance/known-fixes.test.js::a changed floor file is named and its fix offered; the fix runs only after the owner's yes, lays core down again from the release, and the check then finds it gone"
+      "testPointer": "tests/acceptance/known-fixes.test.js::a changed floor file is named and its fix asked for; after the owner's yes the session still cannot make it, and the scheduler's next run lays core down again from the release and the check finds it gone"
     },
     {
       "id": "TC-010-runner-not-running-named-fix-offered-fix-runs",
       "acId": "AC-1101-2",
-      "description": "the runner not running is named and its fix offered; the fix runs only after the owner's yes, and when it cannot bring the runner back it says plainly the fault is still there",
+      "description": "the runner not running is named and its fix asked for; after the owner's yes the scheduler's next run reloads the agents, loads nothing outside the account's own home, and says plainly the fault is still there",
       "status": "pending",
-      "testPointer": "tests/acceptance/known-fixes.test.js::the runner not running is named and its fix offered; the fix runs only after the owner's yes, and when it cannot bring the runner back it says plainly the fault is still there"
+      "testPointer": "tests/acceptance/known-fixes.test.js::the runner not running is named and its fix asked for; after the owner's yes the scheduler's next run reloads the agents, loads nothing outside the account's own home, and says plainly the fault is still there"
     },
     {
       "id": "TC-010-not-signed-named-with-way-opening-squires-installer",
@@ -80,6 +81,55 @@
       "description": "a moved settings file and a fault not on the list are named, and nothing is offered for either",
       "status": "pending",
       "testPointer": "tests/acceptance/known-fixes.test.js::a moved settings file and a fault not on the list are named, and nothing is offered for either"
+    },
+    {
+      "id": "TC-010-yes-for-one-fault-fixes-no-other",
+      "acId": "AC-1101-2",
+      "description": "a yes for one fault does not fix another: after the yes to reload the agents, a changed floor file stays changed and named",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::a yes for one fault does not fix another: after the yes to reload the agents, a changed floor file stays changed and named"
+    },
+    {
+      "id": "TC-010-stale-yes-changes-nothing",
+      "acId": "AC-1101-2",
+      "description": "a yes given more than 30 minutes before the scheduler's run changes nothing and the check says it could not try",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::a yes given more than 30 minutes before the scheduler's run changes nothing and the check says it could not try"
+    },
+    {
+      "id": "TC-010-used-yes-never-used-again",
+      "acId": "AC-1101-2",
+      "description": "a second run of the scheduler after the yes was used does nothing: a floor file changed again stays changed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::a second run of the scheduler after the yes was used does nothing: a floor file changed again stays changed"
+    },
+    {
+      "id": "TC-010-fault-gone-could-not-try",
+      "acId": "AC-1101-2",
+      "description": "a yes for a fault already gone changes nothing and the check says it could not try",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::a yes for a fault already gone changes nothing and the check says it could not try"
+    },
+    {
+      "id": "TC-010-fix-from-release-folder-app-deleted",
+      "acId": "AC-1101-2",
+      "description": "after set-up the app moved and then deleted, the floor fix still lays core down from the Squire home's release folder, and with that folder gone it says it could not try and to open Squire's installer",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::after set-up the app moved and then deleted, the floor fix still lays core down from the Squire home's release folder, and with that folder gone it says it could not try and to open Squire's installer"
+    },
+    {
+      "id": "TC-010-unreadable-file-named-rest-backed-up",
+      "acId": "AC-1101-3",
+      "description": "a file the backup cannot read is named by the health check, current/ keeps its last copy of it, and every other file is backed up",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::a file the backup cannot read is named by the health check, current/ keeps its last copy of it, and every other file is backed up"
+    },
+    {
+      "id": "TC-010-owner-folder-absent-failed-run",
+      "acId": "AC-1101-1",
+      "description": "an owner's folder absent when the backup runs is a failed run in which nothing moves into the archive",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::an owner's folder absent when the backup runs is a failed run in which nothing moves into the archive"
     }
   ],
   "status": "draft"

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:40.059Z",
-  "updatedAt": "2026-11-09T13:45:28.950Z",
+  "updatedAt": "2026-11-09T15:16:32.685Z",
   "purpose": "Runs the real set-up, lay-down, runner and health check against fresh and conflicting Claude Code configurations (top level, per model, environment, command line, managed settings), reads what reaches the session, checks that the health check reports drift, and that it says it cannot confirm the window when a source cannot be read.",
   "testLevel": "integration",
   "acIds": [
@@ -42,9 +42,9 @@
     {
       "id": "TC-006-model-whose-context-window-smaller-than-500k-not",
       "acId": "AC-201-2",
-      "description": "a model whose context window is smaller than 500k is not drift: the health check names nothing about the window",
+      "description": "a model that runs below 500k is not drift for a window at or above its own, while the same window for a 1M model is named",
       "status": "pending",
-      "testPointer": "tests/acceptance/compaction-window.test.js::a model whose context window is smaller than 500k is not drift: the health check names nothing about the window"
+      "testPointer": "tests/acceptance/compaction-window.test.js::a model that runs below 500k is not drift for a window at or above its own, while the same window for a 1M model is named"
     },
     {
       "id": "TC-006-when-managed-settings-file-exists-but-cannot-be",
@@ -66,6 +66,20 @@
       "description": "when the managed preferences exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence",
       "status": "pending",
       "testPointer": "tests/acceptance/compaction-window.test.js::when the managed preferences exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence"
+    },
+    {
+      "id": "TC-006-per-user-managed-preferences-cannot-confirm",
+      "acId": "AC-201-5",
+      "description": "the per-user managed preferences file, a source that can override the window and that the health check does not read, gives cannot confirm the compaction window, naming it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::the per-user managed preferences file, a source that can override the window and that the health check does not read, gives cannot confirm the compaction window, naming it"
+    },
+    {
+      "id": "TC-006-unparseable-managed-settings-cannot-confirm",
+      "acId": "AC-201-5",
+      "description": "a managed settings file that does not parse gives cannot confirm the compaction window, naming it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::a managed settings file that does not parse gives cannot confirm the compaction window, naming it"
     }
   ],
   "status": "draft"

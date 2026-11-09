@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:14.622Z",
-  "updatedAt": "2026-11-07T17:40:15.151Z",
+  "updatedAt": "2026-11-09T15:01:55.639Z",
   "asA": "Squire owner",
   "iWant": "Squire to back up my folder every night and to fix what it can by itself before asking me to send a ticket",
   "soThat": "I lose nothing and rarely need help",
@@ -28,6 +28,15 @@
       "given": "A fault the health check detects that has a fix on the known-fixes list",
       "when": "Squire handles the fault",
       "then": "Squire applies the known fix, with the Squire owner's yes where the fix changes anything, checks that it worked, and offers no ticket; a ticket is offered only when the fix does not work.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1101-3",
+      "description": "A file the nightly backup cannot copy is named, and everything else is still backed up.",
+      "testable": true,
+      "given": "A file in the Squire owner's folder that the nightly backup cannot read, that is not an ordinary file, or that changes or vanishes while it is copied",
+      "when": "The nightly backup runs",
+      "then": "The health check names that file, the backup keeps its last copy of it, and every other file is backed up.",
       "verification": "testOnly"
     }
   ]
