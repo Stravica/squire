@@ -33,6 +33,7 @@ import json
 import os
 import plistlib
 import pwd
+import stat
 import subprocess
 import sys
 import tempfile
@@ -290,7 +291,14 @@ class CompactionWindow:
                 return lines + [self.cannot(drop_ins, 'cannot be listed')]
             for name in names:
                 path = os.path.join(drop_ins, name)
-                if os.path.isfile(path):
+                # A drop-in the check cannot reach (a link into a folder it may
+                # not search, or one that leads nowhere) is named, never skipped.
+                try:
+                    regular = stat.S_ISREG(os.stat(path).st_mode)
+                except OSError:
+                    lines.append(self.cannot(path, 'cannot be reached'))
+                    continue
+                if regular:
                     lines += self.json_source(path)
         preferences = os.path.join(self.root + '/Library', 'Managed Preferences')
         lines += self.plist_source(os.path.join(preferences, 'com.anthropic.claudecode.plist'))
