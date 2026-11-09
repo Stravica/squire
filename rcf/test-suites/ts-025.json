@@ -1,10 +1,11 @@
 {
   "createdAt": "2026-11-08T19:15:34.839Z",
-  "updatedAt": "2026-11-09T16:55:02.291Z",
+  "updatedAt": "2026-11-09T18:33:11.035Z",
   "purpose": "Runs the installed session runner, the session-start and config-change hooks and lay-down through their real entry points, in a test world with a fake Claude Code at the place it installs itself: the config folder, the environment, the claude location, the server's arguments, the check before each start, settings files in the Squire owner's folder, resume, the session record and the launchd agents.",
   "testLevel": "integration",
   "acIds": [
-    "AC-401-3"
+    "AC-401-3",
+    "AC-401-1"
   ],
   "id": "TS-025",
   "usId": "US-401",
@@ -135,6 +136,13 @@
       "description": "Startup writes the job record, so a quiet session resumed under the same id is a job the floor has seen: a send is asked with a request id, not refused as one job.",
       "status": "pending",
       "testPointer": "tests/acceptance/session-runner.test.js::a session started and then resumed under the same id with nothing done is a job the floor has seen: a send in it is asked, not refused as one job"
+    },
+    {
+      "id": "TC-025-re-run-after-done-keeps-session",
+      "acId": "AC-401-1",
+      "description": "set-up opened again after it finished, pausing on the owner's squire.json, leaves the running session untouched, and a restarted runner has one session running again within two minutes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::set-up opened again after it finished, pausing on the owner's squire.json, leaves the running session untouched, and a restarted runner has one session running again within two minutes"
     }
   ],
   "status": "draft"

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.132Z",
-  "updatedAt": "2026-11-09T15:16:32.094Z",
+  "updatedAt": "2026-11-09T18:33:01.723Z",
   "purpose": "Runs the scheduled backup job on a seeded folder and checks copies and archives; injects a known fault and checks the known fix runs, with the required yes, before any ticket is offered.",
   "testLevel": "integration",
   "acIds": [
@@ -130,6 +130,13 @@
       "description": "an owner's folder absent when the backup runs is a failed run in which nothing moves into the archive",
       "status": "pending",
       "testPointer": "tests/acceptance/backup.test.js::an owner's folder absent when the backup runs is a failed run in which nothing moves into the archive"
+    },
+    {
+      "id": "TC-010-owner-file-named-like-partial-kept",
+      "acId": "AC-1101-1",
+      "description": "an owner's file named like the backup's own half-written copies is kept like any other: once changed its earlier copy is in the dated archive, once removed its last copy stays, and no copy ever leaves the backup",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::an owner's file named like the backup's own half-written copies is kept like any other: once changed its earlier copy is in the dated archive, once removed its last copy stays, and no copy ever leaves the backup"
     }
   ],
   "status": "draft"

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-09T13:28:40.809Z",
-  "updatedAt": "2026-11-09T15:16:29.967Z",
+  "updatedAt": "2026-11-09T18:33:08.231Z",
   "purpose": "Runs Squire's real set-up app at its entry point and the steps behind it in a test world with fakes for the Mac's commands, Claude Code's installer and the owner's answers: each listed problem is explained, keeps what is done and the owner's things, and resumes or repairs one installation; a step whose result cannot be confirmed runs again and is never counted done.",
   "testLevel": "integration",
   "acIds": [
@@ -278,6 +278,20 @@
       "description": "on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else",
       "status": "pending",
       "testPointer": "tests/acceptance/installer.test.js::on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else"
+    },
+    {
+      "id": "TC-027-spaced-mac-reading-refused-before-change",
+      "acId": "AC-201-7",
+      "description": "a Mac fact reading with a space in it (a macOS version of \"1 3\", a memory reading with a space between its digits, a memory reading led by a space) is not a version or a whole number: it is refused before any change, naming it, and set-up never goes on to the plan window",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a Mac fact reading with a space in it (a macOS version of \"1 3\", a memory reading with a space between its digits, a memory reading led by a space) is not a version or a whole number: it is refused before any change, naming it, and set-up never goes on to the plan window"
+    },
+    {
+      "id": "TC-027-undo-through-linked-claude-places",
+      "acId": "AC-201-4",
+      "description": "a plan found below Pro over a ~/.claude.json or a ~/.claude that is a link to elsewhere in the home leaves each link, and the file or folder it leads to, exactly as set-up found them, as the stopped window says",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan found below Pro over a ~/.claude.json or a ~/.claude that is a link to elsewhere in the home leaves each link, and the file or folder it leads to, exactly as set-up found them, as the stopped window says"
     }
   ],
   "status": "draft"

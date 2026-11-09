@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:40.059Z",
-  "updatedAt": "2026-11-09T15:16:32.685Z",
+  "updatedAt": "2026-11-09T18:32:58.502Z",
   "purpose": "Runs the real set-up, lay-down, runner and health check against fresh and conflicting Claude Code configurations (top level, per model, environment, command line, managed settings), reads what reaches the session, checks that the health check reports drift, and that it says it cannot confirm the window when a source cannot be read.",
   "testLevel": "integration",
   "acIds": [
@@ -80,6 +80,13 @@
       "description": "a managed settings file that does not parse gives cannot confirm the compaction window, naming it",
       "status": "pending",
       "testPointer": "tests/acceptance/compaction-window.test.js::a managed settings file that does not parse gives cannot confirm the compaction window, naming it"
+    },
+    {
+      "id": "TC-006-drop-in-link-unsearchable-cannot-confirm",
+      "acId": "AC-201-5",
+      "description": "when a managed settings drop-in is a link into a folder the health check cannot search, the health check says it cannot confirm the compaction window and names the drop-in, never a pass and never silence",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::when a managed settings drop-in is a link into a folder the health check cannot search, the health check says it cannot confirm the compaction window and names the drop-in, never a pass and never silence"
     }
   ],
   "status": "draft"
