@@ -437,6 +437,8 @@ function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
   t.after(async () => {
     for (const r of iw.runners) await r.stop();
     sw.killFakes(world);
+    // A case may leave the owner's folder unwritable; its write permission comes back first so the world can be removed.
+    try { if (fs.lstatSync(iw.ownerFolder).isDirectory()) fs.chmodSync(iw.ownerFolder, 0o755); } catch (e) { /* none */ }
     w.cleanUp(world);
   });
   for (const rel of ['Library/Application Support', 'Library/Preferences', 'Desktop', 'Documents', 'Downloads']) {
