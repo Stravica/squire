@@ -122,6 +122,330 @@
       "reason": "REQ-007 has no login page, cookie or token endpoint: the session runs under the owner's own Claude sign-in held by Claude Code, so the auth baseline (auth.sessionCookieShape) does not apply to this requirement",
       "operatorAckAt": "2026-11-08T21:00:17.988Z",
       "reqId": "REQ-007"
+    },
+    {
+      "id": "boo-2026-11-09-001",
+      "createdAt": "2026-11-09T13:27:07.021Z",
+      "baselineKey": "auth.emptyTokenRejection",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app; its only sign-in is Claude's own (claude auth login into Squire's Claude Code config folder), and Squire has no login page, session cookie or token of its own, so the auth baseline (auth.emptyTokenRejection) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:07.021Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-002",
+      "createdAt": "2026-11-09T13:27:07.223Z",
+      "baselineKey": "auth.htmlLoginPage",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app; its only sign-in is Claude's own (claude auth login into Squire's Claude Code config folder), and Squire has no login page, session cookie or token of its own, so the auth baseline (auth.htmlLoginPage) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:07.223Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-003",
+      "createdAt": "2026-11-09T13:27:07.399Z",
+      "baselineKey": "auth.postLogout",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app; its only sign-in is Claude's own (claude auth login into Squire's Claude Code config folder), and Squire has no login page, session cookie or token of its own, so the auth baseline (auth.postLogout) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:07.399Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-004",
+      "createdAt": "2026-11-09T13:27:07.574Z",
+      "baselineKey": "auth.sessionCookieShape",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app; its only sign-in is Claude's own (claude auth login into Squire's Claude Code config folder), and Squire has no login page, session cookie or token of its own, so the auth baseline (auth.sessionCookieShape) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:07.574Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-005",
+      "createdAt": "2026-11-09T13:27:07.742Z",
+      "baselineKey": "httpApi.authBoundary",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.authBoundary) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:07.742Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-006",
+      "createdAt": "2026-11-09T13:27:07.913Z",
+      "baselineKey": "httpApi.contentType",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.contentType) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:07.913Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-007",
+      "createdAt": "2026-11-09T13:27:08.096Z",
+      "baselineKey": "httpApi.errorEnvelope",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.errorEnvelope) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:08.096Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-008",
+      "createdAt": "2026-11-09T13:27:08.264Z",
+      "baselineKey": "httpApi.rateLimitDisclosure",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.rateLimitDisclosure) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:08.264Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-009",
+      "createdAt": "2026-11-09T13:27:08.508Z",
+      "baselineKey": "httpApi.authBoundary",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.authBoundary) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:08.508Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-010",
+      "createdAt": "2026-11-09T13:27:08.682Z",
+      "baselineKey": "httpApi.contentType",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.contentType) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:08.682Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-011",
+      "createdAt": "2026-11-09T13:27:08.870Z",
+      "baselineKey": "httpApi.errorEnvelope",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.errorEnvelope) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:08.870Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-012",
+      "createdAt": "2026-11-09T13:27:09.049Z",
+      "baselineKey": "httpApi.rateLimitDisclosure",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac; it exposes no HTTP endpoint, so the HTTP API baseline (httpApi.rateLimitDisclosure) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:09.049Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-013",
+      "createdAt": "2026-11-09T13:27:09.229Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app whose windows are the Mac's own dialogs, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.contrastFloor) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:09.229Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-014",
+      "createdAt": "2026-11-09T13:27:09.397Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app whose windows are the Mac's own dialogs, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.focusRings) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:09.397Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-015",
+      "createdAt": "2026-11-09T13:27:09.575Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app whose windows are the Mac's own dialogs, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.sharedNav) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:09.575Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-016",
+      "createdAt": "2026-11-09T13:27:09.743Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app whose windows are the Mac's own dialogs, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.signedInAffordance) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:09.743Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-017",
+      "createdAt": "2026-11-09T13:27:09.913Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-002 is Squire's set-up, a per-user Mac app whose windows are the Mac's own dialogs, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.themeToggle) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:09.913Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-018",
+      "createdAt": "2026-11-09T13:27:10.155Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.contrastFloor) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:10.155Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-019",
+      "createdAt": "2026-11-09T13:27:10.325Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.focusRings) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:10.325Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-020",
+      "createdAt": "2026-11-09T13:27:10.496Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.sharedNav) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:10.496Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-021",
+      "createdAt": "2026-11-09T13:27:10.666Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.signedInAffordance) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:10.666Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-022",
+      "createdAt": "2026-11-09T13:27:10.843Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-006 is the Squire's name and personality, kept in the owner's squire.json and laid into Claude Code's config folder as instructions, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.themeToggle) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:10.843Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-023",
+      "createdAt": "2026-11-09T13:27:11.027Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.contrastFloor) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:11.027Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-024",
+      "createdAt": "2026-11-09T13:27:11.218Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.focusRings) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:11.218Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-025",
+      "createdAt": "2026-11-09T13:27:11.388Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.sharedNav) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:11.388Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-026",
+      "createdAt": "2026-11-09T13:27:11.592Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.signedInAffordance) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:11.592Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-027",
+      "createdAt": "2026-11-09T13:27:11.790Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-011 is the nightly backup and the health check's known fixes, a launchd job and a check that prints lines on the owner's Mac, and the Claude pages it opens (claude.ai/code and the Claude app) are Claude's own, which Squire neither serves nor styles; Squire renders no web page of its own in this round, so the web UI baseline (webUi.themeToggle) does not apply to this requirement",
+      "operatorAckAt": "2026-11-09T13:27:11.790Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-028",
+      "createdAt": "2026-11-09T13:27:11.993Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "The first-run journey is recorded in rcf/discovery/journey.json, from the download to the first reply that AC-201-3 asserts, with its interruptions mapped to AC-201-4; Squire has no web design stage of its own, so a separate web journey criterion would repeat that record",
+      "operatorAckAt": "2026-11-09T13:27:11.993Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-029",
+      "createdAt": "2026-11-09T13:27:12.181Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "Naming the Squire and its personality is a step of the first-run journey recorded in rcf/discovery/journey.json, and the reply that names the Squire is that journey's exit; Squire has no web design stage of its own, so a separate web journey criterion would repeat that record",
+      "operatorAckAt": "2026-11-09T13:27:12.181Z",
+      "reqId": "REQ-006"
+    },
+    {
+      "id": "boo-2026-11-09-030",
+      "createdAt": "2026-11-09T13:27:12.364Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "The backup job is set up in a step of the first-run journey recorded in rcf/discovery/journey.json; the backup and the known fixes have no screen of their own in this round (the health check prints lines, the page comes later), so there is no web journey to trace",
+      "operatorAckAt": "2026-11-09T13:27:12.364Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-031",
+      "createdAt": "2026-11-09T13:27:12.536Z",
+      "baselineKey": "persistence.crashSafety",
+      "scope": "req",
+      "reason": "Judged: set-up's only store is its progress record, set-up.json, written whole through a file beside it, and no step is counted done until its end state is seen after it ends; a set-up killed part way is AC-201-4's own case (the step runs again from its start on the next run), so a separate crash-safety criterion would repeat AC-201-4",
+      "operatorAckAt": "2026-11-09T13:27:12.536Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-032",
+      "createdAt": "2026-11-09T13:27:12.707Z",
+      "baselineKey": "persistence.schemaMigration",
+      "scope": "req",
+      "reason": "Judged: set-up.json is set-up's own progress record with one shape in this round, and every step checks its end state on the Mac rather than trusting the record alone; a record from an older Squire can first meet a newer one only through the signed update of REQ-014, where any migration belongs, so set-up has no stored schema to migrate",
+      "operatorAckAt": "2026-11-09T13:27:12.707Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-033",
+      "createdAt": "2026-11-09T13:27:12.890Z",
+      "baselineKey": "persistence.backupObservable",
+      "scope": "req",
+      "reason": "Judged: set-up runs no backup; it only writes the backup job's launchd agent, and the backup run and its observable record (backup.json and the dated archive folders) are REQ-011's, settled there, so backups are out of scope for this requirement",
+      "operatorAckAt": "2026-11-09T13:27:12.890Z",
+      "reqId": "REQ-002"
+    },
+    {
+      "id": "boo-2026-11-09-034",
+      "createdAt": "2026-11-09T13:27:13.063Z",
+      "baselineKey": "persistence.backupObservable",
+      "scope": "req",
+      "reason": "Judged: applies and is already AC-1101-1's: every run writes backup.json in the Squire home, which the health check reads and names when a run failed, and the backup itself is plain files in current/ and archive/<run time>/; a separate criterion would repeat AC-1101-1",
+      "operatorAckAt": "2026-11-09T13:27:13.063Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-035",
+      "createdAt": "2026-11-09T13:27:13.233Z",
+      "baselineKey": "persistence.crashSafety",
+      "scope": "req",
+      "reason": "Judged: the backup job never writes the owner's own files, the only data it could lose, and never deletes or overwrites a copy (an earlier copy moves to the run's archive first); a run cut short records no success, the health check names it and the next run copies again in full, which is AC-1101-1's no-partial-pass rule",
+      "operatorAckAt": "2026-11-09T13:27:13.233Z",
+      "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-09-036",
+      "createdAt": "2026-11-09T13:27:13.411Z",
+      "baselineKey": "persistence.schemaMigration",
+      "scope": "req",
+      "reason": "Judged: the backup keeps plain copies of the owner's files in current/ and archive/<run time>/, readable without Squire, and its one record, backup.json, is a last-run report each run writes whole; there is no stored schema to migrate in this round, and a layout change would come with REQ-014's signed update",
+      "operatorAckAt": "2026-11-09T13:27:13.411Z",
+      "reqId": "REQ-011"
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-11-09T13:28:40.809Z",
+  "updatedAt": "2026-11-09T13:28:40.809Z",
+  "purpose": "Runs Squire's real set-up app at its entry point and the steps behind it in a test world with fakes for the Mac's commands, Claude Code's installer and the owner's answers: each listed problem is explained, keeps what is done and the owner's things, and resumes or repairs one installation; a step whose result cannot be confirmed runs again and is never counted done.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-201-4",
+    "AC-201-6"
+  ],
+  "id": "TS-027",
+  "usId": "US-201",
+  "title": "Set-up meets a problem, and steps it cannot confirm",
+  "testCases": [],
+  "status": "draft"
+}

@@ -1,10 +1,11 @@
 {
   "createdAt": "2026-11-07T17:40:40.059Z",
-  "updatedAt": "2026-11-07T17:40:40.059Z",
-  "purpose": "Runs the real installer against fresh and conflicting Claude Code configurations (top-level, per-model, environment, command line), reads the effective window, and checks that the health check reports drift.",
+  "updatedAt": "2026-11-09T13:28:37.310Z",
+  "purpose": "Runs the real set-up, lay-down, runner and health check against fresh and conflicting Claude Code configurations (top level, per model, environment, command line, managed settings), reads what reaches the session, checks that the health check reports drift, and that it says it cannot confirm the window when a source cannot be read.",
   "testLevel": "integration",
   "acIds": [
-    "AC-201-2"
+    "AC-201-2",
+    "AC-201-5"
   ],
   "id": "TS-006",
   "usId": "US-201",
