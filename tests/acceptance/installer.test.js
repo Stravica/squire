@@ -502,7 +502,9 @@ test('a set-up record that does not parse, is cut short, or holds wrong types an
     fs.mkdirSync(iw.squireHome, { recursive: true });
     fs.writeFileSync(iw.record, bytes);
     const fresh = (x) => { const r = I.readRecord(x); return Boolean(r && Array.isArray(r.done) && r.done[0] === 'yes' && r.done.includes('claudeCode')); };
-    const run = await I.runApp(iw, { killWhen: fresh });
+    // The kill waits for a record set-up wrote: the seeded unknown-id record already reads as fresh.
+    const written = (x) => { try { return fresh(x) && !fs.readFileSync(x.record).equals(Buffer.from(bytes)); } catch (e) { return false; } };
+    const run = await I.runApp(iw, { killWhen: written });
     assert.ok(asked(run, TITLES.plan) && asked(run, TITLES.setUp), `${what}: set-up must run again from the start, asking the declaration and the one yes; got ${I.describeRun(run)}`);
     assert.ok(fresh(iw), `${what}: set-up must write a record of its own and carry on; got ${JSON.stringify(I.readRecord(iw))}`);
     const setAside = Object.keys(I.contentOf(iw.squireHome)).filter((rel) => rel !== 'set-up.json' &&
