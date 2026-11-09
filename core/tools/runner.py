@@ -16,9 +16,11 @@ non-zero (its agent runs it again).
 
 Before each start it writes the Squire's name and personality from the
 owner's squire.json into CLAUDE.md in Squire's config folder, and the
-session's --name is the stored squireName. While set-up's record in the
-Squire home shows set-up short of its first conversation (no phone step
-done), it holds its lock and starts no session.
+session's --name is the stored squireName. During the first set-up, while
+set-up's record in the Squire home shows set-up short of its first
+conversation (no phone step done) and no session has yet been recorded in
+the Squire home, it holds its lock and starts no session; set-up opened
+again later never holds it.
 
 While the session runs it looks for a settings file every second: one
 appearing stops the session (its whole process group), is moved and named,
@@ -252,17 +254,27 @@ class Runner:
                 return 1
 
     def awaiting_set_up(self):
-        """True while set-up's record in the Squire home shows set-up has not
-        yet reached its first conversation (no phone step done): the session
-        starts for the first conversation, not part way through set-up. A
-        home with no set-up record, or one that cannot be read, waits for
-        nothing."""
+        """True only during the first set-up, while set-up's record in the
+        Squire home shows it has not yet reached its first conversation (no
+        phone step done): the session starts for the first conversation, not
+        part way through set-up. Once a session has been recorded in the
+        Squire home, as the first conversation's is, set-up opened again never
+        holds the session, whatever its record says after a re-run that
+        paused. A home with no set-up record, or one that cannot be read,
+        waits for nothing."""
         try:
             with open(os.path.join(self.home, 'set-up.json'), encoding='utf-8') as f:
                 done = json.load(f).get('done')
         except (OSError, ValueError, AttributeError):
             return False
         if not isinstance(done, list) or 'phone' in done:
+            return False
+        try:
+            recorded = [n for n in os.listdir(os.path.join(self.home, 'sessions'))
+                        if n.endswith('.json') and not n.startswith('.')]
+        except OSError:
+            recorded = []
+        if recorded:
             return False
         waiting = ['no session: Squire\'s set-up has not reached its first conversation yet; open Squire to finish '
                    'set-up']
