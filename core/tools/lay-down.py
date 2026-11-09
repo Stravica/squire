@@ -5,16 +5,20 @@ core whole. Run by the installer or an update, never by the session.
 
 The core goes to <Squire home>/core as a copy. The owner's folder is never
 touched. A release lacking any floor entry point, a release that is or lies
-in the Squire home, and a layout where the owner's folder and the Squire
-home overlap are refused with exit 1 and a reason, and nothing changes.
+in the Squire home (other than the Squire home's own release folder,
+release/core, which set-up keeps), and a layout where the owner's folder
+and the Squire home overlap are refused with exit 1 and a reason, and
+nothing changes.
 
 Once core is down it writes the settings of Claude Code's config folder for
-Squire's session (claude-config/settings.json) from core's settings, records
-the SHA-256 digests of core's settings and the four floor hooks in
-core-digests.json in the Squire home, and writes the session runner's and
-the wake-up scheduler's launchd agents into Library/LaunchAgents under the
-home folder it is given. It loads them only when that folder is the
-account's own home folder, as the account database names it.
+Squire's session (claude-config/settings.json) from core's settings and the
+Squire's name and personality from the owner's squire.json into its
+CLAUDE.md, records the SHA-256 digests of core's settings and the four floor
+hooks in core-digests.json in the Squire home, and writes the session
+runner's, the wake-up scheduler's and the nightly backup's launchd agents
+into Library/LaunchAgents under the home folder it is given. It loads them
+only when that folder is the account's own home folder, as the account
+database names it.
 """
 
 import hashlib
@@ -37,11 +41,12 @@ class LayDown:
     PYTHON = '/usr/bin/python3'
     RUNNER = 'com.stravica.squire.runner'
     WAKE_UPS = 'com.stravica.squire.wake-ups'
+    BACKUP = 'com.stravica.squire.backup'
 
     @staticmethod
     def main(argv):
         sys.path.insert(0, os.path.join(CORE, 'lib'))
-        from squire import Config, Paths, SquireError
+        from squire import Config, Paths, Persona, SquireError
 
         try:
             if len(argv) != 1:
@@ -54,7 +59,7 @@ class LayDown:
             missing = [p for p in LayDown.ENTRY_POINTS if not os.path.isfile(os.path.join(release, p))]
             if missing:
                 raise SquireError(f'the release {argv[0]} lacks {", ".join(missing)}')
-            if Paths.overlap(release, home):
+            if Paths.overlap(release, home) and release != os.path.join(home, 'release', 'core'):
                 raise SquireError(f'the release {argv[0]} and the Squire home {home} overlap')
             if Paths.overlap(config.owner_folder, home):
                 raise SquireError(f'the owner\'s folder {config.owner_folder} and the Squire home {home} overlap')
@@ -64,6 +69,7 @@ class LayDown:
             return 1
         try:
             LayDown.settle(home)
+            Persona.write(home, config.owner_folder)
             LayDown.agents(home)
         except (OSError, SquireError) as e:
             sys.stderr.write(f'lay-down laid core down, then failed: {e}. Lay core down again.\n')
@@ -98,8 +104,8 @@ class LayDown:
 
     @staticmethod
     def agents(home):
-        """The runner's and the wake-up scheduler's launchd agents, loaded only
-        for the account's own home folder."""
+        """The runner's, the wake-up scheduler's and the nightly backup's
+        launchd agents, loaded only for the account's own home folder."""
         from squire import SquireError
 
         user_home = os.path.expanduser('~')
@@ -114,6 +120,9 @@ class LayDown:
             LayDown.WAKE_UPS: {'Label': LayDown.WAKE_UPS, 'EnvironmentVariables': env,
                                'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'wake-up.py'), '--due'],
                                'StartInterval': 60},
+            LayDown.BACKUP: {'Label': LayDown.BACKUP, 'EnvironmentVariables': env,
+                             'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'backup.py')],
+                             'StartCalendarInterval': {'Hour': 2, 'Minute': 30}},
         }
         for label, agent in agents.items():
             LayDown.write(os.path.join(folder, label + '.plist'), plistlib.dumps(agent), 0o644)

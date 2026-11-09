@@ -4,7 +4,11 @@
     /usr/bin/python3 -B wake-up.py --due    delivers the owner's picked wake-ups
                                             that have come due, and the retries
                                             now due (the scheduler's agent runs
-                                            it every 60 seconds)
+                                            it every 60 seconds); then the
+                                            health check's known fixes the
+                                            owner said yes to, and once a day
+                                            the warning of a sign-in that ends
+                                            within seven days
 
 A wake-up reaches only Squire's own session: the one session record in the
 Squire home, its process alive and the one it was, its socket its own and
@@ -24,6 +28,7 @@ import json
 import os
 import re
 import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -179,6 +184,74 @@ class Delivery:
             return 'unknown', f'written, then the connection failed ({e.strerror or type(e).__name__}); never retried'
 
 
+class FixTick:
+    """The outside job for the health check's known fixes: when the approvals
+    ledger holds an owner's yes to a known fix not yet used, the scheduler's
+    run runs the health check's perform step once, bounded, with an
+    environment built from nothing."""
+
+    WITHIN = 1200
+
+    def __init__(self, config):
+        self.config = config
+
+    def run(self):
+        from squire import Ledger, System
+
+        if not Ledger.fix_pending(self.config.ledger_path):
+            return
+        try:
+            subprocess.run([System.command('/usr/bin/python3'), '-B', os.path.join(CORE, 'tools', 'health.py'), '--perform'],
+                           cwd='/', env=System.env(self.config.home), stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=self.WITHIN)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+
+class SignInWarning:
+    """Once a day, Squire's Claude sign-in is read; when it ends within seven
+    days, one wake-up through Squire's own session names the day and the one
+    action. sign-in.json in the Squire home keeps the day it last looked."""
+
+    TEXT = ('Squire\'s Claude sign-in ends on {day}. The one thing to do: sign in again before then. To ask for it, '
+            'run {python} {health} --request sign-in and ask the owner for their yes; the sign-in page then opens in '
+            'the browser.')
+
+    def __init__(self, router):
+        self.router = router
+        self.file = os.path.join(router.home, 'sign-in.json')
+
+    def run(self, now):
+        from squire import ClaudeSignIn
+
+        today = time.strftime('%Y-%m-%d', time.localtime(now))
+        try:
+            with open(self.file, encoding='utf-8') as f:
+                if json.load(f).get('checked') == today:
+                    return
+        except (OSError, ValueError, AttributeError):
+            pass
+        sign_in = ClaudeSignIn(self.router.home)
+        if not sign_in.claude:
+            return
+        ends = sign_in.ends_soon(now)
+        try:
+            fd, tmp = tempfile.mkstemp(prefix='.sign-in-', dir=self.router.home)
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump({'checked': today}, f)
+                f.write('\n')
+            os.replace(tmp, self.file)
+        except OSError:
+            return
+        if ends is None:
+            return
+        day = sign_in.day(ends)
+        health = os.path.join(self.router.home, 'core', 'tools', 'health.py')
+        state = {'id': f'sign-in-{day}-{today}', 'text': self.TEXT.format(day=day, python='/usr/bin/python3', health=health),
+                 'session': None, 'attempts': [], 'state': 'retrying'}
+        self.router.attempt(state, now)
+
+
 class WakeUpRouter:
     RETRIES = 3
     RETRY_GAP = 60
@@ -209,6 +282,8 @@ class WakeUpRouter:
         try:
             if argv[0] == '--due':
                 router.due(time.time())
+                FixTick(router.config).run()
+                SignInWarning(router).run(time.time())
                 return 0
             now = time.time()
             state = {'id': f'fired-{int(now * 1000)}-{os.urandom(3).hex()}', 'text': argv[0], 'session': None,

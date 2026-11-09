@@ -14,12 +14,20 @@ core's, a claude it can trust, and a Claude sign-in. When any of these
 fails, no session starts, the health check says why and the runner exits
 non-zero (its agent runs it again).
 
+Before each start it writes the Squire's name and personality from the
+owner's squire.json into CLAUDE.md in Squire's config folder, and the
+session's --name is the stored squireName. While set-up's record in the
+Squire home shows set-up short of its first conversation (no phone step
+done), it holds its lock and starts no session.
+
 While the session runs it looks for a settings file every second: one
 appearing stops the session (its whole process group), is moved and named,
 and a new session starts. A server is replaced only on evidence: its process
 dies, it shows no Connected within 60 seconds of its start, or it shows a
 disconnection not followed by Connected within 60 seconds. A quiet,
-connected server is never replaced.
+connected server is never replaced. A server that stops before any session
+started leaves its own last line in runner.json's problems, where the health
+check prints it, until a session starts.
 """
 
 import fcntl
@@ -172,6 +180,8 @@ class Runner:
     DISCONNECTED = re.compile(r'\b(?:reconnecting|disconnected)\b', re.IGNORECASE)
     ESCAPES = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
     TAIL = 65536
+    STOPPED = 'no session: Claude Code\'s Remote Control server stopped before any session started: '
+    REASON_MOST = 300
 
     def __init__(self, config):
         self.home = config.home
@@ -183,6 +193,8 @@ class Runner:
         self.lock = None
         self.offset = 0
         self.started = 0.0
+        self.started_at = 0.0
+        self.carried = []
 
     @staticmethod
     def main():
@@ -213,6 +225,9 @@ class Runner:
     def run(self):
         self.stop_leftover()
         while True:
+            if self.awaiting_set_up():
+                time.sleep(self.TICK)
+                continue
             problems = [f'no session: the Claude Code settings file .claude/{name} in the owner\'s folder could '
                         'not be moved' for name in self.settings.move()]
             problems = problems or FloorCheck(self.home).problems()
@@ -225,14 +240,96 @@ class Runner:
             if not problems and not claude.signed_in(self.home):
                 problems = ['no session: Claude Code is not signed in for Squire; the owner signs in once with '
                             'Squire\'s Claude Code config folder (claude-config in the Squire home)']
-            self.write_json(self.state_file, {'problems': problems})
+            self.carried = self.stopped_reason()
+            self.write_json(self.state_file, {'problems': problems + self.carried})
             if problems:
                 return 1
+            self.persona()
             self.start(claude)
             outcome = self.watch()
             self.stop()
             if outcome == 'died':
                 return 1
+
+    def awaiting_set_up(self):
+        """True while set-up's record in the Squire home shows set-up has not
+        yet reached its first conversation (no phone step done): the session
+        starts for the first conversation, not part way through set-up. A
+        home with no set-up record, or one that cannot be read, waits for
+        nothing."""
+        try:
+            with open(os.path.join(self.home, 'set-up.json'), encoding='utf-8') as f:
+                done = json.load(f).get('done')
+        except (OSError, ValueError, AttributeError):
+            return False
+        if not isinstance(done, list) or 'phone' in done:
+            return False
+        waiting = ['no session: Squire\'s set-up has not reached its first conversation yet; open Squire to finish '
+                   'set-up']
+        try:
+            with open(self.state_file, encoding='utf-8') as f:
+                written = json.load(f).get('problems')
+        except (OSError, ValueError, AttributeError):
+            written = None
+        if written != waiting:
+            self.write_json(self.state_file, {'problems': waiting})
+        return True
+
+    def persona(self):
+        """The Squire's name and personality into what the session loads."""
+        from squire import Persona
+
+        try:
+            Persona.write(self.home, self.owner)
+        except OSError:
+            pass
+
+    def stopped_reason(self):
+        """The reason the last server stopped before any session, kept beside
+        other problems until a session starts."""
+        try:
+            with open(self.state_file, encoding='utf-8') as f:
+                problems = json.load(f).get('problems')
+            return [p for p in problems if isinstance(p, str) and p.startswith(self.STOPPED[:60])][:1]
+        except (OSError, ValueError, AttributeError, TypeError):
+            return []
+
+    def session_since(self):
+        """True when a session record was written after the server started."""
+        folder = os.path.join(self.home, 'sessions')
+        try:
+            names = [n for n in os.listdir(folder) if n.endswith('.json') and not n.startswith('.')]
+        except OSError:
+            return False
+        for name in names:
+            try:
+                with open(os.path.join(folder, name), encoding='utf-8') as f:
+                    at = json.load(f).get('recordedAt')
+            except (OSError, ValueError, AttributeError):
+                continue
+            if isinstance(at, (int, float)) and not isinstance(at, bool) and at >= self.started_at:
+                return True
+        return False
+
+    def record_stopped(self):
+        """The server's own last line, as the reason it stopped before any
+        session: its last non-blank line, terminal escapes and control
+        characters removed, cut at 300 characters."""
+        code = self.server.poll() if self.server is not None else None
+        try:
+            with open(self.log, 'rb') as f:
+                size = f.seek(0, os.SEEK_END)
+                f.seek(max(self.offset, size - self.TAIL))
+                text = self.ESCAPES.sub('', f.read().decode('utf-8', 'replace'))
+        except OSError:
+            text = ''
+        lines = [line for line in text.splitlines() if line.strip()]
+        if lines:
+            reason = self.STOPPED + ''.join(c for c in lines[-1].strip() if c.isprintable())[:self.REASON_MOST]
+        else:
+            reason = f'no session: Claude Code\'s Remote Control server stopped before any session with no output ' \
+                     f'(exit {code})'
+        self.write_json(self.state_file, {'problems': [reason]})
 
     def answer_questions(self):
         """The config folder's .claude.json answers "trust this folder" and
@@ -267,6 +364,7 @@ class Runner:
         from squire import Process
 
         os.makedirs(os.path.dirname(self.log), exist_ok=True)
+        self.started_at = time.time()
         with open(self.log, 'ab') as log:
             self.offset = os.fstat(log.fileno()).st_size
             self.server = subprocess.Popen(
@@ -285,9 +383,14 @@ class Runner:
         connected_once, dropped = False, None
         while True:
             time.sleep(self.TICK)
+            if self.carried and self.session_since():
+                self.carried = []
+                self.write_json(self.state_file, {'problems': []})
             if self.settings.present():
                 return 'settings'
             if self.server.poll() is not None:
+                if not self.session_since():
+                    self.record_stopped()
                 return 'died'
             now = time.monotonic()
             status = self.status()
