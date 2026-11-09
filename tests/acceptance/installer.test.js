@@ -70,7 +70,7 @@ test('set-up on a Mac with less than 4 GB of memory is refused before any change
   assertRefusedBeforeAnyChange(iw, before, run, [/4 GB/], '2 GB of memory');
 });
 
-test('set-up on a Mac without Apple\'s command line tools, for a user who cannot install them, is refused before any change and says to ask whoever administers the Mac', { timeout: 60000 }, async (t) => {
+test("set-up on a Mac without Apple's command line tools, for a user who cannot install them, is refused before any change and says to ask whoever administers the Mac", { timeout: 60000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, groups: noAdmin } });
   const before = w.snapshot(iw.userHome);
   const run = await I.runApp(iw);
@@ -89,7 +89,7 @@ test('a declared plan below Pro, or the plan window closed, stops set-up before 
 
 // ------------------------------------------------------------ the plan read
 
-test('a plan found below Pro at sign-in stops set-up and leaves the home folder as set-up found it, signing Squire\'s config folder out, with Apple\'s tools never started', { timeout: 120000 }, async (t) => {
+test("a plan found below Pro at sign-in stops set-up and leaves the home folder as set-up found it, signing Squire's config folder out, with Apple's tools never started", { timeout: 120000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false }, claude: { plan: 'free' } });
   const before = I.contentOf(iw.userHome);
   const run = await I.runApp(iw);
@@ -118,12 +118,9 @@ test('a plan found below Pro at sign-in never touches a Claude Code the owner al
   assert.deepEqual(I.contentOf(iw.userHome), before, 'the home folder must be as set-up found it');
 });
 
-for (const [plan, answer, outcome] of [
-  ['enterprise_plus', 'button returned:Continue', 'goes on'],
-  ['missing', 'button returned:Stop', 'stops'],
-  ['unreadable', 'button returned:Stop', 'stops'],
-]) {
-  test(`a plan Squire cannot confirm (${plan === 'missing' ? 'no plan field' : plan === 'unreadable' ? 'an answer it cannot read' : 'a value it does not know'}) is asked of the owner, and ${answer.split(':')[1]} ${outcome}`, { timeout: 120000 }, async (t) => {
+// A plan set-up cannot confirm, asked of the owner, answered as given.
+function askedPlan(plan, answer, outcome) {
+  return async (t) => {
     const iw = I.makeInstallerWorld(t, { claude: { plan }, mac: { answers: { [TITLES.askPlan]: answer } } });
     const before = I.contentOf(iw.userHome);
     const run = await I.runApp(iw, { killWhen: doneWith('signIn') });
@@ -134,10 +131,17 @@ for (const [plan, answer, outcome] of [
       assertWindow(run, TITLES.stopped, [/Pro/], `plan ${plan}, Stop`);
       assert.deepEqual(I.contentOf(iw.userHome), before, `plan ${plan}, Stop: the home folder must be as set-up found it`);
     }
-  });
+  };
 }
 
-test('the plan read comes before Apple\'s tools and everything else system-wide', { timeout: 120000 }, async (t) => {
+test('a plan Squire cannot confirm (a value it does not know) is asked of the owner, and Continue goes on', { timeout: 120000 },
+  askedPlan('enterprise_plus', 'button returned:Continue', 'goes on'));
+test('a plan Squire cannot confirm (no plan field) is asked of the owner, and Stop stops', { timeout: 120000 },
+  askedPlan('missing', 'button returned:Stop', 'stops'));
+test('a plan Squire cannot confirm (an answer it cannot read) is asked of the owner, and Stop stops', { timeout: 120000 },
+  askedPlan('unreadable', 'button returned:Stop', 'stops'));
+
+test("the plan read comes before Apple's tools and everything else system-wide", { timeout: 120000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false } });
   const run = await I.runApp(iw, { killWhen: doneWith('appleTools') });
   const calls = run.calls;
@@ -150,8 +154,9 @@ test('the plan read comes before Apple\'s tools and everything else system-wide'
 
 // ---------------------------------------------------- the listed failures
 
-for (const [mode, what] of [['fail', 'a failed download'], ['timeout', 'a timed-out download'], ['interrupted', 'an interrupted download']]) {
-  test(`${what} runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation`, { timeout: 180000 }, async (t) => {
+// A download that does not finish, then set-up run again.
+function failedDownload(mode, what) {
+  return async (t) => {
     const iw = I.makeInstallerWorld(t, { mac: { download: mode } });
     const run = await I.runApp(iw);
     assertWindow(run, TITLES.paused, [/download/i], what);
@@ -168,8 +173,15 @@ for (const [mode, what] of [['fail', 'a failed download'], ['timeout', 'a timed-
     assert.ok(!asked(again, TITLES.plan) && !asked(again, TITLES.setUp), `the re-run must not ask the plan or the yes again; got ${I.describeRun(again)}`);
     assert.equal(installerRuns(again).length, 1, `the re-run must install Claude Code once; got ${I.describeRun(again)}`);
     assert.ok(I.doneSteps(iw).includes('claudeCode'), 'the re-run must record Claude Code done');
-  });
+  };
 }
+
+test('a failed download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation', { timeout: 180000 },
+  failedDownload('fail', 'a failed download'));
+test('a timed-out download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation', { timeout: 180000 },
+  failedDownload('timeout', 'a timed-out download'));
+test('an interrupted download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation', { timeout: 180000 },
+  failedDownload('interrupted', 'an interrupted download'));
 
 test('a second set-up started while one runs exits at once, saying set-up is already running, and changes nothing', { timeout: 120000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.name]: { hang: true } } } });
@@ -187,8 +199,9 @@ test('a second set-up started while one runs exits at once, saying set-up is alr
   await first.kill();
 });
 
-for (const [mode, what] of [['cancel', 'a cancelled sign-in'], ['timeout', 'a timed-out sign-in'], ['offline', 'a sign-in with no internet']]) {
-  test(`${what} is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling`, { timeout: 180000 }, async (t) => {
+// A sign-in that does not finish, then set-up run again.
+function failedSignIn(mode, what) {
+  return async (t) => {
     const iw = I.makeInstallerWorld(t, { claude: { signIn: mode } });
     const run = await I.runApp(iw);
     assertWindow(run, TITLES.paused, [/sign/i], what);
@@ -199,8 +212,15 @@ for (const [mode, what] of [['cancel', 'a cancelled sign-in'], ['timeout', 'a ti
     assert.equal(downloads(again).length, 0, `the re-run must not download Claude Code again; got ${I.describeRun(again)}`);
     assert.ok(authCalls(again, 'login').length === 1 && I.doneSteps(iw).includes('signIn'), 'the re-run must sign in once and record it done');
     assert.ok(I.signedInto(iw), 'the sign-in must land in Squire\'s config folder');
-  });
+  };
 }
+
+test('a cancelled sign-in is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling', { timeout: 180000 },
+  failedSignIn('cancel', 'a cancelled sign-in'));
+test('a timed-out sign-in is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling', { timeout: 180000 },
+  failedSignIn('timeout', 'a timed-out sign-in'));
+test('a sign-in with no internet is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling', { timeout: 180000 },
+  failedSignIn('offline', 'a sign-in with no internet'));
 
 test('with no phone to hand set-up still completes: the phone step is answered Later and every step is recorded done', { timeout: FULL_RUN }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.phone]: 'button returned:Later' } } });
@@ -248,7 +268,7 @@ test('a re-run resumes at the first step not recorded done, and runs again a ste
   assert.ok(fs.existsSync(launcher(iw)), 'the launcher must be back');
 });
 
-test('running set-up again over a finished set-up repairs what no longer holds and keeps the owner\'s folder and settings', { timeout: FULL_RUN * 2 }, async (t) => {
+test("running set-up again over a finished set-up repairs what no longer holds and keeps the owner's folder and settings", { timeout: FULL_RUN * 2 }, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const run = await I.runApp(iw);
   assert.deepEqual(I.doneSteps(iw), STEPS, `the first set-up must finish; got ${I.describeRun(run)}`);
@@ -268,7 +288,7 @@ test('running set-up again over a finished set-up repairs what no longer holds a
   assert.deepEqual(I.ownerConfig(iw), ownerConfig, 'the owner\'s settings must be kept');
 });
 
-test('with the sign-in gone, the health line says to open Squire\'s installer to sign in again, and running set-up again resumes at the sign-in', { timeout: FULL_RUN * 2 }, async (t) => {
+test("with the sign-in gone, the health line says to open Squire's installer to sign in again, and running set-up again resumes at the sign-in", { timeout: FULL_RUN * 2 }, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const run = await I.runApp(iw);
   assert.deepEqual(I.doneSteps(iw), STEPS, `the first set-up must finish; got ${I.describeRun(run)}`);
@@ -278,13 +298,14 @@ test('with the sign-in gone, the health line says to open Squire\'s installer to
   const h = I.healthOf(iw);
   assert.match(h.stdout, /sign in again/i, `the health check must say to sign in again; got ${h.stdout} ${h.stderr}`);
   assert.match(h.stdout, /installer/i, `the health check must say to open Squire's installer; got ${h.stdout}`);
-  const again = await I.runApp(iw, { killWhen: doneWith('signIn') });
+  // The sign-in is already in the record, so the re-run is let finish: it repairs the one step whose end state is gone.
+  const again = await I.runApp(iw);
   assert.equal(authCalls(again, 'login').length, 1, `the re-run must sign in again; got ${I.describeRun(again)}`);
   assert.equal(downloads(again).length, 0, 'the re-run must not reinstall Claude Code');
   assert.ok(I.signedInto(iw), 'the sign-in must land in Squire\'s config folder');
 });
 
-test('when Claude Code\'s server exits before any session, the runner records its reason, the health check prints it, and set-up\'s last step names it', { timeout: FULL_RUN * 2 }, async (t) => {
+test("when Claude Code's server exits before any session, the runner records its reason, the health check prints it, and set-up's last step names it", { timeout: FULL_RUN * 2 }, async (t) => {
   const refusal = 'Unable to determine your organization for Remote Control eligibility';
   const iw = I.makeInstallerWorld(t, { claude: { server: 'refuse' } });
   const run = await I.runApp(iw);
@@ -312,7 +333,7 @@ test('a Claude Code whose launcher is there but whose version is incomplete is n
   assert.ok(I.doneSteps(iw).includes('claudeCode'), 'once it answers, Claude Code is recorded done');
 });
 
-test('Apple\'s tools still reporting that they install are not counted done, and a re-run runs that step again from its start', { timeout: 240000 }, async (t) => {
+test("Apple's tools still reporting that they install are not counted done, and a re-run runs that step again from its start", { timeout: 240000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, toolsInstall: 'stillInstalling' } });
   const polledAfterInstall = (n) => (x) => {
     const calls = I.readJsonLines(x.callsFile).filter((c) => c.cmd === 'xcode-select');
@@ -341,7 +362,7 @@ test('before the one yes nothing is installed, and Not now or a closed window in
   }
 });
 
-test('the one yes names every piece set-up adds: Claude Code with its own updates, Apple\'s tools with the administrator\'s password prompt, Squire, and each background job', { timeout: 60000 }, async (t) => {
+test("the one yes names every piece set-up adds: Claude Code with its own updates, Apple's tools with the administrator's password prompt, Squire, and each background job", { timeout: 60000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, answers: { [TITLES.setUp]: 'button returned:Not now' } } });
   const run = await I.runApp(iw);
   assertWindow(run, TITLES.setUp, [/Claude Code/, /updat/i, /command line tools/i, /password/i, /Squire/, /session/i, /wake-up/i, /backup/i],

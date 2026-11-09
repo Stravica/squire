@@ -153,7 +153,7 @@ case "$text" in
 esac
 `;
 
-test('setting Squire up from the download on a fresh Mac user opens no Terminal window: every new window belongs to set-up, the browser, System Settings, Apple\'s tools dialog or the Claude app', { skip: SKIP, timeout: (SET_UP_MINUTES + 10) * 60000 }, async (t) => {
+test("setting Squire up from the download on a fresh Mac user opens no Terminal window: every new window belongs to set-up, the browser, System Settings, Apple's tools dialog or the Claude app", { skip: SKIP, timeout: (SET_UP_MINUTES + 10) * 60000 }, async (t) => {
   if (SKIP) { t.skip(SKIP); return; }
   const state = look();
   refuseOwnUser(state);

@@ -92,7 +92,7 @@ function assertNoPartialPassThenRecovers(world, run, repair, what) {
   assert.deepEqual(backupLines(health(world), world.destination), [], `${what}: after a run that succeeds, the health check must no longer name the backup`);
 }
 
-test('lay-down writes the backup job\'s agent: the backup program every night at 02:30, never kept alive, and its load reaches no real launchd domain', { timeout: 60000 }, (t) => {
+test("lay-down writes the backup job's agent: the backup program every night at 02:30, never kept alive, and its load reaches no real launchd domain", { timeout: 60000 }, (t) => {
   const world = backupWorld(t);
   const agent = s.launchAgents(world).find((a) => a.plist.Label === 'com.stravica.squire.backup');
   assert.ok(agent, `lay-down must write com.stravica.squire.backup.plist under the home's Library/LaunchAgents; found ${s.launchAgents(world).map((a) => a.plist.Label).join(', ')}`);
@@ -103,7 +103,7 @@ test('lay-down writes the backup job\'s agent: the backup program every night at
   assert.ok(!s.launchdHas('com.stravica.squire.backup'), 'a world\'s lay-down must load nothing into the launchd domain of whoever runs the tests');
 });
 
-test('the backup copies an added file, and a file removed from the owner\'s folder stays in the backup', { timeout: 60000 }, (t) => {
+test("the backup copies an added file, and a file removed from the owner's folder stays in the backup", { timeout: 60000 }, (t) => {
   const world = backupWorld(t);
   assertRan(backup(world), 'the first run');
   const current = path.join(world.destination, 'current');
@@ -122,7 +122,7 @@ test('the backup copies an added file, and a file removed from the owner\'s fold
     `the removed file must stay in the backup, in the run's archive folder; found ${kept.map(([rel]) => rel).join(', ') || 'nothing'}`);
 });
 
-test('a changed file\'s earlier copy moves to the dated archive, and nothing in the backup is ever overwritten or deleted', { timeout: 60000 }, (t) => {
+test("a changed file's earlier copy moves to the dated archive, and nothing in the backup is ever overwritten or deleted", { timeout: 60000 }, (t) => {
   const world = backupWorld(t);
   const file = path.join(world.owner, 'shopping.md');
   const versions = ['Eggs\n', 'Eggs\nFlour\n', 'Eggs\nFlour\nLemons\n'];

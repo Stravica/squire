@@ -58,7 +58,7 @@ async function startedName(world, t) {
   return i >= 0 ? call.argv[i + 1] : null;
 }
 
-test('set-up\'s naming step writes the name and personality the owner gives into the owner\'s squire.json', { timeout: 120000 }, async (t) => {
+test("set-up's naming step writes the name and personality the owner gives into the owner's squire.json", { timeout: 120000 }, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const run = await I.runApp(iw, { killWhen: (x) => I.doneSteps(x).includes('ownerFolder') });
   const config = I.ownerConfig(iw);
@@ -67,7 +67,7 @@ test('set-up\'s naming step writes the name and personality the owner gives into
   assert.equal(config.personality, PERSONALITY, 'the owner\'s squire.json must hold the personality given');
 });
 
-test('lay-down writes the name and personality into what Squire\'s session loads', { timeout: 60000 }, (t) => {
+test("lay-down writes the name and personality into what Squire's session loads", { timeout: 60000 }, (t) => {
   const world = personaWorld(t);
   s.layDownCore(world);
   assertInLoaded(world, 'after lay-down');

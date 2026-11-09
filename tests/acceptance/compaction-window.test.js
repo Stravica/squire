@@ -61,7 +61,7 @@ function assertNamed(world, value, source, what) {
 
 // ------------------------------------------------- the window is 500k
 
-test('core\'s settings carry an auto-compact window of 500000 tokens, and lay-down lays the same settings into Squire\'s config folder', { timeout: 60000 }, (t) => {
+test("core's settings carry an auto-compact window of 500000 tokens, and lay-down lays the same settings into Squire's config folder", { timeout: 60000 }, (t) => {
   const core = readJson(path.join(w.CORE, 'settings.json'));
   assert.equal(core.autoCompactWindow, WINDOW, 'core/settings.json must set autoCompactWindow to 500000');
   const world = windowWorld(t);
@@ -70,7 +70,7 @@ test('core\'s settings carry an auto-compact window of 500000 tokens, and lay-do
   assert.equal(laid.autoCompactWindow, WINDOW, 'Squire\'s session reads a window of 500000 from its config folder');
 });
 
-test('the window reaches Squire\'s session only from its config folder: the owner\'s own settings, a window variable around the runner and a stray --autocompact never reach it', { timeout: 120000 }, async (t) => {
+test("the window reaches Squire's session only from its config folder: the owner's own settings, a window variable around the runner and a stray --autocompact never reach it", { timeout: 120000 }, async (t) => {
   const world = windowWorld(t);
   writeJson(path.join(world.userHome, '.claude', 'settings.json'), { autoCompactWindow: 200000 });
   const fake = s.installFakeClaudeCode(world);
@@ -87,7 +87,7 @@ test('the window reaches Squire\'s session only from its config folder: the owne
 
 // ------------------------------------------- the health check guards it
 
-test('the health check names a window other than 500000 in Squire\'s config folder, at the top level and per model, and in the runner\'s environment', { timeout: 120000 }, (t) => {
+test("the health check names a window other than 500000 in Squire's config folder, at the top level and per model, and in the runner's environment", { timeout: 120000 }, (t) => {
   const world = windowWorld(t);
   const file = configSettings(world);
   const laid = readJson(file);
@@ -102,7 +102,7 @@ test('the health check names a window other than 500000 in Squire\'s config fold
   assertNamed(world, 400000, 'CLAUDE_CODE_AUTO_COMPACT_WINDOW', 'a window variable in the runner\'s agent');
 });
 
-test('the health check names a window other than 500000 in the Mac\'s managed settings file, its drop-in folder and the managed preferences', { timeout: 120000 }, (t) => {
+test("the health check names a window other than 500000 in the Mac's managed settings file, its drop-in folder and the managed preferences", { timeout: 120000 }, (t) => {
   const world = windowWorld(t);
   const managed = path.join(world.system, MANAGED, 'managed-settings.json');
   writeJson(managed, { autoCompactWindow: 250000 });
@@ -127,12 +127,9 @@ test('a model whose context window is smaller than 500k is not drift: the health
 
 // ------------------------------------------------ cannot confirm the window
 
-for (const [what, place, make] of [
-  ['the managed settings file', 'managed-settings.json', (world) => path.join(world.system, MANAGED, 'managed-settings.json')],
-  ['a managed settings drop-in', '50-team.json', (world) => path.join(world.system, MANAGED, 'managed-settings.d', '50-team.json')],
-  ['the managed preferences', 'com.anthropic.claudecode', (world) => path.join(world.system, PREFERENCES)],
-]) {
-  test(`when ${what} exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence`, { timeout: 60000 }, (t) => {
+// A source the health check should read that exists but cannot be read.
+function unreadable(what, place, make) {
+  return (t) => {
     const world = windowWorld(t);
     const file = make(world);
     if (file.endsWith('.plist')) writePlist(file, { autoCompactWindow: WINDOW });
@@ -144,5 +141,12 @@ for (const [what, place, make] of [
     assert.ok(lines.some((l) => /cannot confirm the compaction window/i.test(l) && l.includes(place)),
       `${what} unreadable: the health check must say it cannot confirm the compaction window, naming ${place}; got ${w.describe(r)}`);
     assert.notEqual(r.status, 0, `${what} unreadable: never a pass; got ${w.describe(r)}`);
-  });
+  };
 }
+
+test('when the managed settings file exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence', { timeout: 60000 },
+  unreadable('the managed settings file', 'managed-settings.json', (world) => path.join(world.system, MANAGED, 'managed-settings.json')));
+test('when a managed settings drop-in exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence', { timeout: 60000 },
+  unreadable('a managed settings drop-in', '50-team.json', (world) => path.join(world.system, MANAGED, 'managed-settings.d', '50-team.json')));
+test('when the managed preferences exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence', { timeout: 60000 },
+  unreadable('the managed preferences', 'com.anthropic.claudecode', (world) => path.join(world.system, PREFERENCES)));

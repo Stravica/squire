@@ -53,7 +53,7 @@ function throughTheFloorAfterYes(world, command, what) {
   w.assertAllowed(w.attempt(world, session, call), `${what}, after the owner said yes`);
 }
 
-test('a changed floor file is named and its fix offered; the fix runs only after the owner\'s yes, lays core down again from the release, and the check then finds it gone', { timeout: 120000 }, (t) => {
+test("a changed floor file is named and its fix offered; the fix runs only after the owner's yes, lays core down again from the release, and the check then finds it gone", { timeout: 120000 }, (t) => {
   const world = fixWorld(t);
   const changed = path.join(world.home, 'core', 'hooks', 'config-change.py');
   fs.appendFileSync(changed, '# one line more\n');
@@ -68,7 +68,7 @@ test('a changed floor file is named and its fix offered; the fix runs only after
   assert.deepEqual(linesWith(health(world), /config-change\.py/), [], 'after the fix the check must no longer name the floor file');
 });
 
-test('the runner not running is named and its fix offered; the fix runs only after the owner\'s yes, and when it cannot bring the runner back it says plainly the fault is still there', { timeout: 120000 }, (t) => {
+test("the runner not running is named and its fix offered; the fix runs only after the owner's yes, and when it cannot bring the runner back it says plainly the fault is still there", { timeout: 120000 }, (t) => {
   const world = fixWorld(t);
   const h = health(world);
   assert.ok(linesWith(h, /runner/i).some((l) => /not running/i.test(l)), `the health check must name the runner not running; got ${w.describe(h)}`);
@@ -80,7 +80,7 @@ test('the runner not running is named and its fix offered; the fix runs only aft
   assert.ok(linesWith(health(world), /runner/i).some((l) => /not running/i.test(l)), 'the check still names it');
 });
 
-test('not signed in is named with the way on, opening Squire\'s installer to sign in again, and no command is offered for it', { timeout: 120000 }, (t) => {
+test("not signed in is named with the way on, opening Squire's installer to sign in again, and no command is offered for it", { timeout: 120000 }, (t) => {
   const world = fixWorld(t);
   s.installFakeClaudeCode(world, { signedIn: false });
   const h = health(world);
