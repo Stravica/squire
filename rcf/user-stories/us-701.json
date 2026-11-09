@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:12.526Z",
-  "updatedAt": "2026-11-07T18:02:37.252Z",
+  "updatedAt": "2026-11-08T18:34:31.120Z",
   "asA": "Squire owner",
   "iWant": "the check-ins I pick to reach my own Squire and nothing else",
   "soThat": "a wake-up never lands in the wrong place, and when Squire is not sure, nothing is sent",
@@ -19,7 +19,7 @@
       "given": "A wake-up the Squire owner picked comes due",
       "when": "Squire looks for its own session and finds exactly one, none, or more than one candidate",
       "then": "With exactly one, the wake-up is delivered to that session; with none or more than one, nothing is sent and the log says why.",
-      "verification": "external"
+      "verification": "testOnly"
     },
     {
       "id": "AC-701-2",
@@ -28,7 +28,7 @@
       "given": "A wake-up comes due and Squire finds exactly one session of its own",
       "when": "Delivering the wake-up to that session fails",
       "then": "The wake-up is delivered nowhere else, and the failure is recorded with its reason and its retry state.",
-      "verification": "external"
+      "verification": "testOnly"
     }
   ]
 }

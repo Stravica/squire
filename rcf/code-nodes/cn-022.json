@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-022",
+  "path": "core/tools/wake-up.py#Framing",
+  "implementsAcIds": [
+    "AC-701-1",
+    "AC-1901-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-08T21:22:27.341Z",
+  "updatedAt": "2026-11-08T21:22:27.341Z"
+}

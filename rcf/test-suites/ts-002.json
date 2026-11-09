@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-08T14:33:31.617Z",
+  "updatedAt": "2026-11-08T19:29:49.215Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -441,6 +441,20 @@
       "description": "Premise first: state/approvalſ.jsonl opens the approvals ledger itself, else skipped with the reason. Appending to it after cd state, emptying it with truncate after cd state, and appending to it through a shell variable naming the folder are each blocked before and after a yes, naming the safety floor, with no request id.",
       "status": "pending",
       "testPointer": "tests/acceptance/safety-floor.test.js::the session can never write the approvals ledger from the shell by a name the disk folds, the long s in approvals, where the floor cannot resolve its folder, yes or no, and the refusal names the safety floor and asks nothing"
+    },
+    {
+      "id": "TC-002-wake-up-never-a-yes",
+      "acId": "AC-1901-2",
+      "description": "A wake-up saying yes, Yes with the request id, or no, delivered and taken as the prompt, never answers the open request.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a wake-up whose text is yes, Yes with the request id, or no, delivered to the session and taken as its prompt, never answers the open request"
+    },
+    {
+      "id": "TC-002-journey-wake-up-not-a-yes",
+      "acId": "AC-1901-2",
+      "description": "End to end on a laid-down core: a wake-up saying yes reaches the session's prompt hook and the send stays asked until the owner's own yes.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-2-journey.test.js::on a laid-down core the runner starts a session that runs the floor, a wake-up saying yes reaches it without answering its request, and after a settings file appears the new session is the one woken"
     }
   ],
   "status": "draft"

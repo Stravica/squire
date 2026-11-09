@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "head": "ebd4eddf2254a3b0beb1aa8660e17ea35ae92c7c",
+  "scope": "reviewVerdict",
+  "criteria": [
+    {
+      "acId": "AC-401-1",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/tools/runner.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-401-2",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/tools/runner.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-401-3",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/tools/runner.py:1:1: unsupported file type .py; core/hooks/session-start.py:1:1: unsupported file type .py; core/hooks/config-change.py:1:1: unsupported file type .py; core/lib/squire.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-701-1",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/hooks/session-start.py:1:1: unsupported file type .py; core/tools/wake-up.py:1:1: unsupported file type .py; core/lib/squire.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-701-2",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/tools/wake-up.py:1:1: unsupported file type .py"
+    },
+    {
+      "acId": "AC-1901-2",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "core/lib/squire.py:1:1: unsupported file type .py; core/hooks/pre-tool-use.py:1:1: unsupported file type .py; core/hooks/user-prompt-submit.py:1:1: unsupported file type .py; core/tools/wake-up.py:1:1: unsupported file type .py"
+    }
+  ],
+  "result": "blocked",
+  "totals": {
+    "criteria": 6,
+    "structuralPassed": 0,
+    "mutants": 0,
+    "killed": 0,
+    "survived": 0,
+    "timeout": 0,
+    "notApplicable": 0,
+    "blocked": 6
+  },
+  "wallMs": 77,
+  "node": "v24.14.0"
+}

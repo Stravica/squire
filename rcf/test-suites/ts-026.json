@@ -1,0 +1,92 @@
+{
+  "createdAt": "2026-11-08T19:15:35.105Z",
+  "updatedAt": "2026-11-08T20:41:13.859Z",
+  "purpose": "Runs the installed wake-up router against fake session inboxes in a test world: each delivery failure recorded with its reason and retry state and delivered nowhere else, the retry rule over seeded past attempts, and a line written but never acknowledged recorded unknown and never retried.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-701-2"
+  ],
+  "id": "TS-026",
+  "usId": "US-701",
+  "title": "Wake-up delivery failures",
+  "testCases": [
+    {
+      "id": "TC-026-missing-socket-recorded",
+      "acId": "AC-701-2",
+      "description": "A missing socket: delivered nowhere else, recorded with its reason and retry state.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a missing socket is a failed delivery: delivered nowhere else, recorded with its reason and its retry state"
+    },
+    {
+      "id": "TC-026-refused-recorded",
+      "acId": "AC-701-2",
+      "description": "A refused connection: delivered nowhere else, recorded with its reason and retry state.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a refused connection is a failed delivery: delivered nowhere else, recorded with its reason and its retry state"
+    },
+    {
+      "id": "TC-026-rejected-token-recorded",
+      "acId": "AC-701-2",
+      "description": "A rejected token: delivered nowhere else, recorded with its reason and retry state.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a rejected token is a failed delivery: delivered nowhere else, recorded with its reason and its retry state"
+    },
+    {
+      "id": "TC-026-timeout-recorded",
+      "acId": "AC-701-2",
+      "description": "A timeout before the line is written: delivered nowhere else, recorded with its reason and retry state.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a timeout before the line is written is a failed delivery: delivered nowhere else, recorded with its reason and its retry state"
+    },
+    {
+      "id": "TC-026-unknown-never-retried",
+      "acId": "AC-701-2",
+      "description": "A line written but not acknowledged within the deadline is recorded unknown and never retried.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a line written but not acknowledged within the deadline is recorded unknown and never retried"
+    },
+    {
+      "id": "TC-026-retry-typical-delivered",
+      "acId": "AC-701-2",
+      "description": "Typical: a wake-up that failed once is retried, re-checked and delivered.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::typical: a wake-up that failed once is retried by the scheduler run with the session back, re-checked and delivered"
+    },
+    {
+      "id": "TC-026-retry-heavy-limits",
+      "acId": "AC-701-2",
+      "description": "Heavy: the third retry inside ten minutes is delivered; never a fourth retry, and none after ten minutes.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::heavy: after three failed attempts the third retry inside ten minutes is delivered, and there is never a fourth retry or one after ten minutes"
+    },
+    {
+      "id": "TC-026-retry-rechecks-identity",
+      "acId": "AC-701-2",
+      "description": "A retry re-runs the identity check: a changed session or two records means not delivered, and the log says why.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::a retry re-runs the identity check: with the record now naming a different session, or two records, the retry is not delivered and the log says why"
+    },
+    {
+      "id": "TC-026-process-gone-before-socket",
+      "acId": "AC-701-2",
+      "description": "The record is read first and its process checked before its socket: with both gone the failed attempt names the process gone, not the missing socket.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::with one record whose process is gone and whose socket is gone too, the failed attempt names the process gone, not the missing socket"
+    },
+    {
+      "id": "TC-026-last-retry-every-reason",
+      "acId": "AC-701-2",
+      "description": "Three failed attempts (process gone, missing socket, no record) and no session: the last retry fails, the state is failed with four attempts, and the log line names every reason.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::after three failed attempts with no session the last retry fails, the wake-up is recorded failed with four attempts and its log line names every reason"
+    },
+    {
+      "id": "TC-026-state-unwritable",
+      "acId": "AC-701-2",
+      "description": "With wake-ups/ unwritable the attempt cannot be recorded before the line: nothing is sent, the router exits non-zero and the log says the state could not be written.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/wake-ups.test.js::when the wake-up state cannot be written nothing is sent, the router exits non-zero and the log says the state could not be written"
+    }
+  ],
+  "status": "draft"
+}

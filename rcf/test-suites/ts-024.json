@@ -1,0 +1,22 @@
+{
+  "createdAt": "2026-11-08T19:15:34.565Z",
+  "updatedAt": "2026-11-08T19:29:49.767Z",
+  "purpose": "Walks a sleep or lid-close and the next wake on a running Squire, end to end through the product's real entry points on a target Mac. Takes the target host as a parameter (SQUIRE_TARGET_HOST, an SSH destination, or RCF_TARGET_URL); without one it skips with the line 'external: needs a target host' and never passes.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-401-2"
+  ],
+  "id": "TS-024",
+  "usId": "US-401",
+  "title": "Sleep and wake on a target Mac",
+  "testCases": [
+    {
+      "id": "TC-024-release-sleep-wake",
+      "acId": "AC-401-2",
+      "description": "On a target Mac: within two minutes of waking from sleep or a closed lid, one registered and connected Squire session runs.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-2-session.test.js::after the target sleeps or its lid is closed and it wakes, within two minutes of the wake exactly one Squire session is running, registered and connected"
+    }
+  ],
+  "status": "draft"
+}

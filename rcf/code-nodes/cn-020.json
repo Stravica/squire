@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-020",
+  "path": "core/tools/wake-up.py#Identity",
+  "implementsAcIds": [
+    "AC-701-1",
+    "AC-701-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-08T21:22:26.783Z",
+  "updatedAt": "2026-11-08T21:22:26.783Z"
+}

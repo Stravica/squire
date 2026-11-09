@@ -689,6 +689,7 @@ module.exports = {
   writeConfigFile,
   ledgerOf,
   cleanUp,
+  productEnv,
   runPython,
   runPythonRaw,
   layDown,

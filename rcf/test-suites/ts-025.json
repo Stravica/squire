@@ -1,0 +1,141 @@
+{
+  "createdAt": "2026-11-08T19:15:34.839Z",
+  "updatedAt": "2026-11-08T20:41:11.758Z",
+  "purpose": "Runs the installed session runner, the session-start and config-change hooks and lay-down through their real entry points, in a test world with a fake Claude Code at the place it installs itself: the config folder, the environment, the claude location, the server's arguments, the check before each start, settings files in the Squire owner's folder, resume, the session record and the launchd agents.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-401-3"
+  ],
+  "id": "TS-025",
+  "usId": "US-401",
+  "title": "The launch contract",
+  "testCases": [
+    {
+      "id": "TC-025-runner-config-folder",
+      "acId": "AC-401-3",
+      "description": "The runner gives Claude Code a config folder inside the Squire home whose settings are core's installed settings, with the trust and Remote Control questions answered in advance and the sign-in kept.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the session runs from a Claude Code config folder inside the Squire home whose settings are the installed core settings, with the trust and Remote Control questions answered in advance and the sign-in kept"
+    },
+    {
+      "id": "TC-025-runner-environment",
+      "acId": "AC-401-3",
+      "description": "The session environment is built from nothing: the Mac folders, Claude Code's and Homebrew's on PATH in that order, its home, user, Squire home, config folder and locale, never a key, a token or agent teams.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the runner builds the session environment from nothing: the Mac folders first on PATH, then Claude Code, then Homebrew, its own home, user and config, and never an API key, a token or agent teams, whatever is set around it"
+    },
+    {
+      "id": "TC-025-runner-claude-location",
+      "acId": "AC-401-3",
+      "description": "The runner runs the claude installed under the home folder, never a decoy on PATH and never one anyone may change; with none, no session and a health line.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the runner runs the claude Claude Code installs under the home folder and never one found on PATH, and with none it can trust it starts no session and the health check says why"
+    },
+    {
+      "id": "TC-025-runner-server-arguments",
+      "acId": "AC-401-3",
+      "description": "One Remote Control server in the Squire owner's folder in single-session mode, asking nothing itself, named for the owner's Squire, accepting wake-ups, never forked, its output kept.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the runner starts one Remote Control server in the owner folder in single-session mode, with the permission mode that asks nothing, the owner name for Squire, Squire settings accepting its wake-ups, and never a fork"
+    },
+    {
+      "id": "TC-025-runner-check-before-start",
+      "acId": "AC-401-3",
+      "description": "With core's settings or a floor hook missing, the config folder settings changed or no sign-in, no session starts and the health check says why, with no sign-in window.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::before each start the runner checks the floor: with core settings or a floor hook missing, its config folder settings changed, or no Claude sign-in, no session starts and the health check says why, never with a sign-in window"
+    },
+    {
+      "id": "TC-025-runner-settings-before-start",
+      "acId": "AC-401-3",
+      "description": "A settings file in the owner's folder before a start is moved into the Squire home with its content and named, and only then does the session start.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::no session starts while a Claude Code settings file sits in the owner folder: the runner moves it into the Squire home, keeps its content, names it in the health check, and only then starts the session"
+    },
+    {
+      "id": "TC-025-runner-settings-appear-typical",
+      "acId": "AC-401-3",
+      "description": "Typical: a settings file appearing mid-session stops the session within 5 seconds, is moved and named, and a new session starts.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::typical: a Claude Code settings file appearing in the owner folder while the session runs stops the session within 5 seconds, is moved into the Squire home and named, and a new session starts"
+    },
+    {
+      "id": "TC-025-runner-settings-appear-heavy",
+      "acId": "AC-401-3",
+      "description": "Heavy: settings files appearing together and by folded spellings each stop the session within 5 seconds, are moved and named, and a new session starts each time.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::heavy: settings files appearing together, and by spellings the disk folds, each stop the session within 5 seconds, are moved into the Squire home and named, and a new session starts each time"
+    },
+    {
+      "id": "TC-025-config-change-refused",
+      "acId": "AC-401-3",
+      "description": "The floor's ConfigChange hook refuses project, local and Squire's user settings changes, run from core's settings as Claude Code runs it.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::a change to Claude Code settings during a session is refused by the floor ConfigChange hook, for the owner folder project and local settings and Squire own user settings, and core settings run it as Claude Code does"
+    },
+    {
+      "id": "TC-025-resume-unknown-both-marks",
+      "acId": "AC-401-3",
+      "description": "A resumed session the floor has never seen starts holding both marks; a known resumed job keeps what it had; a fresh start or a clear starts clean.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::a resumed session the floor has never seen starts its job holding untrusted input and private things, while a resumed job it knows keeps what it had and a fresh start or a clear starts clean"
+    },
+    {
+      "id": "TC-025-session-record-written",
+      "acId": "AC-401-3",
+      "description": "The SessionStart hook records the session id, socket and token in the Squire home and never in the owner's folder, run from core's settings.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the SessionStart hook records the session id, its messaging socket and token in the Squire home and never in the owner folder, and core settings run it as Claude Code does"
+    },
+    {
+      "id": "TC-025-launchd-agents-written",
+      "acId": "AC-401-3",
+      "description": "Lay-down writes the runner and wake-up scheduler agents running installed copies from the Squire home, and loads neither into the test runner's domain.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::lay-down writes the two launchd agents that run the installed runner and wake-up router from the Squire home, the runner kept alive and started at load, and loads neither into the domain of whoever runs the tests"
+    },
+    {
+      "id": "TC-025-journey-runner-floor-on",
+      "acId": "AC-401-3",
+      "description": "End to end on a laid-down core: the installed runner starts a session whose SessionStart hook records it and in which a send is asked; a settings file appearing restarts it.",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-2-journey.test.js::on a laid-down core the runner starts a session that runs the floor, a wake-up saying yes reaches it without answering its request, and after a settings file appears the new session is the one woken"
+    },
+    {
+      "id": "TC-025-session-record-listener",
+      "acId": "AC-401-3",
+      "description": "The SessionStart hook, run by the process that listens on the session socket, records that process as the pid, its start time in UTC to the second, and the socket owner.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the session record names the process listening on the messaging socket, its start time in UTC as the system reports it, and the socket owner"
+    },
+    {
+      "id": "TC-025-no-socket-no-record",
+      "acId": "AC-401-3",
+      "description": "With a messaging socket path where no socket is and none appears, the SessionStart hook writes no session record, prints nothing and exits 0 within its wait.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the SessionStart hook given a messaging socket path where no socket is and none appears writes no session record, prints nothing and lets the session start within its wait"
+    },
+    {
+      "id": "TC-025-floor-digests",
+      "acId": "AC-401-3",
+      "description": "A floor hook with one harmless line added, or core settings and the config folder settings changed alike, differs from the digest lay-down recorded: no session, and the health check names the file.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::before each start the runner compares core settings and every floor hook with the digests lay-down recorded: a hook with one line added, or core settings and the config folder settings changed alike, starts no session and the health check names the file"
+    },
+    {
+      "id": "TC-025-marks-kept-every-source",
+      "acId": "AC-401-3",
+      "description": "A job holding untrusted input and private things keeps both through a SessionStart under its own id from compact, resume, startup, clear and an unknown source: a send stays refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::the SessionStart hook never removes the marks of a job: one holding untrusted input and private things keeps both through compact, resume, startup, clear and an unknown source under its own id"
+    },
+    {
+      "id": "TC-025-startup-job-seen",
+      "acId": "AC-401-3",
+      "description": "Startup writes the job record, so a quiet session resumed under the same id is a job the floor has seen: a send is asked with a request id, not refused as one job.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-runner.test.js::a session started and then resumed under the same id with nothing done is a job the floor has seen: a send in it is asked, not refused as one job"
+    }
+  ],
+  "status": "draft"
+}

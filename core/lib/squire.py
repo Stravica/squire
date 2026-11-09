@@ -7,6 +7,7 @@ Standard library only; run by /usr/bin/python3.
 import fcntl
 import json
 import os
+import subprocess
 import unicodedata
 
 
@@ -99,12 +100,13 @@ class Ledger:
     Records: a request for a yes ({type: request, id, session, item, at});
     the owner's answer ({type: answer, request, session, answer, at}); a yes
     used up ({type: use, request, at}); what a job has taken in
-    ({type: taint, session, kind, source, at}); and a small-model call the
-    floor made for a job ({type: model, session, at}). A record that cannot
-    be read makes the whole ledger untrusted.
+    ({type: taint, session, kind, source, at}); a small-model call the
+    floor made for a job ({type: model, session, at}); and a job the floor
+    saw start ({type: job, session, source, at}). A record that cannot be
+    read makes the whole ledger untrusted.
     """
 
-    KINDS = {'request', 'answer', 'use', 'taint', 'model'}
+    KINDS = {'request', 'answer', 'use', 'taint', 'model', 'job'}
 
     def __init__(self, path):
         self.path = path
@@ -189,3 +191,40 @@ class Ledger:
 
     def model_call(self, session, now):
         self.append({'type': 'model', 'session': session, 'at': now})
+
+    def seen(self, session):
+        """True when the floor saw this job start: the ledger holds its record."""
+        return bool(self._of('job', session=session))
+
+    def job(self, session, source, now):
+        """Records a job the floor saw start, keeping one it already holds."""
+        if not self.seen(session):
+            self.append({'type': 'job', 'session': session, 'source': source, 'at': now})
+
+
+class Process:
+    """A process as the Mac reports it, by its id."""
+
+    MONTHS = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+
+    @classmethod
+    def started_at(cls, pid):
+        """The process's start as /bin/ps reports it in the C locale and UTC,
+        written as ISO 8601 UTC to the second; None when no process has the id."""
+        if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+            return None
+        try:
+            r = subprocess.run(['/bin/ps', '-o', 'lstart=', '-p', str(pid)], stdin=subprocess.DEVNULL,
+                               capture_output=True, text=True, timeout=10,
+                               env={'LC_ALL': 'C', 'TZ': 'UTC0', 'PATH': '/usr/bin:/bin'})
+        except (OSError, subprocess.SubprocessError):
+            return None
+        parts = r.stdout.split()
+        if r.returncode != 0 or len(parts) != 5 or parts[1] not in cls.MONTHS:
+            return None
+        try:
+            hour, minute, second = (int(x) for x in parts[3].split(':'))
+            fields = (int(parts[4]), cls.MONTHS.index(parts[1]) + 1, int(parts[2]), hour, minute, second)
+        except ValueError:
+            return None
+        return '%04d-%02d-%02dT%02d:%02d:%02dZ' % fields
