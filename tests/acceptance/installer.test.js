@@ -291,6 +291,48 @@ test("running set-up again over a finished set-up repairs what no longer holds a
   assert.deepEqual(I.ownerConfig(iw), ownerConfig, 'the owner\'s settings must be kept');
 });
 
+// Squire's runner restarted as launchd restarts it: the running one asked to
+// stop, then its agent's program started again.
+async function restartRunner(iw) {
+  for (const r of iw.runners) await r.stop();
+  const runner = I.startRunnerFromPlist(iw);
+  assert.ok(runner, 'the runner\'s agent must be there to start it again');
+  return runner;
+}
+
+// The session processes the fake Claude Code started that are still running.
+const liveSessions = (iw) => iw.inner.sessions().filter((x) => !w.processGone(x.pid));
+
+const runnerProblems = (iw) => {
+  try { return JSON.stringify(JSON.parse(fs.readFileSync(path.join(iw.squireHome, 'runner.json'), 'utf8')).problems); } catch (e) { return '(no runner.json)'; }
+};
+
+test("set-up opened again after it finished, pausing on the owner's squire.json, leaves the running session untouched, and a restarted runner has one session running again within two minutes", { timeout: FULL_RUN * 4 }, async (t) => {
+  const iw = I.makeInstallerWorld(t);
+  const run = await I.runApp(iw);
+  assert.deepEqual(I.doneSteps(iw), STEPS, `the first set-up must finish, its first conversation recorded done; got ${I.describeRun(run)}`);
+  assert.equal(liveSessions(iw).length, 1, 'once set-up is done, one session must be running');
+  // The owner's settings stop parsing. With set-up not opened again, a
+  // restarted runner has its session back.
+  fs.writeFileSync(path.join(iw.ownerFolder, 'squire.json'), '{"wakeUps": [{"at": "07:30"\n');
+  const seen = iw.inner.sessions().length;
+  await restartRunner(iw);
+  const back = await s.waitFor(() => iw.inner.sessions().length > seen && liveSessions(iw).length === 1, 120000, 500);
+  assert.ok(back, `with set-up not opened again, a restarted runner must have one session running within two minutes; runner.json says ${runnerProblems(iw)}`);
+  const running = liveSessions(iw)[0];
+  const started = iw.inner.sessions().length;
+  // Set-up opened again pauses at the owner's squire.json.
+  const again = await I.runApp(iw);
+  assertWindow(again, TITLES.paused, [/squire\.json/], 'set-up opened again over an owner\'s squire.json that does not parse');
+  // A few of the runner's ticks after set-up has paused.
+  await s.sleep(5000);
+  assert.ok(!w.processGone(running.pid) && iw.inner.sessions().length === started,
+    `set-up opened again after it finished must leave the running session untouched: the same session process running and no other started; sessions since: ${JSON.stringify(iw.inner.sessions().slice(started - 1).map((x) => ({ pid: x.pid, alive: !w.processGone(x.pid) })))}`);
+  await restartRunner(iw);
+  const restarted = await s.waitFor(() => iw.inner.sessions().length > started && liveSessions(iw).length === 1, 120000, 500);
+  assert.ok(restarted, `after set-up was opened again and paused, a restarted runner must have one session running within two minutes; runner.json says ${runnerProblems(iw)}`);
+});
+
 test("with the sign-in gone, the health line says to open Squire's installer to sign in again, and running set-up again resumes at the sign-in", { timeout: FULL_RUN * 2 }, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const run = await I.runApp(iw);
@@ -445,6 +487,29 @@ test("a plan found below Pro over a partial install of Claude Code already there
     'every byte that was there must survive (~/.claude.json and the launcher restored as they were, the partial version kept) and every byte set-up added must go');
 });
 
+test("a plan found below Pro over a ~/.claude.json or a ~/.claude that is a link to elsewhere in the home leaves each link, and the file or folder it leads to, exactly as set-up found them, as the stopped window says", { timeout: 240000 }, async (t) => {
+  const linked = [
+    ['a ~/.claude.json that is a link to a file elsewhere in the home', (iw) => {
+      const target = put(iw, 'dotfiles/claude.json', JSON.stringify({ numStartups: 4, theme: 'dark' }, null, 2) + '\n');
+      fs.symlinkSync(target, path.join(iw.userHome, '.claude.json'));
+    }],
+    ['a ~/.claude that is a link to a folder elsewhere in the home holding one file', (iw) => {
+      put(iw, 'dotfiles/claude/settings.json', '{"theme": "dark"}\n');
+      fs.symlinkSync(path.join(iw.userHome, 'dotfiles', 'claude'), path.join(iw.userHome, '.claude'));
+    }],
+  ];
+  for (const [what, make] of linked) {
+    const iw = I.makeInstallerWorld(t, { claude: { plan: 'free' } });
+    make(iw);
+    const before = I.contentOf(iw.userHome);
+    const run = await I.runApp(iw);
+    assert.equal(installerRuns(run).length, 1, `${what}: with no Claude Code there, set-up must install it; got ${I.describeRun(run)}`);
+    assertWindow(run, TITLES.stopped, [/Pro/, /as set-up found it/i], `a Free plan read over ${what}`);
+    assert.deepEqual(I.contentOf(iw.userHome), before,
+      `${what}: the home folder must be as set-up found it: each link still a link to the same place, what it leads to byte for byte as it was, and nothing set-up or the installer made left inside it`);
+  }
+});
+
 test('a file another app writes inside a folder set-up created is kept by the undo, and that folder is kept and named on the stopped window', { timeout: 120000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { claude: { plan: 'enterprise_plus' } });
   const go = path.join(iw.root, 'answer-the-plan-ask');
@@ -592,6 +657,23 @@ test('a Mac fact set-up cannot read (sw_vers failing, sw_vers printing no versio
     const run = await I.runApp(iw);
     assertRefusedBeforeAnyChange(iw, before, run, [word], what);
     assert.ok(!asked(run, TITLES.plan), `${what}: a fact set-up cannot read is refused, never asked and never assumed`);
+  }
+});
+
+test('a Mac fact reading with a space in it (a macOS version of "1 3", a memory reading with a space between its digits, a memory reading led by a space) is not a version or a whole number: it is refused before any change, naming it, and set-up never goes on to the plan window', { timeout: 180000 }, async (t) => {
+  for (const [mac, word, what] of [
+    [{ macos: '1 3' }, /macOS|version/i, 'a macOS version reading of "1 3"'],
+    [{ memBytes: '17179 869184' }, /memory/i, 'a memory reading with a space between its digits'],
+    [{ memBytes: ' 4294967296' }, /memory/i, 'a memory reading led by a space'],
+  ]) {
+    // Should set-up take the reading and go on, the owner says Not now at the
+    // one yes, so nothing is installed either way.
+    const iw = I.makeInstallerWorld(t, { mac: { ...mac, answers: { [TITLES.setUp]: 'button returned:Not now' } } });
+    const before = w.snapshot(iw.userHome);
+    const run = await I.runApp(iw);
+    assert.ok(!asked(run, TITLES.plan),
+      `${what}: a reading that is not a version or a whole number is refused, never assumed, so set-up must not go on to the plan window; got ${I.describeRun(run)}`);
+    assertRefusedBeforeAnyChange(iw, before, run, [word], what);
   }
 });
 

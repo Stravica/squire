@@ -215,3 +215,41 @@ test("an owner's folder absent when the backup runs is a failed run in which not
   assert.match(fs.readFileSync(path.join(world.home, 'backup.json'), 'utf8'), /fail/i, 'backup.json must record the run as failed');
   assert.deepEqual(filesUnder(world.destination), before, 'nothing may move into the archive, and current/ must stay as it was');
 });
+
+// ------------------------------------- an owner's file named like the backup's own
+
+test("an owner's file named like the backup's own half-written copies is kept like any other: once changed its earlier copy is in the dated archive, once removed its last copy stays, and no copy ever leaves the backup", { timeout: 60000 }, (t) => {
+  const world = backupWorld(t);
+  const name = '.squire-partial-recipes.md';
+  const file = path.join(world.owner, name);
+  const versions = ['Lemon tart: 3 eggs.\n', 'Lemon tart: 4 eggs, less sugar, 40 minutes.\n'];
+  const archived = (files) => Object.entries(files).filter(([rel]) => rel.startsWith('archive/') && rel.endsWith(`/${name}`)).map(([, d]) => d);
+  // Every copy the backup has held so far, by its bytes: none may ever go.
+  const held = new Set();
+  const assertNoneGone = (files, what) => {
+    const now = new Set(Object.values(files));
+    for (const digest of held) assert.ok(now.has(digest), `${what}: a copy that was in the backup must still be in it; nothing in the backup may be deleted`);
+    for (const digest of now) held.add(digest);
+  };
+
+  fs.writeFileSync(file, versions[0]);
+  assertRan(backup(world), 'the first run');
+  let files = filesUnder(world.destination);
+  assert.equal(files[`current/${name}`], w.sha256(versions[0]), `the first run must back the owner's ${name} up into current/`);
+  assertNoneGone(files, 'the first run');
+
+  fs.writeFileSync(file, versions[1]);
+  assertRan(backup(world), 'the run after the file changed');
+  files = filesUnder(world.destination);
+  assert.ok(archived(files).includes(w.sha256(versions[0])),
+    `after ${name} changed, its earlier copy must be in the dated archive, not deleted; found ${Object.keys(files).filter((rel) => rel.endsWith(name)).join(', ') || 'no copy at all'}`);
+  assert.equal(files[`current/${name}`], w.sha256(versions[1]), `after ${name} changed, current/ must hold its new bytes`);
+  assertNoneGone(files, 'the run after the file changed');
+
+  fs.rmSync(file);
+  assertRan(backup(world), 'the run after the file was removed');
+  files = filesUnder(world.destination);
+  assert.ok(archived(files).includes(w.sha256(versions[1])),
+    `after ${name} was removed, its last copy must stay in the backup, in the run's archive folder; found ${Object.keys(files).filter((rel) => rel.endsWith(name)).join(', ') || 'no copy at all'}`);
+  assertNoneGone(files, 'the run after the file was removed');
+});

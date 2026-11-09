@@ -187,3 +187,28 @@ test('a managed settings file that does not parse gives cannot confirm the compa
   fs.writeFileSync(file, '{"autoCompactWindow": 500000, "permissions": {"allow": [\n');
   assertCannotConfirm(world, 'managed-settings.json', 'a managed settings file that does not parse');
 });
+
+test('when a managed settings drop-in is a link into a folder the health check cannot search, the health check says it cannot confirm the compaction window and names the drop-in, never a pass and never silence', { timeout: 60000 }, (t) => {
+  const world = windowWorld(t);
+  // The settings the drop-in leads to set a window, in a folder this account
+  // may list but not search, so nothing running as this account can reach them.
+  const shut = path.join(world.root, 'team-settings');
+  const target = path.join(shut, 'team.json');
+  writeJson(target, { autoCompactWindow: 200000 });
+  const dropIn = path.join(world.system, MANAGED, 'managed-settings.d', '50-team.json');
+  fs.mkdirSync(path.dirname(dropIn), { recursive: true });
+  fs.symlinkSync(target, dropIn);
+  fs.chmodSync(shut, 0o600);
+  // The search permission comes back here, before the world's own clean-up runs.
+  try {
+    let reached = null;
+    try { fs.statSync(dropIn); reached = 'its target can be read'; } catch (e) { reached = e.code === 'EACCES' ? null : `stat gave ${e.code}`; }
+    if (reached) {
+      t.skip(`the drop-in's target must be out of reach of this account, and ${reached} (a test run with more rights than the owner's)`);
+      return;
+    }
+    assertCannotConfirm(world, '50-team.json', 'a managed settings drop-in linked into a folder the health check cannot search');
+  } finally {
+    fs.chmodSync(shut, 0o755);
+  }
+});
