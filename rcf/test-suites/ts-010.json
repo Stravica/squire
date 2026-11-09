@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.132Z",
-  "updatedAt": "2026-11-07T17:40:41.132Z",
+  "updatedAt": "2026-11-09T13:45:33.753Z",
   "purpose": "Runs the scheduled backup job on a seeded folder and checks copies and archives; injects a known fault and checks the known fix runs, with the required yes, before any ticket is offered.",
   "testLevel": "integration",
   "acIds": [
@@ -10,6 +10,77 @@
   "id": "TS-010",
   "usId": "US-1101",
   "title": "Nightly backup and self-fix first",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-010-lay-down-writes-backup-jobs-agent-backup-program",
+      "acId": "AC-1101-1",
+      "description": "lay-down writes the backup job's agent: the backup program every night at 02:30, never kept alive, and its load reaches no real launchd domain",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::lay-down writes the backup job's agent: the backup program every night at 02:30, never kept alive, and its load reaches no real launchd domain"
+    },
+    {
+      "id": "TC-010-backup-copies-added-file-file-removed-from-owners",
+      "acId": "AC-1101-1",
+      "description": "the backup copies an added file, and a file removed from the owner's folder stays in the backup",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::the backup copies an added file, and a file removed from the owner's folder stays in the backup"
+    },
+    {
+      "id": "TC-010-changed-files-earlier-copy-moves-dated-archive-nothing",
+      "acId": "AC-1101-1",
+      "description": "a changed file's earlier copy moves to the dated archive, and nothing in the backup is ever overwritten or deleted",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::a changed file's earlier copy moves to the dated archive, and nothing in the backup is ever overwritten or deleted"
+    },
+    {
+      "id": "TC-010-absent-backup-destination-gives-no-partial-pass-failure",
+      "acId": "AC-1101-1",
+      "description": "an absent backup destination gives no partial pass: the failure is recorded, the health check names the backup and the destination, and the next run succeeds",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::an absent backup destination gives no partial pass: the failure is recorded, the health check names the backup and the destination, and the next run succeeds"
+    },
+    {
+      "id": "TC-010-backup-destination-that-cannot-be-written-gives-no",
+      "acId": "AC-1101-1",
+      "description": "a backup destination that cannot be written gives no partial pass: the failure is recorded, the health check names it, and the next run succeeds",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::a backup destination that cannot be written gives no partial pass: the failure is recorded, the health check names it, and the next run succeeds"
+    },
+    {
+      "id": "TC-010-full-backup-destination-gives-no-partial-pass-failure",
+      "acId": "AC-1101-1",
+      "description": "a full backup destination gives no partial pass: the failure is recorded, the health check names it, and the next run succeeds",
+      "status": "pending",
+      "testPointer": "tests/acceptance/backup.test.js::a full backup destination gives no partial pass: the failure is recorded, the health check names it, and the next run succeeds"
+    },
+    {
+      "id": "TC-010-changed-floor-file-named-fix-offered-fix-runs",
+      "acId": "AC-1101-2",
+      "description": "a changed floor file is named and its fix offered; the fix runs only after the owner's yes, lays core down again from the release, and the check then finds it gone",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::a changed floor file is named and its fix offered; the fix runs only after the owner's yes, lays core down again from the release, and the check then finds it gone"
+    },
+    {
+      "id": "TC-010-runner-not-running-named-fix-offered-fix-runs",
+      "acId": "AC-1101-2",
+      "description": "the runner not running is named and its fix offered; the fix runs only after the owner's yes, and when it cannot bring the runner back it says plainly the fault is still there",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::the runner not running is named and its fix offered; the fix runs only after the owner's yes, and when it cannot bring the runner back it says plainly the fault is still there"
+    },
+    {
+      "id": "TC-010-not-signed-named-with-way-opening-squires-installer",
+      "acId": "AC-1101-2",
+      "description": "not signed in is named with the way on, opening Squire's installer to sign in again, and no command is offered for it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::not signed in is named with the way on, opening Squire's installer to sign in again, and no command is offered for it"
+    },
+    {
+      "id": "TC-010-moved-settings-file-fault-not-list-named-nothing",
+      "acId": "AC-1101-2",
+      "description": "a moved settings file and a fault not on the list are named, and nothing is offered for either",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::a moved settings file and a fault not on the list are named, and nothing is offered for either"
+    }
+  ],
   "status": "draft"
 }

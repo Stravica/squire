@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-08T19:29:49.215Z",
+  "updatedAt": "2026-11-09T13:45:25.955Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -455,6 +455,27 @@
       "description": "End to end on a laid-down core: a wake-up saying yes reaches the session's prompt hook and the send stays asked until the owner's own yes.",
       "status": "pending",
       "testPointer": "tests/e2e/round-2-journey.test.js::on a laid-down core the runner starts a session that runs the floor, a wake-up saying yes reaches it without answering its request, and after a settings file appears the new session is the one woken"
+    },
+    {
+      "id": "TC-002-before-one-yes-nothing-installed-not-now-closed",
+      "acId": "AC-1901-5",
+      "description": "before the one yes nothing is installed, and Not now or a closed window installs nothing and writes nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::before the one yes nothing is installed, and Not now or a closed window installs nothing and writes nothing"
+    },
+    {
+      "id": "TC-002-one-yes-names-every-piece-set-up-adds",
+      "acId": "AC-1901-5",
+      "description": "the one yes names every piece set-up adds: Claude Code with its own updates, Apple's tools with the administrator's password prompt, Squire, and each background job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::the one yes names every piece set-up adds: Claude Code with its own updates, Apple's tools with the administrator's password prompt, Squire, and each background job"
+    },
+    {
+      "id": "TC-002-after-one-yes-nothing-outside-named-list-installed",
+      "acId": "AC-1901-5",
+      "description": "after the one yes nothing outside the named list is installed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::after the one yes nothing outside the named list is installed"
     }
   ],
   "status": "draft"

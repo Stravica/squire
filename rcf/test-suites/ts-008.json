@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:40.589Z",
-  "updatedAt": "2026-11-07T17:40:40.589Z",
+  "updatedAt": "2026-11-09T13:45:33.967Z",
   "purpose": "Walks the whole first-run journey under a fresh macOS user, from the download to the first reply from the Squire, as one path. Takes the target host as a parameter.",
   "testLevel": "e2e",
   "acIds": [
@@ -9,6 +9,14 @@
   "id": "TS-008",
   "usId": "US-201",
   "title": "Fresh Mac: installer to first reply",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-008-setting-squire-up-from-download-fresh-mac-user",
+      "acId": "AC-201-1",
+      "description": "setting Squire up from the download on a fresh Mac user opens no Terminal window: every new window belongs to set-up, the browser, System Settings, Apple's tools dialog or the Claude app",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-3-install.test.js::setting Squire up from the download on a fresh Mac user opens no Terminal window: every new window belongs to set-up, the browser, System Settings, Apple's tools dialog or the Claude app"
+    }
+  ],
   "status": "draft"
 }
