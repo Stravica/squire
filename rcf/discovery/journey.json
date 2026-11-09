@@ -155,7 +155,7 @@
           "slug": "owner-folder",
           "kind": "step",
           "screenId": "SCR-002",
-          "label": "The owner's folder, ~/Squire unless the owner picks another",
+          "label": "The owner's folder, ~/Squire",
           "next": [
             "JNY-001-011"
           ],

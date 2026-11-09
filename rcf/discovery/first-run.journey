@@ -16,7 +16,7 @@ goal: From opening the download to the first reply from their own Squire, withou
 - step plan-read @installer-window The plan read from the sign-in; a plan below Pro stops set-up and undoes what set-up added; a plan Squire cannot read is asked of the owner
 - step apple-tools @apple-tools-dialog Apple's command line tools, by Apple's own dialog, unless they are already there
 - step name-squire @installer-window Naming the Squire and giving it a personality
-- step owner-folder @installer-window The owner's folder, ~/Squire unless the owner picks another
+- step owner-folder @installer-window The owner's folder, ~/Squire
 - step lay-down @installer-window Squire laid down: the always-on session and the wake-ups
 - step backup @installer-window The nightly backup job
 - step health @installer-window The health check
