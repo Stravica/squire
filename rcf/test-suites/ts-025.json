@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-08T19:15:34.839Z",
-  "updatedAt": "2026-11-08T20:41:11.758Z",
+  "updatedAt": "2026-11-09T16:55:02.291Z",
   "purpose": "Runs the installed session runner, the session-start and config-change hooks and lay-down through their real entry points, in a test world with a fake Claude Code at the place it installs itself: the config folder, the environment, the claude location, the server's arguments, the check before each start, settings files in the Squire owner's folder, resume, the session record and the launchd agents.",
   "testLevel": "integration",
   "acIds": [
@@ -92,7 +92,7 @@
       "acId": "AC-401-3",
       "description": "Lay-down writes the runner and wake-up scheduler agents running installed copies from the Squire home, and loads neither into the test runner's domain.",
       "status": "pending",
-      "testPointer": "tests/acceptance/session-runner.test.js::lay-down writes the two launchd agents that run the installed runner and wake-up router from the Squire home, the runner kept alive and started at load, and loads neither into the domain of whoever runs the tests"
+      "testPointer": "tests/acceptance/session-runner.test.js::lay-down writes the three launchd agents that run the installed runner, wake-up router and backup from the Squire home, the runner kept alive and started at load, and loads none of them into the domain of whoever runs the tests"
     },
     {
       "id": "TC-025-journey-runner-floor-on",
