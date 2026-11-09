@@ -2,9 +2,10 @@
 
 // Code hygiene for the nightly backup, through its entry point
 // (core/tools/backup.py): runs within one second each get an archive folder
-// of their own, a half-written copy left by a stopped run is cleared at the
-// next start, and a link in the owner's folder is copied as a link, never
-// followed. Bound to no criterion.
+// of their own, a half-written copy left by a stopped run at the top of the
+// destination (where the backup writes its copies, never among the owner's
+// files) is cleared at the next start, and a link in the owner's folder is
+// copied as a link, never followed. Bound to no criterion.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -44,14 +45,19 @@ test('runs within one second each move earlier copies into an archive folder of 
   assert.deepEqual(kept, ['one\n', 'one two\n'], 'each earlier copy must be kept whole');
 });
 
-test('a half-written copy left by a stopped run is cleared at the next start, and a link is copied as a link', { timeout: 60000 }, (t) => {
+test('a half-written copy left by a stopped run, at the top of the destination where the backup writes its copies, is cleared at the next start, no copy is written among the owner\'s files, and a link is copied as a link', { timeout: 60000 }, (t) => {
   const world = backupWorld(t);
   backup(world);
-  const partial = path.join(world.destination, 'current', '.squire-partial-left-behind');
+  const partial = path.join(world.destination, '.squire-partial-left-behind');
   fs.writeFileSync(partial, 'half');
   fs.symlinkSync('/nonexistent/elsewhere', path.join(world.owner, 'pointer'));
+  fs.writeFileSync(path.join(world.owner, 'letter.md'), 'Dear Mr Hale, about Thursday.\n');
   backup(world);
   assert.ok(!fs.existsSync(partial), 'the half-written copy must be cleared');
+  assert.deepEqual(fs.readdirSync(world.destination).filter((n) => n !== 'current' && n !== 'archive'), [],
+    'after a run, the top of the destination holds only current/ and archive/');
+  assert.equal(fs.readFileSync(path.join(world.destination, 'current', 'letter.md'), 'utf8'), 'Dear Mr Hale, about Thursday.\n',
+    'a file copied through the top of the destination must land whole in current/');
   const copied = path.join(world.destination, 'current', 'pointer');
   assert.ok(fs.lstatSync(copied).isSymbolicLink(), 'the link must be copied as a link');
   assert.equal(fs.readlinkSync(copied), '/nonexistent/elsewhere', 'the link must keep its target');
