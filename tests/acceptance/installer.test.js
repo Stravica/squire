@@ -646,6 +646,9 @@ test("a sign-in that ends within seven days gets one wake-up through Squire's se
 });
 
 test('a sign-in that ends in more than seven days, or whose end cannot be read, gets no wake-up and no sign-in', { timeout: 180000 }, async (t) => {
+  // A regression guard: nothing warns or signs in at the round's base, so this
+  // holds there; it stays so the warning never fires outside its window or on
+  // an end it cannot read. The two cases beside it fail until it is built.
   for (const [ends, what] of [[new Date(Date.now() + 20 * DAY).toISOString(), 'ending in 20 days'], ['soon', 'an end that cannot be read']]) {
     const world = renewWorld(t, { loginExpiresAt: ends });
     await liveSession(world, t);
