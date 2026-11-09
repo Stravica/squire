@@ -708,6 +708,7 @@ module.exports = {
   claudeCodePlaces,
   contentOf,
   appEnv,
+  startRunnerFromPlist,
   runApp,
   startApp,
   describeRun,
