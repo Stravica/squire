@@ -2,9 +2,13 @@
 
 // Round 3's additions to the test world: Squire's set-up app, run at its own
 // entry point as a process, on a Mac made of fakes. Nothing here imports or
-// copies product logic. What stands in for the outside, each owned by the
-// world and first on the PATH the app is opened with (the design record's
-// line 3), is:
+// copies product logic. Set-up runs the Mac's commands only from the system
+// folders, under SQUIRE_SYSTEM_ROOT when it is set (the design record's line
+// 3), so the world's system/ folder mirrors /usr/bin, /bin, /usr/sbin and
+// /sbin: every real command is a link there, and each fake below stands at
+// the system path of the command it replaces. The PATH the app is opened with
+// is the world's own, and a test may put hostile commands first on it; set-up
+// must never call them. What stands in for the outside is:
 //
 //   sw_vers, sysctl, id      the Mac's version, memory and the user's groups
 //   xcode-select             Apple's command line tools: present or absent,
@@ -14,15 +18,21 @@
 //                            serves a fake installer (or fails, times out, is
 //                            cut short, finds no network, or is slow)
 //   osascript                set-up's own windows: each answered by its title
-//                            from the test's answers, and recorded
+//                            from the test's answers (one answer, a sequence
+//                            of answers, or an answer given once a file the
+//                            test makes appears), and recorded
 //   open                     the browser: records what it was asked to open
 //
 // The fake installer lays a fake Claude Code where the real one installs
 // itself (~/.local/bin/claude, a link into ~/.local/share/claude/versions/),
-// with the other places the real installer makes under the home. That fake
-// answers --version, auth login, auth status (with the plan the test sets),
-// auth logout and remote-control (round 2's fake session, or an account
-// refusal before any session).
+// with the other places the real installer makes under the home, and does to
+// a pre-existing ~/.claude.json and launcher what the real one was measured
+// to do (it keeps a copy of the old ~/.claude.json in ~/.claude/backups, adds
+// its own keys to the file and re-points the launcher). That fake answers
+// --version, auth login, auth status (with the plan the test sets), auth
+// logout (or fails it) and remote-control (round 2's fake session, or an
+// account refusal before any session), and records each call's environment
+// names.
 //
 // The answer source exists only in the test world. Squire ships no answer
 // file and no switch for one.
@@ -35,13 +45,18 @@
 //   Applications/Squire.app  the app, assembled as the release assembles it:
 //                            installer/Squire.app with core/ at
 //                            Contents/Resources/core
-//   mac-bin/                 the fakes above
+//   inherited-bin/           first on the PATH the app is opened with: empty,
+//                            or a test's hostile commands
 //   mac.json                 how the fake Mac behaves (changeable with set)
 //   claude-code.json         how the fake Claude Code behaves
 //   mac-calls.jsonl          one line per call of any fake, in order
+//   hostile-calls.jsonl      one line per call of a hostile command
 //   dialogs.jsonl            one line per window set-up showed
-//   system/                  SQUIRE_SYSTEM_ROOT: the Mac's system places
-//                            (managed settings) as the health check reads them
+//   system/                  SQUIRE_SYSTEM_ROOT: the Mac's system folders
+//                            (usr/bin, bin, usr/sbin, sbin: real commands as
+//                            links, the fakes at their own paths) and the
+//                            system places (managed settings) the health
+//                            check reads
 //
 // Where set-up keeps things (the design record's line 2): the Squire home is
 // ~/Library/Application Support/Squire (SQUIRE_HOME is not set for the app),
@@ -95,7 +110,11 @@ const DEFAULT_ANSWERS = {
 const STEPS = ['yes', 'claudeCode', 'signIn', 'appleTools', 'naming', 'ownerFolder', 'layDown', 'backup', 'health',
   'phone', 'firstConversation'];
 
+// swVers 'fail' makes sw_vers exit 1 with nothing on stdout; a macos of ''
+// makes it print no version; a memBytes that is not a number is printed as
+// it stands.
 const DEFAULT_MAC = {
+  swVers: 'ok',
   macos: '15.1',
   memBytes: 17179869184,
   groups: 'staff everyone localaccounts _appserverusr admin _appserveradm',
@@ -132,6 +151,7 @@ const FAKES = {
   sw_vers: `
 record();
 const m = mac();
+if (m.swVers === 'fail') { process.stderr.write('sw_vers: unable to read the system version\\n'); process.exit(1); }
 if (argv.includes('-productVersion')) { process.stdout.write(m.macos + '\\n'); process.exit(0); }
 if (argv.includes('-productName')) { process.stdout.write('macOS\\n'); process.exit(0); }
 if (argv.includes('-buildVersion')) { process.stdout.write('24B83\\n'); process.exit(0); }
@@ -194,8 +214,24 @@ fs.appendFileSync(${JSON.stringify('DIALOGS_FILE')}, JSON.stringify({ title, tex
 record({ title });
 if (!title) { process.stderr.write('execution error: not one of set-up\\'s windows (-2700)\\n'); process.exit(1); }
 const answers = { ...${JSON.stringify(DEFAULT_ANSWERS)}, ...(mac().answers || {}) };
-const a = answers[title];
-if (a && a.hang) hang();
+let a = answers[title];
+// A sequence answers the nth window of this title with its nth answer (the
+// last one after that); "waitFor" holds the answer until the test makes a file.
+if (a && Array.isArray(a.sequence)) {
+  const seen = fs.readFileSync(${JSON.stringify('DIALOGS_FILE')}, 'utf8').split('\\n').filter(Boolean)
+    .map((l) => JSON.parse(l)).filter((d) => d.title === title).length;
+  a = a.sequence[Math.min(seen - 1, a.sequence.length - 1)];
+}
+if (a && a.waitFor) {
+  const then = a.then;
+  const until = Date.now() + 120000;
+  const poll = () => {
+    if (fs.existsSync(a.waitFor)) { process.stdout.write(String(then) + '\\n'); process.exit(0); }
+    if (Date.now() > until) { process.stderr.write('execution error: no answer (-1712)\\n'); process.exit(1); }
+    setTimeout(poll, 100);
+  };
+  poll();
+} else if (a && a.hang) hang();
 else if (a && a.cancel) { process.stderr.write('execution error: User canceled. (-128)\\n'); process.exit(1); }
 else { process.stdout.write(String(a) + '\\n'); process.exit(0); }
 `,
@@ -217,7 +253,8 @@ const argv = process.argv.slice(2);
 const configDir = process.env.CLAUDE_CONFIG_DIR || path.join(process.env.HOME || '/nonexistent', '.claude');
 const stateFile = path.join(configDir, '.claude.json');
 fs.appendFileSync(${JSON.stringify(iw.callsFile)}, JSON.stringify({ cmd: 'claude', argv, at: Date.now(), pid: process.pid,
-  configDir: process.env.CLAUDE_CONFIG_DIR || null, bin: process.argv[1] }) + '\\n');
+  configDir: process.env.CLAUDE_CONFIG_DIR || null, bin: process.argv[1], envNames: Object.keys(process.env).sort(),
+  path: process.env.PATH || null }) + '\\n');
 const readState = () => { try { return JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch (e) { return {}; } };
 const writeState = (s) => { fs.mkdirSync(configDir, { recursive: true }); fs.writeFileSync(stateFile, JSON.stringify(s, null, 2)); };
 const hang = () => { setInterval(() => {}, 1000); };
@@ -242,6 +279,7 @@ if (argv[0] === 'auth' && argv[1] === 'login') {
   process.stdout.write(JSON.stringify(out, null, 2) + '\\n');
   process.exit(signedIn ? 0 : 1);
 } else if (argv[0] === 'auth' && argv[1] === 'logout') {
+  if (how.logout === 'fail') { process.stderr.write('Unable to log out: the credential store did not answer.\\n'); process.exit(1); }
   const s = readState();
   delete s.oauthAccount;
   writeState(s);
@@ -273,8 +311,17 @@ set -e
 how=$(/usr/bin/plutil -extract installer raw -o - ${JSON.stringify(iw.macPlist)} 2>/dev/null || echo ok)
 printf '{"cmd":"claude-installer","argv":[],"how":"%s","at":%s000}\\n' "$how" "$(/bin/date +%s)" >> ${JSON.stringify(iw.callsFile)}
 if [ "$how" = "slow" ]; then /bin/sleep 60; fi
-/bin/mkdir -p "$HOME/.local/bin" "$HOME/.local/share/claude/versions" "$HOME/.local/state/claude" "$HOME/.cache/claude" "$HOME/.claude"
-[ -e "$HOME/.claude.json" ] || echo '{}' > "$HOME/.claude.json"
+/bin/mkdir -p "$HOME/.local/bin" "$HOME/.local/share/claude/versions" "$HOME/.local/state/claude/locks" "$HOME/.cache/claude/staging" \\
+  "$HOME/.claude/backups" "$HOME/.claude/downloads" "$HOME/.claude/sessions"
+# As measured over a home that already held ~/.claude.json: a copy of the old
+# file goes into ~/.claude/backups, and the file keeps its keys and gains the
+# installer's own.
+if [ -e "$HOME/.claude.json" ]; then
+  /bin/cp "$HOME/.claude.json" "$HOME/.claude/backups/.claude.json.backup.$(/bin/date +%s)000"
+  ${JSON.stringify(process.execPath)} ${JSON.stringify(iw.mergeScript)} "$HOME/.claude.json"
+else
+  echo '{"installMethod":"native","autoUpdates":false}' > "$HOME/.claude.json"
+fi
 version="$HOME/.local/share/claude/versions/${CLAUDE_VERSION}"
 if [ "$how" = "incomplete" ]; then
   /usr/bin/head -c 200 ${JSON.stringify(iw.claudeScript)} > "$version"
@@ -285,6 +332,73 @@ fi
 /bin/ln -sfn "$version" "$HOME/.local/bin/claude"
 echo "Claude Code successfully installed!"
 `;
+}
+
+// What the fake installer runs on a pre-existing ~/.claude.json: every key
+// kept, the installer's own added.
+const MERGE_SCRIPT = `'use strict';
+const fs = require('fs');
+const file = process.argv[2];
+let data = {};
+try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { data = {}; }
+Object.assign(data, { installMethod: 'native', autoUpdates: false, autoUpdatesProtectedForNative: true,
+  firstStartTime: new Date().toISOString(), migrationVersion: 1 });
+fs.writeFileSync(file, JSON.stringify(data, null, 2));
+`;
+
+// The system folders a world mirrors under its SQUIRE_SYSTEM_ROOT, and where
+// each fake stands among them.
+const SYSTEM_FOLDERS = ['usr/bin', 'bin', 'usr/sbin', 'sbin'];
+const FAKE_PLACES = {
+  sw_vers: 'usr/bin', sysctl: 'usr/sbin', id: 'usr/bin', 'xcode-select': 'usr/bin', curl: 'usr/bin', osascript: 'usr/bin', open: 'usr/bin',
+};
+
+// Lays the four system folders under root: every entry of the real folder as
+// a link to it, except the files given ({ 'usr/bin/curl': text }), written
+// in its place and made executable. Returns root.
+function makeSystemRoot(root, files = {}) {
+  for (const folder of SYSTEM_FOLDERS) {
+    const dir = path.join(root, folder);
+    fs.mkdirSync(dir, { recursive: true });
+    for (const name of fs.readdirSync(`/${folder}`)) {
+      const rel = `${folder}/${name}`;
+      if (rel in files) continue;
+      try { fs.symlinkSync(`/${rel}`, path.join(dir, name)); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+    }
+  }
+  for (const [rel, text] of Object.entries(files)) {
+    const file = path.join(root, rel);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.rmSync(file, { force: true });
+    fs.writeFileSync(file, text);
+    fs.chmodSync(file, 0o755);
+  }
+  return root;
+}
+
+// Hostile commands first on the PATH the app is opened with: a sw_vers that
+// answers macOS 26, an osascript that answers Install (and Pro) to any window,
+// and a curl that serves another installer. Each records its own call; none
+// may ever be called.
+function hostileCommands(iw) {
+  const record = `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+fs.appendFileSync(${JSON.stringify(iw.hostileFile)}, JSON.stringify({ cmd: require('path').basename(process.argv[1]),
+  argv: process.argv.slice(2), at: Date.now() }) + '\\n');
+`;
+  const other = path.join(iw.root, 'hostile-installer.sh');
+  fs.writeFileSync(other, `#!/bin/bash\n/usr/bin/touch ${JSON.stringify(iw.hostileMarker)}\n`);
+  const files = {
+    sw_vers: `${record}process.stdout.write('26.0\\n');\n`,
+    osascript: `${record}const t = process.argv.slice(2).join(' ');\nprocess.stdout.write((/your Claude plan/.test(t) ? 'Pro' : 'button returned:Install') + '\\n');\n`,
+    curl: `${record}const a = process.argv.slice(2);\nconst i = a.indexOf('-o');\nconst text = fs.readFileSync(${JSON.stringify(other)}, 'utf8');\nif (i >= 0) fs.writeFileSync(a[i + 1], text); else process.stdout.write(text);\n`,
+  };
+  for (const [name, text] of Object.entries(files)) {
+    const file = path.join(iw.inherited, name);
+    fs.writeFileSync(file, text);
+    fs.chmodSync(file, 0o755);
+  }
 }
 
 // ------------------------------------------------------------- the world
@@ -302,7 +416,10 @@ function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
     squireHome: path.join(world.userHome, 'Library', 'Application Support', 'Squire'),
     ownerFolder: path.join(world.userHome, 'Squire'),
     app: path.join(root, 'Applications', 'Squire.app'),
-    fakes: path.join(root, 'mac-bin'),
+    inherited: path.join(root, 'inherited-bin'),
+    hostileFile: path.join(root, 'hostile-calls.jsonl'),
+    hostileMarker: path.join(root, 'hostile-installer-ran'),
+    mergeScript: path.join(root, 'merge-claude-json.js'),
     macFile: path.join(root, 'mac.json'),
     macPlist: path.join(root, 'mac-installer.plist'),
     claudeFile: path.join(root, 'claude-code.json'),
@@ -325,7 +442,8 @@ function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
   for (const rel of ['Library/Application Support', 'Library/Preferences', 'Desktop', 'Documents', 'Downloads']) {
     fs.mkdirSync(path.join(iw.userHome, rel), { recursive: true });
   }
-  for (const dir of [iw.fakes, iw.toolsDir, iw.system, path.dirname(iw.claudeScript)]) fs.mkdirSync(dir, { recursive: true });
+  for (const dir of [iw.inherited, iw.toolsDir, iw.system, path.dirname(iw.claudeScript)]) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(iw.mergeScript, MERGE_SCRIPT);
   iw.set = (changes) => {
     const next = { ...DEFAULT_MAC, ...(fs.existsSync(iw.macFile) ? JSON.parse(fs.readFileSync(iw.macFile, 'utf8')) : {}), ...changes };
     fs.writeFileSync(iw.macFile, JSON.stringify(next));
@@ -337,17 +455,16 @@ function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
   };
   iw.set(mac);
   iw.setClaude(claude);
-  // The fakes.
+  // The fakes, each at its system path under the world's system folders.
+  const fakes = {};
   for (const [cmd, body] of Object.entries(FAKES)) {
-    const file = path.join(iw.fakes, cmd);
-    const text = (fakeHeader(iw, cmd) + body)
+    fakes[`${FAKE_PLACES[cmd]}/${cmd}`] = (fakeHeader(iw, cmd) + body)
       .replaceAll('"TOOLS_MARKER"', JSON.stringify(iw.toolsMarker))
       .replaceAll('"TOOLS_DIR"', JSON.stringify(iw.toolsDir))
       .replaceAll('"INSTALLER_SCRIPT"', JSON.stringify(iw.installerScript))
       .replaceAll('"DIALOGS_FILE"', JSON.stringify(iw.dialogsFile));
-    fs.writeFileSync(file, text);
-    fs.chmodSync(file, 0o755);
   }
+  makeSystemRoot(iw.system, fakes);
   // Round 2's fake session, which the fake Claude Code's remote-control runs.
   const inner = sw.installFakeClaudeCode(world, {}, { dir: path.join(root, 'claude-code-inner') });
   fs.writeFileSync(iw.claudeScript, fakeClaudeCodeScript(iw, inner.bin));
@@ -408,17 +525,20 @@ function contentOf(abs, rel = '') {
 
 // --------------------------------------------------------------- running
 
-// The environment Finder opens the app with in this world: the fakes first on
-// PATH, then the Mac's own folders; no SQUIRE_HOME, no Claude Code variables.
-function appEnv(iw) {
+// The environment Finder opens the app with in this world: a PATH of the
+// world's own (its inherited-bin first, then the Mac's own folders), the
+// world's system folders as SQUIRE_SYSTEM_ROOT, no SQUIRE_HOME and no Claude
+// Code variables. extra adds or replaces variables.
+function appEnv(iw, extra = {}) {
   return {
-    PATH: `${iw.fakes}:${MAC_PATH}`,
+    PATH: `${iw.inherited}:${MAC_PATH}`,
     HOME: iw.userHome,
     USER: process.env.USER || 'owner',
     LOGNAME: process.env.USER || 'owner',
     TMPDIR: iw.world.tmp,
     LANG: 'en_GB.UTF-8',
     SQUIRE_SYSTEM_ROOT: iw.system,
+    ...extra,
   };
 }
 
@@ -463,12 +583,13 @@ function startRunnerFromPlist(iw) {
 //   killWhen  a test of the world: when it turns true the app is killed
 //             (SIGKILL to its process group), as a quit or a crash would
 //   timeout   the bound on the run (150 s); a run still going is killed
+//   env       variables added to or replacing the app's environment
 // Returns the exit, the output, and the windows and calls of this run.
-async function runApp(iw, { launchd = true, killWhen = null, timeout = 150000 } = {}) {
+async function runApp(iw, { launchd = true, killWhen = null, timeout = 150000, env = {} } = {}) {
   const dialogsBefore = readJsonLines(iw.dialogsFile).length;
   const callsBefore = readJsonLines(iw.callsFile).length;
   const exe = path.join(iw.app, APP_EXECUTABLE);
-  const child = spawn(exe, [], { cwd: '/', env: appEnv(iw), stdio: ['ignore', 'pipe', 'pipe'], detached: true });
+  const child = spawn(exe, [], { cwd: '/', env: appEnv(iw, env), stdio: ['ignore', 'pipe', 'pipe'], detached: true });
   let stdout = '';
   let stderr = '';
   let exit = null;
@@ -515,8 +636,8 @@ async function runApp(iw, { launchd = true, killWhen = null, timeout = 150000 } 
 }
 
 // Starts the app without waiting, for a second set-up beside a first.
-function startApp(iw) {
-  const child = spawn(path.join(iw.app, APP_EXECUTABLE), [], { cwd: '/', env: appEnv(iw), stdio: 'ignore', detached: true });
+function startApp(iw, { env = {} } = {}) {
+  const child = spawn(path.join(iw.app, APP_EXECUTABLE), [], { cwd: '/', env: appEnv(iw, env), stdio: 'ignore', detached: true });
   let exit = null;
   child.on('exit', (status, signal) => { exit = { status, signal }; });
   return {
@@ -566,7 +687,12 @@ function ownerConfig(iw) {
   try { return JSON.parse(fs.readFileSync(path.join(iw.ownerFolder, 'squire.json'), 'utf8')); } catch (e) { return null; }
 }
 
+const hostileCalls = (iw) => readJsonLines(iw.hostileFile);
+
 module.exports = {
+  makeSystemRoot,
+  hostileCommands,
+  hostileCalls,
   APP_SOURCE,
   APP_EXECUTABLE,
   CLAUDE_VERSION,

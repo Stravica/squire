@@ -108,6 +108,9 @@ const ENVIRONMENT_FORBIDDEN = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', '
 // Behaviour, changeable between calls with set():
 //   { signedIn: true }        auth status answers signed in (the default)
 //   { signedIn: false }       auth status answers not signed in, exit 1
+//   { loginExpiresAt: <ISO> } auth status also prints when the sign-in ends,
+//                             as Claude Code 2.1.319 was measured to
+//   claude auth login         answers "Login successful.", exit 0
 //
 // Records, in the world:
 //   claude-code-calls.jsonl     one line per invocation: argv, cwd, pid, its
@@ -213,8 +216,14 @@ append(${JSON.stringify(callsFile)}, { argv, cwd: process.cwd(), pid: process.pi
   envNames: Object.keys(process.env).sort(), env, ownerClaude });
 if (argv[0] === 'auth' && argv[1] === 'status') {
   const signedIn = how.signedIn !== false;
-  process.stdout.write(JSON.stringify({ loggedIn: signedIn, authMethod: signedIn ? 'claude.ai' : 'none' }, null, 2) + '\\n');
+  const out = { loggedIn: signedIn, authMethod: signedIn ? 'claude.ai' : 'none' };
+  if (signedIn && how.loginExpiresAt) out.loginExpiresAt = how.loginExpiresAt;
+  process.stdout.write(JSON.stringify(out, null, 2) + '\\n');
   process.exit(signedIn ? 0 : 1);
+}
+if (argv[0] === 'auth' && argv[1] === 'login') {
+  process.stdout.write('Login successful.\\n');
+  process.exit(0);
 }
 if (argv[0] === 'remote-control') {
   const child = spawn(process.execPath, [${JSON.stringify(sessionScript)}, String(process.pid)], { stdio: 'ignore' });

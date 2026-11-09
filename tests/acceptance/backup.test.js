@@ -19,12 +19,12 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const w = require('../fixtures/squire-world.js');
 const s = require('../fixtures/session-world.js');
+const I = require('../fixtures/installer-world.js');
 
 function backupWorld(t, destination) {
   const world = w.makeWorld();
   t.after(() => w.cleanUp(world));
-  world.system = path.join(world.root, 'system');
-  fs.mkdirSync(world.system, { recursive: true });
+  world.system = I.makeSystemRoot(path.join(world.root, 'system'));
   s.layDownCore(world);
   world.destination = destination || path.join(world.root, 'backups', 'Squire Backup');
   fs.mkdirSync(path.dirname(world.destination), { recursive: true });
@@ -166,4 +166,52 @@ test('a full backup destination gives no partial pass: the failure is recorded, 
   const world = backupWorld(t);
   fs.writeFileSync(path.join(world.owner, 'scan.pdf'), Buffer.alloc(256 * 1024, 7));
   assertNoPartialPassThenRecovers(world, () => backupOnFullDisk(world, 64), () => {}, 'a full destination');
+});
+
+// ------------------------------------------ a source the backup cannot decide
+
+test('a file the backup cannot read is named by the health check, current/ keeps its last copy of it, and every other file is backed up', { timeout: 60000 }, (t) => {
+  const world = backupWorld(t);
+  const locked = path.join(world.owner, 'letters', 'tax-return-2025.txt');
+  fs.mkdirSync(path.dirname(locked), { recursive: true });
+  fs.writeFileSync(locked, 'Return as filed in January.\n');
+  const r1 = backup(world);
+  assert.doesNotMatch(r1.stderr, /can't open file|Traceback/, `the first run: the backup job must run; got ${w.describe(r1)}`);
+  assert.equal(r1.status, 0, `the first run must succeed; got ${w.describe(r1)}`);
+  // The file changes and then cannot be read; another file is added beside it.
+  fs.writeFileSync(locked, 'Return as amended in March.\n');
+  const added = path.join(world.owner, 'letters', 'plumber.md');
+  fs.writeFileSync(added, 'Dear Mr Hale, about Thursday.\n');
+  const readable = filesUnder(world.owner);
+  delete readable['letters/tax-return-2025.txt'];
+  fs.chmodSync(locked, 0o000);
+  t.after(() => { try { fs.chmodSync(locked, 0o600); } catch (e) { /* gone */ } });
+  const r2 = backup(world);
+  assert.doesNotMatch(r2.stderr, /can't open file|Traceback/, `the run with an unreadable file: the backup job must run; got ${w.describe(r2)}`);
+  const current = path.join(world.destination, 'current');
+  assert.equal(fs.readFileSync(path.join(current, 'letters', 'plumber.md'), 'utf8'), 'Dear Mr Hale, about Thursday.\n',
+    'every other file must still be backed up');
+  const backedUp = filesUnder(current);
+  for (const [rel, digest] of Object.entries(readable)) {
+    assert.equal(backedUp[rel], digest, `current/${rel}, a file the backup can read, must be backed up`);
+  }
+  assert.equal(fs.readFileSync(path.join(current, 'letters', 'tax-return-2025.txt'), 'utf8'), 'Return as filed in January.\n',
+    'current/ must keep its last copy of the file it could not read');
+  const h = health(world);
+  assert.ok(h.stdout.split('\n').some((l) => l.includes('tax-return-2025.txt')),
+    `the health check must name the file the backup could not read; got ${w.describe(h)}`);
+});
+
+test("an owner's folder absent when the backup runs is a failed run in which nothing moves into the archive", { timeout: 60000 }, (t) => {
+  const world = backupWorld(t);
+  assertRan(backup(world), 'the first run');
+  const before = filesUnder(world.destination);
+  const away = `${world.owner}-away`;
+  fs.renameSync(world.owner, away);
+  t.after(() => { try { fs.renameSync(away, world.owner); } catch (e) { /* gone */ } });
+  const r = backup(world);
+  assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the backup job must run; got ${w.describe(r)}`);
+  assert.notEqual(r.status, 0, `a run with the owner's folder absent must not pass; got ${w.describe(r)}`);
+  assert.match(fs.readFileSync(path.join(world.home, 'backup.json'), 'utf8'), /fail/i, 'backup.json must record the run as failed');
+  assert.deepEqual(filesUnder(world.destination), before, 'nothing may move into the archive, and current/ must stay as it was');
 });

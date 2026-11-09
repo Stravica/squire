@@ -6,17 +6,20 @@
 // ids, the record set-up.json and the key words the cases read; the rest of
 // the wording is the builder's.
 //
-// Three groups: set-up meeting a problem (explained, keeping what is done and
-// the owner's things, resuming or repairing the one installation); a step
-// whose result cannot be confirmed (run again from its start, never counted
-// done); and the one yes (nothing installed before it, every piece named in
-// it, nothing outside the list after it).
+// Groups: set-up meeting a problem (explained, keeping what is done and the
+// owner's things, resuming or repairing the one installation); a step whose
+// result cannot be confirmed (run again from its start, never counted done);
+// the one yes (nothing installed before it, every piece named in it, nothing
+// outside the list after it); the Mac's commands only from the system
+// folders; the undo, the record and the lock; the owner's folder; a Mac fact
+// set-up cannot read; and signing in again before the sign-in ends.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
+const s = require('../fixtures/session-world.js');
 const I = require('../fixtures/installer-world.js');
 
 const { TITLES, STEPS } = I;
@@ -384,4 +387,295 @@ test('after the one yes nothing outside the named list is installed', { timeout:
   const added = Object.keys(I.contentOf(iw.userHome)).filter((rel) => !(rel in before));
   const outside = added.filter((rel) => !allowed.some((re) => re.test(rel)));
   assert.deepEqual(outside, [], 'set-up must add nothing outside Claude Code, Squire, its folder and its three background jobs');
+});
+
+// ------------------------------------- the Mac's commands, system folders only
+
+const TOKENS = { ANTHROPIC_API_KEY: 'sk-ant-test-not-a-key', CLAUDE_CODE_OAUTH_TOKEN: 'oauth-test-not-a-token', ANTHROPIC_AUTH_TOKEN: 'auth-test-not-a-token' };
+
+test("a hostile sw_vers first on the PATH the app is opened with is never called: the Mac check reads the system's own answer and macOS 12 is refused", { timeout: 60000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { macos: '12.7.6' } });
+  I.hostileCommands(iw);
+  const before = w.snapshot(iw.userHome);
+  const run = await I.runApp(iw);
+  assertRefusedBeforeAnyChange(iw, before, run, [/macOS 13/], 'macOS 12 with a hostile sw_vers answering 26');
+  assert.deepEqual(I.hostileCalls(iw), [], 'no command on the inherited PATH may be called');
+});
+
+test("a hostile osascript and curl first on the PATH the app is opened with are never called, the one yes is asked through the system's own windows, and the token variables the app is opened with reach no claude call", { timeout: 120000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t);
+  I.hostileCommands(iw);
+  const run = await I.runApp(iw, { env: TOKENS, killWhen: doneWith('signIn') });
+  assert.ok(I.doneSteps(iw).includes('signIn'), `set-up must get as far as the sign-in; got ${I.describeRun(run)}`);
+  assert.deepEqual(I.hostileCalls(iw), [], 'no command on the inherited PATH may be called: not its osascript, not its curl');
+  assert.ok(!fs.existsSync(iw.hostileMarker), 'the installer the hostile curl serves must never run');
+  assert.equal(I.dialogsTitled(run, TITLES.setUp).length, 1, 'the one yes must be asked through the system\'s own osascript');
+  assert.equal(installerRuns(run).length, 1, 'Claude Code\'s installer must come from the system\'s own download');
+  const claude = I.callsOf(run, 'claude');
+  assert.ok(claude.length >= 1, 'set-up must call Claude Code');
+  for (const c of claude) {
+    const leaked = Object.keys(TOKENS).filter((n) => (c.envNames || []).includes(n));
+    assert.deepEqual(leaked, [], `claude ${c.argv.join(' ')} must run in an environment built from nothing; it was given ${leaked.join(', ')}`);
+  }
+});
+
+// ------------------------------------------------- the undo, every byte
+
+// Files laid under the world's home before set-up runs.
+function put(iw, rel, data, mode = 0o644) {
+  const file = path.join(iw.userHome, rel);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, data);
+  fs.chmodSync(file, mode);
+  return file;
+}
+
+test("a plan found below Pro over a partial install of Claude Code already there leaves every byte that was there as it was, restores what the installer changed and takes away everything set-up added", { timeout: 120000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { claude: { plan: 'free' } });
+  put(iw, '.claude.json', JSON.stringify({ numStartups: 4, projects: { [path.join(iw.userHome, 'notes')]: { allowedTools: [] } } }, null, 2) + '\n');
+  put(iw, '.claude/settings.json', '{"theme": "dark"}\n');
+  const partial = put(iw, `.local/share/claude/versions/2.1.300`, Buffer.alloc(200, 0), 0o755);
+  fs.mkdirSync(path.join(iw.userHome, '.local', 'bin'), { recursive: true });
+  fs.symlinkSync(partial, launcher(iw));
+  const before = I.contentOf(iw.userHome);
+  const run = await I.runApp(iw);
+  assert.equal(installerRuns(run).length, 1, `a launcher that does not answer is not Claude Code found: set-up must install it; got ${I.describeRun(run)}`);
+  assertWindow(run, TITLES.stopped, [/Pro/, /as set-up found it/i], 'a Free plan read over a partial install');
+  assert.deepEqual(I.contentOf(iw.userHome), before,
+    'every byte that was there must survive (~/.claude.json and the launcher restored as they were, the partial version kept) and every byte set-up added must go');
+});
+
+test('a file another app writes inside a folder set-up created is kept by the undo, and that folder is kept and named on the stopped window', { timeout: 120000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { claude: { plan: 'enterprise_plus' } });
+  const go = path.join(iw.root, 'answer-the-plan-ask');
+  iw.set({ answers: { [TITLES.askPlan]: { waitFor: go, then: 'button returned:Stop' } } });
+  const before = I.contentOf(iw.userHome);
+  const stranger = path.join(iw.userHome, '.claude', 'notes-from-another-app.txt');
+  const text = 'Written by another app while set-up was running.\n';
+  const run = await I.runApp(iw, {
+    killWhen: (x) => {
+      if (!fs.existsSync(go) && I.readJsonLines(x.dialogsFile).some((d) => d.title === TITLES.askPlan)) {
+        fs.writeFileSync(stranger, text);
+        fs.writeFileSync(go, '');
+      }
+      return false;
+    },
+  });
+  assert.ok(fs.existsSync(go), `set-up must ask the plan it cannot confirm; got ${I.describeRun(run)}`);
+  assertWindow(run, TITLES.stopped, [/Pro/, /\.claude\b/], 'Stop on a plan set-up cannot confirm, with another app\'s file in ~/.claude');
+  assert.equal(fs.readFileSync(stranger, 'utf8'), text, 'the file set-up did not write must be kept');
+  const expected = { ...before, '.claude': 'dir', '.claude/notes-from-another-app.txt': I.contentOf(stranger)[''] };
+  assert.deepEqual(I.contentOf(iw.userHome), expected, 'everything else set-up added must go, and only ~/.claude and the file in it stay');
+});
+
+test("an undo step that fails, signing Squire's config folder out, is named on the stopped window, stays in the record, and the window never says the Mac is as set-up found it",{ timeout: 120000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { claude: { plan: 'free', logout: 'fail' } });
+  const run = await I.runApp(iw);
+  assert.ok(authCalls(run, 'logout').length >= 1, `set-up must try to sign Squire's config folder out; got ${I.describeRun(run)}`);
+  assertWindow(run, TITLES.stopped, [/Pro/, /sign/i], 'a Free plan read whose sign-out fails');
+  const shown = I.dialogsTitled(run, TITLES.stopped).pop();
+  assert.doesNotMatch(shown.text, /as set-up found it/i, 'with an undo step failed, the window must never say the Mac is as set-up found it');
+  const record = I.readRecord(iw);
+  assert.ok(record && Array.isArray(record.added) && record.added.length >= 1, `what was not undone must stay in set-up.json's added; got ${JSON.stringify(record)}`);
+});
+
+// ------------------------------------------------- the record and the lock
+
+test('a set-up record that lists every step done, with no yes in the approvals ledger, still gets the one yes asked before anything installs', { timeout: 60000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.setUp]: 'button returned:Not now' } } });
+  fs.mkdirSync(iw.squireHome, { recursive: true });
+  fs.writeFileSync(iw.record, JSON.stringify({ done: STEPS, added: [], release: path.join(iw.squireHome, 'release', 'core') }, null, 2) + '\n');
+  const run = await I.runApp(iw);
+  assert.equal(I.dialogsTitled(run, TITLES.setUp).length, 1, `a record alone is never consent: the one yes must be asked; got ${I.describeRun(run)}`);
+  assert.equal(downloads(run).length + installerRuns(run).length + installCalls(run).length, 0, 'with Not now, nothing may be installed');
+  assert.ok(!asked(run, TITLES.ready), 'set-up must not call itself ready on a record alone');
+});
+
+test('a set-up record that does not parse, is cut short, or holds wrong types and out-of-order step ids is set aside, never adopted, and set-up runs again from the start', { timeout: 300000 }, async (t) => {
+  const bad = [
+    ['cut short', '{"done": ["yes", "claudeCode", "signIn"], "added": [{"path": "/x", "ma'],
+    ['wrong types and out-of-order ids', '{"done": ["claudeCode", "yes", "yes", "appleTools"], "added": "nothing", "release": 7}\n'],
+    ['an unknown step id', '{"done": ["yes", "claudeCode", "signIn", "appleTools", "naming", "ownerFolder", "layDown", "sudo"], "added": []}\n'],
+  ];
+  for (const [what, bytes] of bad) {
+    const iw = I.makeInstallerWorld(t);
+    fs.mkdirSync(iw.squireHome, { recursive: true });
+    fs.writeFileSync(iw.record, bytes);
+    const fresh = (x) => { const r = I.readRecord(x); return Boolean(r && Array.isArray(r.done) && r.done[0] === 'yes' && r.done.includes('claudeCode')); };
+    const run = await I.runApp(iw, { killWhen: fresh });
+    assert.ok(asked(run, TITLES.plan) && asked(run, TITLES.setUp), `${what}: set-up must run again from the start, asking the declaration and the one yes; got ${I.describeRun(run)}`);
+    assert.ok(fresh(iw), `${what}: set-up must write a record of its own and carry on; got ${JSON.stringify(I.readRecord(iw))}`);
+    const setAside = Object.keys(I.contentOf(iw.squireHome)).filter((rel) => rel !== 'set-up.json' &&
+      fs.lstatSync(path.join(iw.squireHome, rel)).isFile() && fs.readFileSync(path.join(iw.squireHome, rel)).equals(Buffer.from(bytes)));
+    assert.ok(setAside.length >= 1, `${what}: the bad record must be set aside in the Squire home, never deleted`);
+    assert.ok(!fs.readFileSync(iw.record).equals(Buffer.from(bytes)), `${what}: the bad record must never be adopted`);
+  }
+});
+
+test('a second set-up opened with a different temporary folder still exits at once, saying set-up is already running, and changes nothing', { timeout: 120000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.name]: { hang: true } } } });
+  const first = I.startApp(iw);
+  t.after(() => first.kill());
+  const waiting = await s.waitFor(() => I.readJsonLines(iw.dialogsFile).some((d) => d.title === TITLES.name), 90000, 200);
+  assert.ok(waiting, 'the first set-up must reach the naming window');
+  const otherTmp = path.join(iw.root, 'another-tmp');
+  fs.mkdirSync(otherTmp, { recursive: true });
+  const before = w.snapshot(iw.userHome);
+  iw.set({ answers: {} });
+  const second = await I.runApp(iw, { launchd: false, timeout: 30000, env: { TMPDIR: otherTmp } });
+  assertWindow(second, TITLES.cannot, [/already running/i], 'a second set-up with another TMPDIR');
+  assert.ok(!second.timedOut, 'the second set-up must exit at once');
+  assert.deepEqual(w.snapshotDifferences(before, w.snapshot(iw.userHome)), [], 'the second set-up must change nothing');
+  await first.kill();
+});
+
+// ------------------------------------------------------- the owner's folder
+
+test("a ~/Squire that is a file, a link into Documents or not writable, or an owner's squire.json that does not parse, pauses set-up naming it and is left byte for byte", { timeout: 600000 }, async (t) => {
+  const cases = [
+    ['a file', (iw) => { put(iw, 'Squire', 'A file the owner made, called Squire.\n'); return /\/Squire\b/; }],
+    ['a link into Documents', (iw) => {
+      put(iw, 'Documents/Squire/plans.md', 'Kitchen, phase two.\n');
+      fs.symlinkSync(path.join(iw.userHome, 'Documents', 'Squire'), iw.ownerFolder);
+      return /\/Squire\b/;
+    }],
+    ['not writable', (iw) => {
+      put(iw, 'Squire/plans.md', 'Kitchen, phase two.\n');
+      fs.chmodSync(iw.ownerFolder, 0o555);
+      t.after(() => { try { fs.chmodSync(iw.ownerFolder, 0o755); } catch (e) { /* gone */ } });
+      return /\/Squire\b/;
+    }],
+    ["an owner's squire.json that does not parse", (iw) => { put(iw, 'Squire/squire.json', '{"wakeUps": [{"at": "07:30"\n'); return /squire\.json/; }],
+  ];
+  for (const [what, make] of cases) {
+    const iw = I.makeInstallerWorld(t);
+    const names = make(iw);
+    const target = fs.realpathSync(path.dirname(iw.ownerFolder));
+    const before = w.snapshot(target);
+    const watched = Object.keys(before).filter((rel) => rel === 'Squire' || rel.startsWith('Squire/') || rel.startsWith('Documents/'));
+    const run = await I.runApp(iw);
+    assertWindow(run, TITLES.paused, [names], `~/Squire ${what}`);
+    assert.ok(!I.doneSteps(iw).includes('ownerFolder'), `~/Squire ${what}: the owner's folder step must not be recorded done`);
+    const after = w.snapshot(target);
+    for (const rel of watched) assert.deepEqual(after[rel], before[rel], `~/Squire ${what}: ${rel} must be left exactly as it was`);
+    const grown = Object.keys(after).filter((rel) => (rel.startsWith('Squire/') || rel.startsWith('Documents/')) && !(rel in before));
+    assert.deepEqual(grown, [], `~/Squire ${what}: nothing may be written into it`);
+  }
+});
+
+// ---------------------------------------------------------- the health step
+
+test("an unreadable managed settings file on an otherwise healthy Mac lets set-up finish, and its ready window carries the cannot-confirm line", { timeout: FULL_RUN }, async (t) => {
+  const iw = I.makeInstallerWorld(t);
+  const managed = path.join(iw.system, 'Library', 'Application Support', 'ClaudeCode', 'managed-settings.json');
+  fs.mkdirSync(path.dirname(managed), { recursive: true });
+  fs.writeFileSync(managed, '{"autoCompactWindow": 500000}\n');
+  fs.chmodSync(managed, 0o000);
+  t.after(() => { try { fs.chmodSync(managed, 0o600); } catch (e) { /* gone */ } });
+  const run = await I.runApp(iw);
+  assert.deepEqual(I.doneSteps(iw), STEPS, `a line set-up's own steps did not lay down must not hold set-up; got ${I.describeRun(run)}`);
+  assertWindow(run, TITLES.ready, [/cannot confirm the compaction window/i], 'set-up over an unreadable managed settings file');
+});
+
+// --------------------------------------------- a Mac fact set-up cannot read
+
+test('a Mac fact set-up cannot read (sw_vers failing, sw_vers printing no version, a memory reading that is not a number) is refused before any change, naming it and the way on', { timeout: 180000 }, async (t) => {
+  for (const [mac, word, what] of [
+    [{ swVers: 'fail' }, /macOS|version/i, 'sw_vers failing'],
+    [{ macos: '' }, /macOS|version/i, 'sw_vers printing no version'],
+    [{ memBytes: 'plenty' }, /memory/i, 'a memory reading that is not a number'],
+  ]) {
+    const iw = I.makeInstallerWorld(t, { mac });
+    const before = w.snapshot(iw.userHome);
+    const run = await I.runApp(iw);
+    assertRefusedBeforeAnyChange(iw, before, run, [word], what);
+    assert.ok(!asked(run, TITLES.plan), `${what}: a fact set-up cannot read is refused, never asked and never assumed`);
+  }
+});
+
+// ------------------------------------ signing in again before the sign-in ends
+
+const DAY = 24 * 60 * 60 * 1000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const pad = (n) => String(n).padStart(2, '0');
+const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+
+// Squire set up in a session world: core laid down and kept as the Squire
+// home's release folder, set-up's record, and a fake Claude Code that says
+// when the sign-in ends.
+function renewWorld(t, behaviour) {
+  const world = w.makeWorld();
+  t.after(() => { s.killFakes(world); w.cleanUp(world); });
+  world.system = I.makeSystemRoot(path.join(world.root, 'system'));
+  s.layDownCore(world);
+  world.release = path.join(world.home, 'release', 'core');
+  w.copyTree(w.CORE, world.release);
+  fs.writeFileSync(path.join(world.home, 'set-up.json'), JSON.stringify({ done: STEPS, added: [], release: world.release }, null, 2) + '\n');
+  world.fake = s.installFakeClaudeCode(world, behaviour);
+  return world;
+}
+
+// One tick of the wake-ups scheduler, as its agent runs it.
+function tick(world) {
+  const r = s.runDueWakeUps(world, { coreDir: fs.realpathSync(s.installedCore(world)), env: { SQUIRE_SYSTEM_ROOT: world.system } });
+  assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the scheduler's run must run; got ${w.describe(r)}`);
+  return r;
+}
+
+async function liveSession(world, t) {
+  const runner = s.startRunner(world);
+  t.after(() => runner.stop());
+  const live = await s.waitFor(() => s.sessionRecords(world).length === 1 && world.fake.sessions().length >= 1, 30000);
+  assert.ok(live, `the runner must start one session; runner output: ${runner.output()}`);
+  return runner;
+}
+
+const renewPrompts = (world) => world.fake.prompts().filter((p) => /sign in again/i.test(p.content));
+
+test("a sign-in that ends within seven days gets one wake-up through Squire's session naming the day and the one action, and a second run that day sends none",{ timeout: 120000 }, async (t) => {
+  const ends = new Date(Date.now() + 3 * DAY).toISOString();
+  const world = renewWorld(t, { loginExpiresAt: ends });
+  await liveSession(world, t);
+  tick(world);
+  const warned = await s.waitFor(() => renewPrompts(world).length >= 1, 15000);
+  assert.ok(warned, `the scheduler's run must send one wake-up saying to sign in again; the session got ${JSON.stringify(world.fake.prompts().map((p) => p.content))}`);
+  assert.ok(renewPrompts(world)[0].content.includes(localDay(ends)), `the wake-up must name the day the sign-in ends (${localDay(ends)}); it said: ${renewPrompts(world)[0].content}`);
+  tick(world);
+  await sleep(3000);
+  assert.equal(renewPrompts(world).length, 1, 'a second run the same day must send no second wake-up');
+});
+
+test('a sign-in that ends in more than seven days, or whose end cannot be read, gets no wake-up and no sign-in', { timeout: 180000 }, async (t) => {
+  for (const [ends, what] of [[new Date(Date.now() + 20 * DAY).toISOString(), 'ending in 20 days'], ['soon', 'an end that cannot be read']]) {
+    const world = renewWorld(t, { loginExpiresAt: ends });
+    await liveSession(world, t);
+    tick(world);
+    await sleep(3000);
+    assert.deepEqual(renewPrompts(world), [], `${what}: no wake-up may be sent`);
+    assert.equal(world.fake.authCalls().filter((c) => c.argv[1] === 'login').length, 0, `${what}: nothing may sign in`);
+  }
+});
+
+test("on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else", { timeout: 120000 }, async (t) => {
+  const ends = new Date(Date.now() + 3 * DAY).toISOString();
+  const world = renewWorld(t, { loginExpiresAt: ends });
+  const health = w.runPython(world, path.join(world.home, 'core', 'tools', 'health.py'), [], { cwd: world.root, env: { SQUIRE_SYSTEM_ROOT: world.system } });
+  const request = `${w.PYTHON} ${path.join(world.home, 'core', 'tools', 'health.py')} --request sign-in`;
+  assert.ok(health.stdout.includes(request), `the health check must name the day and how to ask to sign in again, ${request}; got ${w.describe(health)}`);
+  assert.ok(health.stdout.includes(localDay(ends)), `the health check must name the day the sign-in ends; got ${w.describe(health)}`);
+  const session = 'session-sign-in-again';
+  const call = w.tools.bash(request);
+  const asked = w.attempt(world, session, call);
+  w.assertBlocked(asked, 'signing in again, before the owner\'s yes');
+  assert.ok(w.requestIdIn(asked.stderr), `the floor must ask the owner (a block with a request id); got ${w.describe(asked)}`);
+  w.ownerSays(world, session, 'yes');
+  w.assertBlocked(w.attempt(world, session, call), 'signing in again from the session after the yes: it runs outside the session');
+  const callsBefore = world.fake.calls().length;
+  const core = fs.realpathSync(s.installedCore(world));
+  const coreBefore = w.snapshot(core);
+  tick(world);
+  const made = world.fake.calls().slice(callsBefore).filter((c) => !(c.argv[0] === 'auth' && c.argv[1] === 'status'));
+  assert.deepEqual(made.map((c) => c.argv.slice(0, 2).join(' ')), ['auth login'], `the yes must run Claude Code's sign-in once and nothing else; got ${JSON.stringify(made.map((c) => c.argv))}`);
+  assert.equal(made[0].env.CLAUDE_CONFIG_DIR, s.configDir(world), 'the sign-in must go into Squire\'s config folder');
+  assert.deepEqual(w.snapshotDifferences(coreBefore, w.snapshot(core)), [], 'signing in again must lay nothing down');
 });

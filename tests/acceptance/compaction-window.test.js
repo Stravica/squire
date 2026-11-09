@@ -16,8 +16,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const os = require('node:os');
 const w = require('../fixtures/squire-world.js');
 const s = require('../fixtures/session-world.js');
+const I = require('../fixtures/installer-world.js');
 
 const WINDOW = 500000;
 const MANAGED = path.join('Library', 'Application Support', 'ClaudeCode');
@@ -26,8 +28,7 @@ const PREFERENCES = path.join('Library', 'Managed Preferences', 'com.anthropic.c
 function windowWorld(t) {
   const world = w.makeWorld();
   t.after(() => { s.killFakes(world); w.cleanUp(world); });
-  world.system = path.join(world.root, 'system');
-  fs.mkdirSync(world.system, { recursive: true });
+  world.system = I.makeSystemRoot(path.join(world.root, 'system'));
   s.layDownCore(world);
   return world;
 }
@@ -115,14 +116,25 @@ test("the health check names a window other than 500000 in the Mac's managed set
   assertNamed(world, 270000, 'com.anthropic.claudecode', 'the managed preferences');
 });
 
-test('a model whose context window is smaller than 500k is not drift: the health check names nothing about the window', { timeout: 60000 }, (t) => {
-  // A regression guard: with no window line at all yet, this holds at the
-  // round's base; it stays to keep the model's own cap from reading as drift.
+test('a model that runs below 500k is not drift for a window at or above its own, while the same window for a 1M model is named', { timeout: 60000 }, (t) => {
+  // One world, one value: Opus 4.6 runs at 200K without its [1m] variant and
+  // Opus 5.5 with the 1M window (model-config), so 800000 changes nothing for
+  // the first and lifts the second above 500k. A check that is missing, or
+  // that stays silent for every model, fails here.
   const world = windowWorld(t);
-  writeJson(configSettings(world), { ...readJson(configSettings(world)), model: 'claude-haiku-4-5' });
+  const value = 800000;
+  writeJson(configSettings(world), {
+    ...readJson(configSettings(world)),
+    model: 'claude-opus-4-6',
+    modelSettings: { 'claude-opus-4-6': { autoCompactWindow: value }, 'claude-opus-5-5': { autoCompactWindow: value } },
+  });
   const r = health(world);
   assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the health check must run; got ${w.describe(r)}`);
-  assert.deepEqual(windowLines(r), [], `a smaller model must not be named as window drift; got ${w.describe(r)}`);
+  const lines = windowLines(r);
+  assert.ok(lines.some((l) => l.includes(String(value)) && l.includes('claude-opus-5-5')),
+    `the window ${value} for a 1M model must be named with its model; got ${w.describe(r)}`);
+  assert.ok(!lines.some((l) => l.includes('claude-opus-4-6')),
+    `a model that runs at 200K is not drift for a window above its own; got ${w.describe(r)}`);
 });
 
 // ------------------------------------------------ cannot confirm the window
@@ -150,3 +162,28 @@ test('when a managed settings drop-in exists but cannot be read, the health chec
   unreadable('a managed settings drop-in', '50-team.json', (world) => path.join(world.system, MANAGED, 'managed-settings.d', '50-team.json')));
 test('when the managed preferences exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence', { timeout: 60000 },
   unreadable('the managed preferences', 'com.anthropic.claudecode', (world) => path.join(world.system, PREFERENCES)));
+
+// A present source the health check cannot decide: it says it cannot confirm
+// the window, naming the source, whatever value the source holds.
+function assertCannotConfirm(world, place, what) {
+  const r = health(world);
+  assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `${what}: the health check must run; got ${w.describe(r)}`);
+  assert.ok(windowLines(r).some((l) => /cannot confirm the compaction window/i.test(l) && l.includes(place)),
+    `${what}: the health check must say it cannot confirm the compaction window, naming ${place}; got ${w.describe(r)}`);
+  assert.notEqual(r.status, 0, `${what}: never a pass; got ${w.describe(r)}`);
+}
+
+test("the per-user managed preferences file, a source that can override the window and that the health check does not read, gives cannot confirm the compaction window, naming it", { timeout: 60000 }, (t) => {
+  const world = windowWorld(t);
+  const user = os.userInfo().username;
+  writePlist(path.join(world.system, 'Library', 'Managed Preferences', user, 'com.anthropic.claudecode.plist'), { autoCompactWindow: WINDOW });
+  assertCannotConfirm(world, path.join('Managed Preferences', user), 'the per-user managed preferences');
+});
+
+test('a managed settings file that does not parse gives cannot confirm the compaction window, naming it', { timeout: 60000 }, (t) => {
+  const world = windowWorld(t);
+  const file = path.join(world.system, MANAGED, 'managed-settings.json');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, '{"autoCompactWindow": 500000, "permissions": {"allow": [\n');
+  assertCannotConfirm(world, 'managed-settings.json', 'a managed settings file that does not parse');
+});
