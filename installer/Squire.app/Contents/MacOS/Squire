@@ -481,7 +481,8 @@ sq_claude_found() {
   return 1
 }
 
-# Every path in Claude Code's places, sorted: SQ_LISTED.
+# Every path in Claude Code's places, sorted: SQ_LISTED. A place that is a
+# link to a folder is listed inside too, for the installer writes through it.
 sq_list_places() {
   local rel p
   SQ_LISTED=()
@@ -493,28 +494,42 @@ sq_list_places() {
     p=$HOME/$rel
     [[ -e $p || -L $p ]] || continue
     SQ_LISTED+=($p)
-    [[ -d $p && ! -L $p ]] && SQ_LISTED+=($p/**/*(DN))
+    [[ -d $p ]] && SQ_LISTED+=($p/**/*(DN))
   done
   SQ_LISTED=(${(ou)SQ_LISTED})
 }
 
 # A copy of a file the installer changes, taken inside the Squire home before
-# it runs: bytes, mode and times; a link as its target.
+# it runs: bytes, mode and times; a link as its target. The installer writes
+# through a link, so what a link leads to is kept as well: a copy of the file
+# when it is there, and recorded created when it is not.
 sq_save_copy() {
-  local p=$1 saved target
+  local p=$1 saved to n=0
+  local -a link
   (( ${SQ_ADDED_PATH[(Ie)$p]} )) && return 0
   [[ -d $p && ! -L $p ]] && return 0
   zf_mkdir -p -m 700 $SQ_HOME/saved 2>/dev/null || return 1
   saved=$SQ_HOME/saved/$(( $#SQ_ADDED_PATH + 1 ))-${p:t}
   zf_rm -f -- $saved 2>/dev/null
   if [[ -L $p ]]; then
-    local -a link
     zstat -L -A link +link -- $p 2>/dev/null || return 1
     zf_ln -s -- $link[1] $saved 2>/dev/null || return 1
   else
     sq_bounded 120 /dev/null $SQ_ROOT/bin/cp -p -- $p $saved || return 1
   fi
   sq_added_add $p changed $saved
+  [[ -L $p ]] || return 0
+  to=$p
+  while [[ -L $to ]] && (( n++ < 32 )); do
+    zstat -L -A link +link -- $to 2>/dev/null || return 1
+    if [[ $link[1] == /* ]]; then to=$link[1]; else to=${to:h}/$link[1]; fi
+  done
+  [[ -L $to ]] && return 0
+  if [[ -e $to ]]; then
+    sq_save_copy $to
+  else
+    sq_added_add $to created
+  fi
 }
 
 sq_step_claude_code() {
