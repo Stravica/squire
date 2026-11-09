@@ -534,6 +534,7 @@ module.exports = {
   wakeUpsDir,
   wakeUpLogFile,
   waitFor,
+  sleep,
   layDownCore,
   installFakeClaudeCode,
   killFakes,
