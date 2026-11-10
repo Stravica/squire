@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-10T18:48:41.653Z",
+  "updatedAt": "2026-11-10T18:53:29.261Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -14,6 +14,119 @@
   "id": "TS-012",
   "usId": "US-2001",
   "title": "Ticket preview and yes, diagnostics only, receiver privacy and deletion",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-012-ticket-built-once-into-outbox-digest-floor-shows-exact",
+      "acId": "AC-2001-1",
+      "description": "a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+    },
+    {
+      "id": "TC-012-owner-no-nothing-posted-ticket-set-aside",
+      "acId": "AC-2001-1",
+      "description": "with the owner's no nothing is posted and the ticket is set aside",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the owner's no nothing is posted and the ticket is set aside"
+    },
+    {
+      "id": "TC-012-no-answer-within-ledger-timeout-nothing-posted-ticket-set",
+      "acId": "AC-2001-1",
+      "description": "with no answer within the ledger's timeout nothing is posted and the ticket is set aside",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with no answer within the ledger's timeout nothing is posted and the ticket is set aside"
+    },
+    {
+      "id": "TC-012-yes-naming-another-request-posts-nothing",
+      "acId": "AC-2001-1",
+      "description": "a yes naming another request posts nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a yes naming another request posts nothing"
+    },
+    {
+      "id": "TC-012-fault-not-known-fixes-list-offers-ticket-line-own",
+      "acId": "AC-2001-1",
+      "description": "a fault not on the known-fixes list offers a ticket on a line of its own; the fault's own line carries no offer",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a fault not on the known-fixes list offers a ticket on a line of its own; the fault's own line carries no offer"
+    },
+    {
+      "id": "TC-012-personal-details-planted-owner-folder-error-logs-paths-computer",
+      "acId": "AC-2001-2",
+      "description": "personal details planted in the owner's folder, the error logs, the paths, the computer's name and the account never reach a ticket, its preview or the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::personal details planted in the owner's folder, the error logs, the paths, the computer's name and the account never reach a ticket, its preview or the intake"
+    },
+    {
+      "id": "TC-012-mac-model-outside-known-set-ticket-leaves-out-macmodelclass",
+      "acId": "AC-2001-5",
+      "description": "with a Mac model outside the known set, the ticket leaves out macModelClass and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a Mac model outside the known set, the ticket leaves out macModelClass and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-macos-version-not-whole-numbers-dots-ticket-leaves-out",
+      "acId": "AC-2001-5",
+      "description": "with a macOS version that is not whole numbers and dots, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a macOS version that is not whole numbers and dots, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-claude-code-version-answer-not-version-ticket-leaves-out",
+      "acId": "AC-2001-5",
+      "description": "with a Claude Code version answer that is not a version, the ticket leaves out claudeCodeVersion and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a Claude Code version answer that is not a version, the ticket leaves out claudeCodeVersion and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-macos-version-inside-pattern-privacy-patterns-read-card-number",
+      "acId": "AC-2001-5",
+      "description": "with a macOS version inside its pattern that the privacy patterns read as a card number, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a macOS version inside its pattern that the privacy patterns read as a card number, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-approved-ticket-whose-send-fails-kept-health-line-saying",
+      "acId": "AC-2001-4",
+      "description": "an approved ticket whose send fails is kept with a health line saying it waits, retried with a growing wait carrying the same bytes and id, and cleared by an answer in the 2xx range; the intake files it once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose send fails is kept with a health line saying it waits, retried with a growing wait carrying the same bytes and id, and cleared by an answer in the 2xx range; the intake files it once"
+    },
+    {
+      "id": "TC-012-intake-offline-approved-ticket-kept-shown-waiting-then-sent",
+      "acId": "AC-2001-6",
+      "description": "with the intake offline, the approved ticket is kept and shown as waiting, then sent again with the same id and filed once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the intake offline, the approved ticket is kept and shown as waiting, then sent again with the same id and filed once"
+    },
+    {
+      "id": "TC-012-answer-coming-after-bound-30-seconds-approved-ticket-kept",
+      "acId": "AC-2001-6",
+      "description": "with the answer coming after the bound (30 seconds), the approved ticket is kept and shown as waiting, then sent again with the same id and filed once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the answer coming after the bound (30 seconds), the approved ticket is kept and shown as waiting, then sent again with the same id and filed once"
+    },
+    {
+      "id": "TC-012-ticket-file-changed-after-yes-never-sent-sent-changed",
+      "acId": "AC-2001-6",
+      "description": "a ticket file changed after the yes is never sent, and is sent as changed only after another yes to the changed bytes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket file changed after the yes is never sent, and is sent as changed only after another yes to the changed bytes"
+    },
+    {
+      "id": "TC-012-install-id-made-first-ticket-32-lower-case-hex",
+      "acId": "AC-2001-3",
+      "description": "the install id is made at the first ticket: 32 lower-case hex digits kept in the Squire home for its user only, the same on every ticket from that home",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::the install id is made at the first ticket: 32 lower-case hex digits kept in the Squire home for its user only, the same on every ticket from that home"
+    },
+    {
+      "id": "TC-012-two-squire-homes-have-different-install-ids-made-from",
+      "acId": "AC-2001-3",
+      "description": "two Squire homes have different install ids, made from nothing about the owner, the Mac or the account, and nothing is posted anywhere but the tickets",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::two Squire homes have different install ids, made from nothing about the owner, the Mac or the account, and nothing is posted anywhere but the tickets"
+    }
+  ],
   "status": "draft"
 }

@@ -142,3 +142,47 @@ test('after core is laid down again from a changed release, the name and persona
   assert.equal(name, NAME, 'the session\'s --name must still be the Squire\'s name');
   assert.ok(fs.readFileSync(path.join(world.owner, 'squire.json')).equals(owner), 'the owner\'s squire.json must be unchanged');
 });
+
+// After a signed update and after a rollback (round 4, the design record
+// ADR-005 line 13): the update is installed by Squire's own install, through
+// the owner's yes, in the updates world.
+
+const R = require('../fixtures/updates-world.js');
+
+async function personaAcrossUpdate(t, shape) {
+  const rw = R.makeReleaseWorld(t, { persona: { squireName: NAME, personality: PERSONALITY } });
+  await R.startSquire(rw);
+  const ownerConfig = fs.readFileSync(path.join(rw.owner, 'squire.json'));
+  R.buildRelease(rw, { version: '0.2.0', shape });
+  R.tick(rw);
+  assert.ok(R.staged(rw).includes('0.2.0'), `the weekly check must stage the signed release; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
+  const a = R.asked(rw, 'session-persona', R.updateRequest(rw, '0.2.0'), 'the request to install');
+  R.owner(rw, 'session-persona', `yes ${a.id}`);
+  const calls = rw.inner.serverCalls().length;
+  const before = R.wakeUpIds(rw);
+  R.tick(rw);
+  return { rw, ownerConfig, sent: R.newWakeUps(rw, before), calls };
+}
+
+function assertPersonaKept(r, what) {
+  const { rw } = r;
+  assert.ok(fs.readFileSync(path.join(rw.owner, 'squire.json')).equals(r.ownerConfig), `${what}: the owner's squire.json must be unchanged`);
+  const text = fs.readFileSync(path.join(rw.home, 'claude-config', 'CLAUDE.md'), 'utf8');
+  assert.ok(text.includes(NAME) && text.includes(PERSONALITY), `${what}: what the session loads must hold the name and personality; got ${JSON.stringify(text.slice(0, 300))}`);
+  const started = rw.inner.serverCalls().slice(r.calls);
+  assert.ok(started.length >= 1, `${what}: a session must have started since`);
+  const argv = started[started.length - 1].argv;
+  assert.equal(argv[argv.indexOf('--name') + 1], NAME, `${what}: the session started since must carry the name`);
+}
+
+test("after a signed update the name and personality are unchanged in the owner's squire.json, present in what the session loads, and carried by the session started after it", { timeout: 600000 }, async (t) => {
+  const r = await personaAcrossUpdate(t, 'good');
+  assert.ok(r.sent.some((x) => /Squire is updated to 0\.2\.0; all checks passed/.test(x)), `the update must install; sent ${JSON.stringify(r.sent)}`);
+  assertPersonaKept(r, 'after the update');
+});
+
+test("after an update rolled back the name and personality are unchanged in the owner's squire.json, present in what the session loads, and carried by the session started after it", { timeout: 600000 }, async (t) => {
+  const r = await personaAcrossUpdate(t, 'runnerExits');
+  assert.ok(r.sent.some((x) => /Squire rolled 0\.2\.0 back to 0\.1\.0/.test(x)), `the update must be rolled back; sent ${JSON.stringify(r.sent)}`);
+  assertPersonaKept(r, 'after the rollback');
+});

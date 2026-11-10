@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-10T18:48:41.368Z",
+  "updatedAt": "2026-11-10T18:53:26.514Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -17,6 +17,371 @@
   "id": "TS-011",
   "usId": "US-1401",
   "title": "Signed update, changelog and yes, rollback, and the Squire owner's folder untouched",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-011-a-release-signed-with-the-installed-key",
+      "acId": "AC-1401-1",
+      "description": "a release signed with the installed key is staged outside core and offered in one wake-up naming its version and the request that asks for it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release signed with the installed key is staged outside core and offered in one wake-up naming its version and the request that asks for it"
+    },
+    {
+      "id": "TC-011-a-release-with-no-signature-is-refused",
+      "acId": "AC-1401-1",
+      "description": "a release with no signature is refused: its download removed, nothing changed, the refusal named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release with no signature is refused: its download removed, nothing changed, the refusal named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-signed-with-another-key-is",
+      "acId": "AC-1401-1",
+      "description": "a release signed with another key is refused: its download removed, nothing changed, the refusal named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release signed with another key is refused: its download removed, nothing changed, the refusal named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-whose-manifest-was-changed-by",
+      "acId": "AC-1401-1",
+      "description": "a release whose manifest was changed by one byte after signing is refused: its download removed, nothing changed, the refusal named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release whose manifest was changed by one byte after signing is refused: its download removed, nothing changed, the refusal named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-that-carries-its-own-key-and",
+      "acId": "AC-1401-1",
+      "description": "a release that carries its own key and is signed by it, but not by the installed key is refused: its download removed, nothing changed, the refusal named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release that carries its own key and is signed by it, but not by the installed key is refused: its download removed, nothing changed, the refusal named once on the health check"
+    },
+    {
+      "id": "TC-011-a-signed-release-older-than-the",
+      "acId": "AC-1401-1",
+      "description": "a signed release older than the installed one is never staged, offered or installed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a signed release older than the installed one is never staged, offered or installed"
+    },
+    {
+      "id": "TC-011-a-signed-release-carrying-a-new-key",
+      "acId": "AC-1401-1",
+      "description": "a signed release carrying a new key installs on a yes, and the next release is checked with the new key only",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a signed release carrying a new key installs on a yes, and the next release is checked with the new key only"
+    },
+    {
+      "id": "TC-011-after-a-signed-update-opening-an-app",
+      "acId": "AC-1401-1",
+      "description": "after a signed update, opening an app older than the installed release never lays its core down: the installed release stays, the sign-in repair still runs, and \"Squire: set-up paused\" says the installed Squire is newer",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::after a signed update, opening an app older than the installed release never lays its core down: the installed release stays, the sign-in repair still runs, and \"Squire: set-up paused\" says the installed Squire is newer"
+    },
+    {
+      "id": "TC-011-after-a-signed-update-opening-a-newer",
+      "acId": "AC-1401-1",
+      "description": "after a signed update, opening a newer app (a fresh download) lays its core down as set-up always has",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::after a signed update, opening a newer app (a fresh download) lays its core down as set-up always has"
+    },
+    {
+      "id": "TC-011-after-a-signed-update-the-floor-fix-lays",
+      "acId": "AC-1401-1",
+      "description": "after a signed update, the floor fix lays down the current kept release, never the app's core",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::after a signed update, the floor fix lays down the current kept release, never the app's core"
+    },
+    {
+      "id": "TC-011-a-release-whose-manifest-does-not-parse",
+      "acId": "AC-1401-6",
+      "description": "a release whose manifest does not parse is refused as an unsigned one is: download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release whose manifest does not parse is refused as an unsigned one is: download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-whose-manifest-carries-a-field",
+      "acId": "AC-1401-6",
+      "description": "a release whose manifest carries a field the check does not know is refused as an unsigned one is: download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release whose manifest carries a field the check does not know is refused as an unsigned one is: download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-whose-version-is-not-three",
+      "acId": "AC-1401-6",
+      "description": "a release whose version is not three whole numbers is refused as an unsigned one is: download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release whose version is not three whole numbers is refused as an unsigned one is: download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-holding-a-file-its-manifest",
+      "acId": "AC-1401-6",
+      "description": "a release holding a file its manifest does not list is refused as an unsigned one is: download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release holding a file its manifest does not list is refused as an unsigned one is: download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-missing-a-file-its-manifest",
+      "acId": "AC-1401-6",
+      "description": "a release missing a file its manifest lists is refused as an unsigned one is: download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release missing a file its manifest lists is refused as an unsigned one is: download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-a-release-whose-archive-does-not-unpack",
+      "acId": "AC-1401-6",
+      "description": "a release whose archive does not unpack is refused as an unsigned one is: download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release whose archive does not unpack is refused as an unsigned one is: download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-a-correctly-signed-release-checked-with",
+      "acId": "AC-1401-6",
+      "description": "a correctly signed release checked with no ssh-keygen on the Mac is refused, never installed: nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a correctly signed release checked with no ssh-keygen on the Mac is refused, never installed: nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-correctly-signed-release-checked-ssh-keygen-fails-refused-never",
+      "acId": "AC-1401-6",
+      "description": "a correctly signed release checked with an ssh-keygen that fails is refused, never installed: nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a correctly signed release checked with an ssh-keygen that fails is refused, never installed: nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-correctly-signed-release-checked-ssh-keygen-never-answers-bounded",
+      "acId": "AC-1401-6",
+      "description": "a correctly signed release checked with an ssh-keygen that never answers (bounded at 30 seconds) is refused, never installed: nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a correctly signed release checked with an ssh-keygen that never answers (bounded at 30 seconds) is refused, never installed: nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-weekly-check-runs-once-week-second-run-scheduler-fetches",
+      "acId": "AC-1401-2",
+      "description": "the weekly check runs once a week: a second run of the scheduler fetches nothing and offers nothing again",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::the weekly check runs once a week: a second run of the scheduler fetches nothing and offers nothing again"
+    },
+    {
+      "id": "TC-011-floor-block-install-carries-version-changelog-exactly-release-manifest",
+      "acId": "AC-1401-2",
+      "description": "the floor's block for an install carries the version and the changelog exactly as the release's manifest has them, and the owner's fresh, exact yes installs that release",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::the floor's block for an install carries the version and the changelog exactly as the release's manifest has them, and the owner's fresh, exact yes installs that release"
+    },
+    {
+      "id": "TC-011-nothing-installed-no-answer-from-owner-core-digests-kept",
+      "acId": "AC-1401-2",
+      "description": "nothing is installed with no answer from the owner: core's digests and the kept releases stay as they are",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with no answer from the owner: core's digests and the kept releases stay as they are"
+    },
+    {
+      "id": "TC-011-nothing-installed-owner-no-core-digests-kept-releases-stay",
+      "acId": "AC-1401-2",
+      "description": "nothing is installed with the owner's no: core's digests and the kept releases stay as they are",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with the owner's no: core's digests and the kept releases stay as they are"
+    },
+    {
+      "id": "TC-011-nothing-installed-yes-given-more-than-30-minutes-before",
+      "acId": "AC-1401-2",
+      "description": "nothing is installed with a yes given more than 30 minutes before the run: core's digests and the kept releases stay as they are",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with a yes given more than 30 minutes before the run: core's digests and the kept releases stay as they are"
+    },
+    {
+      "id": "TC-011-nothing-installed-yes-timed-after-now-core-digests-kept",
+      "acId": "AC-1401-2",
+      "description": "nothing is installed with a yes timed after now: core's digests and the kept releases stay as they are",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with a yes timed after now: core's digests and the kept releases stay as they are"
+    },
+    {
+      "id": "TC-011-nothing-installed-yes-version-no-longer-staged-core-digests",
+      "acId": "AC-1401-2",
+      "description": "nothing is installed with a yes for a version no longer the staged one: core's digests and the kept releases stay as they are",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with a yes for a version no longer the staged one: core's digests and the kept releases stay as they are"
+    },
+    {
+      "id": "TC-011-while-health-check-names-fault-no-update-staged-offered",
+      "acId": "AC-1401-2",
+      "description": "while the health check names a fault no update is staged or offered, and once it is gone the next run stages and offers it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::while the health check names a fault no update is staged or offered, and once it is gone the next run stages and offers it"
+    },
+    {
+      "id": "TC-011-signed-release-whose-runner-exits-once-installs-yes-rolled",
+      "acId": "AC-1401-3",
+      "description": "a signed release whose runner exits at once installs on a yes, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a signed release whose runner exits at once installs on a yes, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing"
+    },
+    {
+      "id": "TC-011-when-check-after-rollback-fails-too-health-line-names",
+      "acId": "AC-1401-3",
+      "description": "when the check after a rollback fails too, a health line names both versions and a support ticket is offered",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the check after a rollback fails too, a health line names both versions and a support ticket is offered"
+    },
+    {
+      "id": "TC-011-owner-folder-hashes-same-before-signed-install-after-apart",
+      "acId": "AC-1401-4",
+      "description": "the owner's folder hashes the same before a signed install and after it, apart from the one recorded use of the owner's yes in the approvals ledger",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::the owner's folder hashes the same before a signed install and after it, apart from the one recorded use of the owner's yes in the approvals ledger"
+    },
+    {
+      "id": "TC-011-owner-folder-hashes-same-before-install-rolled-back-after",
+      "acId": "AC-1401-4",
+      "description": "the owner's folder hashes the same before an install that is rolled back and after the rollback, apart from the one recorded use of the owner's yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::the owner's folder hashes the same before an install that is rolled back and after the rollback, apart from the one recorded use of the owner's yes"
+    },
+    {
+      "id": "TC-011-whatever-owner-folder-holds-file-no-may-read-file",
+      "acId": "AC-1401-7",
+      "description": "whatever the owner's folder holds (a file no one may read, a file only its owner may read, a link to nothing, a link outside it, an empty folder, a closed folder, a named pipe), an install and a rollback leave every entry as it was",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::whatever the owner's folder holds (a file no one may read, a file only its owner may read, a link to nothing, a link outside it, an empty folder, a closed folder, a named pipe), an install and a rollback leave every entry as it was"
+    },
+    {
+      "id": "TC-011-after-signed-install-no-process-previous-release-left-running",
+      "acId": "AC-1401-5",
+      "description": "after a signed install no process of the previous release is left running: its runner, its server and its session are gone",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::after a signed install no process of the previous release is left running: its runner, its server and its session are gone"
+    },
+    {
+      "id": "TC-011-install-killed-part-way-through-lay-down-leaves-squire",
+      "acId": "AC-1401-5",
+      "description": "an install killed part way through its lay-down leaves Squire on one whole version, says which in one wake-up, and leaves the owner's folder unchanged",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed part way through its lay-down leaves Squire on one whole version, says which in one wake-up, and leaves the owner's folder unchanged"
+    },
+    {
+      "id": "TC-011-install-killed-step-record-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"record\" is found unfinished at the next runner start: Squire is on 0.1.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"record\" is found unfinished at the next runner start: Squire is on 0.1.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-keep-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"keep\" is found unfinished at the next runner start: Squire is on 0.1.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"keep\" is found unfinished at the next runner start: Squire is on 0.1.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-stop-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"stop\" is found unfinished at the next runner start: Squire is on 0.1.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"stop\" is found unfinished at the next runner start: Squire is on 0.1.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-lay-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"lay\" is found unfinished at the next runner start: Squire is on 0.1.0 or 0.2.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"lay\" is found unfinished at the next runner start: Squire is on 0.1.0 or 0.2.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-switch-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"switch\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"switch\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-reload-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"reload\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"reload\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-check-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"check\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"check\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-install-killed-step-clear-found-unfinished-next-runner-start",
+      "acId": "AC-1401-8",
+      "description": "an install killed at its step \"clear\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install killed at its step \"clear\" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-download-fails-never-reaches-core-nothing-staged-changed-check",
+      "acId": "AC-1401-8",
+      "description": "a download that fails never reaches core: nothing is staged or changed, and the check is recorded as could not check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a download that fails never reaches core: nothing is staged or changed, and the check is recorded as could not check"
+    },
+    {
+      "id": "TC-011-download-stops-part-way-never-ends-bounded-never-reaches",
+      "acId": "AC-1401-8",
+      "description": "a download that stops part way and never ends (bounded) never reaches core: nothing is staged or changed, and the check is recorded as could not check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a download that stops part way and never ends (bounded) never reaches core: nothing is staged or changed, and the check is recorded as could not check"
+    },
+    {
+      "id": "TC-011-download-cut-short-never-reaches-core-nothing-staged-changed",
+      "acId": "AC-1401-8",
+      "description": "a download cut short never reaches core: nothing is staged or changed, and the check is recorded as could not check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a download cut short never reaches core: nothing is staged or changed, and the check is recorded as could not check"
+    },
+    {
+      "id": "TC-011-claude-code-version-changed-outside-squire-noticed-scheduler-next",
+      "acId": "AC-1401-5",
+      "description": "Claude Code's version changed outside Squire is noticed at the scheduler's next run, checked, and reported in one wake-up with the health check's result, once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::Claude Code's version changed outside Squire is noticed at the scheduler's next run, checked, and reported in one wake-up with the health check's result, once"
+    },
+    {
+      "id": "TC-011-when-launcher-now-points-another-file-same-version-answer",
+      "acId": "AC-1401-9",
+      "description": "when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-when-claude-version-fails-scheduler-next-run-counts-change",
+      "acId": "AC-1401-9",
+      "description": "when claude --version fails, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when claude --version fails, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-when-claude-version-never-answers-bounded-scheduler-next-run",
+      "acId": "AC-1401-9",
+      "description": "when claude --version never answers (bounded), the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when claude --version never answers (bounded), the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-when-launcher-points-nothing-scheduler-next-run-counts-change",
+      "acId": "AC-1401-9",
+      "description": "when the launcher points at nothing, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the launcher points at nothing, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-when-claude-code-now-older-version-scheduler-next-run",
+      "acId": "AC-1401-9",
+      "description": "when Claude Code is now an older version, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when Claude Code is now an older version, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-when-claude-code-changed-squire-sign-no-longer-answers",
+      "acId": "AC-1401-9",
+      "description": "when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again"
+    }
+  ],
   "status": "draft"
 }
