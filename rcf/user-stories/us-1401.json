@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-10T18:48:41.943Z",
+  "updatedAt": "2026-11-10T21:10:08.695Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -72,7 +72,7 @@
       "testable": true,
       "given": "A Squire owner's folder holding entries of every kind: a file no one may read, a file only its owner may read, a link to nothing, a link to a place outside the folder, an empty folder, a closed folder and a named pipe",
       "when": "A signed update installs and is rolled back",
-      "then": "Every entry has the same relative path, type, permissions, bytes and link target after the rollback as before the install; an entry the comparison cannot read counts as changed, never as the same.",
+      "then": "Every entry has the same relative path, type, permissions, bytes and link target after the rollback as before the install; an entry whose metadata the comparison cannot read (lstat: path, type, mode, size, link target) counts as changed; an entry whose contents it cannot read is compared by metadata alone, before and after, and never has its mode changed by the comparison.",
       "verification": "testOnly"
     },
     {

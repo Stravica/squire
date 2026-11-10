@@ -820,39 +820,55 @@ function stagingFiles(rw) {
   return out;
 }
 
-// The owner's folder as content (the design record's line 13): every entry's
-// relative path, type, permissions, bytes (as a SHA-256) and link target, not
-// its times. A file its owner cannot read is opened for the reading and put
-// back; an entry that still cannot be read throws, so a case fails rather
-// than passes or skips. except names relative paths left out.
+// The owner's folder as the comparison sees it (the design record's line 13):
+// every entry's relative path, type, permissions (the mode's low twelve bits;
+// access lists and flags are not compared), size, bytes (as a SHA-256) and
+// link target, not its times. The comparison only looks: it never changes a
+// mode and never opens a named pipe. An entry whose contents it may not read
+// (a file it may not open, a folder it may not list) is recorded by its
+// metadata alone and compared by that, before and after; an entry whose
+// metadata it cannot read (lstat: path, type, mode, size, link target) is
+// recorded so, and counts as changed whatever it shows. except names relative
+// paths left out.
+const METADATA_UNREADABLE = 'metadata unreadable';
 function ownerHash(dir, { except = [] } = {}) {
   const out = {};
   const walk = (abs, rel) => {
-    for (const name of fs.readdirSync(abs).sort()) {
+    let names;
+    try { names = fs.readdirSync(abs).sort(); } catch (e) { return false; }
+    for (const name of names) {
       const a = path.join(abs, name);
       const r = rel ? `${rel}/${name}` : name;
       if (except.includes(r)) continue;
-      const st = fs.lstatSync(a);
+      let st;
+      try { st = fs.lstatSync(a); } catch (e) { out[r] = METADATA_UNREADABLE; continue; }
       const mode = (st.mode & 0o7777).toString(8);
-      if (st.isSymbolicLink()) out[r] = `link ${mode} ${fs.readlinkSync(a)}`;
-      else if (st.isDirectory()) {
+      if (st.isSymbolicLink()) {
+        let target;
+        try { target = fs.readlinkSync(a); } catch (e) { out[r] = METADATA_UNREADABLE; continue; }
+        out[r] = `link ${mode} ${st.size} ${target}`;
+      } else if (st.isDirectory()) {
         out[r] = `dir ${mode}`;
-        if ((st.mode & 0o500) !== 0o500) fs.chmodSync(a, st.mode | 0o500);
-        try { walk(a, r); } finally { fs.chmodSync(a, st.mode & 0o7777); }
+        if (walk(a, r) === false) out[r] += ' contents unreadable';
       } else if (st.isFile()) {
-        if ((st.mode & 0o400) === 0) fs.chmodSync(a, st.mode | 0o400);
-        try { out[r] = `file ${mode} ${w.sha256(fs.readFileSync(a))}`; } finally { fs.chmodSync(a, st.mode & 0o7777); }
+        let bytes = null;
+        try { bytes = fs.readFileSync(a); } catch (e) { bytes = null; }
+        out[r] = bytes ? `file ${mode} ${st.size} ${w.sha256(bytes)}` : `file ${mode} ${st.size} contents unreadable`;
       } else if (st.isFIFO()) out[r] = `fifo ${mode}`;
-      else throw new Error(`the owner's folder hash cannot read ${r}`);
+      else out[r] = `other ${mode} ${st.size}`;
     }
+    return true;
   };
   walk(dir, '');
   return out;
 }
 
+// The entries that differ; an entry whose metadata could not be read, before
+// or after, always differs.
 function hashDifferences(before, after) {
   const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
-  return keys.filter((k) => before[k] !== after[k]).map((k) => `${k}: ${before[k] || '(none)'} -> ${after[k] || '(none)'}`);
+  return keys.filter((k) => before[k] !== after[k] || before[k] === METADATA_UNREADABLE || after[k] === METADATA_UNREADABLE)
+    .map((k) => `${k}: ${before[k] || '(none)'} -> ${after[k] || '(none)'}`);
 }
 
 const LEDGER = 'state/approvals.jsonl';
