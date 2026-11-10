@@ -233,7 +233,8 @@ const { ticketLines } = require('../fixtures/updates-world.js');
 
 test('a fix that worked offers no support ticket: after "fixed" the health check offers nothing to send', { timeout: 120000 }, (t) => {
   // A regression guard: no ticket was offered at the round's base; it stays
-  // so a fixed fault never sends anything.
+  // so a fixed fault never sends anything. Regression evidence, bound to no
+  // criterion: the "still" case beside it is the rule's bound red half.
   const world = fixWorld(t);
   changeFloorFile(world);
   askedThenYes(world, 'floor', 'the floor fix');
@@ -259,7 +260,8 @@ test('a fix that did not work offers a support ticket on a line of its own, and 
 
 test('a fix that could not be tried offers no support ticket and asks for the fix again', { timeout: 120000 }, (t) => {
   // A regression guard for the "could not try" half: no ticket was offered at
-  // the round's base, and the request was named again.
+  // the round's base, and the request was named again. Regression evidence,
+  // bound to no criterion: the "yes timed after now" case is the bound red half.
   const world = fixWorld(t);
   changeFloorFile(world);
   askedThenYes(world, 'floor', 'the floor fix');

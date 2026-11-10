@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.132Z",
-  "updatedAt": "2026-11-10T18:53:29.956Z",
+  "updatedAt": "2026-11-10T20:59:34.345Z",
   "purpose": "Runs the scheduled backup job on a seeded folder and checks copies and archives; injects a known fault and checks the known fix runs, with the required yes, before any ticket is offered.",
   "testLevel": "integration",
   "acIds": [
@@ -139,25 +139,11 @@
       "testPointer": "tests/acceptance/backup.test.js::an owner's file named like the backup's own half-written copies is kept like any other: once changed its earlier copy is in the dated archive, once removed its last copy stays, and no copy ever leaves the backup"
     },
     {
-      "id": "TC-010-fix-worked-offers-no-support-ticket-after-fixed-health",
-      "acId": "AC-1101-2",
-      "description": "a fix that worked offers no support ticket: after \"fixed\" the health check offers nothing to send",
-      "status": "pending",
-      "testPointer": "tests/acceptance/known-fixes.test.js::a fix that worked offers no support ticket: after \"fixed\" the health check offers nothing to send"
-    },
-    {
       "id": "TC-010-fix-did-not-work-offers-support-ticket-line-own",
       "acId": "AC-1101-2",
       "description": "a fix that did not work offers a support ticket on a line of its own, and its \"still\" result is printed again at the next run, whoever runs the check",
       "status": "pending",
       "testPointer": "tests/acceptance/known-fixes.test.js::a fix that did not work offers a support ticket on a line of its own, and its \"still\" result is printed again at the next run, whoever runs the check"
-    },
-    {
-      "id": "TC-010-fix-could-not-tried-offers-no-support-ticket-asks",
-      "acId": "AC-1101-2",
-      "description": "a fix that could not be tried offers no support ticket and asks for the fix again",
-      "status": "pending",
-      "testPointer": "tests/acceptance/known-fixes.test.js::a fix that could not be tried offers no support ticket and asks for the fix again"
     },
     {
       "id": "TC-010-yes-timed-after-now-changes-nothing-check-says-could",
