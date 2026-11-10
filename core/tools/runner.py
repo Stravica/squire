@@ -226,6 +226,8 @@ class Runner:
 
     def run(self):
         self.stop_leftover()
+        self.hold(None)
+        self.recover()
         while True:
             if self.awaiting_set_up():
                 time.sleep(self.TICK)
@@ -247,6 +249,7 @@ class Runner:
             if problems:
                 return 1
             self.persona()
+            self.claude_code()
             self.start(claude)
             outcome = self.watch()
             self.stop()
@@ -385,10 +388,50 @@ class Runner:
                 cwd=self.owner, env=claude.env, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
                 start_new_session=True)
         self.started = time.monotonic()
-        # The server, kept in the lock file the runner holds.
-        record = json.dumps({'pid': self.server.pid, 'startedAt': Process.started_at(self.server.pid)}).encode('utf-8')
+        self.hold(self.server.pid)
+
+    def hold(self, server):
+        """This runner and its server, kept in the lock file the runner holds,
+        so an update's install can end them."""
+        from squire import Process
+
+        record = {'runner': os.getpid(), 'runnerStartedAt': Process.started_at(os.getpid())}
+        if server is not None:
+            record.update({'pid': server, 'startedAt': Process.started_at(server)})
         os.ftruncate(self.lock, 0)
-        os.pwrite(self.lock, record, 0)
+        os.pwrite(self.lock, json.dumps(record).encode('utf-8'), 0)
+
+    def recover(self):
+        """An update's install that did not finish (install.json present, no
+        install holding install.lock) is settled by update.py --recover,
+        started beside this runner, which starts as usual."""
+        from squire import System
+
+        if not os.path.lexists(os.path.join(self.home, 'install.json')):
+            return
+        try:
+            fd = os.open(os.path.join(self.home, 'install.lock'), os.O_RDONLY)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            finally:
+                os.close(fd)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            return
+        try:
+            subprocess.Popen([System.command('/usr/bin/python3'), '-B', os.path.join(CORE, 'tools', 'update.py'),
+                              '--recover'], cwd='/', env=System.env(self.home), stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            pass
+
+    def claude_code(self):
+        """At the first start, Claude Code's version and launcher recorded in
+        claude-code.json; a later start keeps the record it finds."""
+        from squire import ClaudeCode
+
+        ClaudeCode.record_once(self.home)
 
     def watch(self):
         """Until the session must stop: 'settings', 'replace' or 'died'."""

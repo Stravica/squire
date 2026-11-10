@@ -5,10 +5,10 @@ core whole. Run by the installer or an update, never by the session.
 
 The core goes to <Squire home>/core as a copy. The owner's folder is never
 touched. A release lacking any floor entry point, a release that is or lies
-in the Squire home (other than the Squire home's own release folder,
-release/core, which set-up keeps), and a layout where the owner's folder
-and the Squire home overlap are refused with exit 1 and a reason, and
-nothing changes.
+in the Squire home (other than the release folders the Squire home keeps:
+release/core, which set-up keeps, and releases/<version>/core, an update's
+kept releases), and a layout where the owner's folder and the Squire home
+overlap are refused with exit 1 and a reason, and nothing changes.
 
 Once core is down it writes the settings of Claude Code's config folder for
 Squire's session (claude-config/settings.json) from core's settings and the
@@ -37,7 +37,7 @@ CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 class LayDown:
     ENTRY_POINTS = ('hooks/pre-tool-use.py', 'hooks/user-prompt-submit.py', 'tools/secret.py', 'tools/lay-down.py')
     FLOOR_FILES = ('settings.json', 'hooks/pre-tool-use.py', 'hooks/user-prompt-submit.py', 'hooks/session-start.py',
-                   'hooks/config-change.py')
+                   'hooks/config-change.py', 'release.json', 'release-key.pub', 'tools/update.py', 'tools/ticket.py')
     PYTHON = '/usr/bin/python3'
     RUNNER = 'com.stravica.squire.runner'
     WAKE_UPS = 'com.stravica.squire.wake-ups'
@@ -59,7 +59,7 @@ class LayDown:
             missing = [p for p in LayDown.ENTRY_POINTS if not os.path.isfile(os.path.join(release, p))]
             if missing:
                 raise SquireError(f'the release {argv[0]} lacks {", ".join(missing)}')
-            if Paths.overlap(release, home) and release != os.path.join(home, 'release', 'core'):
+            if Paths.overlap(release, home) and not LayDown.kept(release, home):
                 raise SquireError(f'the release {argv[0]} and the Squire home {home} overlap')
             if Paths.overlap(config.owner_folder, home):
                 raise SquireError(f'the owner\'s folder {config.owner_folder} and the Squire home {home} overlap')
@@ -75,6 +75,16 @@ class LayDown:
             sys.stderr.write(f'lay-down laid core down, then failed: {e}. Lay core down again.\n')
             return 1
         return 0
+
+    @staticmethod
+    def kept(release, home):
+        """True for a release folder the Squire home keeps: release/core, or
+        releases/<version>/core."""
+        if release == os.path.join(home, 'release', 'core'):
+            return True
+        parent, name = os.path.split(release)
+        return name == 'core' and os.path.dirname(parent) == os.path.join(home, 'releases') \
+            and os.path.basename(parent) not in ('', '.', '..')
 
     @staticmethod
     def write(path, data, mode=0o600):

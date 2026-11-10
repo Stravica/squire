@@ -41,6 +41,9 @@ import time
 
 CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 PYTHON = '/usr/bin/python3'
+sys.path.insert(0, os.path.join(CORE, 'lib'))
+
+from squire import Records  # noqa: E402
 
 
 class KnownFixes:
@@ -129,15 +132,38 @@ class KnownFixes:
                          f'then, ask for it: {self.request("sign-in")}')
         return lines
 
-    def results(self):
-        """The last fixes' results, printed once: the file is removed."""
-        try:
-            with open(self.results_file, encoding='utf-8') as f:
-                results = json.load(f)
-            os.unlink(self.results_file)
-        except (OSError, ValueError):
-            return []
-        return [r for r in results if isinstance(r, str)] if isinstance(results, list) else []
+    def results(self, answered=lambda fault: False):
+        """The last known fixes' results, kept in fixes.json and printed at
+        every run, whoever runs it: a read never consumes them. A result goes
+        once its fix is asked for again, or, for "still", once the owner
+        answers the request of the ticket it offered (answered(fault)).
+        Returns [(fault, line)]."""
+        from squire import Ledger
+
+        results = Records.read(self.results_file)
+        results = results if isinstance(results, list) else []
+        ledger = Ledger.read_shared(self.config.ledger_path)
+        # Each fault's requests in the ledger's order: a result goes once a
+        # request for its fault follows the one whose yes it answered.
+        order = {}
+        for request, _ in (ledger.requests_for('fix:') if ledger else []):
+            order.setdefault(request['item'][len('fix:'):], []).append(request.get('id'))
+        kept = []
+        for r in results:
+            if not isinstance(r, dict) or not isinstance(r.get('line'), str) or not isinstance(r.get('fault'), str):
+                continue
+            ids = order.get(r['fault'], [])
+            if r.get('request') in ids and ids.index(r.get('request')) != len(ids) - 1:
+                continue
+            if r['line'].startswith('still:') and answered(r['fault']):
+                continue
+            kept.append(r)
+        if len(kept) != len(results):
+            try:
+                Records.write(self.results_file, kept)
+            except OSError:
+                pass
+        return [(r['fault'], r['line']) for r in kept]
 
     def perform(self):
         """The scheduler's step: each unused yes to a known fix is marked used
@@ -158,17 +184,21 @@ class KnownFixes:
         for request, answer in yeses:
             fault = request['item'][len('fix:'):]
             if fault not in self.FAULTS:
-                results.append(f'could not try: {fault}: it is not one of the known fixes')
+                line = f'could not try: {fault}: it is not one of the known fixes'
             elif fault in made:
-                results.append(f'could not try: {fault}: its fix was already made at this run')
-            elif not isinstance(answer.get('at'), (int, float)) or now - answer['at'] >= self.FRESH:
-                results.append(f'could not try: {fault}: the owner\'s yes was more than 30 minutes old when the '
-                               'scheduler reached it; ask for the fix again')
+                line = f'could not try: {fault}: its fix was already made at this run'
+            elif not isinstance(answer.get('at'), (int, float)) or answer['at'] > now:
+                line = (f'could not try: {fault}: the owner\'s yes is timed after now, so it is no yes; ask for the '
+                        'fix again')
+            elif now - answer['at'] >= self.FRESH:
+                line = (f'could not try: {fault}: the owner\'s yes was more than 30 minutes old when the scheduler '
+                        'reached it; ask for the fix again')
             elif not self.present(fault):
-                results.append(f'could not try: {fault}: the fault was gone before the fix ran; nothing was changed')
+                line = f'could not try: {fault}: the fault was gone before the fix ran; nothing was changed'
             else:
                 made.add(fault)
-                results.append(self.make(fault))
+                line = self.make(fault)
+            results.append({'fault': fault, 'line': line, 'request': request.get('id'), 'at': int(now)})
         self.record(results)
         return 0
 
@@ -205,14 +235,22 @@ class KnownFixes:
         return None
 
     def lay_down(self):
-        """Core laid down again from the release folder set-up keeps."""
+        """Core laid down again from the current kept release
+        (releases/<current>/core, the current-release record naming it), or,
+        before any update, from the release folder set-up keeps."""
         from squire import System
 
+        current = Records.read(os.path.join(self.home, 'current-release.json'))
+        current = current.get('current') if isinstance(current, dict) else None
+        kept = os.path.join(self.home, 'releases', current, 'core') if isinstance(current, str) and '/' not in current \
+            and current not in ('.', '..') else None
         try:
             with open(os.path.join(self.home, 'set-up.json'), encoding='utf-8') as f:
                 release = json.load(f).get('release')
         except (OSError, ValueError, AttributeError):
             release = None
+        if kept and os.path.isdir(kept):
+            release = kept
         script = os.path.join(release, 'tools', 'lay-down.py') if isinstance(release, str) else None
         if not script or not os.path.isfile(script):
             return 'Squire\'s release folder is gone; open Squire\'s installer to lay core down again'
@@ -232,20 +270,14 @@ class KnownFixes:
         return None
 
     def record(self, results):
+        """The results kept in fixes.json, each the last for its fault."""
         if not results:
             return
-        try:
-            with open(self.results_file, encoding='utf-8') as f:
-                earlier = json.load(f)
-        except (OSError, ValueError):
-            earlier = []
-        results = [r for r in earlier if isinstance(r, str)] + results if isinstance(earlier, list) else results
-        fd, tmp = tempfile.mkstemp(prefix='.fixes-', dir=self.home)
-        with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2)
-            f.write('\n')
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, self.results_file)
+        earlier = Records.read(self.results_file)
+        faults = {r['fault'] for r in results}
+        kept = [r for r in earlier if isinstance(r, dict) and r.get('fault') not in faults] \
+            if isinstance(earlier, list) else []
+        Records.write(self.results_file, kept + results)
 
 
 class CompactionWindow:
@@ -406,7 +438,42 @@ class BackupLines:
         return lines
 
 
+class UpdateLines:
+    """What Squire's updates leave for the owner: a release record and an
+    installed core naming different versions (a fault), the last weekly
+    check's refusal, and the mark of a rollback that did not end checked,
+    naming both versions, printed while Squire stays on that release."""
+
+    @staticmethod
+    def lines(home):
+        """(lines, the rollback mark or None)."""
+        from squire import Version
+        from update import Releases
+
+        releases = Releases(home)
+        record = releases.record()
+        lines = []
+        current, version = releases.current(), releases.config().get('version')
+        if current and Version.of(version) and current['current'] != version:
+            lines.append(f'release: Squire\'s record names release {current["current"]} as current, but its installed '
+                         f'core is release {version}; open Squire\'s installer to lay core down again')
+        if record.get('outcome') == 'refused' and Version.of(record.get('version')) and isinstance(record.get('reason'), str):
+            lines.append(f'update: Squire refused release {record["version"]}: {record["reason"]}; nothing was changed')
+        mark = record.get('rollbackFailed')
+        if isinstance(mark, dict) and Version.of(mark.get('from')) and Version.of(mark.get('to')) \
+                and mark.get('on') == releases.installed():
+            lines.append(f'update: release {mark["from"]} failed its check and the return to release {mark["to"]} did not '
+                         f'end checked; Squire is on {mark["on"]}')
+        else:
+            mark = None
+        return lines, mark
+
+
 class HealthCheck:
+    STOPPED = 'no session: Claude Code\'s Remote Control server stopped before any session'
+    CODES = (('floor:', 'floor'), ('runner:', 'runner'), ('no session:', 'runner'), ('sign-in:', 'sign-in'),
+             ('release:', 'release'))
+
     @staticmethod
     def main(argv):
         sys.path.insert(0, os.path.join(CORE, 'lib'))
@@ -430,17 +497,50 @@ class HealthCheck:
             sys.stderr.write('health.py takes no arguments, --request <fix> or --perform\n')
             return 2
         installed = os.path.isdir(os.path.join(config.home, 'core'))
-        fixes = KnownFixes(config) if installed else None
-        lines = fixes.results() if installed else []
-        lines += [f'ignored: overlay/{rel} (safety floor)' for rel in HealthCheck.ignored_overlays(CORE, config.owner_folder)]
-        lines += HealthCheck.runner_lines(config.home)
-        if installed:
-            lines += fixes.lines()
-            lines += CompactionWindow(config.home).lines()
-            lines += BackupLines.lines(config.home)
+        lines = HealthCheck.lines(config) if installed else []
+        if not installed:
+            lines += [f'ignored: overlay/{rel} (safety floor)' for rel in HealthCheck.ignored_overlays(CORE, config.owner_folder)]
+            lines += HealthCheck.runner_lines(config.home)
         for line in lines:
             print(line)
         return 1 if lines else 0
+
+    @staticmethod
+    def lines(config):
+        """Every line of an installed Squire's check, the ticket offers last,
+        each on a line of its own."""
+        sys.path.insert(0, os.path.join(CORE, 'tools'))
+        from ticket import Outbox
+
+        fixes, outbox = KnownFixes(config), Outbox(config)
+        results = fixes.results(answered=lambda fault: outbox.answered(f'still:{fault}'))
+        lines = [line for _, line in results]
+        overlays = [f'ignored: overlay/{rel} (safety floor)' for rel in HealthCheck.ignored_overlays(CORE, config.owner_folder)]
+        runner = HealthCheck.runner_lines(config.home)
+        backup = BackupLines.lines(config.home)
+        updates, mark = UpdateLines.lines(config.home)
+        lines += overlays + runner + fixes.lines() + CompactionWindow(config.home).lines() + backup + updates
+        present = {}
+        if overlays:
+            present['overlay'] = ('files in the owner\'s folder that the safety floor ignores', [])
+        if any(line.startswith(HealthCheck.STOPPED) for line in runner):
+            present['server-stopped'] = ('Squire\'s session server stopping before any session started', [])
+        if any(line.startswith('backup: the nightly backup to ') for line in backup):
+            present['backup'] = ('the nightly backup that could not run', [])
+        for fault, line in results:
+            if line.startswith('still:'):
+                present[f'still:{fault}'] = (f'the known fix for {fault} that did not work', [fault])
+        if mark:
+            present[f'rollback:{mark["from"]}:{mark["to"]}'] = (
+                f'release {mark["from"]} failing its check and the return to release {mark["to"]} not ending checked', [])
+        codes = []
+        for line in lines:
+            code = next((c for prefix, c in HealthCheck.CODES if line.startswith(prefix)), None)
+            if code and code not in codes:
+                codes.append(code)
+        if mark:
+            codes.append('update-rollback-failed')
+        return lines + outbox.offers(present, codes)
 
     @staticmethod
     def ignored_overlays(core, owner):

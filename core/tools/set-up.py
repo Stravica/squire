@@ -30,7 +30,7 @@ import time
 CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(CORE, 'lib'))
 
-from squire import Config, Paths, Persona, System  # noqa: E402
+from squire import Config, Paths, Persona, Records, System, Version  # noqa: E402
 
 STEPS = ('yes', 'claudeCode', 'signIn', 'appleTools', 'naming', 'ownerFolder', 'layDown', 'backup', 'health', 'phone',
          'firstConversation')
@@ -179,6 +179,11 @@ class SetUp:
         except Paused as e:
             setup.pause(str(e))
             return 1
+        if setup.older():
+            setup.pause(f'This copy of Squire is release {setup.app_version()}, and the Squire already installed on this '
+                        f'Mac is newer (release {setup.installed_version()}), so set-up did not lay its parts down. The '
+                        'installed Squire keeps running; the rest of set-up ran as usual.')
+            return 1
         setup.ready()
         return 0
 
@@ -233,11 +238,35 @@ class SetUp:
         kept = Persona.of(self.owner) or {}
         return all(k in kept for k in Persona.LIMITS)
 
+    def app_version(self):
+        """The app's version: its core's release.json."""
+        data = self.read_json(os.path.join(self.app_core, 'release.json'))
+        version = data.get('version') if isinstance(data, dict) else None
+        return version if Version.of(version) else None
+
+    def installed_version(self):
+        """The installed version: current-release.json first, then the
+        installed core's release.json."""
+        for path, key in ((os.path.join(self.home, 'current-release.json'), 'current'),
+                          (os.path.join(self.home, 'core', 'release.json'), 'version')):
+            data = self.read_json(path)
+            version = data.get(key) if isinstance(data, dict) else None
+            if Version.of(version):
+                return version
+        return None
+
+    def older(self):
+        """True when the app is older than the installed release: its core is
+        never laid down over it."""
+        app, installed = self.app_version(), self.installed_version()
+        return bool(app and installed and Version.of(app) < Version.of(installed))
+
     def lay_down_holds(self):
-        if not os.path.isdir(self.release):
-            return False
-        if os.path.isdir(self.app_core) and Release.digests(self.app_core) != Release.digests(self.release):
-            return False
+        if not self.older():
+            if not os.path.isdir(self.release):
+                return False
+            if os.path.isdir(self.app_core) and Release.unkeyed(self.app_core) != Release.unkeyed(self.release):
+                return False
         recorded = self.read_json(os.path.join(self.home, 'core-digests.json'))
         if not isinstance(recorded, dict) or not recorded:
             return False
@@ -361,13 +390,28 @@ class SetUp:
     def step_lay_down(self):
         if not os.path.isdir(self.app_core):
             raise Paused('Squire\'s download is damaged. Fetch Squire again, then open it.')
+        if self.older():
+            return
+        app, installed = self.app_version(), self.installed_version()
+        # The installed release key stays: a key changes only through a release the installed key signed.
+        key = None
+        installed_key = os.path.join(self.home, 'core', 'release-key.pub')
+        if app and installed and os.path.isfile(installed_key):
+            with open(installed_key, 'rb') as f:
+                key = f.read()
         try:
-            Release.keep(self.app_core, self.release)
+            Release.keep(self.app_core, self.release, key)
         except (OSError, ValueError) as e:
             self.log(f'release copy failed: {e}')
             raise Paused('Squire could not copy itself into its own folder. Open Squire again.')
         self.record.save(release=self.release)
         self.lay_down()
+        if app:
+            current = self.read_json(os.path.join(self.home, 'current-release.json'))
+            previous = installed if installed != app else (current or {}).get('previous') if isinstance(current, dict) \
+                else None
+            Records.write(os.path.join(self.home, 'current-release.json'),
+                          {'current': app, 'previous': previous, 'verified': False})
 
     def lay_down(self):
         script = os.path.join(self.release, 'tools', 'lay-down.py')
@@ -520,8 +564,19 @@ class Release:
         return found
 
     @classmethod
-    def keep(cls, source, release):
+    def unkeyed(cls, root):
+        """The digests, the release key left out: an installed key stays."""
+        found = cls.digests(root)
+        found.pop('release-key.pub', None)
+        return found
+
+    @classmethod
+    def keep(cls, source, release, key=None):
+        """The app's core copied into the release folder, with the installed
+        release key in place of its own when key is given."""
         wanted = cls.digests(source)
+        if key is not None and 'release-key.pub' in wanted:
+            wanted['release-key.pub'] = hashlib.sha256(key).hexdigest()
         if os.path.isdir(release) and cls.digests(release) == wanted:
             return
         parent = os.path.dirname(release)
@@ -530,6 +585,9 @@ class Release:
         try:
             incoming = os.path.join(staging, 'core')
             shutil.copytree(source, incoming, ignore=shutil.ignore_patterns(*cls.SKIP, '*.pyc'))
+            if key is not None and os.path.isfile(os.path.join(incoming, 'release-key.pub')):
+                with open(os.path.join(incoming, 'release-key.pub'), 'wb') as f:
+                    f.write(key)
             if cls.digests(incoming) != wanted:
                 raise ValueError('the copy does not match the app\'s core')
             if os.path.lexists(release):

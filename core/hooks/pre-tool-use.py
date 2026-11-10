@@ -307,6 +307,100 @@ class FixRequest:
         return 2, reason
 
 
+class ShownRequest:
+    """The session's request to install the staged release (update.py
+    --install <version>) or to send a support ticket (ticket.py --send
+    <ticket id>), as the health check and the offers print it. It never runs
+    in the session, yes or no. The floor asks the owner for it with a block
+    that shows exactly what the yes approves: one line naming the request,
+    then the version alone on a line and the changelog's lines as the staged
+    manifest holds them, or the outbox file's bytes, then one empty line and
+    the words that make the session show that text inside one fenced code
+    block. The request records what its block showed (the staged manifest's
+    SHA-256, or the outbox file's and its state record's digest), so a yes
+    binds only those bytes; the scheduler acts on it outside the session."""
+
+    TOOLS = {'--install': 'update.py', '--send': 'ticket.py'}
+    VALUES = {'--install': re.compile(r'^\d+\.\d+\.\d+$'), '--send': re.compile(r'^t-[0-9a-f]{32}$')}
+    RELAY = ('Show the owner the text above inside a fenced code block: a line of three backticks with no language name, '
+             'then the text exactly as written, unchanged, with nothing added inside the fence, then a line of three '
+             'backticks. Your own words go only outside the fence. Then wait for their answer.')
+    APPROVED = ('The owner said yes to request {id}: {what}. Squire\'s scheduler does this outside the session within a '
+                'minute; the session never does, so nothing ran here.')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """(flag, value) for a Bash call that is one of these requests, or None."""
+        command = data.get('command') if tool == 'Bash' else None
+        if not isinstance(command, str):
+            return None
+        shell = ShellCommand(command)
+        if not shell.plain or len(shell.segments) != 1:
+            return None
+        argv = shell.segments[0]
+        if len(argv) < 4 or argv[0] != PYTHON or argv[-2] not in cls.TOOLS \
+                or not all(getattr(word, 'literal', True) for word in argv):
+            return None
+        script = floor.path(' '.join(argv[1:-2]), strict=False)
+        if not floor.is_core_tool(script, cls.TOOLS[argv[-2]]) or not cls.VALUES[argv[-2]].match(argv[-1]):
+            return None
+        return argv[-2], str(argv[-1])
+
+    @staticmethod
+    def read(path):
+        try:
+            with open(path, 'rb') as f:
+                return f.read()
+        except OSError:
+            return None
+
+    @classmethod
+    def shown(cls, home, flag, value):
+        """(item, what, the text the block shows), or (None, why, None)."""
+        if flag == '--install':
+            data = cls.read(os.path.join(home, 'staging', value, 'manifest.json'))
+            try:
+                manifest = json.loads(data.decode('utf-8')) if data is not None else None
+            except (UnicodeDecodeError, ValueError):
+                manifest = None
+            if not isinstance(manifest, dict) or manifest.get('version') != value \
+                    or not isinstance(manifest.get('changelog'), str) or '\r' in manifest['changelog']:
+                return None, f'Squire has no staged, checked release {value} to install, so nothing was asked.', None
+            return (f'update:{value}:{hashlib.sha256(data).hexdigest()}',
+                    f'install Squire release {value}, staged and checked; its version and changelog follow',
+                    value + '\n' + manifest['changelog'].rstrip('\n'))
+        data = cls.read(os.path.join(home, 'outbox', f'{value}.json'))
+        state = cls.read(os.path.join(home, 'outbox', f'{value}.state.json'))
+        try:
+            text = data.decode('ascii') if data is not None else None
+            digest = json.loads(state.decode('utf-8')).get('digest') if state is not None else None
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            text, digest = None, None
+        if text is None or not isinstance(digest, str) or '\r' in text:
+            return None, f'Squire has no support ticket {value} waiting to send, so nothing was asked.', None
+        return (f'ticket:{value}:{hashlib.sha256(data).hexdigest()}:{digest}',
+                'send this support ticket to Squire\'s support intake, exactly as it follows', text.rstrip('\n'))
+
+    @classmethod
+    def settle(cls, floor, ledger, session, flag, value):
+        item, what, text = cls.shown(floor.config.home, flag, value)
+        if item is None:
+            return 2, what
+        now = time.time()
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            return 2, cls.APPROVED.format(id=approved['id'], what=what)
+        pending = ledger.open_requests(session, now, floor.config.timeout)
+        mine = next((r for r in pending if r.get('item') == item), None)
+        if mine is None:
+            mine = ledger.request(session, item, now)
+            pending.append(mine)
+        head = Floor.ASK.format(id=mine['id'], what=what)
+        if len(pending) > 1:
+            head += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, f'{head}\n{text}\n\n{cls.RELAY}'
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -385,6 +479,13 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        shown = ShownRequest.of(self, tool, data)
+        if shown:
+            try:
+                with Ledger(self.config.ledger_path) as ledger:
+                    return ShownRequest.settle(self, ledger, session, *shown)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         fault = FixRequest.of(self, tool, data)
         if fault:
             try:
