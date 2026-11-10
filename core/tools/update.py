@@ -373,6 +373,20 @@ class HealthLines:
             return None
         return [line.strip() for line in r.stdout.splitlines() if line.strip()]
 
+    @staticmethod
+    def read(config):
+        """The installed health check's lines read in this process, the
+        support ticket offers left out (the weekly check reads faults, it
+        builds no ticket), or None when the check could not run."""
+        try:
+            spec = importlib.util.spec_from_file_location(
+                'squire_health', os.path.join(config.home, 'core', 'tools', 'health.py'))
+            health = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(health)
+            return [line.strip() for line in health.HealthCheck.lines(config, offers=False) if line.strip()]
+        except Exception:
+            return None
+
     @classmethod
     def faults(cls, lines):
         codes = []
@@ -396,6 +410,7 @@ class WeeklyCheck:
     ARCHIVE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*$')
 
     def __init__(self, config, send):
+        self.config = config
         self.home = config.home
         self.releases = Releases(config.home)
         self.send = send
@@ -409,7 +424,7 @@ class WeeklyCheck:
         now = int(now)
         if not self.releases.installed() or not self.due(now):
             return
-        lines = HealthLines.run(self.home)
+        lines = HealthLines.read(self.config)
         if lines is None or HealthLines.faults(lines):
             return
         self.check(now)

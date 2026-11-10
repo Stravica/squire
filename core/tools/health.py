@@ -506,9 +506,10 @@ class HealthCheck:
         return 1 if lines else 0
 
     @staticmethod
-    def lines(config):
+    def lines(config, offers=True):
         """Every line of an installed Squire's check, the ticket offers last,
-        each on a line of its own."""
+        each on a line of its own; with offers False (the weekly check's
+        read of the faults) no ticket is built or offered."""
         sys.path.insert(0, os.path.join(CORE, 'tools'))
         from ticket import Outbox
 
@@ -540,7 +541,7 @@ class HealthCheck:
                 codes.append(code)
         if mark:
             codes.append('update-rollback-failed')
-        return lines + outbox.offers(present, codes)
+        return lines + outbox.offers(present, codes) if offers else lines
 
     @staticmethod
     def ignored_overlays(core, owner):
