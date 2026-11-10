@@ -102,8 +102,50 @@ function ledgerOf(world) {
 }
 
 function cleanUp(world) {
+  killWorldProcesses(world);
   if (world.keychain) deleteKeychain(world.keychain);
   fs.rmSync(world.root, { recursive: true, force: true });
+}
+
+// The process group of a process, read with the Mac's own ps (null once gone).
+function groupOf(pid) {
+  const r = spawnSync('/bin/ps', ['-o', 'pgid=', '-p', String(pid)], { encoding: 'utf8' });
+  return Number((r.stdout || '').trim()) || null;
+}
+
+// Every process still running whose command line names this world's folder (a
+// runner, a stand-in Claude Code or its session, a stand-in server), ended by
+// process group, so that nothing a world started outlives it: the runner's
+// group, the server's and the session's with it. A process in this test's own
+// group is ended alone, never the group. Waits at most 5 seconds for them to go.
+function killWorldProcesses(world) {
+  if (!world || !world.root) return [];
+  const own = groupOf(process.pid);
+  const r = spawnSync('/bin/ps', ['-axww', '-o', 'pid=,pgid=,command='], { encoding: 'utf8' });
+  const hits = [];
+  for (const line of (r.stdout || '').split('\n')) {
+    const m = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line);
+    if (!m) continue;
+    const pid = Number(m[1]);
+    const pgid = Number(m[2]);
+    if (pid === process.pid || !m[3].includes(world.root)) continue;
+    hits.push({ pid, pgid });
+  }
+  for (const { pid, pgid } of hits) {
+    try {
+      if (pgid && pgid !== own && pgid > 1) process.kill(-pgid, 'SIGKILL');
+      else process.kill(pid, 'SIGKILL');
+    } catch (e) { /* gone */ }
+  }
+  // Gone, or ended and waiting only to be reaped by its parent.
+  const left = () => {
+    if (!hits.length) return [];
+    const ps = spawnSync('/bin/ps', ['-o', 'pid=,stat=', '-p', hits.map((h) => h.pid).join(',')], { encoding: 'utf8' });
+    return (ps.stdout || '').split('\n').map((l) => l.trim().split(/\s+/)).filter((p) => p[0] && !/^Z/.test(p[1] || ''));
+  };
+  const end = Date.now() + 5000;
+  while (left().length && Date.now() < end) spawnSync('/bin/sleep', ['0.05']);
+  return hits;
 }
 
 function productEnv(world, extra = {}) {
@@ -689,6 +731,8 @@ module.exports = {
   writeConfigFile,
   ledgerOf,
   cleanUp,
+  killWorldProcesses,
+  groupOf,
   productEnv,
   runPython,
   runPythonRaw,
