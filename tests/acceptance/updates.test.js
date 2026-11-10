@@ -429,11 +429,21 @@ test('when the check after a rollback fails too, a health line names both versio
   const rw = await healthyWorld(t);
   const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExitsAndSignsOut' });
   stage(rw, bad);
-  installOnYes(rw, bad);
+  const { sent } = installOnYes(rw, bad);
+  // No session works now (the sign-in has ended), so the owner hears of it in
+  // two ways: the one wake-up naming both versions, kept by the router until a
+  // session can take it ("sent" is durably queued), and the health line, a
+  // mark the owner sees with no session. The install record goes after both.
+  assert.equal(sent.filter((x) => x.includes(NEXT) && x.includes(R.INSTALLED)).length, 1,
+    `one wake-up naming both versions must be kept for the owner though no session can take it; sent ${JSON.stringify(sent)}`);
+  assert.ok(!fs.existsSync(R.installRecordFile(rw)), 'the install record goes once the message and the mark are written');
   const h = R.health(rw);
   const both = h.stdout.split('\n').filter((l) => l.includes(NEXT) && l.includes(R.INSTALLED));
   assert.ok(both.length >= 1, `a health line must name both versions; got ${w.describe(h)}`);
   assert.ok(R.ticketLines(h.stdout).length >= 1, `the health check must offer a support ticket on its own line; got ${w.describe(h)}`);
+  R.tick(rw);
+  const later = R.health(rw);
+  assert.ok(later.stdout.split('\n').some((l) => l.includes(NEXT) && l.includes(R.INSTALLED)), `the mark stands at the next run of the health check; got ${w.describe(later)}`);
 });
 
 test("a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered", LONG, async (t) => {
