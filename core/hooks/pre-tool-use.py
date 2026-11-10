@@ -251,6 +251,62 @@ class SmallModel:
         return out
 
 
+class FixRequest:
+    """The request for one of the health check's known fixes, as the health
+    check prints it: /usr/bin/python3 <Squire home>/core/tools/health.py
+    --request runner|floor|sign-in, its path quoted or not (the default
+    Squire home holds a space). The floor asks the owner for it, naming the
+    one fault and its fix, and records the yes for the outside job; the
+    request itself never runs in the session, yes or no, and the yes is left
+    unused for the wake-ups scheduler, which makes the fix outside the
+    session."""
+
+    FIXES = {
+        'runner': 'reload Squire\'s background jobs, the known fix for Squire\'s session runner not running',
+        'floor': 'lay Squire\'s core down again from Squire\'s release folder, the known fix for a changed floor file',
+        'sign-in': 'sign Squire in to Claude again before its sign-in ends (the sign-in page opens in the browser)',
+    }
+    APPROVED = ('The owner said yes to request {id}: {what}. Squire\'s scheduler makes this fix outside the session '
+                'within a minute; the session never makes it, so nothing ran here.')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """The fault a Bash call asks to fix, or None."""
+        command = data.get('command') if tool == 'Bash' else None
+        if not isinstance(command, str):
+            return None
+        shell = ShellCommand(command)
+        if not shell.plain or len(shell.segments) != 1:
+            return None
+        argv = shell.segments[0]
+        if len(argv) < 4 or argv[0] != PYTHON or argv[-2] != '--request' or argv[-1] not in cls.FIXES \
+                or not all(getattr(word, 'literal', True) for word in argv):
+            return None
+        script = floor.path(' '.join(argv[1:-2]), strict=False)
+        return argv[-1] if floor.is_core_tool(script, 'health.py') else None
+
+    @classmethod
+    def settle(cls, ledger, session, fault, timeout):
+        """Asks the owner, or, once the owner has said yes, blocks with the
+        yes left for the outside job."""
+        now = time.time()
+        item = f'fix:{fault}'
+        what = cls.FIXES[fault]
+        approved = ledger.approval(session, item, now, timeout)
+        if approved:
+            return 2, cls.APPROVED.format(id=approved['id'], what=what)
+        pending = ledger.open_requests(session, now, timeout)
+        mine = next((r for r in pending if r.get('item') == item), None)
+        if mine is None:
+            mine = ledger.request(session, item, now)
+            pending.append(mine)
+        reason = Floor.ASK.format(id=mine['id'], what=what + '. Squire\'s scheduler makes it outside the session '
+                                  'once the owner says yes')
+        if len(pending) > 1:
+            reason += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, reason
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -329,6 +385,13 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        fault = FixRequest.of(self, tool, data)
+        if fault:
+            try:
+                with Ledger(self.config.ledger_path) as ledger:
+                    return FixRequest.settle(ledger, session, fault, self.config.timeout)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         verdict, what, taints = self.judge(tool, data)
         if verdict == 'never':
             return 2, what

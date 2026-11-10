@@ -1,0 +1,14 @@
+{
+  "cnId": "CN-039",
+  "path": "core/hooks/pre-tool-use.py#FixRequest",
+  "implementsAcIds": [
+    "AC-1101-2",
+    "AC-1901-5",
+    "AC-201-8"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:45.002Z",
+  "updatedAt": "2026-11-09T16:41:45.002Z"
+}

@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-029",
+  "path": "core/lib/squire.py#Persona",
+  "implementsAcIds": [
+    "AC-601-1",
+    "AC-601-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:21.929Z",
+  "updatedAt": "2026-11-09T16:41:21.929Z"
+}

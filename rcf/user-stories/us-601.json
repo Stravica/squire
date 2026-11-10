@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:14.098Z",
-  "updatedAt": "2026-11-07T17:40:14.361Z",
+  "updatedAt": "2026-11-09T15:01:51.924Z",
   "asA": "Squire owner",
   "iWant": "to name my Squire and give it a personality in a guided first conversation, and have it keep them",
   "soThat": "my Squire feels like mine and stays that way after fresh starts and updates",
@@ -19,6 +19,15 @@
       "given": "A Squire owner who has named their Squire and given it a personality",
       "when": "Squire starts afresh, and after Squire is updated",
       "then": "The name and personality are unchanged, and Squire's replies use them.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-601-2",
+      "description": "A name or personality Squire cannot keep safely is asked for again and never kept.",
+      "testable": true,
+      "given": "A Squire owner naming their Squire who gives a name or personality that is empty or blank, longer than Squire keeps, or holds control characters, new lines, the marks that hold it in what the session loads, a heading or a code fence",
+      "when": "Set-up's naming step reads the answer",
+      "then": "Set-up asks for that value again, saying why, and never stores it; a value it accepts is stored as given, trimmed.",
       "verification": "testOnly"
     }
   ]

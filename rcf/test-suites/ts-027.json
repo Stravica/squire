@@ -1,0 +1,298 @@
+{
+  "createdAt": "2026-11-09T13:28:40.809Z",
+  "updatedAt": "2026-11-09T18:33:08.231Z",
+  "purpose": "Runs Squire's real set-up app at its entry point and the steps behind it in a test world with fakes for the Mac's commands, Claude Code's installer and the owner's answers: each listed problem is explained, keeps what is done and the owner's things, and resumes or repairs one installation; a step whose result cannot be confirmed runs again and is never counted done.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-201-4",
+    "AC-201-6",
+    "AC-201-7",
+    "AC-201-8"
+  ],
+  "id": "TS-027",
+  "usId": "US-201",
+  "title": "Set-up meets a problem, and steps it cannot confirm",
+  "testCases": [
+    {
+      "id": "TC-027-set-up-macos-older-than-13-refused-before",
+      "acId": "AC-201-4",
+      "description": "set-up on a macOS older than 13 is refused before any change, naming macOS 13 and the way on",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::set-up on a macOS older than 13 is refused before any change, naming macOS 13 and the way on"
+    },
+    {
+      "id": "TC-027-set-up-mac-with-less-than-4-gb",
+      "acId": "AC-201-4",
+      "description": "set-up on a Mac with less than 4 GB of memory is refused before any change, naming 4 GB",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::set-up on a Mac with less than 4 GB of memory is refused before any change, naming 4 GB"
+    },
+    {
+      "id": "TC-027-set-up-mac-without-apples-command-line-tools",
+      "acId": "AC-201-4",
+      "description": "set-up on a Mac without Apple's command line tools, for a user who cannot install them, is refused before any change and says to ask whoever administers the Mac",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::set-up on a Mac without Apple's command line tools, for a user who cannot install them, is refused before any change and says to ask whoever administers the Mac"
+    },
+    {
+      "id": "TC-027-declared-plan-below-pro-plan-window-closed-stops",
+      "acId": "AC-201-4",
+      "description": "a declared plan below Pro, or the plan window closed, stops set-up before any change, naming Pro",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a declared plan below Pro, or the plan window closed, stops set-up before any change, naming Pro"
+    },
+    {
+      "id": "TC-027-plan-found-below-pro-at-sign-stops-set",
+      "acId": "AC-201-4",
+      "description": "a plan found below Pro at sign-in stops set-up and leaves the home folder as set-up found it, signing Squire's config folder out, with Apple's tools never started",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan found below Pro at sign-in stops set-up and leaves the home folder as set-up found it, signing Squire's config folder out, with Apple's tools never started"
+    },
+    {
+      "id": "TC-027-plan-found-below-pro-at-sign-never-touches",
+      "acId": "AC-201-4",
+      "description": "a plan found below Pro at sign-in never touches a Claude Code the owner already had",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan found below Pro at sign-in never touches a Claude Code the owner already had"
+    },
+    {
+      "id": "TC-027-plan-squire-cannot-confirm-value-does-not-know",
+      "acId": "AC-201-4",
+      "description": "a plan Squire cannot confirm (a value it does not know) is asked of the owner, and Continue goes on",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan Squire cannot confirm (a value it does not know) is asked of the owner, and Continue goes on"
+    },
+    {
+      "id": "TC-027-plan-squire-cannot-confirm-no-plan-field-asked",
+      "acId": "AC-201-4",
+      "description": "a plan Squire cannot confirm (no plan field) is asked of the owner, and Stop stops",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan Squire cannot confirm (no plan field) is asked of the owner, and Stop stops"
+    },
+    {
+      "id": "TC-027-plan-squire-cannot-confirm-answer-cannot-read-asked",
+      "acId": "AC-201-4",
+      "description": "a plan Squire cannot confirm (an answer it cannot read) is asked of the owner, and Stop stops",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan Squire cannot confirm (an answer it cannot read) is asked of the owner, and Stop stops"
+    },
+    {
+      "id": "TC-027-plan-read-comes-before-apples-tools-everything-else",
+      "acId": "AC-201-4",
+      "description": "the plan read comes before Apple's tools and everything else system-wide",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::the plan read comes before Apple's tools and everything else system-wide"
+    },
+    {
+      "id": "TC-027-failed-download-runs-no-installer-leaves-no-half",
+      "acId": "AC-201-4",
+      "description": "a failed download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a failed download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation"
+    },
+    {
+      "id": "TC-027-timed-out-download-runs-no-installer-leaves-no",
+      "acId": "AC-201-4",
+      "description": "a timed-out download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a timed-out download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation"
+    },
+    {
+      "id": "TC-027-interrupted-download-runs-no-installer-leaves-no-half",
+      "acId": "AC-201-4",
+      "description": "an interrupted download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::an interrupted download runs no installer, leaves no half-finished installation, and running set-up again resumes the one installation"
+    },
+    {
+      "id": "TC-027-second-set-up-started-while-one-runs-exits",
+      "acId": "AC-201-4",
+      "description": "a second set-up started while one runs exits at once, saying set-up is already running, and changes nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a second set-up started while one runs exits at once, saying set-up is already running, and changes nothing"
+    },
+    {
+      "id": "TC-027-cancelled-sign-explained-keeps-claude-code-steps-done",
+      "acId": "AC-201-4",
+      "description": "a cancelled sign-in is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a cancelled sign-in is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling"
+    },
+    {
+      "id": "TC-027-timed-out-sign-explained-keeps-claude-code-steps",
+      "acId": "AC-201-4",
+      "description": "a timed-out sign-in is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a timed-out sign-in is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling"
+    },
+    {
+      "id": "TC-027-sign-with-no-internet-explained-keeps-claude-code",
+      "acId": "AC-201-4",
+      "description": "a sign-in with no internet is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a sign-in with no internet is explained, keeps Claude Code and the steps done, and running set-up again resumes at the sign-in without reinstalling"
+    },
+    {
+      "id": "TC-027-with-no-phone-hand-set-up-still-completes",
+      "acId": "AC-201-4",
+      "description": "with no phone to hand set-up still completes: the phone step is answered Later and every step is recorded done",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::with no phone to hand set-up still completes: the phone step is answered Later and every step is recorded done"
+    },
+    {
+      "id": "TC-027-with-laptop-closed-during-first-conversation-earlier-steps",
+      "acId": "AC-201-4",
+      "description": "with the laptop closed during the first conversation, the earlier steps stay done, and running set-up again finishes only the last step",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::with the laptop closed during the first conversation, the earlier steps stay done, and running set-up again finishes only the last step"
+    },
+    {
+      "id": "TC-027-step-killed-part-way-not-recorded-done-runs",
+      "acId": "AC-201-4",
+      "description": "a step killed part way is not recorded done and runs again from its start on the next run",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a step killed part way is not recorded done and runs again from its start on the next run"
+    },
+    {
+      "id": "TC-027-re-run-resumes-at-first-step-not-recorded",
+      "acId": "AC-201-4",
+      "description": "a re-run resumes at the first step not recorded done, and runs again a step recorded done whose end state no longer holds",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a re-run resumes at the first step not recorded done, and runs again a step recorded done whose end state no longer holds"
+    },
+    {
+      "id": "TC-027-running-set-up-again-over-finished-set-up",
+      "acId": "AC-201-4",
+      "description": "running set-up again over a finished set-up repairs what no longer holds and keeps the owner's folder and settings",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::running set-up again over a finished set-up repairs what no longer holds and keeps the owner's folder and settings"
+    },
+    {
+      "id": "TC-027-with-sign-gone-health-line-says-open-squires",
+      "acId": "AC-201-4",
+      "description": "with the sign-in gone, the health line says to open Squire's installer to sign in again, and running set-up again resumes at the sign-in",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::with the sign-in gone, the health line says to open Squire's installer to sign in again, and running set-up again resumes at the sign-in"
+    },
+    {
+      "id": "TC-027-when-claude-codes-server-exits-before-any-session",
+      "acId": "AC-201-4",
+      "description": "when Claude Code's server exits before any session, the runner records its reason, the health check prints it, and set-up's last step names it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::when Claude Code's server exits before any session, the runner records its reason, the health check prints it, and set-up's last step names it"
+    },
+    {
+      "id": "TC-027-claude-code-whose-launcher-there-but-whose-version",
+      "acId": "AC-201-6",
+      "description": "a Claude Code whose launcher is there but whose version is incomplete is not counted done, and is installed again from its start on every run until it answers",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a Claude Code whose launcher is there but whose version is incomplete is not counted done, and is installed again from its start on every run until it answers"
+    },
+    {
+      "id": "TC-027-apples-tools-still-reporting-that-they-install-not",
+      "acId": "AC-201-6",
+      "description": "Apple's tools still reporting that they install are not counted done, and a re-run runs that step again from its start",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::Apple's tools still reporting that they install are not counted done, and a re-run runs that step again from its start"
+    },
+    {
+      "id": "TC-027-hostile-sw-vers-never-called",
+      "acId": "AC-201-4",
+      "description": "a hostile sw_vers first on the PATH the app is opened with is never called: the Mac check reads the system's own answer and macOS 12 is refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a hostile sw_vers first on the PATH the app is opened with is never called: the Mac check reads the system's own answer and macOS 12 is refused"
+    },
+    {
+      "id": "TC-027-undo-over-partial-install-every-byte",
+      "acId": "AC-201-4",
+      "description": "a plan found below Pro over a partial install of Claude Code already there leaves every byte that was there as it was, restores what the installer changed and takes away everything set-up added",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan found below Pro over a partial install of Claude Code already there leaves every byte that was there as it was, restores what the installer changed and takes away everything set-up added"
+    },
+    {
+      "id": "TC-027-undo-keeps-foreign-file-in-created-folder",
+      "acId": "AC-201-4",
+      "description": "a file another app writes inside a folder set-up created is kept by the undo, and that folder is kept and named on the stopped window",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a file another app writes inside a folder set-up created is kept by the undo, and that folder is kept and named on the stopped window"
+    },
+    {
+      "id": "TC-027-failed-undo-step-named-never-as-found",
+      "acId": "AC-201-4",
+      "description": "an undo step that fails, signing Squire's config folder out, is named on the stopped window, stays in the record, and the window never says the Mac is as set-up found it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::an undo step that fails, signing Squire's config folder out, is named on the stopped window, stays in the record, and the window never says the Mac is as set-up found it"
+    },
+    {
+      "id": "TC-027-bad-record-set-aside-never-adopted",
+      "acId": "AC-201-6",
+      "description": "a set-up record that does not parse, is cut short, or holds wrong types and out-of-order step ids is set aside, never adopted, and set-up runs again from the start",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a set-up record that does not parse, is cut short, or holds wrong types and out-of-order step ids is set aside, never adopted, and set-up runs again from the start"
+    },
+    {
+      "id": "TC-027-second-set-up-other-tmpdir-already-running",
+      "acId": "AC-201-4",
+      "description": "a second set-up opened with a different temporary folder still exits at once, saying set-up is already running, and changes nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a second set-up opened with a different temporary folder still exits at once, saying set-up is already running, and changes nothing"
+    },
+    {
+      "id": "TC-027-owner-folder-problems-pause-byte-for-byte",
+      "acId": "AC-201-4",
+      "description": "a ~/Squire that is a file, a link into Documents or not writable, or an owner's squire.json that does not parse, pauses set-up naming it and is left byte for byte",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a ~/Squire that is a file, a link into Documents or not writable, or an owner's squire.json that does not parse, pauses set-up naming it and is left byte for byte"
+    },
+    {
+      "id": "TC-027-health-step-done-with-cannot-confirm-line",
+      "acId": "AC-201-4",
+      "description": "an unreadable managed settings file on an otherwise healthy Mac lets set-up finish, and its ready window carries the cannot-confirm line",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::an unreadable managed settings file on an otherwise healthy Mac lets set-up finish, and its ready window carries the cannot-confirm line"
+    },
+    {
+      "id": "TC-027-unreadable-mac-fact-refused-before-change",
+      "acId": "AC-201-7",
+      "description": "a Mac fact set-up cannot read (sw_vers failing, sw_vers printing no version, a memory reading that is not a number) is refused before any change, naming it and the way on",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a Mac fact set-up cannot read (sw_vers failing, sw_vers printing no version, a memory reading that is not a number) is refused before any change, naming it and the way on"
+    },
+    {
+      "id": "TC-027-sign-in-ending-warned-once-a-day",
+      "acId": "AC-201-8",
+      "description": "a sign-in that ends within seven days gets one wake-up through Squire's session naming the day and the one action, and a second run that day sends none",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a sign-in that ends within seven days gets one wake-up through Squire's session naming the day and the one action, and a second run that day sends none"
+    },
+    {
+      "id": "TC-027-sign-in-far-or-unreadable-no-warning",
+      "acId": "AC-201-8",
+      "description": "a sign-in that ends in more than seven days, or whose end cannot be read, gets no wake-up and no sign-in",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a sign-in that ends in more than seven days, or whose end cannot be read, gets no wake-up and no sign-in"
+    },
+    {
+      "id": "TC-027-sign-in-again-on-yes-into-config-only",
+      "acId": "AC-201-8",
+      "description": "on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::on the owner's yes to signing in again, the scheduler's next run runs Claude Code's sign-in into Squire's config folder and nothing else"
+    },
+    {
+      "id": "TC-027-spaced-mac-reading-refused-before-change",
+      "acId": "AC-201-7",
+      "description": "a Mac fact reading with a space in it (a macOS version of \"1 3\", a memory reading with a space between its digits, a memory reading led by a space) is not a version or a whole number: it is refused before any change, naming it, and set-up never goes on to the plan window",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a Mac fact reading with a space in it (a macOS version of \"1 3\", a memory reading with a space between its digits, a memory reading led by a space) is not a version or a whole number: it is refused before any change, naming it, and set-up never goes on to the plan window"
+    },
+    {
+      "id": "TC-027-undo-through-linked-claude-places",
+      "acId": "AC-201-4",
+      "description": "a plan found below Pro over a ~/.claude.json or a ~/.claude that is a link to elsewhere in the home leaves each link, and the file or folder it leads to, exactly as set-up found them, as the stopped window says",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::a plan found below Pro over a ~/.claude.json or a ~/.claude that is a link to elsewhere in the home leaves each link, and the file or folder it leads to, exactly as set-up found them, as the stopped window says"
+    }
+  ],
+  "status": "draft"
+}

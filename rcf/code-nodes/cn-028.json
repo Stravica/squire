@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-028",
+  "path": "core/tools/set-up.py#Paused",
+  "implementsAcIds": [
+    "AC-201-4"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:19.806Z",
+  "updatedAt": "2026-11-09T16:41:19.806Z"
+}

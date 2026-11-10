@@ -15,16 +15,24 @@
 // what runs there is read-only inspection, Squire's own entry points and,
 // for a restart and a crash, launchctl and kill on Squire's own processes.
 //
+// The Squire home on the target is the target's SQUIRE_HOME, and
+// $HOME/Library/Application Support/Squire only when that is unset;
+// SQUIRE_TARGET_SQUIRE_HOME, when given, is exported as SQUIRE_HOME for
+// every command run there, so a test can be pointed at another Squire home.
+//
 // What is observed (no surface outside a running session lists an
 // account's Remote Control sessions): Squire's runner agent loaded, one
-// session record whose process is alive and whose socket accepts a
-// connection, one Remote Control server, and the server's own registration
-// and connected state in logs/session.log in the Squire home. Connected is
-// the status word Connected with no disconnection line after it (the design
-// record's words, from Claude Code's own: Reconnecting or disconnected, in
-// either case); a "·" alone, the banner and the session's name line never
-// count. The listing in the Claude app on the phone, and putting the
-// target to sleep or closing its lid, are by-hand steps of the release Verify.
+// session record whose process is alive and listens on the record's socket,
+// one Remote Control server, and the server's own connected state in
+// logs/session.log in the Squire home. A session is back after an event when
+// its record was written after the event and the process the record names is
+// alive and is the one listening on the record's socket (the peer process id
+// macOS reports for a local socket). Connected or Reconnected is the
+// connected word; Reconnecting or disconnected after the last of them is a
+// disconnection line (the design record's words, from Claude Code's own); a
+// "·" alone, the banner and the session's name line never count. The listing
+// in the Claude app on the phone, and putting the target to sleep or closing
+// its lid, are by-hand steps of the release Verify.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -32,6 +40,9 @@ const os = require('node:os');
 const { spawnSync } = require('node:child_process');
 
 const TARGET = process.env.SQUIRE_TARGET_HOST || process.env.RCF_TARGET_URL || '';
+const TARGET_SQUIRE_HOME = process.env.SQUIRE_TARGET_SQUIRE_HOME || '';
+// The Squire home on the target, as the target's shell expands it.
+const HOME_ON_TARGET = '"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}"';
 const SKIP = TARGET ? false : 'external: needs a target host (SQUIRE_TARGET_HOST, an SSH destination, or RCF_TARGET_URL)';
 const TWO_MINUTES = 120000;
 const WAKE_WAIT_MINUTES = 15;
@@ -40,17 +51,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Runs a command on the target; with a script, Python 3 reads it on stdin.
 function onTarget(command, { input = '', timeout = 60000 } = {}) {
-  const r = spawnSync('ssh', ['-o', 'BatchMode=yes', TARGET, command], { input, encoding: 'utf8', timeout });
+  const exported = TARGET_SQUIRE_HOME ? `export SQUIRE_HOME=${JSON.stringify(TARGET_SQUIRE_HOME)}; ` : '';
+  const r = spawnSync('ssh', ['-o', 'BatchMode=yes', TARGET, exported + command], { input, encoding: 'utf8', timeout });
   return { status: r.status, stdout: r.stdout || '', stderr: r.stderr || '', error: r.error ? String(r.error.message) : '' };
 }
 
 // Read-only: what Squire's session looks like on the target, as JSON.
 const LOOK = String.raw`
-import glob, json, os, plistlib, pwd, socket, subprocess, sys
+import glob, json, os, plistlib, pwd, socket, subprocess, sys, time
 home = os.environ.get('SQUIRE_HOME') or os.path.expanduser('~/Library/Application Support/Squire')
 uid = os.getuid()
 offset = int(sys.argv[1]) if len(sys.argv) > 1 else 0
-out = {'uid': uid, 'user': pwd.getpwuid(uid).pw_name, 'host': os.uname().nodename, 'home': home,
+out = {'uid': uid, 'user': pwd.getpwuid(uid).pw_name, 'host': os.uname().nodename, 'home': home, 'now': time.time(),
        'installed': os.path.isfile(os.path.join(home, 'core', 'tools', 'runner.py'))}
 runner = os.path.join(home, 'core', 'tools', 'runner.py')
 agents = []
@@ -81,9 +93,12 @@ for f in sorted(glob.glob(os.path.join(home, 'sessions', '*.json'))):
             alive = True
         except OSError:
             alive = False
-    records.append({'sessionId': rec.get('sessionId'), 'pid': pid, 'alive': alive, 'path': rec.get('socket')})
+    recorded = rec.get('recordedAt')
+    records.append({'sessionId': rec.get('sessionId'), 'pid': pid, 'alive': alive, 'path': rec.get('socket'),
+                    'recordedAt': recorded if isinstance(recorded, (int, float)) and not isinstance(recorded, bool) else None})
 # The one record's socket: connected to with a 2-second timeout and closed at
-# once, nothing sent.
+# once, nothing sent; the process listening on it is the peer process id
+# macOS reports for a local socket (LOCAL_PEERPID).
 for r in records:
     path = r.pop('path')
     if len(records) == 1 and isinstance(path, str):
@@ -92,8 +107,13 @@ for r in records:
         try:
             sk.connect(path)
             r['socketAccepts'] = True
+            try:
+                r['listenerPid'] = sk.getsockopt(0, 2)
+            except OSError:
+                r['listenerPid'] = None
         except (OSError, socket.timeout):
             r['socketAccepts'] = False
+            r['listenerPid'] = None
         finally:
             sk.close()
 out['records'] = records
@@ -121,16 +141,25 @@ function look(offset = 0) {
 // A disconnection line, in the design record's words (taken from Claude
 // Code 2.1.319's own strings).
 const DISCONNECTION = /\b(reconnecting|disconnected)\b/i;
+// The connected word: Connected or Reconnected, each a whole word.
+const CONNECTED = /\b(?:Connected|Reconnected)\b/g;
 
-// The status word Connected in this output, with no disconnection line after
-// the last one.
+// The last Connected or Reconnected in this output, with no disconnection
+// line after it: Connected, Reconnecting, Reconnected reads connected.
 function connectedIn(text) {
-  let last = -1;
-  for (const m of text.matchAll(/\bConnected\b/g)) last = m.index;
-  return last >= 0 && !DISCONNECTION.test(text.slice(last));
+  let after = -1;
+  for (const m of text.matchAll(CONNECTED)) after = m.index + m[0].length;
+  return after >= 0 && !DISCONNECTION.test(text.slice(after));
 }
 
 const socketAccepts = (state) => state.records.length === 1 && state.records[0].socketAccepts === true;
+
+// The one record was written after the event (the target's clock, read before
+// the event) and the process it names is alive and is the one listening on
+// its socket.
+const liveRecordSince = (state, since) => state.records.length === 1 && state.records[0].alive
+  && typeof state.records[0].recordedAt === 'number' && state.records[0].recordedAt > since
+  && Number.isInteger(state.records[0].listenerPid) && state.records[0].listenerPid === state.records[0].pid;
 
 function refuseOwnUser(state) {
   assert.ok(!(state.uid === process.getuid() && state.host === os.hostname()),
@@ -148,9 +177,9 @@ function assertRunning(state, what) {
 }
 
 // Within two minutes of an event, exactly one session runs again: one record,
-// its process alive and new and its socket accepting a connection, one
-// server, and the server's own registration and Connected written after the
-// event with no disconnection line after it.
+// written after the event, its process alive and new and the one listening on
+// the record's socket, one server, and the server's connected word written
+// after the event with no disconnection line after it.
 async function assertBackWithinTwoMinutes(before, what) {
   const oldPid = before.records[0] && before.records[0].pid;
   const end = Date.now() + TWO_MINUTES;
@@ -159,11 +188,11 @@ async function assertBackWithinTwoMinutes(before, what) {
     state = look(before.logSize);
     const live = state.records.filter((r) => r.alive);
     if (state.records.length === 1 && live.length === 1 && live[0].pid !== oldPid && state.servers.length === 1
-      && /Session started/.test(state.logSince) && connectedIn(state.logSince) && socketAccepts(state)) return state;
+      && liveRecordSince(state, before.now) && connectedIn(state.logSince)) return state;
     if (Date.now() >= end) break;
     await sleep(5000);
   }
-  assert.fail(`${what}: within two minutes exactly one Squire session must be running again, registered and connected (Connected since the event, no disconnection line after it, the record's socket accepting a connection); ` +
+  assert.fail(`${what}: within two minutes exactly one Squire session must be running again, registered and connected (a session record written after the event whose process is alive and listens on its socket, Connected or Reconnected since the event, no disconnection line after it); ` +
     `records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
 }
 
@@ -189,13 +218,13 @@ test('the session restarted and then crashed is back within two minutes each tim
   // A wake-up fired at the restarted session arrives.
   const text = `Release check ${Date.now()}: nothing to do.`;
   t.after(() => {
-    const clean = onTarget(`/usr/bin/grep -l -F ${JSON.stringify(text)} "$HOME/Library/Application Support/Squire/wake-ups/"*.json | /usr/bin/xargs -I{} /bin/rm -f {}; ` +
-      `/usr/bin/grep -l -F ${JSON.stringify(text)} "$HOME/Library/Application Support/Squire/wake-ups/"*.json; true`);
+    const clean = onTarget(`/usr/bin/grep -l -F ${JSON.stringify(text)} ${HOME_ON_TARGET}/wake-ups/*.json | /usr/bin/xargs -I{} /bin/rm -f {}; ` +
+      `/usr/bin/grep -l -F ${JSON.stringify(text)} ${HOME_ON_TARGET}/wake-ups/*.json; true`);
     assert.equal(clean.stdout.trim(), '', `the wake-up state this test made must be gone from the target; left: ${clean.stdout}`);
   });
-  r = onTarget(`/usr/bin/python3 "$HOME/Library/Application Support/Squire/core/tools/wake-up.py" ${JSON.stringify(text)}`);
+  r = onTarget(`/usr/bin/python3 ${HOME_ON_TARGET}/core/tools/wake-up.py ${JSON.stringify(text)}`);
   assert.equal(r.status, 0, `a wake-up fired at the restarted session must be delivered (exit 0); got ${r.status} ${r.stdout} ${r.stderr}`);
-  const states = onTarget(`/bin/cat "$HOME/Library/Application Support/Squire/wake-ups/"*.json`);
+  const states = onTarget(`/bin/cat ${HOME_ON_TARGET}/wake-ups/*.json`);
   assert.ok(states.stdout.includes(text) && /"state":\s*"delivered"/.test(states.stdout),
     `the wake-up must be recorded delivered on the target; got ${states.stdout.slice(-600)}`);
 });

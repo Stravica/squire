@@ -1,0 +1,15 @@
+{
+  "cnId": "CN-069",
+  "path": "installer/Squire.app/Contents/MacOS/Squire#sq_step_claude_code",
+  "implementsAcIds": [
+    "AC-201-3",
+    "AC-201-4",
+    "AC-201-6",
+    "AC-1901-5"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:43:09.556Z",
+  "updatedAt": "2026-11-09T16:43:09.556Z"
+}

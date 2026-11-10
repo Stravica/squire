@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-062",
+  "path": "installer/Squire.app/Contents/MacOS/Squire#sq_consent_add",
+  "implementsAcIds": [
+    "AC-1901-5"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:42:52.402Z",
+  "updatedAt": "2026-11-09T16:42:52.402Z"
+}

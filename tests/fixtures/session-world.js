@@ -84,7 +84,13 @@ const ENVIRONMENT_FORBIDDEN = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', '
 // first on PATH, say). It answers the two commands the runner uses:
 //
 //   claude auth status         prints {"loggedIn": ...} and exits 0 when
-//                              signed in, 1 when not (as Claude Code does)
+//                              signed in, 1 when not (as Claude Code does);
+//                              like Claude Code on a Mac, which finds its
+//                              sign-in only when its environment names the
+//                              account, it answers not signed in when USER
+//                              is missing or empty, whatever else the
+//                              environment holds (LOGNAME alone does not
+//                              stand in for it)
 //   claude remote-control ...  a server that stays up until stopped, with one
 //                              session process in the server's process group,
 //                              as Claude Code's single-session server runs; it
@@ -106,8 +112,12 @@ const ENVIRONMENT_FORBIDDEN = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', '
 // as the prompt.
 //
 // Behaviour, changeable between calls with set():
-//   { signedIn: true }        auth status answers signed in (the default)
+//   { signedIn: true }        auth status answers signed in (the default),
+//                             when USER is set
 //   { signedIn: false }       auth status answers not signed in, exit 1
+//   { loginExpiresAt: <ISO> } auth status also prints when the sign-in ends,
+//                             as Claude Code 2.1.319 was measured to
+//   claude auth login         answers "Login successful.", exit 0
 //
 // Records, in the world:
 //   claude-code-calls.jsonl     one line per invocation: argv, cwd, pid, its
@@ -212,9 +222,16 @@ const argv = process.argv.slice(2);
 append(${JSON.stringify(callsFile)}, { argv, cwd: process.cwd(), pid: process.pid, pgid: pgidOf(process.pid),
   envNames: Object.keys(process.env).sort(), env, ownerClaude });
 if (argv[0] === 'auth' && argv[1] === 'status') {
-  const signedIn = how.signedIn !== false;
-  process.stdout.write(JSON.stringify({ loggedIn: signedIn, authMethod: signedIn ? 'claude.ai' : 'none' }, null, 2) + '\\n');
+  // With no USER, Claude Code cannot find its own sign-in.
+  const signedIn = how.signedIn !== false && Boolean(process.env.USER);
+  const out = { loggedIn: signedIn, authMethod: signedIn ? 'claude.ai' : 'none' };
+  if (signedIn && how.loginExpiresAt) out.loginExpiresAt = how.loginExpiresAt;
+  process.stdout.write(JSON.stringify(out, null, 2) + '\\n');
   process.exit(signedIn ? 0 : 1);
+}
+if (argv[0] === 'auth' && argv[1] === 'login') {
+  process.stdout.write('Login successful.\\n');
+  process.exit(0);
 }
 if (argv[0] === 'remote-control') {
   const child = spawn(process.execPath, [${JSON.stringify(sessionScript)}, String(process.pid)], { stdio: 'ignore' });
@@ -525,6 +542,7 @@ module.exports = {
   wakeUpsDir,
   wakeUpLogFile,
   waitFor,
+  sleep,
   layDownCore,
   installFakeClaudeCode,
   killFakes,

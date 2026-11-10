@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:13.053Z",
-  "updatedAt": "2026-11-07T18:02:36.723Z",
+  "updatedAt": "2026-11-09T15:01:48.091Z",
   "asA": "Squire owner",
   "iWant": "to set Squire up on my Mac from one download, one step at a time, without ever opening Terminal",
   "soThat": "I can install and start using my own assistant without technical help",
@@ -25,7 +25,7 @@
       "id": "AC-201-2",
       "description": "The installer sets Claude Code's auto-compact window to 500k tokens, and the health check reports any drift from it.",
       "testable": true,
-      "given": "A fresh Claude Code configuration, and configurations that set the auto-compact window otherwise: at the top level of the settings, per model, in the environment and on the command line",
+      "given": "A fresh Claude Code configuration for Squire's session, configurations that set the auto-compact window otherwise by the routes that reach that session (its config folder's settings, at the top level and per model; the environment Squire's runner gives it; the Mac's managed settings file and managed preferences), and the routes that do not reach it (the Squire owner's own Claude Code settings, environment and command line)",
       "when": "The installer runs and Squire's session starts, and a setting later changes the window",
       "then": "The session's effective auto-compact window is 500k tokens after the installer runs, and the health check reports the drift when a setting changes it.",
       "verification": "testOnly"
@@ -43,9 +43,45 @@
       "id": "AC-201-4",
       "description": "When set-up meets a problem, Squire explains it, keeps what is done and the Squire owner's things, and carries on or resumes without starting again.",
       "testable": true,
-      "given": "Set-up on a Mac where something goes wrong: macOS older than Squire needs, or a Claude plan below Pro; a download that fails, times out or is interrupted, or a second install started over a first; a sign-in that is cancelled, times out or has no internet; no phone to hand, or the laptop closed during the first conversation",
+      "given": "Set-up on a Mac where something goes wrong: macOS older than Squire needs, a Mac that cannot install Apple's tools for this user, a Claude plan the Squire owner says is below Pro, or a plan found below Pro at sign-in; a download that fails, times out or is interrupted, or a second install started over a first; a sign-in that is cancelled, times out or has no internet; no phone to hand, or the laptop closed during the first conversation",
       "when": "Squire's set-up runs into it",
-      "then": "An unsupported macOS or a plan below Pro stops set-up before it changes anything on the Mac, and Squire explains what is missing and the way on. A failed, timed-out or interrupted download, or a second install over a first, leaves no half-finished installation, keeps the Squire owner's data and settings, and resumes or repairs the one installation. A cancelled, timed-out or offline sign-in is explained, keeps the progress made and resumes without reinstalling. With no phone, or with the laptop closed during the first conversation, the Mac set-up still completes, the first conversation resumes where it stopped, and the phone can join later.",
+      "then": "An unsupported macOS, or a plan the Squire owner says is below Pro, stops set-up before it changes anything on the Mac. A plan found below Pro at sign-in stops set-up and leaves the Mac as set-up found it. Either way, Squire explains what is missing and the way on. A failed, timed-out or interrupted download, or a second install over a first, leaves no half-finished installation, keeps the Squire owner's data and settings, and resumes or repairs the one installation. A cancelled, timed-out or offline sign-in is explained, keeps the progress made and resumes without reinstalling. With no phone, or with the laptop closed during the first conversation, the Mac set-up still completes, the first conversation resumes where it stopped, and the phone can join later.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-5",
+      "description": "When a source that could change Squire's compaction window cannot be read, the health check says it cannot confirm the window.",
+      "testable": true,
+      "given": "Squire set up, and a source that could set the session's auto-compact window which exists but cannot be read: the Mac's managed settings file or folder, or its managed preferences for Claude Code",
+      "when": "The health check runs",
+      "then": "The health check says it cannot confirm the compaction window and names the source it could not read; it never reports the window as confirmed and never stays silent.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-6",
+      "description": "A set-up step whose result Squire cannot confirm is run again from its start and is never counted as done.",
+      "testable": true,
+      "given": "Set-up on a Mac where the result of a step cannot be confirmed: Claude Code's launcher is present but the version it points to is incomplete, or Apple's tools still report that they are installing",
+      "when": "Squire's set-up reaches that step, or is run again after it",
+      "then": "Squire runs the step again from its start and does not record it as done until its result is confirmed; a later run never skips it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-7",
+      "description": "When set-up cannot read a fact about the Mac it needs, it refuses before changing anything, saying what it could not read and the way on.",
+      "testable": true,
+      "given": "A Mac whose facts set-up must read cannot be read: its macOS version reading is missing, fails or is not a version, its memory reading is missing, fails or is not a whole number, or, with Apple's tools absent, the list of the user's groups cannot be read",
+      "when": "The Squire owner opens Squire's download",
+      "then": "Set-up refuses before it changes anything on the Mac, names what it could not read and the way on, and never asks the owner for that fact or assumes it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-8",
+      "description": "Before Squire's Claude sign-in ends, Squire warns its owner and, on the owner's yes, signs in again with no Terminal.",
+      "testable": true,
+      "given": "Squire set up, with its Claude sign-in due to end within seven days, and the day it ends readable without touching the sign-in's secret",
+      "when": "Squire's background run checks the sign-in, and the Squire owner says yes to signing in again",
+      "then": "Squire tells the owner through its own session, at most once a day, the day the sign-in ends and the one action to take; on the owner's yes it runs the sign-in again into Squire's own Claude Code configuration, opening the browser's sign-in page, with no Terminal and nothing else.",
       "verification": "testOnly"
     }
   ]

@@ -520,16 +520,17 @@ test('the SessionStart hook given a messaging socket path where no socket is and
   assert.deepEqual(s.sessionRecords(world), [], `with no socket there may be no session record; found ${JSON.stringify(s.sessionRecords(world))}`);
 });
 
-test('lay-down writes the two launchd agents that run the installed runner and wake-up router from the Squire home, the runner kept alive and started at load, and loads neither into the domain of whoever runs the tests', { timeout: 60000 }, (t) => {
+test('lay-down writes the three launchd agents that run the installed runner, wake-up router and backup from the Squire home, the runner kept alive and started at load, and loads none of them into the domain of whoever runs the tests', { timeout: 60000 }, (t) => {
   const world = w.makeWorld();
   t.after(() => w.cleanUp(world));
   const release = path.join(world.root, 'release');
   w.copyTree(w.CORE, release);
   const installed = s.layDownCore(world, release);
   const agents = s.launchAgents(world);
-  assert.equal(agents.length, 2, `lay-down must write two launchd agents under ~/Library/LaunchAgents; found ${agents.map((a) => path.basename(a.file)).join(', ') || 'none'}`);
+  // Three, not two: ADR-004 line 16 has the same lay-down write the nightly backup's agent, com.stravica.squire.backup.
+  assert.equal(agents.length, 3, `lay-down must write three launchd agents under ~/Library/LaunchAgents; found ${agents.map((a) => path.basename(a.file)).join(', ') || 'none'}`);
   const labels = agents.map((a) => a.plist.Label);
-  assert.equal(new Set(labels).size, 2, `each agent must have its own label; got ${labels}`);
+  assert.equal(new Set(labels).size, 3, `each agent must have its own label; got ${labels}`);
   for (const a of agents) {
     assert.equal(path.basename(a.file), `${a.plist.Label}.plist`, `an agent's file must be named for its label; got ${path.basename(a.file)}`);
     assert.equal(a.plist.EnvironmentVariables && a.plist.EnvironmentVariables.SQUIRE_HOME, world.home, `${a.plist.Label} must name the Squire home (SQUIRE_HOME)`);

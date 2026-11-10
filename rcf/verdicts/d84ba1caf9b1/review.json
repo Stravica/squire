@@ -1,0 +1,62 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "d84ba1caf9b1111c1ed169ad538484a9e81bd27a",
+  "fbsIds": [
+    "FBS-003"
+  ],
+  "touchedAcIds": [
+    "AC-201-1",
+    "AC-201-2",
+    "AC-201-3",
+    "AC-201-4",
+    "AC-201-5",
+    "AC-201-6",
+    "AC-201-7",
+    "AC-201-8",
+    "AC-601-1",
+    "AC-601-2",
+    "AC-1101-1",
+    "AC-1101-2",
+    "AC-1101-3",
+    "AC-1901-5",
+    "AC-401-1",
+    "AC-401-2"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-201-5",
+      "text": "core/tools/health.py:293 reads a managed-settings.d entry only when os.path.isfile can stat it, so a drop-in that is a link into a folder the check cannot search is skipped with no line; on a set-up, healthy Mac the check then exits 0 and prints nothing, a pass over a source it could not read, while the same file made unreadable in a searchable folder gives cannot confirm. The design record's line 14 names a folder it cannot list or traverse."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1101-1",
+      "text": "core/tools/backup.py:114-122 deletes every file named .squire-partial-* under current/ at each run and line 168 never archives such a name, so an owner's file with that name is backed up and then deleted from the backup: once changed, its earlier copy is deleted, not archived; once removed, its last copy is deleted; after three runs the backup holds no copy of it. Nothing in the backup may be deleted (design record line 16)."
+    },
+    {
+      "id": "F-3",
+      "locus": "build",
+      "acId": "AC-201-7",
+      "text": "installer/Squire.app/Contents/MacOS/Squire:174 and :182 delete every space inside the macOS version and memory readings before checking them, so a version reading of '1 3' is taken as macOS 13 and set-up goes on to the plan window, and a memory reading holding a space is taken as a whole number; a reading that is not a version or a whole number is refused, never assumed (design record line 6)."
+    },
+    {
+      "id": "F-4",
+      "locus": "build",
+      "acId": "AC-201-4",
+      "text": "installer/Squire.app/Contents/MacOS/Squire:495-498 and :517 keep a pre-existing ~/.claude.json that is a link only as the link, so the installer's write through it changes the linked file, and the undo for a plan found below Pro leaves the installer's keys in that file while the stopped window says this Mac is as set-up found it; a ~/.claude that is a link likewise keeps the backups, downloads and sessions folders the installer made inside it (Squire:481 lists no linked folder's contents) under the same window."
+    },
+    {
+      "id": "F-5",
+      "locus": "build",
+      "acId": "AC-401-1",
+      "text": "core/tools/runner.py:228 and 254-275 hold back every session while set-up.json lacks phone, and a re-run of set-up over a finished set-up drops phone from the record when a step it repeats pauses (core/tools/set-up.py:199-200; the app's sq_not_done, Squire:322-326). With the owner's squire.json made unparseable and Squire's app opened again (paused at the Squire folder), a restarted runner held its lock and started no session within two minutes; the same Mac without the re-run had its session back within two minutes."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-09T17:59:57.477Z"
+}

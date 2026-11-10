@@ -1,14 +1,58 @@
 {
   "createdAt": "2026-11-07T17:40:40.865Z",
-  "updatedAt": "2026-11-07T17:40:40.865Z",
+  "updatedAt": "2026-11-09T15:16:33.322Z",
   "purpose": "Sets a name and personality through the real set-up path, then starts afresh and updates, and checks they are unchanged and reach the session that answers.",
   "testLevel": "integration",
   "acIds": [
-    "AC-601-1"
+    "AC-601-1",
+    "AC-601-2"
   ],
   "id": "TS-009",
   "usId": "US-601",
   "title": "Name and personality survive a fresh start and an update",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-009-set-ups-naming-step-writes-name-personality-owner",
+      "acId": "AC-601-1",
+      "description": "set-up's naming step writes the name and personality the owner gives into the owner's squire.json",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::set-up's naming step writes the name and personality the owner gives into the owner's squire.json"
+    },
+    {
+      "id": "TC-009-lay-down-writes-name-personality-into-what-squires",
+      "acId": "AC-601-1",
+      "description": "lay-down writes the name and personality into what Squire's session loads",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::lay-down writes the name and personality into what Squire's session loads"
+    },
+    {
+      "id": "TC-009-after-fresh-start-name-personality-present-unchanged-what",
+      "acId": "AC-601-1",
+      "description": "after a fresh start the name and personality are present and unchanged in what the session loads, and the session carries the name",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::after a fresh start the name and personality are present and unchanged in what the session loads, and the session carries the name"
+    },
+    {
+      "id": "TC-009-after-core-laid-down-again-from-changed-release",
+      "acId": "AC-601-1",
+      "description": "after core is laid down again from a changed release, the name and personality are unchanged in what the session loads and in its name",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::after core is laid down again from a changed release, the name and personality are unchanged in what the session loads and in its name"
+    },
+    {
+      "id": "TC-009-unkeepable-name-or-personality-asked-again",
+      "acId": "AC-601-2",
+      "description": "a name or personality that is empty, blank, too long, holds a control character or a new line, Squire's comment marks, a heading or a code fence is asked for again and never stored",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::a name or personality that is empty, blank, too long, holds a control character or a new line, Squire's comment marks, a heading or a code fence is asked for again and never stored"
+    },
+    {
+      "id": "TC-009-adversarial-name-personality-round-trip",
+      "acId": "AC-601-1",
+      "description": "a name and personality with Unicode, quotes, a colon and an instruction-like sentence reach the owner's squire.json, what the session loads and --name exactly as given, trimmed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::a name and personality with Unicode, quotes, a colon and an instruction-like sentence reach the owner's squire.json, what the session loads and --name exactly as given, trimmed"
+    }
+  ],
   "status": "draft"
 }

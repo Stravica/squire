@@ -1,0 +1,847 @@
+#!/bin/zsh -f
+# Squire's set-up: the app's own executable, opened from Finder.
+#
+# Everything before Apple's command line tools are present runs here, in
+# zsh: the Mac check, the plan the owner declares and the one yes (step yes);
+# Claude Code found or installed (claudeCode); the sign-in into Squire's
+# config folder and the plan read (signIn); Apple's tools (appleTools). Then
+# core's Python carries on from naming:
+#   /usr/bin/python3 -B Contents/Resources/core/tools/set-up.py <that core>
+#
+# The Mac's own commands run only from /usr/bin, /bin, /usr/sbin and /sbin
+# (under SQUIRE_SYSTEM_ROOT when it names an existing absolute folder), each
+# by its full path, in an environment built from nothing, stdin from
+# /dev/null, each call bounded; the PATH the app is opened with is never
+# read. Nothing is written before the one yes. set-up.json in the Squire home
+# records each step once its end state is seen; set-up.lock there keeps set-up
+# to one at a time for as long as this process lives.
+
+emulate -R zsh
+setopt extended_glob
+zmodload zsh/system zsh/datetime zsh/zselect zsh/stat || exit 1
+zmodload -F zsh/files b:zf_mkdir b:zf_rm b:zf_mv b:zf_ln b:zf_rmdir b:zf_chmod || exit 1
+
+typeset -g SQ_SELF=${0:A}
+typeset -ga SQ_STEPS=(yes claudeCode signIn appleTools naming ownerFolder layDown backup health phone firstConversation)
+typeset -g SQ_T_PLAN='Squire: your Claude plan'
+typeset -g SQ_T_SETUP='Squire: set up'
+typeset -g SQ_T_ASKPLAN='Squire: your plan'
+typeset -g SQ_T_CANNOT='Squire: cannot set up'
+typeset -g SQ_T_STOPPED='Squire: set-up stopped'
+typeset -g SQ_T_PAUSED='Squire: set-up paused'
+typeset -g SQ_INSTALL_URL='https://claude.ai/install.sh'
+typeset -ga SQ_CLAUDE_PLACES=(~/.local/bin/claude /usr/local/bin/claude /opt/homebrew/bin/claude)
+
+typeset -g SQ_ROOT= SQ_BAD_ROOT= SQ_PATH= SQ_USER= SQ_UMASK=022 SQ_TMP= SQ_ERR=/dev/null SQ_LOG=
+typeset -g SQ_APP_CORE= SQ_HOME= SQ_RECORD= SQ_LEDGER= SQ_LOCK_FD= SQ_CLAUDE= SQ_PLAN= SQ_PLAN_WORD=
+typeset -g SQ_REC=none SQ_RELEASE= SQ_DECLARED= SQ_NAME= SQ_PERSONALITY=
+typeset -g SQ_HAS_RELEASE= SQ_HAS_NAME= SQ_HAS_PERSONALITY=
+typeset -ga SQ_DONE SQ_ADDED_PATH SQ_ADDED_MADE SQ_ADDED_SAVED SQ_EXTRA SQ_LISTED
+
+# --------------------------------------------------------------- the seams
+
+# The system root, the system folders' PATH and the user's name.
+sq_env_init() {
+  if [[ -n ${SQUIRE_SYSTEM_ROOT-} ]]; then
+    if [[ $SQUIRE_SYSTEM_ROOT == /* && -d $SQUIRE_SYSTEM_ROOT ]]; then
+      SQ_ROOT=${SQUIRE_SYSTEM_ROOT%%/#}
+    else
+      SQ_BAD_ROOT=1
+    fi
+  fi
+  SQ_PATH=$SQ_ROOT/usr/bin:$SQ_ROOT/bin:$SQ_ROOT/usr/sbin:$SQ_ROOT/sbin
+  SQ_USER=${USERNAME:-${LOGNAME-}}
+}
+
+# sq_bounded <seconds> <output file> <command> [args...]: runs one command
+# by its full path in an environment built from nothing (SQ_EXTRA adds to
+# it), stdin from /dev/null, its errors to set-up's log. Returns its exit
+# status, or 124 when the bound passed and its process tree was killed.
+sq_bounded() {
+  local bound=$1 out=$2
+  shift 2
+  local -a env
+  env=($SQ_ROOT/usr/bin/env -i HOME=$HOME USER=$SQ_USER LOGNAME=$SQ_USER LANG=en_US.UTF-8 PATH=$SQ_PATH)
+  [[ -n ${TMPDIR-} ]] && env+=(TMPDIR=$TMPDIR)
+  env+=($SQ_EXTRA)
+  { umask $SQ_UMASK; exec $env "$@" } </dev/null >|$out 2>>$SQ_ERR &
+  local pid=$! end=$(( EPOCHREALTIME + bound ))
+  while kill -0 $pid 2>/dev/null; do
+    if (( EPOCHREALTIME >= end )); then
+      sq_kill_tree $pid
+      wait $pid 2>/dev/null
+      return 124
+    fi
+    zselect -t 2
+  done
+  wait $pid
+}
+
+# A process and everything it started, stopped first and then killed.
+sq_kill_tree() {
+  local kid
+  kill -STOP $1 2>/dev/null
+  $SQ_ROOT/usr/bin/env -i PATH=$SQ_PATH $SQ_ROOT/usr/bin/pgrep -P $1 </dev/null >|$SQ_TMP/kids.$1 2>/dev/null
+  for kid in ${(f)"$(<$SQ_TMP/kids.$1)"}; do
+    [[ $kid == <-> ]] && sq_kill_tree $kid
+  done
+  kill -KILL $1 2>/dev/null
+}
+
+# sq_out <seconds> <command> [args...]: a bounded call whose output is REPLY.
+sq_out() {
+  local bound=$1
+  shift
+  sq_bounded $bound $SQ_TMP/out "$@"
+  local rc=$?
+  REPLY=$(<$SQ_TMP/out)
+  return $rc
+}
+
+# sq_reading <seconds> <command> [args...]: a bounded call whose output, as
+# it was printed with only its own trailing newline dropped, is REPLY.
+sq_reading() {
+  local bound=$1 chunk
+  shift
+  sq_bounded $bound $SQ_TMP/out "$@"
+  local rc=$?
+  REPLY=
+  while sysread chunk; do REPLY+=$chunk; done <$SQ_TMP/out
+  REPLY=${REPLY%$'\n'}
+  return $rc
+}
+
+sq_plutil() {
+  sq_out 30 $SQ_ROOT/usr/bin/plutil "$@"
+}
+
+sq_log() {
+  [[ -n $SQ_LOG ]] || return 0
+  local stamp
+  strftime -s stamp '%Y-%m-%dT%H:%M:%S' $EPOCHSECONDS
+  print -r -- "$stamp set-up: $*" >>$SQ_LOG 2>/dev/null
+}
+
+# A path under the home folder as the owner reads it: ~/...
+sq_tilde() {
+  REPLY=$1
+  [[ $1 == $HOME/* ]] && REPLY="~/${1#$HOME/}"
+}
+
+# ----------------------------------------------------------------- windows
+
+# sq_window <title> <text> <button>...: REPLY is the button the owner chose,
+# empty when the window could not be answered.
+sq_window() {
+  local title=$1 text=$2 b list=
+  shift 2
+  for b in "$@"; do list+="${list:+, }\"$b\""; done
+  sq_bounded 3600 $SQ_TMP/window $SQ_ROOT/usr/bin/osascript -e 'on run argv' \
+    -e "display dialog (item 2 of argv) with title (item 1 of argv) buttons {$list} default button \"${argv[-1]}\"" \
+    -e 'end run' $title $text
+  local rc=$?
+  local out=$(<$SQ_TMP/window)
+  REPLY=
+  if (( rc == 0 )) && [[ $out == 'button returned:'* ]] && (( ${argv[(Ie)${out#button returned:}]} )); then
+    REPLY=${out#button returned:}
+  else
+    sq_log "window \"$title\" not answered (osascript exit $rc)"
+  fi
+}
+
+sq_cannot() {
+  sq_log "cannot set up: $1"
+  sq_window $SQ_T_CANNOT $1 OK
+}
+
+sq_paused() {
+  sq_log "paused: $1"
+  sq_window $SQ_T_PAUSED $1 OK
+}
+
+# The plan the owner declares: REPLY is the item chosen, empty when none.
+sq_plan_window() {
+  local choose="choose from list {\"Pro\", \"Max\", \"Team or Enterprise\", \"Free\", \"I'm not sure\"} with title (item 1 of argv) with prompt (item 2 of argv)"
+  sq_bounded 3600 $SQ_TMP/window $SQ_ROOT/usr/bin/osascript -e 'on run argv' -e $choose -e 'end run' \
+    $SQ_T_PLAN 'Which Claude plan is your Claude account on? Squire needs Pro or above.'
+  local rc=$?
+  local out=$(<$SQ_TMP/window)
+  REPLY=
+  case $out in
+    (Pro|Max|'Team or Enterprise'|Free|"I'm not sure") (( rc == 0 )) && REPLY=$out ;;
+  esac
+}
+
+# --------------------------------------------------------------- the Mac
+
+# Apple's command line tools: xcode-select -p exits 0 naming a folder that exists.
+sq_tools_present() {
+  sq_out 30 $SQ_ROOT/usr/bin/xcode-select -p || return 1
+  [[ -n ${REPLY%%$'\n'*} && -d ${REPLY%%$'\n'*} ]]
+}
+
+# The Mac check, before any write: every failing condition named, in order.
+# Each reading is taken as printed, only its own trailing newline dropped: a
+# reading that is not then a version, or a whole number, is refused.
+sq_mac_check() {
+  local -a said groups
+  local v mem major
+  if sq_reading 30 $SQ_ROOT/usr/bin/sw_vers -productVersion && v=$REPLY && [[ $v == <->(.<->)# ]]; then
+    major=${v%%.*}
+    if (( ${#major} > 6 || 10#$major < 13 )); then
+      said+=("This Mac runs macOS $v, and Squire needs macOS 13 or later. Update macOS in System Settings, then open Squire again.")
+    fi
+  else
+    said+=("Squire could not read this Mac's macOS version, so it cannot tell whether it is macOS 13 or later. Check for updates in System Settings, then open Squire again.")
+  fi
+  if sq_reading 30 $SQ_ROOT/usr/sbin/sysctl -n hw.memsize && mem=$REPLY && [[ $mem == <-> && ${#mem} -le 18 ]]; then
+    if (( 10#$mem < 4294967296 )); then
+      said+=("This Mac has less than 4 GB of memory, and Squire needs 4 GB or more.")
+    fi
+  else
+    said+=("Squire could not read how much memory this Mac has; it needs 4 GB or more.")
+  fi
+  if ! sq_tools_present; then
+    if sq_out 30 $SQ_ROOT/usr/bin/id -Gn; then
+      groups=(${=REPLY})
+      if (( ! ${groups[(Ie)admin]} )); then
+        said+=("Apple's command line tools are not on this Mac, and this account cannot install them. Ask whoever administers this Mac to install them, or set Squire up from an administrator's account.")
+      fi
+    else
+      said+=("Apple's command line tools are not on this Mac, and Squire could not read this account's groups to see whether it can install them. Ask whoever administers this Mac, or set Squire up from an administrator's account.")
+    fi
+  fi
+  if (( $#said )); then
+    sq_cannot "Squire cannot set up on this Mac yet."$'\n\n'"${(pj:\n\n:)said}"
+    return 1
+  fi
+}
+
+# ------------------------------------------------------------ the record
+
+# A JSON string for $1: REPLY.
+sq_json_str() {
+  local s=$1 out= c hex i
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  if [[ $s == *[[:cntrl:]]* ]]; then
+    for (( i = 1; i <= $#s; i++ )); do
+      c=$s[i]
+      if [[ $c == [[:cntrl:]] ]]; then
+        printf -v hex '\\u%04x' "'$c"
+        out+=$hex
+      else
+        out+=$c
+      fi
+    done
+    s=$out
+  fi
+  REPLY="\"$s\""
+}
+
+# Reads set-up.json: SQ_REC is none, bad or ok, and the record's fields are
+# read into SQ_DONE, SQ_ADDED_* and the rest only when it is ok.
+sq_record_read() {
+  SQ_REC=none SQ_DONE=() SQ_ADDED_PATH=() SQ_ADDED_MADE=() SQ_ADDED_SAVED=()
+  SQ_RELEASE= SQ_DECLARED= SQ_NAME= SQ_PERSONALITY= SQ_HAS_RELEASE= SQ_HAS_NAME= SQ_HAS_PERSONALITY=
+  [[ -e $SQ_RECORD || -L $SQ_RECORD || -e $SQ_RECORD.new || -L $SQ_RECORD.new ]] || return 0
+  SQ_REC=bad
+  [[ -e $SQ_RECORD.new || -L $SQ_RECORD.new ]] && return 0
+  [[ -f $SQ_RECORD && ! -L $SQ_RECORD ]] || return 0
+  sq_plutil -type done $SQ_RECORD && [[ $REPLY == array ]] || return 0
+  sq_plutil -type added $SQ_RECORD && [[ $REPLY == array ]] || return 0
+  sq_plutil -extract done json -o - $SQ_RECORD || return 0
+  local json=$REPLY part= step found= n i made obj path saved key
+  local -a done
+  [[ $json == '[]' ]] && found=1
+  for step in $SQ_STEPS; do
+    [[ -n $found ]] && break
+    part+="${part:+,}\"$step\""
+    done+=($step)
+    [[ $json == "[$part]" ]] && found=1
+  done
+  [[ -n $found ]] || return 0
+  [[ $json == '[]' ]] && done=()
+  sq_plutil -extract added raw -o - $SQ_RECORD || return 0
+  n=$REPLY
+  [[ $n == <-> ]] || return 0
+  local -a paths mades saveds
+  for (( i = 0; i < n; i++ )); do
+    sq_plutil -extract added.$i json -o - $SQ_RECORD || return 0
+    obj=$REPLY
+    [[ $obj == '{'*'}' && $obj == *'"path":"'* ]] || return 0
+    if [[ $obj == *'"made":"created"'* ]]; then
+      made=created
+    elif [[ $obj == *'"made":"changed"'* && $obj == *'"savedCopy":"'* ]]; then
+      made=changed
+    else
+      return 0
+    fi
+    sq_plutil -extract added.$i.path raw -o - $SQ_RECORD || return 0
+    path=$REPLY
+    [[ $path == /* ]] || return 0
+    saved=
+    if [[ $made == changed ]]; then
+      sq_plutil -extract added.$i.savedCopy raw -o - $SQ_RECORD || return 0
+      saved=$REPLY
+    fi
+    paths+=($path) mades+=($made) saveds+=($saved)
+  done
+  for key in release declared squireName personality; do
+    if sq_plutil -type $key $SQ_RECORD; then
+      [[ $REPLY == string ]] || return 0
+      sq_plutil -extract $key raw -o - $SQ_RECORD || return 0
+      case $key in
+        (release) SQ_RELEASE=$REPLY SQ_HAS_RELEASE=1 ;;
+        (declared) SQ_DECLARED=$REPLY ;;
+        (squireName) SQ_NAME=$REPLY SQ_HAS_NAME=1 ;;
+        (personality) SQ_PERSONALITY=$REPLY SQ_HAS_PERSONALITY=1 ;;
+      esac
+    fi
+  done
+  SQ_DONE=($done) SQ_ADDED_PATH=($paths) SQ_ADDED_MADE=($mades) SQ_ADDED_SAVED=("${saveds[@]}")
+  SQ_REC=ok
+}
+
+# Writes set-up.json whole, through the file beside it and a rename, 0600.
+sq_record_write() {
+  local out='{"done": [' step i
+  for (( i = 1; i <= $#SQ_DONE; i++ )); do
+    (( i > 1 )) && out+=', '
+    out+="\"$SQ_DONE[i]\""
+  done
+  out+='], "added": ['
+  for (( i = 1; i <= $#SQ_ADDED_PATH; i++ )); do
+    (( i > 1 )) && out+=', '
+    sq_json_str $SQ_ADDED_PATH[i]
+    out+="{\"path\": $REPLY, \"made\": \"$SQ_ADDED_MADE[i]\""
+    if [[ $SQ_ADDED_MADE[i] == changed ]]; then
+      sq_json_str $SQ_ADDED_SAVED[i]
+      out+=", \"savedCopy\": $REPLY"
+    fi
+    out+='}'
+  done
+  out+=']'
+  if [[ -n $SQ_HAS_RELEASE ]]; then sq_json_str $SQ_RELEASE; out+=", \"release\": $REPLY"; fi
+  if [[ -n $SQ_DECLARED ]]; then sq_json_str $SQ_DECLARED; out+=", \"declared\": $REPLY"; fi
+  if [[ -n $SQ_HAS_NAME ]]; then sq_json_str $SQ_NAME; out+=", \"squireName\": $REPLY"; fi
+  if [[ -n $SQ_HAS_PERSONALITY ]]; then sq_json_str $SQ_PERSONALITY; out+=", \"personality\": $REPLY"; fi
+  out+=$'}\n'
+  { print -rn -- $out >|$SQ_RECORD.new } 2>/dev/null || return 1
+  zf_chmod 600 $SQ_RECORD.new 2>/dev/null || return 1
+  zf_mv -f $SQ_RECORD.new $SQ_RECORD 2>/dev/null || return 1
+}
+
+# A step recorded done whose end state no longer holds, and whose run again
+# did not finish: done keeps only the steps before it.
+sq_not_done() {
+  local at=${SQ_DONE[(Ie)$1]}
+  (( at )) || return 0
+  SQ_DONE=(${SQ_DONE[1,at-1]})
+  sq_record_write
+}
+
+# sq_mark_done <step>: recorded done in order, the record written.
+sq_mark_done() {
+  (( ${SQ_DONE[(Ie)$1]} )) || SQ_DONE+=($1)
+  if ! sq_record_write; then
+    SQ_DONE=(${SQ_DONE:#$1})
+    sq_paused "Squire could not write its own record of set-up, so the step is not counted done. Open Squire again."
+    return 1
+  fi
+}
+
+# sq_added_add <path> <created|changed> [saved copy]: one entry per path,
+# the first kept.
+sq_added_add() {
+  (( ${SQ_ADDED_PATH[(Ie)$1]} )) && return 0
+  SQ_ADDED_PATH+=($1) SQ_ADDED_MADE+=($2) SQ_ADDED_SAVED+=("${3-}")
+}
+
+# ---------------------------------------------------- the lock and consent
+
+# One set-up at a time: a lock no live process holds is free.
+sq_lock() {
+  local lock=$SQ_HOME/set-up.lock
+  sq_tilde $SQ_HOME
+  local shown=$REPLY
+  if [[ -e $lock || -L $lock ]]; then
+    if [[ ! -f $lock || ! -r $lock || ! -w $lock ]]; then
+      sq_cannot "Squire cannot use its own folder, $shown: its set-up lock there cannot be opened. Let your account write there, then open Squire again."
+      return 1
+    fi
+  elif ! { : >>$lock } 2>/dev/null; then
+    sq_cannot "Squire cannot write in its own folder, $shown. Let your account write there, then open Squire again."
+    return 1
+  fi
+  if ! zsystem flock -t 0 -f SQ_LOCK_FD $lock 2>/dev/null; then
+    sq_cannot "Squire's set-up is already running. Finish that set-up, or quit it, then open Squire again."
+    return 1
+  fi
+}
+
+# sq_consent_has <what>: the approvals ledger of set-up's own holds the yes.
+sq_consent_has() {
+  [[ -f $SQ_LEDGER ]] || return 1
+  local line
+  for line in "${(@f)$(<$SQ_LEDGER)}"; do
+    [[ $line == "{\"consent\": \"$1\", \"at\": "<->"}" ]] && return 0
+  done
+  return 1
+}
+
+sq_consent_add() {
+  { print -r -- "{\"consent\": \"$1\", \"at\": $EPOCHSECONDS}" >>$SQ_LEDGER } 2>/dev/null
+}
+
+# A record set-up cannot adopt: set aside in the Squire home, never deleted.
+sq_set_aside() {
+  local stamp f
+  strftime -s stamp '%Y%m%dT%H%M%S' $EPOCHSECONDS
+  for f in $SQ_RECORD $SQ_RECORD.new; do
+    [[ -e $f || -L $f ]] || continue
+    zf_mv -f $f $SQ_HOME/set-up.bad-$stamp-$$-${f:t} 2>/dev/null
+  done
+  sq_log "a record set-up could not adopt was set aside as set-up.bad-$stamp-$$"
+}
+
+# ----------------------------------------------------------- step: yes
+
+sq_yes_text() {
+  REPLY="Squire will install these on this Mac:"$'\n\n'
+  REPLY+="• Claude Code, Anthropic's command line tool, which keeps itself up to date with its own background updates."$'\n'
+  if [[ -n $1 ]]; then
+    REPLY+="• Apple's command line tools, from Apple's own installer, which asks for an administrator's password."$'\n'
+  fi
+  REPLY+="• Squire itself, in your Library, with a folder of your own at ~/Squire."$'\n'
+  REPLY+="• Three background jobs: Squire's always-on session, its wake-ups, and a nightly backup of ~/Squire."$'\n\n'
+  REPLY+="Nothing else is installed."
+}
+
+# The declaration and the one yes. Returns 2 when the owner said Not now.
+sq_step_yes() {
+  if [[ $SQ_REC == ok && -n $SQ_DECLARED ]] && (( ${SQ_DONE[(Ie)yes]} )) && sq_consent_has install; then
+    return 0
+  fi
+  sq_plan_window
+  local declared=$REPLY
+  if [[ -z $declared || $declared == Free ]]; then
+    sq_cannot "Squire needs a Claude plan of Pro or above. Get Pro or above at claude.ai, then open Squire again."
+    return 1
+  fi
+  local absent=
+  sq_tools_present || absent=1
+  sq_yes_text $absent
+  sq_window $SQ_T_SETUP $REPLY 'Not now' Install
+  [[ $REPLY == Install ]] || return 2
+  local made_home=
+  if [[ ! -d $SQ_HOME ]]; then
+    if ! zf_mkdir -p -m 700 $SQ_HOME 2>/dev/null; then
+      sq_tilde $SQ_HOME
+      sq_cannot "Squire could not make its own folder, $REPLY. Let your account write there, then open Squire again."
+      return 1
+    fi
+    made_home=1
+  fi
+  if [[ -z $SQ_LOCK_FD ]]; then
+    sq_lock || return 1
+  fi
+  zf_mkdir -p -m 700 $SQ_HOME/logs 2>/dev/null && SQ_LOG=$SQ_HOME/logs/set-up.log SQ_ERR=$SQ_HOME/logs/set-up.log
+  if [[ $SQ_REC == bad ]]; then
+    sq_set_aside
+    SQ_REC=none
+  fi
+  if ! sq_consent_add install; then
+    sq_paused "Squire could not record your yes in its own folder. Open Squire again."
+    return 1
+  fi
+  SQ_DECLARED=$declared
+  [[ -n $made_home ]] && sq_added_add $SQ_HOME created
+  sq_log "the one yes given (declared: $declared)"
+  sq_mark_done yes
+}
+
+# ---------------------------------------------------- step: claudeCode
+
+# Claude Code found: a claude at the fixed places, the user's own and not
+# writable by others, that answers --version with a version. SQ_CLAUDE.
+sq_claude_found() {
+  local place
+  local -A st
+  SQ_CLAUDE=
+  for place in $SQ_CLAUDE_PLACES; do
+    [[ -f $place && -x $place ]] || continue
+    zstat -H st -- $place 2>/dev/null || continue
+    (( st[uid] == UID && (st[mode] & 8#022) == 0 )) || continue
+    sq_out 30 $place --version || continue
+    [[ $REPLY == <->.<->.<->* ]] || continue
+    SQ_CLAUDE=$place
+    return 0
+  done
+  return 1
+}
+
+# Every path in Claude Code's places, sorted: SQ_LISTED. A place that is a
+# link to a folder is listed inside too, for the installer writes through it.
+sq_list_places() {
+  local rel p
+  SQ_LISTED=()
+  for rel in .local .local/bin .local/share .local/state .cache .local/bin/claude .claude.json; do
+    p=$HOME/$rel
+    [[ -e $p || -L $p ]] && SQ_LISTED+=($p)
+  done
+  for rel in .local/share/claude .local/state/claude .cache/claude .claude; do
+    p=$HOME/$rel
+    [[ -e $p || -L $p ]] || continue
+    SQ_LISTED+=($p)
+    [[ -d $p ]] && SQ_LISTED+=($p/**/*(DN))
+  done
+  SQ_LISTED=(${(ou)SQ_LISTED})
+}
+
+# A copy of a file the installer changes, taken inside the Squire home before
+# it runs: bytes, mode and times; a link as its target. The installer writes
+# through a link, so what a link leads to is kept as well: a copy of the file
+# when it is there, and recorded created when it is not.
+sq_save_copy() {
+  local p=$1 saved to n=0
+  local -a link
+  (( ${SQ_ADDED_PATH[(Ie)$p]} )) && return 0
+  [[ -d $p && ! -L $p ]] && return 0
+  zf_mkdir -p -m 700 $SQ_HOME/saved 2>/dev/null || return 1
+  saved=$SQ_HOME/saved/$(( $#SQ_ADDED_PATH + 1 ))-${p:t}
+  zf_rm -f -- $saved 2>/dev/null
+  if [[ -L $p ]]; then
+    zstat -L -A link +link -- $p 2>/dev/null || return 1
+    zf_ln -s -- $link[1] $saved 2>/dev/null || return 1
+  else
+    sq_bounded 120 /dev/null $SQ_ROOT/bin/cp -p -- $p $saved || return 1
+  fi
+  sq_added_add $p changed $saved
+  [[ -L $p ]] || return 0
+  to=$p
+  while [[ -L $to ]] && (( n++ < 32 )); do
+    zstat -L -A link +link -- $to 2>/dev/null || return 1
+    if [[ $link[1] == /* ]]; then to=$link[1]; else to=${to:h}/$link[1]; fi
+  done
+  [[ -L $to ]] && return 0
+  if [[ -e $to ]]; then
+    sq_save_copy $to
+  else
+    sq_added_add $to created
+  fi
+}
+
+sq_step_claude_code() {
+  if sq_claude_found; then
+    (( ${SQ_DONE[(Ie)claudeCode]} )) && return 0
+    sq_mark_done claudeCode
+    return
+  fi
+  local rel p rc first
+  for rel in .local .local/bin .local/bin/claude .local/share .local/share/claude .local/share/claude/versions \
+      .local/state .local/state/claude .cache .cache/claude .claude .claude.json; do
+    p=$HOME/$rel
+    if [[ ! -e $p && ! -L $p ]]; then
+      sq_added_add $p created
+    elif [[ $rel == .claude.json || $rel == .local/bin/claude ]]; then
+      if ! sq_save_copy $p; then
+        sq_not_done claudeCode
+        sq_paused "Squire could not keep a copy of Claude Code's files before installing it, so it did not install it. Open Squire again."
+        return 1
+      fi
+    fi
+  done
+  if ! sq_record_write; then
+    sq_paused "Squire could not write its own record of set-up, so it did not install Claude Code. Open Squire again."
+    return 1
+  fi
+  sq_list_places
+  local -A before
+  for p in $SQ_LISTED; do before[$p]=1; done
+  local file=$SQ_HOME/claude-install.sh
+  zf_rm -f -- $file 2>/dev/null
+  sq_log "downloading Claude Code's installer"
+  sq_bounded 610 $SQ_TMP/curl $SQ_ROOT/usr/bin/curl -fsSL --max-time 600 -o $file $SQ_INSTALL_URL
+  rc=$?
+  first=
+  [[ -f $file && -s $file ]] && first=$(<$file)
+  if (( rc != 0 )) || [[ $first != '#!'* ]]; then
+    zf_rm -f -- $file 2>/dev/null
+    sq_log "the download did not finish (curl exit $rc)"
+    sq_not_done claudeCode
+    sq_paused "The download of Claude Code's installer did not finish, so nothing was installed. Check this Mac is online, then open Squire again."
+    return 1
+  fi
+  sq_log "running Claude Code's installer"
+  sq_bounded 600 $SQ_TMP/installer $SQ_ROOT/bin/bash $file
+  rc=$?
+  zf_rm -f -- $file 2>/dev/null
+  sq_list_places
+  for p in $SQ_LISTED; do
+    (( ${+before[$p]} )) || sq_added_add $p created
+  done
+  sq_record_write
+  if (( rc != 0 )) || ! sq_claude_found; then
+    sq_log "Claude Code's installer exited $rc, or its claude does not answer"
+    sq_not_done claudeCode
+    sq_paused "Claude Code did not finish installing. Open Squire again to install it once more."
+    return 1
+  fi
+  sq_mark_done claudeCode
+}
+
+# ------------------------------------------------------- step: signIn
+
+# Signed in to Squire's config folder: claude auth status there exits 0, the
+# folder's .claude.json holds oauthAccount, and loggedIn is not false. The
+# answer is left in $SQ_TMP/status for the plan read.
+sq_signed_in() {
+  [[ -n $SQ_CLAUDE ]] || return 1
+  SQ_EXTRA=(CLAUDE_CONFIG_DIR=$SQ_HOME/claude-config)
+  sq_bounded 30 $SQ_TMP/status $SQ_CLAUDE auth status
+  local rc=$?
+  SQ_EXTRA=()
+  (( rc == 0 )) || return 1
+  sq_plutil -type oauthAccount $SQ_HOME/claude-config/.claude.json && [[ $REPLY == dictionary ]] || return 1
+  if sq_plutil -type loggedIn $SQ_TMP/status; then
+    [[ $REPLY == bool ]] && sq_plutil -extract loggedIn raw -o - $SQ_TMP/status && [[ $REPLY == true ]] || return 1
+  fi
+  return 0
+}
+
+# The plan read: SQ_PLAN is ok, free or unknown.
+sq_plan_read() {
+  SQ_PLAN=unknown SQ_PLAN_WORD=
+  if sq_plutil -type subscriptionType $SQ_TMP/status && [[ $REPLY == string ]] \
+      && sq_plutil -extract subscriptionType raw -o - $SQ_TMP/status; then
+    SQ_PLAN_WORD=${(L)${REPLY//[[:space:]]/}}
+    case $SQ_PLAN_WORD in
+      (pro|max|ultra|team|enterprise) SQ_PLAN=ok ;;
+      (free) SQ_PLAN=free ;;
+    esac
+  fi
+}
+
+sq_step_sign_in() {
+  local config=$SQ_HOME/claude-config rc
+  if (( ${SQ_DONE[(Ie)signIn]} )) && sq_signed_in; then
+    return 0
+  fi
+  zf_mkdir -p -m 700 $config 2>/dev/null
+  sq_added_add $config created
+  sq_record_write
+  sq_log "signing in to Claude"
+  SQ_EXTRA=(CLAUDE_CONFIG_DIR=$config)
+  sq_bounded 900 $SQ_TMP/login $SQ_CLAUDE auth login
+  rc=$?
+  SQ_EXTRA=()
+  if (( rc != 0 )) || ! sq_signed_in; then
+    sq_log "the sign-in did not finish (exit $rc)"
+    sq_not_done signIn
+    if (( rc == 124 )); then
+      sq_paused "The Claude sign-in timed out: it was not finished within 15 minutes. Open Squire again to sign in; set-up carries on from there."
+    else
+      sq_paused "The Claude sign-in did not finish. Check this Mac is online, then open Squire again to sign in; set-up carries on from there."
+    fi
+    return 1
+  fi
+  sq_plan_read
+  sq_log "plan read: ${SQ_PLAN_WORD:-unreadable}"
+  if [[ $SQ_PLAN == free ]]; then
+    sq_undo
+    return 1
+  fi
+  if [[ $SQ_PLAN == unknown ]]; then
+    sq_window $SQ_T_ASKPLAN 'Squire could not confirm your plan; it needs Pro or above. Continue?' Stop Continue
+    case $REPLY in
+      (Continue)
+        if ! sq_consent_add plan; then
+          sq_not_done signIn
+          sq_paused "Squire could not record your answer in its own folder. Open Squire again."
+          return 1
+        fi
+        ;;
+      (Stop)
+        sq_undo
+        return 1
+        ;;
+      (*)
+        sq_not_done signIn
+        sq_paused "Set-up stopped at your plan: the window closed without an answer. Open Squire again to carry on."
+        return 1
+        ;;
+    esac
+  fi
+  sq_mark_done signIn
+}
+
+# A plan below Pro: Squire's config folder signed out, then each entry in
+# added undone, newest first; the Squire home removed when set-up made it and
+# every step succeeded; the stopped window names what is kept or failed.
+sq_undo() {
+  local -a failed kept keep_path keep_made keep_saved
+  local i p made saved signout_failed= shown
+  sq_log "a plan below Pro: undoing what set-up added"
+  if [[ -n $SQ_CLAUDE ]]; then
+    SQ_EXTRA=(CLAUDE_CONFIG_DIR=$SQ_HOME/claude-config)
+    if ! sq_bounded 30 $SQ_TMP/logout $SQ_CLAUDE auth logout; then
+      failed+=("signing Squire's Claude Code out of its Claude account")
+      signout_failed=1
+    fi
+    SQ_EXTRA=()
+  fi
+  for (( i = $#SQ_ADDED_PATH; i >= 1; i-- )); do
+    p=$SQ_ADDED_PATH[i] made=$SQ_ADDED_MADE[i] saved=$SQ_ADDED_SAVED[i]
+    sq_tilde $p
+    shown=$REPLY
+    if [[ $p == $SQ_HOME || $p == $SQ_HOME/* ]]; then
+      if [[ $p == $SQ_HOME || ( $p == $SQ_HOME/claude-config && -n $signout_failed ) ]]; then
+        keep_path=($p $keep_path) keep_made=($made $keep_made) keep_saved=("$saved" "${keep_saved[@]}")
+      fi
+      continue
+    fi
+    if [[ $made == created ]]; then
+      if [[ -d $p && ! -L $p ]]; then
+        if ! zf_rmdir -- $p 2>/dev/null; then
+          if [[ -n $p/*(#qDN[1]) ]]; then
+            kept+=($shown)
+          else
+            failed+=("removing $shown")
+            keep_path=($p $keep_path) keep_made=($made $keep_made) keep_saved=("$saved" "${keep_saved[@]}")
+          fi
+        fi
+      elif [[ -e $p || -L $p ]]; then
+        if ! zf_rm -f -- $p 2>/dev/null; then
+          failed+=("removing $shown")
+          keep_path=($p $keep_path) keep_made=($made $keep_made) keep_saved=("$saved" "${keep_saved[@]}")
+        fi
+      fi
+    else
+      if [[ -n $saved && ( -e $saved || -L $saved ) && ! ( -d $p && ! -L $p ) ]] \
+          && { zf_rm -f -- $p 2>/dev/null; zf_mv -f -- $saved $p 2>/dev/null }; then
+        :
+      else
+        failed+=("restoring $shown as it was")
+        keep_path=($p $keep_path) keep_made=($made $keep_made) keep_saved=("$saved" "${keep_saved[@]}")
+      fi
+    fi
+  done
+  local home_made= at=${SQ_ADDED_PATH[(Ie)$SQ_HOME]}
+  (( at )) && [[ $SQ_ADDED_MADE[at] == created ]] && home_made=1
+  if (( $#failed == 0 )) && [[ -n $home_made ]]; then
+    SQ_LOG= SQ_ERR=/dev/null
+    zf_rm -rf -- $SQ_HOME 2>/dev/null
+    [[ -e $SQ_HOME ]] && failed+=("removing Squire's own folder")
+  elif (( $#failed == 0 )); then
+    zf_rm -rf -- $SQ_HOME/claude-config $SQ_HOME/saved 2>/dev/null
+    SQ_ADDED_PATH=() SQ_ADDED_MADE=() SQ_ADDED_SAVED=() SQ_DONE=()
+    sq_record_write
+  else
+    SQ_ADDED_PATH=($keep_path) SQ_ADDED_MADE=($keep_made) SQ_ADDED_SAVED=("${keep_saved[@]}") SQ_DONE=()
+    sq_record_write
+  fi
+  local text="Squire needs a Claude plan of Pro or above"
+  [[ -n $SQ_PLAN_WORD ]] && text+=", and this Claude account's plan reads as ${SQ_PLAN_WORD}"
+  text+=". Get Pro or above at claude.ai, then open Squire again."
+  if (( $#failed == 0 && $#kept == 0 )); then
+    text+=$'\n\n'"Everything set-up added has been taken away: this Mac is as set-up found it."
+  fi
+  if (( $#kept )); then
+    text+=$'\n\n'"Kept: ${(j:, :)kept}, because something other than set-up wrote in it while set-up ran. Everything else set-up added has been taken away."
+  fi
+  if (( $#failed )); then
+    text+=$'\n\n'"Squire could not finish undoing: ${(j:; :)failed}. Squire's record keeps these, so opening Squire again can finish them."
+  fi
+  sq_log "stopped: $text"
+  sq_window $SQ_T_STOPPED $text OK
+}
+
+# --------------------------------------------------- step: appleTools
+
+sq_apple_tools_answer() {
+  sq_tools_present && sq_bounded 60 /dev/null $SQ_ROOT/usr/bin/python3 -B -V
+}
+
+# Apple's tools: checked before the step starts and again after it ends;
+# recorded done only on the check after.
+sq_step_apple_tools() {
+  local end
+  if sq_apple_tools_answer; then
+    (( ${SQ_DONE[(Ie)appleTools]} )) && return 0
+    if sq_apple_tools_answer; then
+      sq_mark_done appleTools
+      return
+    fi
+  fi
+  sq_not_done appleTools
+  sq_log "starting Apple's command line tools installer"
+  sq_bounded 60 /dev/null $SQ_ROOT/usr/bin/xcode-select --install
+  end=$(( EPOCHREALTIME + 3600 ))
+  while (( EPOCHREALTIME < end )); do
+    if sq_apple_tools_answer; then
+      sq_mark_done appleTools
+      return
+    fi
+    zselect -t 1000
+  done
+  sq_paused "Apple's command line tools are not finished installing. Let Apple's installer finish, then open Squire again."
+  return 1
+}
+
+# ------------------------------------------------------ core's Python
+
+# The steps from naming on, in core's Python, as a child of this process so
+# that set-up's lock stays held.
+sq_python() {
+  local -a env
+  env=($SQ_ROOT/usr/bin/env -i HOME=$HOME USER=$SQ_USER LOGNAME=$SQ_USER LANG=en_US.UTF-8 PATH=$SQ_PATH)
+  [[ -n ${TMPDIR-} ]] && env+=(TMPDIR=$TMPDIR)
+  [[ -n ${SQUIRE_HOME-} ]] && env+=(SQUIRE_HOME=$SQUIRE_HOME)
+  [[ -n $SQ_ROOT ]] && env+=(SQUIRE_SYSTEM_ROOT=$SQ_ROOT)
+  $env $SQ_ROOT/usr/bin/python3 -B $SQ_APP_CORE/tools/set-up.py $SQ_APP_CORE </dev/null 2>>$SQ_ERR
+}
+
+# ------------------------------------------------------------------ main
+
+sq_main() {
+  local rc base
+  sq_env_init
+  SQ_UMASK=$(umask)
+  umask 077
+  base=${TMPDIR:-/tmp}
+  SQ_TMP=${base%%/#}/squire-set-up.$$.$EPOCHSECONDS
+  zf_mkdir -m 700 $SQ_TMP 2>/dev/null || return 1
+  trap 'zf_rm -rf -- $SQ_TMP 2>/dev/null' EXIT
+  if [[ -n $SQ_BAD_ROOT ]]; then
+    SQ_PATH=/usr/bin:/bin:/usr/sbin:/sbin
+    sq_cannot "Squire was opened with a system folder setting it cannot use. Open Squire from Finder, then try again."
+    return 1
+  fi
+  SQ_APP_CORE=${SQ_SELF:h:h}/Resources/core
+  if [[ ! -r $SQ_APP_CORE/tools/set-up.py || ! -r $SQ_APP_CORE/tools/lay-down.py || ! -r $SQ_APP_CORE/lib/squire.py ]]; then
+    sq_cannot "This copy of Squire is damaged: part of it is missing. Fetch Squire again, then open it."
+    return 1
+  fi
+  SQ_HOME=${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}
+  SQ_RECORD=$SQ_HOME/set-up.json
+  SQ_LEDGER=$SQ_HOME/set-up-approvals.jsonl
+  if [[ -d $SQ_HOME ]]; then
+    sq_lock || return 1
+    SQ_LOG=$SQ_HOME/logs/set-up.log SQ_ERR=$SQ_HOME/logs/set-up.log
+    zf_mkdir -p -m 700 $SQ_HOME/logs 2>/dev/null || SQ_LOG= SQ_ERR=/dev/null
+  fi
+  sq_mac_check || return 1
+  sq_record_read
+  sq_step_yes
+  rc=$?
+  (( rc == 2 )) && return 0
+  (( rc == 0 )) || return 1
+  sq_step_claude_code || return 1
+  sq_step_sign_in || return 1
+  sq_step_apple_tools || return 1
+  sq_python
+}
+
+sq_main "$@"
+exit $?

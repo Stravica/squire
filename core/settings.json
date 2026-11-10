@@ -47,5 +47,6 @@
       }
     ]
   },
+  "autoCompactWindow": 500000,
   "crossSessionInbound": "accept"
 }

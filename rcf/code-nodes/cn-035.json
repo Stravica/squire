@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-035",
+  "path": "core/tools/backup.py#Backup",
+  "implementsAcIds": [
+    "AC-1101-1",
+    "AC-1101-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-09T16:41:36.164Z",
+  "updatedAt": "2026-11-09T16:41:36.164Z"
+}

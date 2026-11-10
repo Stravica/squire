@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:40.589Z",
-  "updatedAt": "2026-11-07T17:40:40.589Z",
+  "updatedAt": "2026-11-09T15:02:23.125Z",
   "purpose": "Walks the whole first-run journey under a fresh macOS user, from the download to the first reply from the Squire, as one path. Takes the target host as a parameter.",
   "testLevel": "e2e",
   "acIds": [
@@ -9,6 +9,14 @@
   "id": "TS-008",
   "usId": "US-201",
   "title": "Fresh Mac: installer to first reply",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-008-first-run-journey-fresh-mac-user-from-download",
+      "acId": "AC-201-3",
+      "description": "the first-run journey on a fresh Mac user: from the download, every set-up step runs in order without Terminal, and the owner gets a first reply from their Squire, named",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-3-install.test.js::the first-run journey on a fresh Mac user: from the download, every set-up step runs in order without Terminal, and the owner gets a first reply from their Squire, named"
+    }
+  ],
   "status": "draft"
 }

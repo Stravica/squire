@@ -1,14 +1,93 @@
 {
   "createdAt": "2026-11-07T17:40:40.059Z",
-  "updatedAt": "2026-11-07T17:40:40.059Z",
-  "purpose": "Runs the real installer against fresh and conflicting Claude Code configurations (top-level, per-model, environment, command line), reads the effective window, and checks that the health check reports drift.",
+  "updatedAt": "2026-11-09T18:32:58.502Z",
+  "purpose": "Runs the real set-up, lay-down, runner and health check against fresh and conflicting Claude Code configurations (top level, per model, environment, command line, managed settings), reads what reaches the session, checks that the health check reports drift, and that it says it cannot confirm the window when a source cannot be read.",
   "testLevel": "integration",
   "acIds": [
-    "AC-201-2"
+    "AC-201-2",
+    "AC-201-5"
   ],
   "id": "TS-006",
   "usId": "US-201",
   "title": "Installer sets and the health check guards the auto-compact window",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-006-cores-settings-carry-auto-compact-window-500000-tokens",
+      "acId": "AC-201-2",
+      "description": "core's settings carry an auto-compact window of 500000 tokens, and lay-down lays the same settings into Squire's config folder",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::core's settings carry an auto-compact window of 500000 tokens, and lay-down lays the same settings into Squire's config folder"
+    },
+    {
+      "id": "TC-006-window-reaches-squires-session-only-from-config-folder",
+      "acId": "AC-201-2",
+      "description": "the window reaches Squire's session only from its config folder: the owner's own settings, a window variable around the runner and a stray --autocompact never reach it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::the window reaches Squire's session only from its config folder: the owner's own settings, a window variable around the runner and a stray --autocompact never reach it"
+    },
+    {
+      "id": "TC-006-health-check-names-window-other-than-500000-squires",
+      "acId": "AC-201-2",
+      "description": "the health check names a window other than 500000 in Squire's config folder, at the top level and per model, and in the runner's environment",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::the health check names a window other than 500000 in Squire's config folder, at the top level and per model, and in the runner's environment"
+    },
+    {
+      "id": "TC-006-health-check-names-window-other-than-500000-macs",
+      "acId": "AC-201-2",
+      "description": "the health check names a window other than 500000 in the Mac's managed settings file, its drop-in folder and the managed preferences",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::the health check names a window other than 500000 in the Mac's managed settings file, its drop-in folder and the managed preferences"
+    },
+    {
+      "id": "TC-006-model-whose-context-window-smaller-than-500k-not",
+      "acId": "AC-201-2",
+      "description": "a model that runs below 500k is not drift for a window at or above its own, while the same window for a 1M model is named",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::a model that runs below 500k is not drift for a window at or above its own, while the same window for a 1M model is named"
+    },
+    {
+      "id": "TC-006-when-managed-settings-file-exists-but-cannot-be",
+      "acId": "AC-201-5",
+      "description": "when the managed settings file exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::when the managed settings file exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence"
+    },
+    {
+      "id": "TC-006-when-managed-settings-drop-exists-but-cannot-be",
+      "acId": "AC-201-5",
+      "description": "when a managed settings drop-in exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::when a managed settings drop-in exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence"
+    },
+    {
+      "id": "TC-006-when-managed-preferences-exists-but-cannot-be-read",
+      "acId": "AC-201-5",
+      "description": "when the managed preferences exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::when the managed preferences exists but cannot be read, the health check says it cannot confirm the compaction window and names it, never a pass and never silence"
+    },
+    {
+      "id": "TC-006-per-user-managed-preferences-cannot-confirm",
+      "acId": "AC-201-5",
+      "description": "the per-user managed preferences file, a source that can override the window and that the health check does not read, gives cannot confirm the compaction window, naming it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::the per-user managed preferences file, a source that can override the window and that the health check does not read, gives cannot confirm the compaction window, naming it"
+    },
+    {
+      "id": "TC-006-unparseable-managed-settings-cannot-confirm",
+      "acId": "AC-201-5",
+      "description": "a managed settings file that does not parse gives cannot confirm the compaction window, naming it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::a managed settings file that does not parse gives cannot confirm the compaction window, naming it"
+    },
+    {
+      "id": "TC-006-drop-in-link-unsearchable-cannot-confirm",
+      "acId": "AC-201-5",
+      "description": "when a managed settings drop-in is a link into a folder the health check cannot search, the health check says it cannot confirm the compaction window and names the drop-in, never a pass and never silence",
+      "status": "pending",
+      "testPointer": "tests/acceptance/compaction-window.test.js::when a managed settings drop-in is a link into a folder the health check cannot search, the health check says it cannot confirm the compaction window and names the drop-in, never a pass and never silence"
+    }
+  ],
   "status": "draft"
 }
