@@ -146,15 +146,21 @@ function assertFresh(state, t) {
 // Claude Code at its fixed places, asked whether Squire's config folder (in
 // the Squire home given) is signed in.
 const SIGNED_IN = String.raw`
-import json, os, subprocess, sys
+import json, os, pwd, subprocess, sys
 home = sys.argv[1]
 out = {'claude': None, 'status': None, 'loggedIn': False, 'oauthAccount': False}
 for c in ('~/.local/bin/claude', '/usr/local/bin/claude', '/opt/homebrew/bin/claude'):
     c = os.path.expanduser(c)
     if os.access(c, os.X_OK):
         out['claude'] = c
-        env = {'HOME': os.path.expanduser('~'), 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'LANG': 'en_US.UTF-8',
-               'CLAUDE_CONFIG_DIR': os.path.join(home, 'claude-config')}
+        # The environment Squire itself gives Claude Code, built from nothing: Claude Code finds its sign-in only
+        # through the account's name, so USER and LOGNAME are the account this read runs as, from the account
+        # database; TMPDIR only when this read was given one.
+        user = pwd.getpwuid(os.getuid()).pw_name
+        env = {'HOME': os.path.expanduser('~'), 'USER': user, 'LOGNAME': user, 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin',
+               'LANG': 'en_US.UTF-8', 'CLAUDE_CONFIG_DIR': os.path.join(home, 'claude-config')}
+        if os.environ.get('TMPDIR'):
+            env['TMPDIR'] = os.environ['TMPDIR']
         r = subprocess.run([c, 'auth', 'status'], env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30)
         out['status'] = r.returncode
         try:
