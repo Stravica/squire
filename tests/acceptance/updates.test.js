@@ -357,6 +357,40 @@ test("nothing is installed with a yes given more than 30 minutes before the run:
 test("nothing is installed with a yes timed after now: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "future", "with a yes timed after now"));
 test("nothing is installed with a yes for a version no longer the staged one: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "otherVersion", "with a yes for a version no longer the staged one"));
 
+// The staged release changed after the offer, before the owner's yes is acted
+// on: a staged file alone, or a staged file and the staged manifest's digest
+// for it together, so that only the signature, checked again, can tell.
+async function stagedChanged(t, how, what) {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
+  R.owner(rw, SESSION, `yes ${a.id}`);
+  const dir = path.join(rw.home, 'staging', NEXT);
+  const file = path.join(dir, 'core', 'tools', 'backup.py');
+  assert.ok(fs.existsSync(file), `the world changes a staged file, which must be there; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
+  fs.appendFileSync(file, '# changed after the offer\n');
+  if (how === 'manifest') {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+    manifest.files['tools/backup.py'] = w.sha256(fs.readFileSync(file));
+    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  }
+  const before = R.untouched(rw);
+  const sentBefore = R.wakeUpIds(rw);
+  R.tick(rw);
+  const sent = R.newWakeUps(rw, sentBefore);
+  assert.deepEqual(updated(sent, NEXT), [], `${what}: nothing may be installed on the owner's yes; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, rw.appCore), `${what}: the installed core must still be the installed release's`);
+  const moved = R.untouchedDifferences(before, R.untouched(rw)).filter((d) => !d.includes(R.LEDGER));
+  assert.deepEqual(moved, [], `${what}: nothing of core, the kept releases or the agents may change, nor the owner's folder beyond the yes's use`);
+  const { h, lines } = refusalLines(rw, NEXT);
+  assert.equal(lines.length, 1, `${what}: the health check must name the refusal on exactly one line, "update: Squire refused release ${NEXT}: <reason>; nothing was changed"; got ${w.describe(h)}`);
+  assert.ok(!R.staged(rw).includes(NEXT), `${what}: the changed staging is removed, so it is never offered again`);
+}
+
+test("a staged file changed after the offer is found when the staged release is checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'file', 'a staged file changed after the offer'));
+test("a staged file and the staged manifest's digest for it, changed together after the offer, are found by the signature checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'manifest', 'a staged file and its digest in the staged manifest changed after the offer'));
+
 test('while the health check names a fault no update is staged or offered, and once it is gone the next run stages and offers it', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
@@ -399,6 +433,28 @@ test('when the check after a rollback fails too, a health line names both versio
   const h = R.health(rw);
   const both = h.stdout.split('\n').filter((l) => l.includes(NEXT) && l.includes(R.INSTALLED));
   assert.ok(both.length >= 1, `a health line must name both versions; got ${w.describe(h)}`);
+  assert.ok(R.ticketLines(h.stdout).length >= 1, `the health check must offer a support ticket on its own line; got ${w.describe(h)}`);
+});
+
+test("a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const good = R.buildRelease(rw, { version: NEXT });
+  stage(rw, good);
+  const first = installOnYes(rw, good);
+  assert.equal(updated(first.sent, NEXT).length, 1, `the first signed update must install; sent ${JSON.stringify(first.sent)}`);
+  const bad = R.buildRelease(rw, { version: LATER, shape: 'runnerExits' });
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
+  stage(rw, bad, 'the next weekly check');
+  const kept = path.join(rw.home, 'releases', NEXT, 'core', 'tools', 'backup.py');
+  assert.ok(fs.existsSync(kept), 'the world changes a file of the kept previous release, which must be there');
+  fs.appendFileSync(kept, '# changed while kept\n');
+  const changed = fs.readFileSync(kept);
+  const { sent } = installOnYes(rw, bad, `${SESSION}-later`);
+  assert.deepEqual(rolledBack(sent, LATER, NEXT), [], `the changed previous release must never be laid down; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, bad), 'nothing is laid down over the new release: the installed core is still the new release\'s, file for file');
+  assert.ok(!fs.readFileSync(path.join(R.installedCore(rw), 'tools', 'backup.py')).equals(changed), 'the changed file never reaches the installed core');
+  const h = R.health(rw);
+  assert.ok(h.stdout.split('\n').some((l) => l.includes(LATER) && l.includes(NEXT)), `a health line must name both versions; got ${w.describe(h)}`);
   assert.ok(R.ticketLines(h.stdout).length >= 1, `the health check must offer a support ticket on its own line; got ${w.describe(h)}`);
 });
 

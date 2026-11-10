@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-10T21:04:16.096Z",
+  "updatedAt": "2026-11-10T21:05:28.147Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -402,6 +402,27 @@
       "description": "a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream"
+    },
+    {
+      "id": "TC-011-a-staged-file-changed-after-the-offer-is",
+      "acId": "AC-1401-1",
+      "description": "a staged file changed after the offer is found when the staged release is checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a staged file changed after the offer is found when the staged release is checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check"
+    },
+    {
+      "id": "TC-011-a-staged-file-and-the-staged-manifest-s",
+      "acId": "AC-1401-1",
+      "description": "a staged file and the staged manifest's digest for it, changed together after the offer, are found by the signature checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a staged file and the staged manifest's digest for it, changed together after the offer, are found by the signature checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check"
+    },
+    {
+      "id": "TC-011-a-kept-previous-release-changed-before-a",
+      "acId": "AC-1401-6",
+      "description": "a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered"
     }
   ],
   "status": "draft"
