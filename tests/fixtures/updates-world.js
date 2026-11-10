@@ -689,8 +689,18 @@ function accountNames() {
   return [short, (r.stdout || '').trim()].filter((x) => x && x.length >= 3);
 }
 
-function carriesAccountName(text) {
-  return accountNames().some((n) => new RegExp(`(^|[^A-Za-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^A-Za-z0-9])`, 'i').test(text));
+// True when the account's short or full name shows in text as a word of its
+// own. A closed-set value of the ticket (a health code, a known fix's name, an
+// agent's label) is left out of the search first, so an account that happens
+// to share a name with one (an account named runner, say) is not a false hit.
+function carriesAccountName(text, ticket = null) {
+  let scrubbed = text;
+  if (ticket) {
+    const closed = [...(ticket.healthCodes || []), ...(ticket.fixesTried || []), ...(ticket.agentsLoaded || []),
+      ...((ticket.lastErrors || []).map((e) => e && e.code))].filter((v) => typeof v === 'string');
+    for (const v of closed) scrubbed = scrubbed.split(JSON.stringify(v)).join('""');
+  }
+  return accountNames().some((n) => new RegExp(`(^|[^A-Za-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^A-Za-z0-9])`, 'i').test(scrubbed));
 }
 
 module.exports = {

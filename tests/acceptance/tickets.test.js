@@ -152,7 +152,7 @@ function assertDiagnosticsOnly(rw, bytes, places, what, extra = []) {
     for (const trace of R.plantedTraces(extra)) {
       assert.ok(!text.includes(trace), `${what}: the planted detail "${trace}" must not appear in ${name}`);
     }
-    assert.ok(!R.carriesAccountName(text), `${what}: the account's names must not appear in ${name}`);
+    assert.ok(!R.carriesAccountName(text, body), `${what}: the account's names must not appear in ${name}`);
   }
 }
 
