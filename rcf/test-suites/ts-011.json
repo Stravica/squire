@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-10T21:06:39.538Z",
+  "updatedAt": "2026-11-10T21:09:13.658Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -437,6 +437,27 @@
       "description": "an install record Squire cannot read (not JSON, cut short, naming a step there is not, naming releases that are not kept) is set aside, never adopted: Squire stays on the release current-release.json names, whole and checked, and one wake-up says which",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::an install record Squire cannot read (not JSON, cut short, naming a step there is not, naming releases that are not kept) is set aside, never adopted: Squire stays on the release current-release.json names, whole and checked, and one wake-up says which"
+    },
+    {
+      "id": "TC-011-when-the-file-the-launcher-points-at-is",
+      "acId": "AC-1401-9",
+      "description": "when the file the launcher points at is replaced at the same path, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the file the launcher points at is replaced at the same path, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-when-the-launcher-is-pointed-elsewhere",
+      "acId": "AC-1401-9",
+      "description": "when the launcher is pointed elsewhere and back between two runs of the scheduler, the next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the launcher is pointed elsewhere and back between two runs of the scheduler, the next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+    },
+    {
+      "id": "TC-011-a-change-to-claude-code-made-while",
+      "acId": "AC-1401-9",
+      "description": "a change to Claude Code made while Squire was stopped is reported once after Squire starts again: the runner's start keeps the record it had, and the change is reported in one wake-up with the health check's result",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a change to Claude Code made while Squire was stopped is reported once after Squire starts again: the runner's start keeps the record it had, and the change is reported in one wake-up with the health check's result"
     }
   ],
   "status": "draft"

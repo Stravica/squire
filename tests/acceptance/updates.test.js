@@ -721,6 +721,11 @@ async function claudeCodeChanged(t, change, what) {
   if (change === 'versionHangs') R.setVersionAnswer(rw, { hang: true });
   if (change === 'targetGone') R.setLauncherTarget(rw, null);
   if (change === 'older') R.setVersionAnswer(rw, '2.1.200');
+  if (change === 'sameTarget') R.setLauncherTarget(rw, R.CLAUDE_CODE, { replace: true });
+  if (change === 'relinked') {
+    R.setLauncherTarget(rw, '2.1.319-b');
+    R.setLauncherTarget(rw, R.CLAUDE_CODE);
+  }
   const before = R.wakeUpIds(rw);
   R.tick(rw);
   const sent = R.newWakeUps(rw, before).filter((x) => CHANGED.test(x));
@@ -733,6 +738,25 @@ test("when claude --version fails, the scheduler's next run counts it a change: 
 test("when claude --version never answers (bounded), the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade", LONG, (t) => claudeCodeChanged(t, "versionHangs", "claude --version never answers (bounded)"));
 test("when the launcher points at nothing, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade", LONG, (t) => claudeCodeChanged(t, "targetGone", "the launcher points at nothing"));
 test("when Claude Code is now an older version, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade", LONG, (t) => claudeCodeChanged(t, "older", "Claude Code is now an older version"));
+
+test("when the file the launcher points at is replaced at the same path, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade", LONG, (t) => claudeCodeChanged(t, "sameTarget", "the file the launcher points at replaced at the same path, with the same version answer"));
+test("when the launcher is pointed elsewhere and back between two runs of the scheduler, the next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade", LONG, (t) => claudeCodeChanged(t, "relinked", "the launcher pointed elsewhere and back between two runs"));
+
+test("a change to Claude Code made while Squire was stopped is reported once after Squire starts again: the runner's start keeps the record it had, and the change is reported in one wake-up with the health check's result", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  R.stopSquire(rw);
+  R.setVersionAnswer(rw, '2.1.400');
+  const before = R.wakeUpIds(rw);
+  await R.startSquire(rw);
+  R.tick(rw);
+  const sent = R.newWakeUps(rw, before).filter((x) => CHANGED.test(x));
+  assert.equal(sent.length, 1, `one wake-up must say Claude Code changed outside Squire while Squire was stopped; sent ${JSON.stringify(R.newWakeUps(rw, before))}`);
+  assert.ok(sent[0].includes('2.1.400'), `the wake-up must name the version Claude Code is now; got ${JSON.stringify(sent[0])}`);
+  const again = R.wakeUpIds(rw);
+  R.tick(rw);
+  assert.deepEqual(R.newWakeUps(rw, again).filter((x) => CHANGED.test(x)), [], 'the same change is never reported twice');
+  assertNoDowngrade(rw, sent, 'a change made while Squire was stopped');
+});
 
 test("when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again", LONG, async (t) => {
   const rw = await healthyWorld(t);

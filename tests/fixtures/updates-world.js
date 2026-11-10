@@ -492,15 +492,22 @@ if (argv[0] === '--version' || argv[0] === '-v') {
 
 // Points the launcher at versions/<name> (written if new), as an update of
 // Claude Code made outside Squire does; null leaves it pointing at nothing.
-function setLauncherTarget(rw, name) {
+// With replace, the file at versions/<name> is written again even though it
+// is there: new contents at the same path, put in place by a rename (a new
+// file), answering --version the same, as a reinstall of the same version
+// would leave it.
+function setLauncherTarget(rw, name, { replace = false } = {}) {
   const versions = path.join(rw.world.userHome, '.local', 'share', 'claude', 'versions');
   const bin = path.join(rw.world.userHome, '.local', 'bin');
   fs.mkdirSync(versions, { recursive: true });
   fs.mkdirSync(bin, { recursive: true });
   const target = path.join(versions, name || 'gone');
-  if (name && !fs.existsSync(target)) {
-    fs.writeFileSync(target, versionsScript(rw));
-    fs.chmodSync(target, 0o755);
+  if (name && (replace || !fs.existsSync(target))) {
+    rw.rewrites = (rw.rewrites || 0) + 1;
+    const extra = replace ? `// written again (${rw.rewrites})\n` : '';
+    fs.writeFileSync(`${target}.new`, versionsScript(rw) + extra);
+    fs.chmodSync(`${target}.new`, 0o755);
+    fs.renameSync(`${target}.new`, target);
   }
   const launcher = path.join(bin, 'claude');
   fs.rmSync(launcher, { force: true });
