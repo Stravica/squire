@@ -18,7 +18,7 @@
 // there), fresh (under 30 minutes old) and unused; then the check runs again
 // and its next run prints one plain line, "fixed: ...", "still: ..." or
 // "could not try: ...". A fault not on the list is named and nothing is
-// offered. The ticket half is a later round's; no case reads tickets.
+// offered here. The ticket half (round 4) is at the end of this file.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -204,7 +204,7 @@ test("not signed in is named with the way on, opening Squire's installer to sign
   assert.ok(lines.every((l) => !l.includes('--fix') && !l.includes('--request')), 'no command is offered or asked for the sign-in once it has ended: it is the owner\'s to make');
 });
 
-test('a moved settings file and a fault not on the list are named, and nothing is offered for either', { timeout: 120000 }, (t) => {
+test('a moved settings file and a fault not on the list are named, and no fix is offered on either one\'s line (a ticket offer has a line of its own)', { timeout: 120000 }, (t) => {
   // A regression guard: the health check named both, with no fix, at the
   // round's base; it stays so the known fixes never grow onto the owner's
   // own files or onto faults Squire cannot fix.

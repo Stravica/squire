@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:16.737Z",
-  "updatedAt": "2026-11-07T18:02:38.034Z",
+  "updatedAt": "2026-11-10T18:48:26.285Z",
   "asA": "Squire owner",
   "iWant": "when Squire cannot fix something, to see exactly what a support ticket will say and send it only if I say yes",
   "soThat": "I get help without giving away anything personal",
@@ -46,6 +46,24 @@
       "given": "A ticket the Squire owner has said yes to",
       "when": "Sending it fails, Squire is offline, or whether it arrived is unclear",
       "then": "The exact approved ticket is saved and shown as waiting to send; Squire retries it without sending it twice when it can, and never changes it without another yes.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-5",
+      "description": "A ticket field whose value is outside its closed set or pattern, or that the privacy patterns match, is left out of the ticket.",
+      "testable": true,
+      "given": "Diagnostics with a value outside its field's closed set or fixed pattern (a Mac model, a macOS version or a Claude Code version answer carrying words, names or addresses), or a value inside its pattern that the privacy patterns match (a card or phone number, an email address, the account's names)",
+      "when": "Squire builds a support ticket",
+      "then": "That field is dropped, the rest of the ticket is built from the allow-listed fields, and the value appears neither in the preview nor in anything sent.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-6",
+      "description": "An approved ticket whose send fails in any way is kept and retried exactly as approved, never sent changed.",
+      "testable": true,
+      "given": "A ticket the Squire owner said yes to, whose send fails, finds the intake offline, gets its answer only after the time allowed, or whose waiting file has changed since the yes",
+      "when": "Squire's scheduler runs",
+      "then": "The ticket stays waiting with a health line saying so, and is retried carrying the same bytes and ticket id until an answer in the 2xx range clears it, filed once; a changed ticket is never sent until the Squire owner says yes again to the changed text.",
       "verification": "testOnly"
     }
   ]

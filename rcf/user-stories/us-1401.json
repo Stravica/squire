@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-10T18:10:06.358Z",
+  "updatedAt": "2026-11-10T18:48:41.943Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -45,7 +45,7 @@
       "testable": true,
       "given": "A Squire owner's folder holding a profile, memory, files, the Squire's name and things Squire built for the Squire owner",
       "when": "A signed update installs, and an update that fails its health check is rolled back",
-      "then": "The Squire owner's folder hashes the same before the update, after it, and after the rollback.",
+      "then": "The Squire owner's folder hashes the same before the update, after it, and after the rollback, apart from Squire's own records inside it (the approvals ledger and Squire's state files there), whose only change is the one recorded use of the Squire owner's yes.",
       "verification": "testOnly"
     },
     {
@@ -55,6 +55,42 @@
       "given": "An update that fails to download, times out or is interrupted by a restart of the Mac; and, separately, Claude Code updated outside Squire",
       "when": "The Mac starts again after the failed or interrupted update, or Squire next runs after Claude Code changed",
       "then": "Squire starts on the previous healthy version or on the fully installed signed one, tells the Squire owner which, and leaves the Squire owner's folder unchanged. When Claude Code was updated outside Squire, Squire notices, runs its health check, and shows the Squire owner the result and any safe step to recover.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-6",
+      "description": "A release Squire's update check cannot fully check is refused, never installed.",
+      "testable": true,
+      "given": "A release the update check cannot run, read or parse: no ssh-keygen on the Mac, an ssh-keygen that fails or does not answer in time, a manifest that does not parse or carries a field the check does not know, a version that is not a version, an archive that does not unpack, a file the manifest lists that is missing, or a file present that it does not list",
+      "when": "Squire's update check fetches and checks it",
+      "then": "The release is refused as an unsigned one is: its download is removed, nothing of Squire's installed core, its kept releases, its agents or the Squire owner's folder changes, and the refusal is named on the health check.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-7",
+      "description": "An update and a rollback leave every entry of the Squire owner's folder as it was, whatever the entry.",
+      "testable": true,
+      "given": "A Squire owner's folder holding entries of every kind: a file no one may read, a file only its owner may read, a link to nothing, a link to a place outside the folder, an empty folder, a closed folder and a named pipe",
+      "when": "A signed update installs and is rolled back",
+      "then": "Every entry has the same relative path, type, permissions, bytes and link target after the rollback as before the install; an entry the comparison cannot read counts as changed, never as the same.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-8",
+      "description": "An install interrupted at any step, or a download that does not complete, leaves Squire on one whole, checked version and says which.",
+      "testable": true,
+      "given": "An install stopped at any of its named steps by a killed process, a restart of the Mac or a log-out; or a download that fails, never ends or is cut short",
+      "when": "Squire's runner next starts or its scheduler next runs",
+      "then": "Squire stays on the new release only when its files, the installed core and the signed manifest all match and the check passes, and is otherwise on the previous release; either way one message tells the Squire owner which, the unfinished install's record is gone, the Squire owner's folder is unchanged, and a download never reaches the installed core.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-9",
+      "description": "Any change to Claude Code that Squire cannot read as unchanged is checked and reported.",
+      "testable": true,
+      "given": "Claude Code's version answer or its launcher's target differs from what Squire's runner recorded at its start, or either cannot be read (a version answer that fails or never comes, a launcher pointing at nothing)",
+      "when": "Squire's scheduler next runs",
+      "then": "Squire runs its health check and tells the Squire owner its result in one message, with the known fixes it offers; a value it cannot read counts as a change, the same change is not reported twice, and no Claude Code downgrade is ever offered.",
       "verification": "testOnly"
     }
   ]
