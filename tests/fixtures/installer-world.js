@@ -32,7 +32,11 @@
 // --version, auth login, auth status (with the plan the test sets), auth
 // logout (or fails it) and remote-control (round 2's fake session, or an
 // account refusal before any session), and records each call's environment
-// names.
+// names. Claude Code on a Mac finds its sign-in only when its environment
+// names the account: run with no USER, it answered not signed in while its
+// config folder held the sign-in. So this fake's auth status answers not
+// signed in (loggedIn false, exit 1) when USER is missing or empty, whatever
+// else the environment holds; LOGNAME alone does not stand in for it.
 //
 // The answer source exists only in the test world. Squire ships no answer
 // file and no switch for one.
@@ -272,7 +276,8 @@ if (argv[0] === 'auth' && argv[1] === 'login') {
     process.exit(0);
   }
 } else if (argv[0] === 'auth' && argv[1] === 'status') {
-  const signedIn = Boolean(readState().oauthAccount);
+  // With no USER, Claude Code cannot find its own sign-in.
+  const signedIn = Boolean(process.env.USER) && Boolean(readState().oauthAccount);
   if (how.plan === 'unreadable' && signedIn) { process.stdout.write('Signed in.\\n'); process.exit(0); }
   const out = { loggedIn: signedIn, authMethod: signedIn ? 'claude.ai' : 'none', apiProvider: 'firstParty', configDirectory: configDir };
   if (signedIn && how.plan !== 'missing') out.subscriptionType = how.plan;
