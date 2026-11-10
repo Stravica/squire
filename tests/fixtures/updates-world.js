@@ -440,6 +440,9 @@ function startStandIns(rw) {
   const port = Number(fs.readFileSync(portFile, 'utf8'));
   rw.releaseHost = `http://127.0.0.1:${port}/releases/`;
   rw.intake = `http://127.0.0.1:${port}/tickets`;
+  // The other intake on the IPv6 loopback address: not the configured one.
+  const otherPort = path.join(rw.state, 'port-other');
+  rw.otherIntake = fs.existsSync(otherPort) ? `http://[::1]:${Number(fs.readFileSync(otherPort, 'utf8'))}/tickets` : null;
 }
 
 // Changes how the stand-ins answer from now on: { archive, latest, intake }.

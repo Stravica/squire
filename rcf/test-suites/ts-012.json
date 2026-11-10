@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-10T18:53:29.261Z",
+  "updatedAt": "2026-11-10T21:13:35.617Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -126,6 +126,41 @@
       "description": "two Squire homes have different install ids, made from nothing about the owner, the Mac or the account, and nothing is posted anywhere but the tickets",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::two Squire homes have different install ids, made from nothing about the owner, the Mac or the account, and nothing is posted anywhere but the tickets"
+    },
+    {
+      "id": "TC-012-an-approved-ticket-whose-file-and-the",
+      "acId": "AC-2001-6",
+      "description": "an approved ticket whose file and the digest in its state record are changed together after the yes is never sent: the yes holds the digest the floor recorded with the request",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose file and the digest in its state record are changed together after the yes is never sent: the yes holds the digest the floor recorded with the request"
+    },
+    {
+      "id": "TC-012-a-ticket-changed-between-its-preview-and",
+      "acId": "AC-2001-1",
+      "description": "a ticket changed between its preview and the owner's yes is never sent on that yes: the yes approves only the bytes its block showed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket changed between its preview and the owner's yes is never sent on that yes: the yes approves only the bytes its block showed"
+    },
+    {
+      "id": "TC-012-a-ticket-whose-configured-intake-changed",
+      "acId": "AC-2001-1",
+      "description": "a ticket whose configured intake changed after the yes is sent nowhere: neither to the address its preview showed nor to the new one",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket whose configured intake changed after the yes is sent nowhere: neither to the address its preview showed nor to the new one"
+    },
+    {
+      "id": "TC-012-an-approved-ticket-whose-post-is",
+      "acId": "AC-2001-6",
+      "description": "an approved ticket whose post is answered by a redirect is never sent where it points: the redirect is a send failure, and the ticket stays waiting",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose post is answered by a redirect is never sent where it points: the redirect is a send failure, and the ticket stays waiting"
+    },
+    {
+      "id": "TC-012-an-approved-ticket-is-cleared-only-by-an",
+      "acId": "AC-2001-6",
+      "description": "an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting"
     }
   ],
   "status": "draft"

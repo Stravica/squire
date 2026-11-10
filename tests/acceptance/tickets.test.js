@@ -276,6 +276,77 @@ test('a ticket file changed after the yes is never sent, and is sent as changed 
   assert.ok(posts[1].bytes.equals(changed), 'what is sent is exactly the changed bytes the owner said yes to');
 });
 
+// ------------------------------------------------- one yes, one set of bytes
+
+// The world changes a waiting ticket's file and, with it, the digest in its
+// state record, so the two still agree with each other: only the digest the
+// floor recorded with the request can tell.
+function changeTicket(rw, ticket) {
+  const changed = Buffer.from(ticket.bytes.toString('utf8').replace(/"createdAt":\s*(\d+)/, (m, n) => m.replace(n, String(Number(n) + 1))));
+  assert.ok(!changed.equals(ticket.bytes), 'the world changes the waiting ticket\'s file');
+  fs.writeFileSync(R.outboxFile(rw, ticket.id), changed);
+  const stateFile = path.join(rw.home, 'outbox', `${ticket.id}.state.json`);
+  const state = R.readJson(stateFile);
+  assert.ok(state, 'the world changes the ticket\'s state record, which must be there');
+  fs.writeFileSync(stateFile, JSON.stringify({ ...state, digest: w.sha256(changed) }) + '\n');
+  return changed;
+}
+
+test("an approved ticket whose file and the digest in its state record are changed together after the yes is never sent: the yes holds the digest the floor recorded with the request", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  approve(rw, ticket);
+  const changed = changeTicket(rw, ticket);
+  R.tick(rw);
+  assert.deepEqual(R.intakePosts(rw), [], 'a ticket changed after the yes, its state record with it, must never be sent');
+  const a = R.asked(rw, `${SESSION}-again`, ticket.request, 'the request to send the changed ticket');
+  R.assertBlockShape(a.block, [changed.toString('utf8')], 'the changed ticket waits for a yes to its own preview');
+});
+
+test("a ticket changed between its preview and the owner's yes is never sent on that yes: the yes approves only the bytes its block showed", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  const a = R.asked(rw, SESSION, ticket.request, 'the request to send the ticket');
+  changeTicket(rw, ticket);
+  R.owner(rw, SESSION, `yes ${a.id}`);
+  R.tick(rw);
+  assert.deepEqual(R.intakePosts(rw), [], 'bytes the owner was not shown must never be sent on the yes to the preview before them');
+});
+
+test("a ticket whose configured intake changed after the yes is sent nowhere: neither to the address its preview showed nor to the new one", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  approve(rw, ticket);
+  const releaseJson = path.join(R.installedCore(rw), 'release.json');
+  const config = R.readJson(releaseJson);
+  assert.ok(config && config.intake === rw.intake, 'the world changes the intake the installed core names, which must be the world\'s');
+  fs.writeFileSync(releaseJson, JSON.stringify({ ...config, intake: rw.intake.replace(/\/tickets$/, '/elsewhere') }, null, 2) + '\n');
+  R.tick(rw);
+  assert.deepEqual(R.hostRequests(rw).filter((r) => r.method === 'POST'), [], 'nothing may be posted anywhere once the intake changed after the yes');
+});
+
+async function redirected(t, mode, what) {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  approve(rw, ticket);
+  if (mode === 'redirectOther') assert.ok(rw.otherIntake, 'the world\'s other intake must be listening on the IPv6 loopback address');
+  R.standIns(rw, { intake: mode });
+  R.tick(rw);
+  const tried = posted(rw, ticket.id).filter((p) => p.server === 'intake' && p.path === new URL(rw.intake).pathname);
+  assert.equal(tried.length, 1, `${what}: the scheduler's run must try the configured intake once`);
+  const elsewhere = R.hostRequests(rw).filter((r) => r.server === 'other' || r.path.startsWith('/tickets/moved'));
+  assert.deepEqual(elsewhere, [], `${what}: a redirect is never followed: nothing may reach the place it points at`);
+  assert.ok(fs.existsSync(R.outboxFile(rw, ticket.id)), `${what}: a redirect is a send failure: the ticket stays in the outbox`);
+  assert.equal(waitingLines(rw, ticket.id).length, 1, `${what}: a health line must say the ticket is waiting to send`);
+}
+
+test("an approved ticket whose post is answered by a redirect is never sent where it points: the redirect is a send failure, and the ticket stays waiting", LONG, (t) => redirected(t, 'redirect', 'a redirect to another place on the intake'));
+test("an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting", LONG, (t) => redirected(t, 'redirectOther', 'a redirect to another host'));
+
 // ------------------------------------------------- the install id
 
 test('the install id is made at the first ticket: 32 lower-case hex digits kept in the Squire home for its user only, the same on every ticket from that home', LONG, async (t) => {
