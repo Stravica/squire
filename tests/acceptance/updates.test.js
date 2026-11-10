@@ -310,9 +310,10 @@ test("the floor's block for an install carries the version and the changelog exa
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
   const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  assert.ok(a.block.includes(NEXT), `the block must name the version; got ${JSON.stringify(a.block)}`);
-  assert.ok(a.block.includes(release.changelog), `the block must carry the changelog exactly as the manifest has it; got ${JSON.stringify(a.block)}`);
-  assert.ok(a.block.includes(R.FENCE_WORDS), `the block must end with the words that make the session show its text byte for byte inside a fenced code block; got ${JSON.stringify(a.block)}`);
+  // The version and the changelog exactly as the manifest has them, each as
+  // whole lines once, then one empty line and the relay words that make the
+  // session show the text byte for byte inside a fenced code block.
+  R.assertBlockShape(a.block, [NEXT, release.changelog], 'the floor\'s block for the install');
   R.owner(rw, SESSION, `yes ${a.id}`);
   const before = R.wakeUpIds(rw);
   R.tick(rw);
@@ -321,7 +322,8 @@ test("the floor's block for an install carries the version and the changelog exa
   assert.ok(R.coreIs(rw, release), 'the installed core must be the release\'s core, file for file');
   assert.equal((R.currentRelease(rw) || {}).current, NEXT, 'current-release.json must name the installed release');
   const kept = R.readJson(path.join(rw.home, 'releases', NEXT, 'manifest.json'));
-  assert.ok(kept && a.block.includes(kept.changelog), 'the changelog shown must be the installed release\'s, byte for byte');
+  assert.ok(kept, 'the installed release\'s manifest must be kept with it');
+  R.assertBlockShape(a.block, [kept.changelog], 'the changelog shown must be the installed release\'s, byte for byte');
   assert.deepEqual(R.keptReleases(rw), [R.INSTALLED, NEXT], 'the current release and the previous one are kept');
 });
 
@@ -344,7 +346,7 @@ async function notInstalled(t, variant, what) {
   assert.ok(R.coreIs(rw, rw.appCore), `${what}: the installed core must still be the installed release's`);
   if (variant === 'future' || variant === 'stale') {
     const again = R.asked(rw, `${SESSION}-again`, R.updateRequest(rw, NEXT), `${what}: the request asked again`);
-    assert.ok(again.block.includes(release.changelog), `${what}: the request is asked again with the changelog`);
+    R.assertBlockShape(again.block, [NEXT, release.changelog], `${what}: the request asked again, with the version and the changelog`);
   }
   if (variant === 'otherVersion') {
     assert.ok(R.staged(rw).includes('0.2.1') && !R.staged(rw).includes(NEXT), `the newer verified release must replace the staged one; staging holds ${JSON.stringify(R.staged(rw))}`);

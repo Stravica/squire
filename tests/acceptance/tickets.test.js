@@ -77,8 +77,9 @@ test('a ticket is built once into the outbox with its digest, the floor shows it
   assert.equal(body.installId, R.installId(rw), 'the ticket carries the install id kept in the Squire home');
   assert.equal(body.destination, rw.intake, 'the ticket names where it is sent');
   const a = R.asked(rw, SESSION, ticket.request, 'the request to send the ticket');
-  assert.ok(a.block.includes(ticket.bytes.toString('utf8')), `the floor's block must show the outbox file's exact bytes; got ${JSON.stringify(a.block)}`);
-  assert.ok(a.block.includes(R.FENCE_WORDS), `the block must end with the words that make the session show its text inside a fenced code block; got ${JSON.stringify(a.block)}`);
+  // The outbox file's exact bytes as whole lines once, then one empty line and
+  // the relay words that make the session show them inside a fenced code block.
+  R.assertBlockShape(a.block, [ticket.bytes.toString('utf8')], 'the floor\'s block for the ticket');
   R.owner(rw, SESSION, `yes ${a.id}`);
   R.tick(rw);
   const posts = posted(rw, ticket.id);
@@ -266,7 +267,7 @@ test('a ticket file changed after the yes is never sent, and is sent as changed 
   R.tick(rw);
   assert.equal(posted(rw, ticket.id).length, 1, 'a file changed after the yes must never be sent');
   const a = R.asked(rw, `${SESSION}-again`, ticket.request, 'the request to send the changed ticket');
-  assert.ok(a.block.includes(changed.toString('utf8')), 'the new preview shows the changed bytes');
+  R.assertBlockShape(a.block, [changed.toString('utf8')], 'the new preview shows the changed bytes');
   R.owner(rw, `${SESSION}-again`, `yes ${a.id}`);
   older(rw, ticket.id, 300);
   R.tick(rw);

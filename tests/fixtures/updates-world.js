@@ -889,6 +889,26 @@ function asked(rw, session, command, what) {
   return { block: r.stderr, id, result: r };
 }
 
+// The floor's block, asserted whole (the design record's line 8): it ends as
+// the relay probe's bytes ended, with the shown text's last line, one empty
+// line, the relay words and one newline, and has no carriage return anywhere;
+// and each text given (a version, a changelog, a ticket's bytes) stands in it
+// as whole lines, exactly once, with nothing else on those lines. The line
+// naming the request, before them, is the builder's wording: not asserted.
+function assertBlockShape(block, texts, what) {
+  assert.ok(!block.includes('\r'), `${what}: every line of the block ends with a line feed alone; got ${JSON.stringify(block)}`);
+  const tail = `\n\n${FENCE_WORDS}\n`;
+  assert.ok(block.endsWith(tail) && !block.endsWith(`\n${tail}`),
+    `${what}: the block must end with the shown text's last line, one empty line, the relay words and one newline; got ${JSON.stringify(block)}`);
+  const lines = block.slice(0, block.length - tail.length).split('\n');
+  for (const text of texts) {
+    const want = text.replace(/\n$/, '').split('\n');
+    let found = 0;
+    for (let i = 0; i + want.length <= lines.length; i++) if (want.every((l, j) => lines[i + j] === l)) found += 1;
+    assert.equal(found, 1, `${what}: ${JSON.stringify(text)} must stand in the block as whole lines exactly once, with nothing else on its lines; got ${JSON.stringify(block)}`);
+  }
+}
+
 // The owner answers one request.
 function owner(rw, session, words) {
   return w.ownerSays(rw.world, session, words, { env: env(rw), coreDir: installedCore(rw) });
@@ -1049,6 +1069,7 @@ module.exports = {
   wakeUpIds,
   newWakeUps,
   asked,
+  assertBlockShape,
   owner,
   moveLedgerTime,
   yesFor,
