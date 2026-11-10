@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-10T21:13:35.617Z",
+  "updatedAt": "2026-11-10T21:15:56.718Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -161,6 +161,27 @@
       "description": "an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting"
+    },
+    {
+      "id": "TC-012-a-ticket-s-post-carries-the-approved",
+      "acId": "AC-2001-2",
+      "description": "a ticket's post carries the approved bytes and nothing else: one POST to the configured intake's path with Host, Content-Type application/json and Content-Length alone, no transfer encoding, and no planted detail in its path, its headers or its body",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket's post carries the approved bytes and nothing else: one POST to the configured intake's path with Host, Content-Type application/json and Content-Length alone, no transfer encoding, and no planted detail in its path, its headers or its body"
+    },
+    {
+      "id": "TC-012-a-person-s-name-planted-where-a-code-of",
+      "acId": "AC-2001-5",
+      "description": "a person's name planted where a code of the right pattern could carry it (an error code in Squire's logs, a folder and a file in the owner's folder) never reaches a ticket: its codes come from closed sets, the name appears nowhere, and the rest of the ticket is built",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a person's name planted where a code of the right pattern could carry it (an error code in Squire's logs, a folder and a file in the owner's folder) never reaches a ticket: its codes come from closed sets, the name appears nowhere, and the rest of the ticket is built"
+    },
+    {
+      "id": "TC-012-a-configured-intake-that-is-not-a-plain",
+      "acId": "AC-2001-2",
+      "description": "a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address"
     }
   ],
   "status": "draft"

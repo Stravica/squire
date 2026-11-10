@@ -193,6 +193,67 @@ test('with a macOS version that is not whole numbers and dots, the ticket leaves
 test('with a Claude Code version answer that is not a version, the ticket leaves out claudeCodeVersion and keeps the rest, and the value reaches neither the preview nor the intake', LONG, (t) => fieldLeftOut(t, "claude", "claudeCodeVersion", "a Claude Code version answer that is not a version", null, ["build for ada.lovelace"]));
 test('with a macOS version inside its pattern that the privacy patterns read as a card number, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake', LONG, (t) => fieldLeftOut(t, "card", "macOSVersion", "a macOS version inside its pattern that the privacy patterns read as a card number", {"mac":{"macOSVersion":"4111.1111.1111.1111"}}, ["4111.1111.1111.1111","4111111111111111"]));
 
+test("a ticket's post carries the approved bytes and nothing else: one POST to the configured intake's path with Host, Content-Type application/json and Content-Length alone, no transfer encoding, and no planted detail in its path, its headers or its body", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantDetails(rw);
+  plantFault(rw);
+  const ticket = offered(rw);
+  approve(rw, ticket);
+  R.tick(rw);
+  const posts = posted(rw, ticket.id);
+  assert.equal(posts.length, 1, `the approved ticket must be posted once; posts: ${JSON.stringify(R.intakePosts(rw).map((p) => p.ticketId))}`);
+  const p = posts[0];
+  const intake = new URL(rw.intake);
+  assert.deepEqual([p.method, p.server, p.path], ['POST', 'intake', intake.pathname], 'one POST to the configured intake\'s own path');
+  const headers = [];
+  for (let i = 0; i < p.headers.length; i += 2) headers.push([p.headers[i].toLowerCase(), p.headers[i + 1]]);
+  assert.deepEqual(headers.map(([k]) => k).sort(), ['content-length', 'content-type', 'host'],
+    `the post carries Host, Content-Type and Content-Length and no other header; got ${JSON.stringify(p.headers)}`);
+  const h = Object.fromEntries(headers);
+  assert.equal(h['content-type'], 'application/json', 'Content-Type is application/json');
+  assert.equal(Number(h['content-length']), ticket.bytes.length, 'Content-Length is the approved bytes\' length');
+  assert.equal(h.host, intake.host, 'Host is the configured intake\'s');
+  assert.ok(p.bytes.equals(ticket.bytes), 'the body is the approved bytes exactly');
+  const wire = [p.method, p.path, ...p.headers, p.bytes.toString('utf8')].join('\n');
+  for (const trace of R.plantedTraces()) assert.ok(!wire.includes(trace), `the planted detail "${trace}" must not appear anywhere in the request`);
+  assert.ok(!R.carriesAccountName(wire, JSON.parse(ticket.bytes.toString('utf8'))), 'the account\'s names must not appear anywhere in the request');
+});
+
+test("a person's name planted where a code of the right pattern could carry it (an error code in Squire's logs, a folder and a file in the owner's folder) never reaches a ticket: its codes come from closed sets, the name appears nowhere, and the rest of the ticket is built", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const name = 'ada-lovelace';
+  const logs = path.join(rw.home, 'logs');
+  fs.mkdirSync(logs, { recursive: true });
+  for (const log of ['runner.log', 'wake-ups.log', 'health.log', 'backup.log']) {
+    fs.appendFileSync(path.join(logs, log), `${new Date().toISOString()} error ${name}: the session could not start\ncode=${name}\n`);
+  }
+  fs.mkdirSync(path.join(rw.owner, 'workspace', 'files', name), { recursive: true });
+  fs.writeFileSync(path.join(rw.owner, 'workspace', 'files', name, `${name}.txt`), `${name}\n`);
+  plantFault(rw);
+  const ticket = offered(rw);
+  const body = JSON.parse(ticket.bytes.toString('utf8'));
+  assert.ok(R.TICKET_FIELDS.ticketId(body.ticketId) && R.TICKET_FIELDS.installId(body.installId), 'the rest of the ticket is still built');
+  const a = approve(rw, ticket);
+  R.tick(rw);
+  assertDiagnosticsOnly(rw, ticket.bytes, {
+    'the ticket': ticket.bytes.toString('utf8'), 'the preview': a.block,
+    'what the intake received': R.intakePosts(rw).map((x) => x.bytes.toString('utf8')).join('\n'),
+  }, 'a name where a code could carry it', [name, 'lovelace']);
+});
+
+test("a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address", LONG, async (t) => {
+  const rw = await healthyWorld(t, { intake: (x) => x.intake.replace('http://', 'http://ada.lovelace@') });
+  plantFault(rw);
+  const h = R.health(rw);
+  assert.deepEqual(R.ticketLines(h.stdout), [], `no ticket may be offered; got ${w.describe(h)}`);
+  assert.deepEqual(R.outboxIds(rw), [], 'no ticket may be built');
+  const config = h.stdout.split('\n').map((l) => l.trim()).filter((l) => /release\.json/.test(l) && !l.startsWith('ignored: overlay/'));
+  assert.ok(config.length >= 1, `a health line must name Squire's config, core/release.json; got ${w.describe(h)}`);
+  assert.ok(config.every((l) => !/lovelace/i.test(l)), 'the line names the config, never the address it holds');
+  R.tick(rw);
+  assert.deepEqual(R.hostRequests(rw).filter((r) => r.method === 'POST'), [], 'nothing may be posted');
+});
+
 // ------------------------------------------------- kept and retried
 
 // The world plays time passing for the ticket's attempts.

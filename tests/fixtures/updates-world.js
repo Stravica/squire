@@ -530,7 +530,7 @@ function setVersionAnswer(rw, how) {
 // Claude Code signed in, and the world's system folders (persona, when given,
 // is the owner's squire.json before the first lay-down). Nothing runs until
 // startSquire.
-function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null } = {}) {
+function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null, intake = null } = {}) {
   const world = w.makeWorld({ approvalTimeoutSeconds });
   // The owner's own wake-ups are left out, so every wake-up a case reads is
   // one an update, a ticket or a recovery sent.
@@ -550,6 +550,9 @@ function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true,
   rw.system = world.system;
   rw.keys = makeKeys(path.join(world.root, 'keys'));
   startStandIns(rw);
+  // intake, when given, makes the address core's release.json names for the
+  // intake from the world's (a case's configured intake that is not plain).
+  if (intake) rw.intake = intake(rw);
   rw.appCore = makeCore(rw, path.join(world.root, 'app-core'), { version: installed });
   s.layDownCore(world, rw.appCore);
   world.release = path.join(world.home, 'release', 'core');
@@ -959,8 +962,11 @@ const setAside = (rw) => { try { return fs.readdirSync(path.join(rw.home, 'outbo
 const installId = (rw) => { try { return fs.readFileSync(path.join(rw.home, 'install-id'), 'utf8').trim(); } catch (e) { return null; } };
 
 // The allow-list of a ticket's fields, each value's set or pattern (the
-// design record's line 16).
+// design record's line 16). Health codes and the codes of lastErrors are a
+// closed set, never a pattern: a name can be written in any pattern a code
+// fits.
 const VERSION = /^\d+\.\d+\.\d+$/;
+const CODES = ['floor', 'agents', 'sign-in', 'runner', 'release', 'update-rollback-failed'];
 const TICKET_FIELDS = {
   ticketId: (v) => typeof v === 'string' && /^t-[0-9a-f]{32}$/.test(v),
   installId: (v) => typeof v === 'string' && /^[0-9a-f]{32}$/.test(v),
@@ -970,9 +976,9 @@ const TICKET_FIELDS = {
   macOSVersion: (v) => typeof v === 'string' && /^\d+(\.\d+)*$/.test(v),
   macModelClass: (v) => ['MacBook Air', 'MacBook Pro', 'Mac mini', 'iMac', 'Mac Studio', 'Mac Pro', 'Mac'].includes(v),
   agentsLoaded: (v) => Array.isArray(v) && v.every((x) => ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup'].includes(x)),
-  healthCodes: (v) => Array.isArray(v) && v.every((x) => typeof x === 'string' && /^[a-z]+(-[a-z]+)*$/.test(x)),
+  healthCodes: (v) => Array.isArray(v) && v.every((x) => CODES.includes(x)),
   lastErrors: (v) => Array.isArray(v) && v.every((x) => x && typeof x === 'object' && Object.keys(x).sort().join() === 'at,code'
-    && typeof x.code === 'string' && /^[a-z]+(-[a-z]+)*$/.test(x.code) && typeof x.at === 'number'),
+    && CODES.includes(x.code) && typeof x.at === 'number'),
   fixesTried: (v) => Array.isArray(v) && v.every((x) => ['runner', 'floor', 'sign-in'].includes(x)),
   createdAt: (v) => typeof v === 'number' && Number.isFinite(v),
 };
@@ -1021,6 +1027,7 @@ module.exports = {
   PLANTED,
   LEDGER,
   TICKET_FIELDS,
+  CODES,
   makeKeys,
   sign,
   makeSystem,
