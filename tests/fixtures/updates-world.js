@@ -384,6 +384,44 @@ async function makeInstalledApp(t, { appVersion = INSTALLED } = {}) {
   return rw;
 }
 
+// A core as the round 3 app carried it: this repository's core without the
+// two files a release names its own (core/release.json, core/release-key.pub).
+function makeRound3Core(dir) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  w.copyTree(w.CORE, dir);
+  for (const name of ['release.json', 'release-key.pub']) fs.rmSync(path.join(dir, name), { force: true });
+  return dir;
+}
+
+// Makes the Squire the app set up (makeInstalledApp) a home as the round 3 app
+// left it: core laid down from a round 3 core (no release.json, no key), that
+// core as the release folder set-up keeps (release/core), no
+// current-release.json, no releases/, no staging/ and no update.json, and
+// set-up.json holding only what round 3's set-up wrote. Squire then runs
+// again, healthy. Returns the round 3 core.
+async function layRound3Home(rw) {
+  stopSquire(rw);
+  const core = makeRound3Core(path.join(rw.root, 'round-3-core'));
+  s.layDownCore(rw.world, core);
+  const release = path.join(rw.home, 'release', 'core');
+  fs.rmSync(release, { recursive: true, force: true });
+  w.copyTree(core, release);
+  for (const name of ['current-release.json', 'releases', 'staging', 'update.json', 'install.json']) {
+    fs.rmSync(path.join(rw.home, name), { recursive: true, force: true });
+  }
+  const record = readJson(path.join(rw.home, 'set-up.json')) || {};
+  const round3 = {};
+  for (const k of ['done', 'squireName', 'personality', 'release']) if (k in record) round3[k] = record[k];
+  fs.writeFileSync(path.join(rw.home, 'set-up.json'), JSON.stringify(round3, null, 2) + '\n', { mode: 0o600 });
+  for (const name of ['release.json', 'release-key.pub']) {
+    assert.ok(!fs.existsSync(path.join(installedCore(rw), name)), `a home the round 3 app laid down holds no core/${name}`);
+  }
+  launchSquire(rw);
+  const healthy = await s.waitFor(() => health(rw).status === 0, 60000, 500);
+  assert.ok(healthy, `the home the round 3 app laid down must be healthy; health: ${w.describe(health(rw))}`);
+  return core;
+}
+
 function plistEnv(file) {
   const r = spawnSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', file], { encoding: 'utf8' });
   try { return JSON.parse(r.stdout).EnvironmentVariables || {}; } catch (e) { return {}; }
@@ -726,6 +764,8 @@ module.exports = {
   setVersionAnswer,
   makeReleaseWorld,
   makeInstalledApp,
+  makeRound3Core,
+  layRound3Home,
   runAppAgain,
   launchSquire,
   startSquire,

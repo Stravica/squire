@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-10T18:53:26.514Z",
+  "updatedAt": "2026-11-10T21:01:12.745Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -381,6 +381,20 @@
       "description": "when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again"
+    },
+    {
+      "id": "TC-011-a-home-the-round-3-app-laid-down-takes",
+      "acId": "AC-1401-1",
+      "description": "a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs on a yes, keeping the app's release with no manifest or signature made up for it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs on a yes, keeping the app's release with no manifest or signature made up for it"
+    },
+    {
+      "id": "TC-011-after-a-newer-app-s-lay-down-over-an",
+      "acId": "AC-1401-1",
+      "description": "after a newer app's lay-down over an updated home, the installed key stays the one the installed release trusted: a release signed with the newer app's key is refused, and the next release signed with the kept key is staged",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::after a newer app's lay-down over an updated home, the installed key stays the one the installed release trusted: a release signed with the newer app's key is refused, and the next release signed with the kept key is staged"
     }
   ],
   "status": "draft"

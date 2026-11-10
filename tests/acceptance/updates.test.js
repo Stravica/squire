@@ -189,6 +189,56 @@ test("after a signed update, the floor fix lays down the current kept release, n
     'the floor fix must lay down the current kept release, the signed update, never the app\'s older core');
 });
 
+// The files of a core folder, by relative path, as one comparable list.
+const filesList = (dir) => Object.entries(w.treeOf(dir)).map(([k, v]) => `${k} ${v.sha256}`);
+
+test("a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs on a yes, keeping the app's release with no manifest or signature made up for it", LONG, async (t) => {
+  const rw = await R.makeInstalledApp(t);
+  await R.layRound3Home(rw);
+  assert.equal(R.currentRelease(rw), null, 'a home the round 3 app laid down has no current-release.json');
+  const run = await R.runAppAgain(rw);
+  assert.ok(R.coreIs(rw, rw.appCore), `the round 4 app's re-run must lay its core down, release.json and release-key.pub with it; windows: ${JSON.stringify(run.dialogs.map((d) => d.title))}`);
+  assert.deepEqual(R.currentRelease(rw), { current: R.INSTALLED, previous: null, verified: false },
+    `the round 4 app's re-run must write current-release.json naming its own release, unverified; got ${JSON.stringify(R.currentRelease(rw))}`);
+  const healthy = await s.waitFor(() => R.health(rw).status === 0, 60000, 500);
+  assert.ok(healthy, `Squire must be healthy after the re-run; health: ${w.describe(R.health(rw))}`);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release, 'the first weekly check after the re-run');
+  const { sent } = installOnYes(rw, release);
+  assert.equal(updated(sent, NEXT).length, 1, `the first update must install on the owner's yes and say so in one wake-up; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, release), 'the installed core must be the signed release\'s, file for file');
+  assert.deepEqual(R.currentRelease(rw), { current: NEXT, previous: R.INSTALLED, verified: true },
+    `current-release.json must name the signed release, verified, and the app's release as the previous one; got ${JSON.stringify(R.currentRelease(rw))}`);
+  assert.deepEqual(R.keptReleases(rw), [R.INSTALLED, NEXT], 'the app\'s release and the signed one are kept');
+  assert.deepEqual(fs.readdirSync(path.join(rw.home, 'releases', R.INSTALLED)).sort(), ['core'],
+    'the app\'s release is kept as its core alone: no manifest and no signature are made up for it');
+  assert.deepEqual(filesList(path.join(rw.home, 'releases', R.INSTALLED, 'core')), filesList(rw.appCore),
+    'the kept release is the app\'s core, file for file');
+});
+
+test("after a newer app's lay-down over an updated home, the installed key stays the one the installed release trusted: a release signed with the newer app's key is refused, and the next release signed with the kept key is staged", LONG, async (t) => {
+  const { rw } = await appUpdated(t);
+  R.makeCore(rw, rw.appCore, { version: LATER, key: rw.keys.two.pub });
+  fs.appendFileSync(path.join(rw.appCore, 'tools', 'backup.py'), '# a fresh download\n');
+  const run = await R.runAppAgain(rw);
+  const installedKey = path.join(R.installedCore(rw), 'release-key.pub');
+  assert.equal(fs.readFileSync(path.join(R.installedCore(rw), 'release.json'), 'utf8'), fs.readFileSync(path.join(rw.appCore, 'release.json'), 'utf8'),
+    `the newer app must lay its core down; windows: ${JSON.stringify(run.dialogs.map((d) => d.title))}`);
+  assert.equal(fs.readFileSync(installedKey, 'utf8'), rw.keys.one.text, 'a newer app never replaces the installed release key');
+  assert.deepEqual(R.currentRelease(rw), { current: LATER, previous: NEXT, verified: false },
+    `current-release.json must name the newer app's release, unverified, and the release it replaced as the previous one; got ${JSON.stringify(R.currentRelease(rw))}`);
+  const healthy = await s.waitFor(() => R.health(rw).status === 0, 60000, 500);
+  assert.ok(healthy, `Squire must be healthy after the newer app's lay-down; health: ${w.describe(R.health(rw))}`);
+  R.buildRelease(rw, { version: '0.4.0', signWith: 'two', carryKey: 'two' });
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
+  const before = R.untouched(rw);
+  R.tick(rw);
+  assertRefused(rw, '0.4.0', before, 'a release signed with the newer app\'s key, which the installed core does not trust');
+  const next = R.buildRelease(rw, { version: '0.4.1', signWith: 'one', carryKey: 'one' });
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
+  stage(rw, next, 'a release signed with the kept key');
+});
+
 // ------------------------------------------- what the check cannot decide
 
 async function refusedUnchecked(t, shape, what) {
