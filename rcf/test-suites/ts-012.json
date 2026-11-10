@@ -1,12 +1,13 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-07T17:40:41.663Z",
-  "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end.",
+  "updatedAt": "2026-11-10T18:10:06.075Z",
+  "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes.",
   "testLevel": "integration",
   "acIds": [
     "AC-2001-1",
     "AC-2001-2",
-    "AC-2001-3"
+    "AC-2001-3",
+    "AC-2001-4"
   ],
   "id": "TS-012",
   "usId": "US-2001",

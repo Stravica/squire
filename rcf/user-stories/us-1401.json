@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-07T18:02:37.773Z",
+  "updatedAt": "2026-11-10T18:10:06.358Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -18,7 +18,7 @@
       "testable": true,
       "given": "A release whose signature is missing, made with a different key, or does not match the release",
       "when": "Squire's update check fetches and checks it",
-      "then": "The release is refused and nothing on the Mac changes; a release correctly signed with Stravica's release key may be offered to the Squire owner.",
+      "then": "The release is refused and nothing of Squire's installed core, its kept releases, its agents or the Squire owner's folder changes; the refusal is named on the health check; a release correctly signed with Stravica's release key may be offered to the Squire owner.",
       "verification": "testOnly"
     },
     {
