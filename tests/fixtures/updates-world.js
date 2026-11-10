@@ -29,7 +29,7 @@
 // world writes, as a release names its own: core/release.json (the version,
 // and the world's loopback release host and intake) and core/release-key.pub
 // (test key one). No environment variable or other switch redirects updates
-// or tickets: the addresses and the key arrive in the core, as item 22 rules.
+// or tickets: the addresses and the key arrive in the core, and only there.
 
 const { spawn, spawnSync } = require('node:child_process');
 const assert = require('node:assert/strict');
