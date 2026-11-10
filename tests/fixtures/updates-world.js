@@ -704,28 +704,46 @@ function startTick(rw) {
   return { pid: child.pid, exited: () => exit };
 }
 
-// Runs the scheduler's tick and kills it (SIGKILL, its whole process group:
-// a power cut or a crash) as soon as the install record names the step, or a
-// later one. Returns the step the record named when it was killed (null if
-// the install ended first).
-async function killInstallAt(rw, step, { within = 300000 } = {}) {
+// Runs the scheduler's tick and stops the install at exactly the named step.
+// The world steps the tick's whole process group (the tick and the install it
+// runs as its child): it holds the group (SIGSTOP), reads install.json, and
+// lets the group run again (SIGCONT) for a twentieth of a millisecond at a
+// time, so the moment the record names the step the group is held there, with
+// nothing in the product made to wait for a test. Then it kills the group
+// (SIGKILL: a power cut or a crash), or, with hold, leaves it held: the
+// returned resume() lets it run to its end, kill() ends it. Returns the step
+// the record named when the group was held (null if the tick ended first, or
+// the record named a later step: the case then fails on the step).
+async function stopInstallAt(rw, step, { hold = false, within = 300000, slice = 0.05 } = {}) {
   const want = INSTALL_STEPS.indexOf(step);
   assert.ok(want >= 0, `no install step is named ${step}`);
   const run = startTick(rw);
+  const signal = (sig) => { try { process.kill(-run.pid, sig); return true; } catch (e) { return false; } };
+  const spin = (ms) => { const until = process.hrtime.bigint() + BigInt(Math.round(ms * 1e6)); while (process.hrtime.bigint() < until) { /* the group runs */ } };
   const end = Date.now() + within;
   let seen = null;
+  let turns = 0;
   while (!run.exited() && Date.now() < end) {
+    if (!signal('SIGSTOP')) break;
     const rec = readJson(installRecordFile(rw));
-    if (rec && INSTALL_STEPS.indexOf(rec.step) >= want) {
-      try { process.kill(-run.pid, 'SIGKILL'); } catch (e) { /* gone */ }
-      seen = rec.step;
-      break;
-    }
-    await s.sleep(2);
+    if (rec && INSTALL_STEPS.indexOf(rec.step) >= want) { seen = rec.step; break; }
+    // Held, the world reads whether the tick has ended, now and then.
+    turns += 1;
+    if (turns % 200 === 0) await new Promise((resolve) => setImmediate(resolve));
+    signal('SIGCONT');
+    spin(slice);
   }
-  if (!seen && !run.exited()) { try { process.kill(-run.pid, 'SIGKILL'); } catch (e) { /* gone */ } }
+  const handle = { seen, run, resume: () => signal('SIGCONT'), kill: () => { signal('SIGKILL'); signal('SIGCONT'); } };
+  if (hold && seen === step) return handle;
+  handle.kill();
   await s.waitFor(() => run.exited(), 5000);
-  return seen;
+  return handle;
+}
+
+// Kills the install at exactly the named step; returns the step the record
+// named when it was killed.
+async function killInstallAt(rw, step, opts = {}) {
+  return (await stopInstallAt(rw, step, opts)).seen;
 }
 
 function health(rw) {
@@ -986,6 +1004,7 @@ module.exports = {
   runnerOutput,
   tick,
   startTick,
+  stopInstallAt,
   killInstallAt,
   health,
   installRecordFile,

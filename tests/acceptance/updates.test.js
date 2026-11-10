@@ -552,7 +552,7 @@ async function interrupted(t, step) {
   R.owner(rw, SESSION, `yes ${a.id}`);
   const before = R.ownerHash(rw.owner, { except: [R.LEDGER] });
   const seen = await R.killInstallAt(rw, step);
-  assert.ok(seen, `the install must reach its step "${step}" (install.json naming it) before it is killed; install.json: ${JSON.stringify(R.readJson(R.installRecordFile(rw)))}`);
+  assert.equal(seen, step, `the install must be killed at exactly its step "${step}" (install.json naming it, written before the step starts); the record named ${JSON.stringify(seen)}; install.json: ${JSON.stringify(R.readJson(R.installRecordFile(rw)))}`);
   const sentBefore = R.wakeUpIds(rw);
   // The Mac starts again: everything Squire ran is gone, and launchd starts
   // the runner at login; then the scheduler runs.
@@ -581,15 +581,16 @@ function assertWhole(r, allowed, what) {
 
 test("an install killed part way through its lay-down leaves Squire on one whole version, says which in one wake-up, and leaves the owner's folder unchanged", LONG, async (t) => {
   const r = await interrupted(t, 'lay');
-  assertWhole(r, [R.INSTALLED, NEXT], `killed at ${r.seen}`);
+  assertWhole(r, [R.INSTALLED, NEXT], `killed at "${r.seen}"`);
 });
 
+// Killed at exactly its step: before the switch Squire is on the previous
+// release, during the lay-down on either, from the switch on the new one.
 async function killedAtStep(t, step) {
   const early = ['record', 'keep', 'stop'].includes(step);
   const allowed = step === 'lay' ? [R.INSTALLED, NEXT] : (early ? [R.INSTALLED] : [NEXT]);
   const r = await interrupted(t, step);
-  const seenAllowed = r.seen && (['record', 'keep', 'stop'].includes(r.seen) ? [R.INSTALLED] : (r.seen === 'lay' ? [R.INSTALLED, NEXT] : [NEXT]));
-  assertWhole(r, seenAllowed || allowed, `killed at "${step}" (the record named "${r.seen}")`);
+  assertWhole(r, allowed, `killed at "${step}"`);
   const healthy = await s.waitFor(() => R.health(r.rw).status === 0, 60000, 500);
   assert.ok(healthy, `killed at "${step}": Squire must be healthy after the recovery; health: ${w.describe(R.health(r.rw))}`);
 }
@@ -602,6 +603,62 @@ test('an install killed at its step "switch" is found unfinished at the next run
 test('an install killed at its step "reload" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which', LONG, (t) => killedAtStep(t, "reload"));
 test('an install killed at its step "check" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which', LONG, (t) => killedAtStep(t, "check"));
 test('an install killed at its step "clear" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which', LONG, (t) => killedAtStep(t, "clear"));
+
+test("an install holds its lock for its whole life: a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither installs nor recovers, and the install finishes as one", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
+  R.owner(rw, SESSION, `yes ${a.id}`);
+  const sentBefore = R.wakeUpIds(rw);
+  const held = await R.stopInstallAt(rw, 'reload', { hold: true });
+  t.after(() => held.kill());
+  assert.equal(held.seen, 'reload', `the install must be held at exactly its step "reload"; the record named ${JSON.stringify(held.seen)}`);
+  // The record alone would now say the install is gone: it names a process that has ended.
+  const record = R.readJson(R.installRecordFile(rw));
+  fs.writeFileSync(R.installRecordFile(rw), JSON.stringify({ ...record, pid: s.deadPid() }) + '\n');
+  const second = R.tick(rw, { timeout: 120000 });
+  assert.equal(second.signal, null, `a second scheduler run must end by itself, never wait on a held install; got ${w.describe(second)}`);
+  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => ON.test(x)), [], 'a second run must never recover an install whose lock is held');
+  assert.ok(R.coreIs(rw, release), 'a second run must leave the held install\'s core as it was: the new release\'s');
+  held.resume();
+  await s.waitFor(() => held.run.exited(), 300000, 500);
+  const sent = R.newWakeUps(rw, sentBefore);
+  assert.equal(updated(sent, NEXT).length, 1, `the install must finish as one and say so once; sent ${JSON.stringify(sent)}`);
+  assert.deepEqual(sent.filter((x) => ON.test(x)), [], 'no wake-up may say the update did not finish');
+  assert.ok(R.coreIs(rw, release), 'the installed core must be the new release\'s, file for file');
+  assert.equal((R.currentRelease(rw) || {}).current, NEXT, 'current-release.json must name the new release');
+  assert.ok(!fs.existsSync(R.installRecordFile(rw)), 'the install record must be gone');
+});
+
+test("an install record Squire cannot read (not JSON, cut short, naming a step there is not, naming releases that are not kept) is set aside, never adopted: Squire stays on the release current-release.json names, whole and checked, and one wake-up says which", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const { sent } = installOnYes(rw, release);
+  assert.equal(updated(sent, NEXT).length, 1, `the signed update must install; sent ${JSON.stringify(sent)}`);
+  const good = { previous: R.INSTALLED, next: NEXT, pid: s.deadPid(), started: Math.floor(R.nowSeconds()) - 60, step: 'lay' };
+  const records = {
+    'that is not JSON': 'this is not an install record\n',
+    'cut short': JSON.stringify(good).slice(0, 30),
+    'naming a step there is not': JSON.stringify({ ...good, step: 'unpack' }) + '\n',
+    'naming releases that are not kept': JSON.stringify({ ...good, previous: '0.0.7', next: '0.9.9' }) + '\n',
+  };
+  for (const [what, text] of Object.entries(records)) {
+    const before = R.wakeUpIds(rw);
+    fs.writeFileSync(R.installRecordFile(rw), text);
+    R.tick(rw);
+    const said = R.newWakeUps(rw, before).filter((x) => ON.test(x));
+    assert.ok(!fs.existsSync(R.installRecordFile(rw)), `an install record ${what} must be set aside: install.json is no longer there`);
+    assert.equal(said.length, 1, `an install record ${what}: exactly one wake-up must say which version Squire is on; sent ${JSON.stringify(R.newWakeUps(rw, before))}`);
+    assert.equal(ON.exec(said[0])[1], NEXT, `an install record ${what}: Squire stays on ${NEXT}, the release current-release.json names`);
+    assert.ok(R.coreIs(rw, release), `an install record ${what}: the installed core must still be the whole of ${NEXT}, file for file`);
+    assert.equal((R.currentRelease(rw) || {}).current, NEXT, `an install record ${what}: current-release.json must still name ${NEXT}`);
+    assert.deepEqual(R.keptReleases(rw), [R.INSTALLED, NEXT], `an install record ${what}: the kept releases stay as they are`);
+  }
+  const healthy = await s.waitFor(() => R.health(rw).status === 0, 60000, 500);
+  assert.ok(healthy, `Squire must be healthy after setting the records aside; health: ${w.describe(R.health(rw))}`);
+});
 
 async function downloadNeverReaches(t, archive, what) {
   const rw = await healthyWorld(t);

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-10T21:05:28.147Z",
+  "updatedAt": "2026-11-10T21:06:39.538Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -423,6 +423,20 @@
       "description": "a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered"
+    },
+    {
+      "id": "TC-011-an-install-holds-its-lock-for-its-whole",
+      "acId": "AC-1401-8",
+      "description": "an install holds its lock for its whole life: a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither installs nor recovers, and the install finishes as one",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install holds its lock for its whole life: a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither installs nor recovers, and the install finishes as one"
+    },
+    {
+      "id": "TC-011-an-install-record-squire-cannot-read-not",
+      "acId": "AC-1401-8",
+      "description": "an install record Squire cannot read (not JSON, cut short, naming a step there is not, naming releases that are not kept) is set aside, never adopted: Squire stays on the release current-release.json names, whole and checked, and one wake-up says which",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::an install record Squire cannot read (not JSON, cut short, naming a step there is not, naming releases that are not kept) is set aside, never adopted: Squire stays on the release current-release.json names, whole and checked, and one wake-up says which"
     }
   ],
   "status": "draft"
