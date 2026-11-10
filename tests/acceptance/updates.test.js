@@ -256,6 +256,26 @@ test('a release holding a file its manifest does not list is refused as an unsig
 test('a release missing a file its manifest lists is refused as an unsigned one is: download removed, nothing changed, named once on the health check', LONG, (t) => refusedUnchecked(t, "missing", "a release missing a file its manifest lists"));
 test('a release whose archive does not unpack is refused as an unsigned one is: download removed, nothing changed, named once on the health check', LONG, (t) => refusedUnchecked(t, "notAnArchive", "a release whose archive does not unpack"));
 
+test("a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  let patch = 0;
+  for (const shape of Object.keys(R.ARCHIVE_SHAPES)) {
+    patch += 1;
+    const version = `0.2.${patch}`;
+    if (patch > 1) R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
+    const release = R.buildArchiveRelease(rw, { version, shape });
+    const what = `an archive holding ${release.what}`;
+    const before = R.untouched(rw);
+    const changed = await R.tickWatching(rw);
+    assertRefused(rw, version, before, what);
+    const extracted = changed.filter((p) => p.startsWith('staging/') && (p.includes(R.MARKER) || /(^|\/)(core|manifest\.json(\.sig)?)(\/|$)/.test(p.slice('staging/'.length))));
+    assert.deepEqual(extracted, [], `${what}: nothing of it may be extracted inside the staging folder; the Squire home saw ${JSON.stringify(changed)}`);
+    assert.deepEqual(R.markersOutside(rw), [], `${what}: nothing of it may reach anywhere outside the staging folder`);
+    assert.ok(fs.readFileSync(release.victim).equals(release.victimBytes) && fs.statSync(release.victim).nlink === 1,
+      `${what}: a file outside the release is never linked to or written`);
+  }
+});
+
 async function refusedWithSshKeygen(t, sshKeygen, what) {
   const rw = await healthyWorld(t, { mac: { sshKeygen } });
   R.buildRelease(rw, { version: NEXT });

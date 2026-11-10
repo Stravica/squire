@@ -218,6 +218,212 @@ function buildRelease(rw, { version, shape = 'good', changelog = CHANGELOG, sign
   return { version, shape, core, manifest, manifestBytes: fs.readFileSync(manifestFile), changelog, archive, archiveName };
 }
 
+// ------------------------------------------------------------- archives
+
+// The entry shapes no release may hold, each refused on the archive's listing
+// before anything is extracted (the design record's line 5): what each one is.
+const ARCHIVE_SHAPES = {
+  absolute: 'an entry with an absolute path',
+  dotSegment: 'an entry whose path holds a dot segment',
+  duplicate: 'two entries with the same path',
+  caseFolded: 'two entries whose paths are the same once case is folded',
+  unicodeEquivalent: 'two entries whose paths are the same once Unicode is normalised',
+  symlinkInside: 'a symbolic link to a file inside core',
+  symlinkOutside: 'a symbolic link to a folder outside the release, and a file written through it',
+  hardLinkInside: 'a hard link to a file inside core',
+  hardLinkOutside: 'a hard link to a file outside the release',
+  appleDouble: 'an AppleDouble entry',
+  emptyFolder: 'a folder that is the parent of no listed file',
+  trailingBytes: 'bytes after the end of the gzip stream',
+};
+// Every odd entry's name carries this, so an extraction anywhere shows.
+const MARKER = 'squire-marker-';
+
+const octal = (n, width) => n.toString(8).padStart(width - 1, '0') + '\0';
+
+// One POSIX ustar header for an entry: type '0' a file, '1' a hard link, '2' a
+// symbolic link, '5' a folder; a name past 100 bytes is split into prefix and
+// name at a slash, as ustar holds it.
+function tarHeader({ name, type, size, mode, linkname = '' }) {
+  const h = Buffer.alloc(512, 0);
+  let nameBytes = Buffer.from(name, 'utf8');
+  let prefixBytes = Buffer.alloc(0);
+  if (nameBytes.length > 100) {
+    let split = false;
+    for (let i = name.length - 1; i > 0 && !split; i--) {
+      if (name[i] !== '/') continue;
+      const p = Buffer.from(name.slice(0, i), 'utf8');
+      const n = Buffer.from(name.slice(i + 1), 'utf8');
+      if (p.length <= 155 && n.length > 0 && n.length <= 100) { prefixBytes = p; nameBytes = n; split = true; }
+    }
+    assert.ok(split, `the world's archive cannot hold the name ${name}`);
+  }
+  nameBytes.copy(h, 0);
+  h.write(octal(mode, 8), 100, 'ascii');
+  h.write(octal(0, 8), 108, 'ascii');
+  h.write(octal(0, 8), 116, 'ascii');
+  h.write(octal(size, 12), 124, 'ascii');
+  h.write(octal(Math.floor(Date.now() / 1000), 12), 136, 'ascii');
+  h.write('        ', 148, 'ascii');
+  h.write(type, 156, 'ascii');
+  Buffer.from(linkname, 'utf8').copy(h, 157);
+  h.write('ustar\0', 257, 'ascii');
+  h.write('00', 263, 'ascii');
+  prefixBytes.copy(h, 345);
+  let sum = 0;
+  for (const b of h) sum += b;
+  h.write(sum.toString(8).padStart(6, '0') + '\0 ', 148, 'ascii');
+  return h;
+}
+
+// A tar stream of the entries, in order, as written (a duplicate stays a
+// duplicate): [{ name, type, mode, data, linkname }].
+function tarBytes(entries) {
+  const parts = [];
+  // A POSIX extended header carries a link target past ustar's 100 bytes.
+  const paxRecord = (key, value) => {
+    const body = ` ${key}=${value}\n`;
+    let n = Buffer.byteLength(body) + 1;
+    while (String(n).length + Buffer.byteLength(body) !== n) n = String(n).length + Buffer.byteLength(body);
+    return Buffer.from(`${n}${body}`, 'utf8');
+  };
+  for (const e of entries) {
+    const data = e.type === '0' ? (e.data || Buffer.alloc(0)) : Buffer.alloc(0);
+    let linkname = e.linkname || '';
+    if (Buffer.byteLength(linkname) > 100) {
+      const pax = paxRecord('linkpath', linkname);
+      parts.push(tarHeader({ name: 'PaxHeader/link', type: 'x', size: pax.length, mode: 0o644 }), pax, Buffer.alloc((512 - (pax.length % 512)) % 512));
+      linkname = linkname.slice(0, 100);
+      while (Buffer.byteLength(linkname) > 100) linkname = linkname.slice(0, -1);
+    }
+    parts.push(tarHeader({ name: e.name, type: e.type, size: data.length, mode: e.mode || (e.type === '5' ? 0o755 : 0o644), linkname }));
+    if (data.length) parts.push(data, Buffer.alloc((512 - (data.length % 512)) % 512));
+  }
+  parts.push(Buffer.alloc(1024));
+  return Buffer.concat(parts);
+}
+
+// A release whose archive holds one entry of the given shape (a key of
+// ARCHIVE_SHAPES) and is otherwise a good release, signed with the installed
+// key, its manifest listing every file the archive carries under core/ with its
+// digest, and well inside the bound (a few hundred entries, under a megabyte
+// unpacked), so the shape alone is what the check refuses. The archive is
+// written entry by entry, since a folder on this Mac cannot hold two names
+// that differ only in case. Published on the world's release host.
+function buildArchiveRelease(rw, { version, shape }) {
+  assert.ok(shape in ARCHIVE_SHAPES, `no archive shape is named ${shape}`);
+  rw.built = (rw.built || 0) + 1;
+  const src = path.join(rw.root, 'build', `${rw.built}-${version}-${shape}`);
+  const core = path.join(src, 'core');
+  fs.mkdirSync(src, { recursive: true });
+  makeCore(rw, core, { version, from: rw.appCore });
+  fs.appendFileSync(path.join(core, 'tools', 'backup.py'), `# release ${version}\n`);
+  fs.appendFileSync(path.join(core, 'hooks', 'config-change.py'), `# release ${version}\n`);
+  const files = filesOf(core);
+  const entries = [{ name: 'core/', type: '5' }];
+  const walk = (abs, rel) => {
+    for (const n of fs.readdirSync(abs).sort()) {
+      const a = path.join(abs, n);
+      const st = fs.lstatSync(a);
+      if (st.isDirectory()) { entries.push({ name: `${rel}/${n}/`, type: '5' }); walk(a, `${rel}/${n}`); }
+      else entries.push({ name: `${rel}/${n}`, type: '0', mode: st.mode & 0o777, data: fs.readFileSync(a) });
+    }
+  };
+  walk(core, 'core');
+  const outside = path.join(rw.root, 'outside');
+  fs.mkdirSync(outside, { recursive: true });
+  const victim = path.join(outside, 'victim.txt');
+  if (!fs.existsSync(victim)) fs.writeFileSync(victim, 'a file outside the release\n');
+  const backup = fs.readFileSync(path.join(core, 'tools', 'backup.py'));
+  const file = (name, data, listed = true) => {
+    entries.push({ name, type: '0', data });
+    if (listed) files[name.slice('core/'.length)] = w.sha256(data);
+  };
+  const odd = (text) => Buffer.from(`${MARKER}${shape}: ${text}\n`);
+  if (shape === 'absolute') file(path.join(outside, `${MARKER}absolute.txt`), odd('an absolute entry'), false);
+  if (shape === 'dotSegment') file(`core/tools/../../../../${MARKER}dot-segment.txt`, odd('past a dot segment'), false);
+  if (shape === 'duplicate') entries.push({ name: 'core/tools/backup.py', type: '0', data: odd('the same path again') });
+  if (shape === 'caseFolded') {
+    file(`core/tools/${MARKER}Case.py`, odd('one spelling'));
+    file(`core/tools/${MARKER}case.py`, odd('the other spelling'));
+  }
+  if (shape === 'unicodeEquivalent') {
+    file(`core/tools/${MARKER}café.py`, odd('composed'));
+    file(`core/tools/${MARKER}café.py`, odd('decomposed'));
+  }
+  if (shape === 'symlinkInside') {
+    entries.push({ name: `core/tools/${MARKER}alias.py`, type: '2', linkname: 'backup.py' });
+    files[`tools/${MARKER}alias.py`] = w.sha256(backup);
+  }
+  if (shape === 'symlinkOutside') {
+    entries.push({ name: `core/tools/${MARKER}link`, type: '2', linkname: outside });
+    file(`core/tools/${MARKER}link/${MARKER}through.txt`, odd('written through a link'));
+  }
+  if (shape === 'hardLinkInside') {
+    entries.push({ name: `core/tools/${MARKER}hard.py`, type: '1', linkname: 'core/tools/backup.py' });
+    files[`tools/${MARKER}hard.py`] = w.sha256(backup);
+  }
+  if (shape === 'hardLinkOutside') {
+    entries.push({ name: `core/tools/${MARKER}hard-outside.txt`, type: '1', linkname: victim });
+    files[`tools/${MARKER}hard-outside.txt`] = w.sha256(fs.readFileSync(victim));
+  }
+  if (shape === 'appleDouble') {
+    file(`core/tools/._${MARKER}backup.py`, Buffer.concat([Buffer.from('0005160700020000', 'hex'), Buffer.alloc(16), Buffer.from('0000', 'hex')]));
+  }
+  if (shape === 'emptyFolder') entries.push({ name: `core/${MARKER}empty/`, type: '5' });
+  const manifest = { version, files, changelog: CHANGELOG, claudeCodeTested: CLAUDE_CODE };
+  const manifestFile = path.join(src, 'manifest.json');
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
+  sign(rw.keys.one.key, manifestFile);
+  entries.push({ name: 'manifest.json', type: '0', data: fs.readFileSync(manifestFile) });
+  entries.push({ name: 'manifest.json.sig', type: '0', data: fs.readFileSync(`${manifestFile}.sig`) });
+  assert.ok(entries.length < 2000, 'the world\'s adversarial archive stays well inside the entry bound');
+  let gz = require('node:zlib').gzipSync(tarBytes(entries));
+  if (shape === 'trailingBytes') gz = Buffer.concat([gz, odd('after the gzip stream')]);
+  const archiveName = `squire-${version}.tar.gz`;
+  fs.mkdirSync(path.join(rw.state, 'serve'), { recursive: true });
+  fs.writeFileSync(path.join(rw.state, 'serve', archiveName), gz);
+  fs.writeFileSync(path.join(rw.state, 'serve', 'latest.json'), JSON.stringify({ version, archive: archiveName }) + '\n');
+  return { version, shape, what: ARCHIVE_SHAPES[shape], victim, victimBytes: fs.readFileSync(victim) };
+}
+
+// One run of the scheduler's tick while the world watches the Squire home:
+// every path created or changed in it during the run, relative to the home.
+async function tickWatching(rw) {
+  const seen = new Set();
+  const watcher = fs.watch(rw.home, { recursive: true }, (event, name) => { if (name) seen.add(String(name)); });
+  try {
+    const run = startTick(rw);
+    await s.waitFor(() => run.exited(), 600000, 50);
+    await s.sleep(1000);
+  } finally {
+    watcher.close();
+  }
+  return [...seen].sort();
+}
+
+// Paths under the world's root, outside the release builds and the release
+// host's files, whose names carry the marker: anything an archive's odd entry
+// put there.
+function markersOutside(rw) {
+  const out = [];
+  const skip = new Set([path.join(rw.root, 'build'), path.join(rw.state, 'serve')]);
+  const walk = (dir) => {
+    let names = [];
+    try { names = fs.readdirSync(dir); } catch (e) { return; }
+    for (const n of names) {
+      const p = path.join(dir, n);
+      if (skip.has(p)) continue;
+      if (n.includes(MARKER)) out.push(path.relative(rw.root, p));
+      let st = null;
+      try { st = fs.lstatSync(p); } catch (e) { continue; }
+      if (st.isDirectory()) walk(p);
+    }
+  };
+  walk(rw.root);
+  return out;
+}
+
 // ------------------------------------------------------------- stand-ins
 
 function startStandIns(rw) {
@@ -756,6 +962,11 @@ module.exports = {
   makeSystem,
   makeCore,
   buildRelease,
+  ARCHIVE_SHAPES,
+  MARKER,
+  buildArchiveRelease,
+  tickWatching,
+  markersOutside,
   standIns,
   hostRequests,
   latestFetches,

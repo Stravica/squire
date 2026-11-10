@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-10T21:01:12.745Z",
+  "updatedAt": "2026-11-10T21:04:16.096Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -395,6 +395,13 @@
       "description": "after a newer app's lay-down over an updated home, the installed key stays the one the installed release trusted: a release signed with the newer app's key is refused, and the next release signed with the kept key is staged",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::after a newer app's lay-down over an updated home, the installed key stays the one the installed release trusted: a release signed with the newer app's key is refused, and the next release signed with the kept key is staged"
+    },
+    {
+      "id": "TC-011-a-signed-release-whose-archive-holds-any",
+      "acId": "AC-1401-6",
+      "description": "a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream"
     }
   ],
   "status": "draft"
