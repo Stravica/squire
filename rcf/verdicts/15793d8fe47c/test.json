@@ -1,0 +1,21 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "15793d8fe47c225e22ebbd89bcd897d2ab4fe0da",
+  "fbsIds": [
+    "FBS-003"
+  ],
+  "result": "FAIL",
+  "suite": {
+    "pass": 213,
+    "fail": 0,
+    "skip": 4,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2, Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, /bin/zsh 5.9, node v24.14.0, pnpm 10.32.1; fresh clone served 6e0a542 (reviewed head 15793d8), pnpm install --frozen-lockfile; env -u SQUIRE_TARGET_HOST -u RCF_TARGET_URL node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js'; SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, three External tests and the Journey test skipped in this run; temporary homes and keychains, fake claude and fake Mac commands only; Journey test run alone against a fresh standard user on the same Mac, not from zero (Apple's tools present), Claude Code 2.1.322: fail at its assertion \"Claude Code must be installed and signed in into Squire's config folder (loggedIn and oauthAccount)\" (auth status exit 1, loggedIn false, oauthAccount true, read with the test's environment, which sets no USER or LOGNAME; the same read with USER and LOGNAME set gave loggedIn true), after all 11 set-up steps were recorded done in order; TAP journey/journey.tap in the TEST evidence",
+  "node": "v24.14.0",
+  "reason": "AC-201-3 Journey test failed at its sign-in assertion: claude auth status in Squire's config folder exit 1, loggedIn false (oauthAccount present), read with the test's environment, which sets no USER or LOGNAME",
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-10T07:39:22.656Z"
+}
