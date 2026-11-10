@@ -1,0 +1,21 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "5dcf07b38629361303808d7c537922236707103a",
+  "fbsIds": [
+    "FBS-003"
+  ],
+  "result": "PASS",
+  "suite": {
+    "pass": 213,
+    "fail": 0,
+    "skip": 4,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2, Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, /bin/zsh 5.9, node v24.14.0, pnpm 10.32.1; fresh clone served a5f2d37 (reviewed head 5dcf07b), pnpm install --frozen-lockfile; env -u SQUIRE_TARGET_HOST -u RCF_TARGET_URL node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js'; SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, three External tests and the Journey test skipped in this run; temporary homes and keychains, fake claude and fake Mac commands only; Journey test run alone against a fresh standard user on the same Mac, not from zero (Apple's tools present), Claude Code 2.1.322: pass (1 test, 1 pass; all 11 set-up steps recorded done in order, the first reply named the Squire), TAP journey/journey.tap in the TEST evidence",
+  "node": "v24.14.0",
+  "reason": null,
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-10T11:27:55.999Z"
+}
