@@ -1,0 +1,36 @@
+# The update-and-rollback states: from a newer signed release on the release host
+# to Squire installed on it, rolled back from it, or left as it was.
+# The record (journey.json) is minted from this file by rcf discover journey add.
+# Every word of these states reaches the owner in Squire's own session, at
+# claude.ai/code or in the Claude app; no window is added. The line grammar draws
+# one line of steps per entry, so each branch from the main line is drawn as its
+# own entry and exit: a refused release, the owner's no or no answer, a failed
+# check and its rollback, a rollback whose own check fails, and an install that
+# did not finish. The interruptions answer to the update criteria: a download
+# that fails or is cut short, the owner leaving the chat or the request timing
+# out, a restart part way through the install, and the owner on the phone.
+
+# Journey: update-and-rollback
+actor: A Squire owner whose Squire is running on their own Mac
+goal: From a newer signed release to Squire running on it, or on the previous version, with the owner's folder unchanged
+- entry weekly-check @claude-code-web The scheduler's weekly check reads latest.json from the release host; a newer release is downloaded into staging, outside core
+- step verified @claude-code-web The check: the signature against the installed key, the manifest's known fields, every listed file with its digest and no unlisted file; the release is staged
+- step offered @claude-code-web One wake-up tells the session; the session asks for the install and the safety floor's block carries the version and the changelog exactly as signed, which the session shows the owner as written
+- step owner-yes @claude-code-web The owner says yes to that request; the yes names that version and is fresh
+- step installing @claude-code-web The scheduler's next run installs from the installed release's own code: the install record written first, the new release kept, the runner stopped, core laid down, the agents reloaded
+- step checking @claude-code-web The check: the runner and one live session back, every floor file at its digest, signed in, every core file against the signed manifest, and no process of the previous release left
+- exit installed @claude-code-web Installed: one wake-up tells the owner Squire is updated; the release before the previous one is removed
+- entry refused @claude-code-web A release the check refuses (unsigned, another key, altered, a file missing or unlisted, a field or answer it cannot read): its staging is removed and nothing of core, the kept releases, the agents or the owner's folder changes
+- exit refused-named @claude-code-web The refusal is one health line until the next weekly check
+- entry not-now @claude-code-web The owner says no, or does not answer before the request times out: core's digests and the kept releases stay as they are
+- exit mentioned-again @claude-code-web The staged release is mentioned again at most once a week
+- entry check-failed @claude-code-web The check after the install fails, or a line of it cannot be read
+- step rolling-back @claude-code-web The install job, still the previous release's code, lays the previous release down again, switches back and reloads, with no one acting
+- step checking-again @claude-code-web The check runs again on the previous release
+- exit rolled-back @claude-code-web One wake-up names both versions: Squire rolled the update back
+- entry rollback-check-failed @claude-code-web The check after the rollback fails too
+- exit ticket-offered @claude-code-web A health line names both versions and a support ticket is offered
+- entry interrupted @claude-code-web The install stopped part way: a restart, a power cut, a killed process or a log-out; its install record is still there
+- step recovered @claude-code-web At the next runner start or scheduler tick: Squire stays on the new release when its files, the installed core's digests and the manifest all match and the check passes, otherwise it lays the previous release down
+- exit told-which @claude-code-web One wake-up says which version Squire is on; the owner's folder is unchanged
+interruptions: lostSignal=weekly-check, closedTab=offered, expiredLink=not-now, deadBattery=interrupted, switchedDevice=offered, lostEmail=notApplicable:Squire sends no email and no emailed link for an update; every word reaches the owner in Squire's own session
