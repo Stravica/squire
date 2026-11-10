@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-080",
+  "path": "core/lib/squire.py#ClaudeCode",
+  "implementsAcIds": [
+    "AC-1401-5",
+    "AC-1401-9"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-10T23:17:49.201Z",
+  "updatedAt": "2026-11-10T23:17:49.201Z"
+}

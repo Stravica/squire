@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-093",
+  "path": "core/hooks/pre-tool-use.py#ShownRequest",
+  "implementsAcIds": [
+    "AC-1401-2",
+    "AC-2001-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-10T23:17:52.905Z",
+  "updatedAt": "2026-11-10T23:17:52.905Z"
+}

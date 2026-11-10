@@ -1,0 +1,17 @@
+{
+  "cnId": "CN-086",
+  "path": "core/tools/update.py#Install",
+  "implementsAcIds": [
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-1401-7",
+    "AC-1401-8"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-10T23:17:50.934Z",
+  "updatedAt": "2026-11-10T23:17:50.934Z"
+}
