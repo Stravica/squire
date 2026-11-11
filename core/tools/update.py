@@ -18,7 +18,8 @@ checked version when an install does not finish.
         run inside an agent (the runner at its start, the scheduler's tick):
         settled when nothing needs laying down, Squire staying on the new
         release when it is whole and checks; any lay-down or rollback is
-        handed to Squire Update, opened by itself with --recover
+        handed to Squire Update, opened by itself with --recover once per
+        waiting install (install.json records the hand-over)
 
 The weekly check runs inside the scheduler's tick (wake-up.py --due), which
 reads this file for it; it stages a release and tells the owner it is
@@ -889,9 +890,10 @@ class Recovery:
     no agent is stopped: an install stopped before its lay-down, with core
     still the previous release's, and a new release laid down whole that
     checks, settle as with lay True; every other outcome is handed to Squire
-    Update, opened by itself with --recover outside every agent, and the
-    record stays until it settles there. With lay True (Squire Update) the
-    rollback runs as built."""
+    Update, opened by itself with --recover outside every agent, once per
+    waiting record (the hand-over is written into it), and the record stays
+    until it settles there. With lay True (Squire Update) the rollback runs
+    as built."""
 
     BEFORE_LAY = ('record', 'keep', 'stop')
     APP = 'Squire Update.app'
@@ -908,11 +910,31 @@ class Recovery:
             return 0
         if not os.path.lexists(self.install.record_file):
             return 0
-        if self.settle() is None:
+        if self.settle() is None and self.mark():
             # Squire Update takes the lock as it opens: it is let go first.
             os.close(fd)
             self.hand_over()
         return 0
+
+    def mark(self):
+        """The hand-over written into the waiting record (handedOver, when it
+        was made), durably and under the lock, before Squire Update is opened:
+        True when this run is to open it; False when the record already holds
+        the mark (an earlier run opened it, and the health check's line says
+        to open it) or the mark cannot be written. A record that is not one
+        JSON object is copied aside first, as an unreadable record is kept,
+        and the mark stands in its place: Squire Update sets either aside."""
+        record = Records.read(self.install.record_file)
+        if isinstance(record, dict) and 'handedOver' in record:
+            return False
+        try:
+            if not isinstance(record, dict):
+                shutil.copyfile(self.install.record_file, self.aside())
+                record = {}
+            Records.write(self.install.record_file, {**record, 'handedOver': int(time.time())}, durable=True)
+        except OSError:
+            return False
+        return True
 
     def hand_over(self):
         """Squire Update opened by itself, as the owner opens it, to settle
@@ -951,10 +973,12 @@ class Recovery:
         self.install.remove_record()
         return on
 
+    def aside(self):
+        return os.path.join(self.install.home, f'install-set-aside-{int(time.time() * 1000)}-{os.getpid()}.json')
+
     def set_aside(self):
-        aside = os.path.join(self.install.home, f'install-set-aside-{int(time.time() * 1000)}-{os.getpid()}.json')
         try:
-            os.rename(self.install.record_file, aside)
+            os.rename(self.install.record_file, self.aside())
         except OSError:
             pass
 
