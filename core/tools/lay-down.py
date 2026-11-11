@@ -20,8 +20,10 @@ Squire's name and personality from the owner's squire.json into its
 CLAUDE.md, records the SHA-256 digests of core's settings and the four floor
 hooks in core-digests.json in the Squire home, lays Squire Update down in
 Applications under the home folder it is given (from core's update-app/,
-signed ad hoc), and writes the session runner's, the wake-up scheduler's and
-the nightly backup's launchd agents into Library/LaunchAgents there. It
+signed ad hoc; when it cannot, that is a log line and update-app.json in the
+Squire home, which the health check names, and the rest goes on), and writes
+the session runner's, the wake-up scheduler's and the nightly backup's
+launchd agents into Library/LaunchAgents there. It
 loads them only when that folder is the account's own home folder, as the
 account database names it, through the Mac's launchctl.
 """
@@ -82,7 +84,7 @@ class LayDown:
             LayDown.settle(home)
             Persona.write(home, config.owner_folder)
             if not core_only:
-                LayDown.update_app(home)
+                LayDown.update_app_or_fault(home)
                 LayDown.agents(home)
         except (OSError, SquireError) as e:
             sys.stderr.write(f'lay-down laid core down, then failed: {e}. Lay core down again.\n')
@@ -132,6 +134,30 @@ class LayDown:
             os.makedirs(os.path.join(home, 'logs'), mode=0o700, exist_ok=True)
             with open(os.path.join(home, 'logs', 'lay-down.log'), 'a', encoding='utf-8') as f:
                 f.write(f'{time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())} lay-down: {text}\n')
+        except OSError:
+            pass
+
+    @staticmethod
+    def update_app_or_fault(home):
+        """Squire Update laid down, update-app.json removed. When it cannot be
+        laid down, the lay-down goes on (core stays, the agents are written
+        and loaded): a log line, and update-app.json in the Squire home naming
+        why, which the health check names until a lay-down puts it there."""
+        from squire import SquireError
+
+        fault = os.path.join(home, 'update-app.json')
+        try:
+            LayDown.update_app(home)
+        except (OSError, SquireError) as e:
+            why = (e.strerror if isinstance(e, OSError) else str(e)) or type(e).__name__
+            LayDown.log(home, f'Squire Update could not be laid down ({why})')
+            try:
+                LayDown.write(fault, (json.dumps({'reason': why}, indent=2) + '\n').encode('utf-8'))
+            except OSError:
+                pass
+            return
+        try:
+            os.unlink(fault)
         except OSError:
             pass
 

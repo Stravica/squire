@@ -444,9 +444,11 @@ class BackupLines:
 class UpdateLines:
     """What Squire's updates leave for the owner: a release record and an
     installed core naming different versions (a fault), an install that did
-    not finish and waits for Squire Update, the last weekly check's refusal,
-    and the mark of a rollback that did not end checked, naming both
-    versions, printed while Squire stays on that release."""
+    not finish and waits for Squire Update, Squire Update that the last
+    lay-down could not put in the Applications folder (update-app.json), the
+    last weekly check's refusal, and the mark of a rollback that did not end
+    checked, naming both versions, printed while Squire stays on that
+    release."""
 
     @staticmethod
     def lines(home):
@@ -462,6 +464,11 @@ class UpdateLines:
             previous = unfinished.get('previous') if isinstance(unfinished, dict) else None
             lines.append('update: Squire\'s update did not finish; open Squire Update on your Mac to '
                          + (f'put Squire back on {previous}' if Version.of(previous) else 'finish it'))
+        fault = Records.read(os.path.join(home, 'update-app.json'))
+        if isinstance(fault, dict) and isinstance(fault.get('reason'), str):
+            lines.append('update: Squire Update, the program that installs Squire\'s updates, could not be put in the '
+                         f'Applications folder in your home folder ({fault["reason"]}); the next update puts it there '
+                         'once that folder can be written to')
         current, version = releases.current(), releases.config().get('version')
         if current and Version.of(version) and current['current'] != version:
             lines.append(f'release: Squire\'s record names release {current["current"]} as current, but its installed '
