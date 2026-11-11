@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-10T21:15:56.718Z",
+  "updatedAt": "2026-11-11T07:15:17.350Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -182,6 +182,13 @@
       "description": "a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address"
+    },
+    {
+      "id": "TC-012-send-request-id-final-newline-refused",
+      "acId": "AC-2001-1",
+      "description": "a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted"
     }
   ],
   "status": "draft"

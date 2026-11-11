@@ -451,3 +451,24 @@ test('two Squire homes have different install ids, made from nothing about the o
   assert.match(ids[1] || '', /^[0-9a-f]{32}$/, 'the second home has an install id');
   assert.notEqual(ids[0], ids[1], 'two Squire homes never share an install id');
 });
+
+// ------------------------------------------------- the request, exactly
+
+test('a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  // The request as offered, its last word the ticket id quoted with a final newline.
+  const command = `${ticket.request.slice(0, ticket.request.length - ticket.id.length)}'${ticket.id}\n'`;
+  const session = `${SESSION}-newline`;
+  const what = 'a send request whose ticket id ends in a newline';
+  for (const when of ['with no yes', 'even after the owner said yes']) {
+    if (when !== 'with no yes') R.owner(rw, session, 'yes');
+    const r = w.attempt(rw.world, session, w.tools.bash(command), { env: R.env(rw), coreDir: R.installedCore(rw) });
+    w.assertBlocked(r, `${what}, ${when}`);
+    assert.equal(w.requestIdIn(r.stderr), null, `${what}, ${when}: refused outright, never asked of the owner; got ${w.describe(r)}`);
+    assert.match(r.stderr, /floor/i, `${what}, ${when}: the refusal must name the safety floor; got ${w.describe(r)}`);
+  }
+  R.tick(rw);
+  assert.deepEqual(posted(rw, ticket.id), [], `${what}: nothing may be posted`);
+});
