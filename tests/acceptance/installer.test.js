@@ -686,14 +686,22 @@ const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-
 
 // Squire set up in a session world: core laid down and kept as the Squire
 // home's release folder, set-up's record, and a fake Claude Code that says
-// when the sign-in ends.
+// when the sign-in ends. The core's release.json keeps its version and names a
+// loopback release host and intake where nothing answers, written before the
+// lay-down records its digests, so the scheduler's tick never reaches the
+// real release host.
 function renewWorld(t, behaviour) {
   const world = w.makeWorld();
   t.after(() => { s.killFakes(world); w.cleanUp(world); });
   world.system = I.makeSystemRoot(path.join(world.root, 'system'));
-  s.layDownCore(world);
+  const core = path.join(world.root, 'renew-core');
+  w.copyTree(w.CORE, core);
+  const { version } = JSON.parse(fs.readFileSync(path.join(w.CORE, 'release.json'), 'utf8'));
+  fs.writeFileSync(path.join(core, 'release.json'),
+    JSON.stringify({ version, releaseHost: 'http://127.0.0.1:9/releases/', intake: 'http://127.0.0.1:9/tickets' }, null, 2) + '\n');
+  s.layDownCore(world, core);
   world.release = path.join(world.home, 'release', 'core');
-  w.copyTree(w.CORE, world.release);
+  w.copyTree(core, world.release);
   fs.writeFileSync(path.join(world.home, 'set-up.json'), JSON.stringify({ done: STEPS, added: [], release: world.release }, null, 2) + '\n');
   world.fake = s.installFakeClaudeCode(world, behaviour);
   return world;
