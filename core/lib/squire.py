@@ -355,11 +355,27 @@ class System:
         env.update(extra)
         return env
 
-    @staticmethod
-    def own_home():
+    OWN_HOME_WITHIN = 10
+
+    @classmethod
+    def own_home(cls):
         """True when the home folder given is the account's own, as the
-        account database names it: only there are launchd agents loaded."""
-        own = pwd.getpwuid(os.getuid()).pw_dir
+        account database names it (its NFSHomeDirectory, read with the Mac's
+        dscl): only there are launchd agents loaded. False when it cannot be
+        read."""
+        record = os.path.join('/Users', pwd.getpwuid(os.getuid()).pw_name)
+        try:
+            r = subprocess.run([cls.command('/usr/bin/dscl'), '.', '-read', record, 'NFSHomeDirectory'],
+                               cwd='/', env=cls.env(), stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                               timeout=cls.OWN_HOME_WITHIN)
+        except (OSError, subprocess.SubprocessError, ValueError):
+            return False
+        said = r.stdout.strip()
+        if r.returncode != 0 or not said.startswith('NFSHomeDirectory:'):
+            return False
+        own = said[len('NFSHomeDirectory:'):].strip()
+        if not os.path.isabs(own) or '\n' in own:
+            return False
         return os.path.realpath(os.path.expanduser('~')) == os.path.realpath(own)
 
 
