@@ -256,6 +256,37 @@ test('a release holding a file its manifest does not list is refused as an unsig
 test('a release missing a file its manifest lists is refused as an unsigned one is: download removed, nothing changed, named once on the health check', LONG, (t) => refusedUnchecked(t, "missing", "a release missing a file its manifest lists"));
 test('a release whose archive does not unpack is refused as an unsigned one is: download removed, nothing changed, named once on the health check', LONG, (t) => refusedUnchecked(t, "notAnArchive", "a release whose archive does not unpack"));
 
+// A correctly signed release whose version is not three whole numbers in ASCII
+// digits and nothing else, named alike by latest.json, by its manifest and by
+// its own release.json, under an archive name the check reads.
+async function refusedNotAVersion(t, version, what) {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version, publish: false });
+  const serve = path.dirname(release.archive);
+  const archive = 'squire-not-a-version.tar.gz';
+  fs.copyFileSync(release.archive, path.join(serve, archive));
+  fs.writeFileSync(path.join(serve, 'latest.json'), JSON.stringify({ version, archive }) + '\n');
+  const before = R.untouched(rw);
+  const sentBefore = R.wakeUpIds(rw);
+  R.tick(rw);
+  assert.deepEqual(R.staged(rw), [], `${what}: a version that is not a version is refused before anything is staged; ` +
+    `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
+  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes('--install')), [], `${what}: nothing may be offered`);
+  assert.deepEqual(R.stagingFiles(rw), [], `${what}: the refused download must be removed from the staging folder`);
+  assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [],
+    `${what}: nothing of the installed core, the kept releases, the agents or the owner's folder may change`);
+  const h = R.health(rw);
+  const lines = h.stdout.split('\n').map((l) => l.trim()).filter((l) => /^update: Squire refused release .+: .+; nothing was changed$/.test(l));
+  assert.equal(lines.length, 1, `${what}: the health check must name the refusal on exactly one line, ` +
+    `"update: Squire refused release <version>: <reason>; nothing was changed"; got ${w.describe(h)}`);
+}
+
+test('a correctly signed release whose version, as latest.json and its manifest both name it, holds a decimal digit that is not ASCII is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, '0.٢.0', 'a signed release whose version holds an Arabic-Indic digit'));
+test('a correctly signed release whose version, as latest.json and its manifest both name it, ends in a newline is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, '0.2.0\n', 'a signed release whose version ends in a newline'));
+test('a correctly signed release whose version, as latest.json and its manifest both name it, has a part with a leading zero is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, '0.02.0', 'a signed release whose version has a part with a leading zero'));
+test('a correctly signed release whose version, as latest.json and its manifest both name it, has a space before it is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, ' 0.2.0', 'a signed release whose version has a space before it'));
+test('a correctly signed release whose version, as latest.json and its manifest both name it, carries a plus sign is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, '+0.2.0', 'a signed release whose version carries a plus sign'));
+
 test("a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream", LONG, async (t) => {
   const rw = await healthyWorld(t);
   let patch = 0;
