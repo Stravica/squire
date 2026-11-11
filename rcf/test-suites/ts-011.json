@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-11T07:14:49.915Z",
+  "updatedAt": "2026-11-11T07:16:58.139Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -542,6 +542,13 @@
       "description": "a latest.json whose archive name is not a plain file name is refused, named once on the health check without that name, never recorded as could not check: no download kept, nothing staged, offered or changed",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::a latest.json whose archive name is not a plain file name is refused, named once on the health check without that name, never recorded as could not check: no download kept, nothing staged, offered or changed"
+    },
+    {
+      "id": "TC-011-rolled-back-release-stays-out-of-offer",
+      "acId": "AC-1401-3",
+      "description": "a release rolled back by itself stays out of the offer at the next weekly check while latest.json still names it: nothing staged or offered, and update.json names it as held out; a newer release published after it is staged and offered as usual",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a release rolled back by itself stays out of the offer at the next weekly check while latest.json still names it: nothing staged or offered, and update.json names it as held out; a newer release published after it is staged and offered as usual"
     }
   ],
   "status": "draft"
