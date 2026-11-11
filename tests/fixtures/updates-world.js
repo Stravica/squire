@@ -15,7 +15,27 @@
 //                        as told, filing a ticket id once (tools/stand-ins.js)
 //   launchd              a supervisor that starts the installed runner and
 //                        starts it again after a lay-down, or when a case asks
-//                        for a runner start (tools/supervisor.js)
+//                        for a runner start (tools/supervisor.js); or, in a
+//                        world made with launchd: 'model', the model of
+//                        launchd (tools/launchd.js) behind the world's
+//                        bin/launchctl, which loads the agents lay-down
+//                        writes, ends a job's process group when the job is
+//                        booted out or its main process exits, and runs the
+//                        scheduler's tick as its agent when the case fires it
+//   Squire Update        opened as the owner opens it at the Mac: the
+//                        installed core's update.py --app, started in a
+//                        process group of its own as Finder or Spotlight
+//                        starts an app, never in a Squire agent's; its
+//                        windows answered by the world's osascript by their
+//                        title (Squire Update's name), each recorded, the
+//                        main window (the one with an Install button) with
+//                        the case's answer: Install, Not now, closed, or
+//                        Install once a file the case makes appears
+//   open                 the Mac's open: records what it was asked to open,
+//                        and starts Squire Update as LaunchServices would
+//                        (the installed core's update.py --app with the
+//                        arguments it was opened with, in a process group of
+//                        its own); any other app it only records
 //   Claude Code          round 2's fake behind a launcher link into
 //                        ~/.local/share/claude/versions/, as Claude Code's
 //                        installer lays it, answering --version as told
@@ -39,6 +59,7 @@ const path = require('node:path');
 const w = require('./squire-world.js');
 const s = require('./session-world.js');
 const I = require('./installer-world.js');
+const L = require('./tools/launchd.js');
 
 const SSH_KEYGEN = '/usr/bin/ssh-keygen';
 const TAR = '/usr/bin/tar';
@@ -117,13 +138,126 @@ process.exit(r.status === null ? 1 : r.status);
 `;
 }
 
+// The world's osascript for Squire Update's windows: a window whose text
+// names Squire Update (and no set-up window's title) is answered and recorded
+// in <log>, one JSON line each ({ args, stdin, text, main, buttons, answer }).
+// The main window is the one with an Install button; it is answered from
+// <answers> ({ main }): a button's name, 'close' (the window closed: osascript
+// exits 1, User canceled), 'hang' (left open), { waitFor, then } (the answer
+// held until the file appears) or { sequence: [...] } (the nth main window gets
+// the nth answer, the last after that). Every other window is answered with
+// its default button. A window that is not Squire Update's goes to delegate
+// (set-up's own answering osascript, in a world set up by its app) or is
+// refused.
+function updateWindowsScript({ log, answers, delegate = null }) {
+  return `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const { spawnSync } = require('child_process');
+const argv = process.argv.slice(2);
+let stdin = '';
+try { stdin = fs.readFileSync(0, 'utf8'); } catch (e) { stdin = ''; }
+const text = argv.join('\\n') + '\\n' + stdin;
+const setUp = ${JSON.stringify(Object.values(I.TITLES))};
+const delegate = ${JSON.stringify(delegate)};
+const mine = text.includes('Squire Update') && !setUp.some((t) => text.includes(t));
+const log = (rec) => fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ at: Date.now(), pid: process.pid, ...rec }) + '\\n');
+if (!mine) {
+  if (delegate) {
+    const r = spawnSync(delegate, argv, { input: stdin, stdio: ['pipe', 'inherit', 'inherit'] });
+    process.exit(r.status === null ? 1 : r.status);
+  }
+  log({ args: argv, stdin, text, refused: true });
+  process.stderr.write('execution error: not one of Squire Update\\'s windows (-2700)\\n');
+  process.exit(1);
+}
+const listed = /buttons\\s*[{\\[]([^}\\]]*)[}\\]]/.exec(text);
+const buttons = listed ? [...listed[1].matchAll(/"([^"]*)"|'([^']*)'/g)].map((m) => m[1] === undefined ? m[2] : m[1]) : [];
+const main = buttons.includes('Install') || /["']Install["']/.test(text);
+let how = {};
+try { how = JSON.parse(fs.readFileSync(${JSON.stringify(answers)}, 'utf8')); } catch (e) { how = {}; }
+let a;
+if (main) {
+  a = how.main === undefined ? 'close' : how.main;
+  if (a && Array.isArray(a.sequence)) {
+    let seen = 0;
+    try { seen = fs.readFileSync(${JSON.stringify(log)}, 'utf8').split('\\n').filter(Boolean).map((l) => JSON.parse(l)).filter((d) => d.main).length; } catch (e) { seen = 0; }
+    a = a.sequence[Math.min(seen, a.sequence.length - 1)];
+  }
+} else {
+  const d = /default button\\s+"([^"]*)"/.exec(text);
+  a = d ? d[1] : (buttons.length ? buttons[buttons.length - 1] : 'OK');
+}
+log({ args: argv, stdin, text, main, buttons, answer: a });
+const answer = (b) => { process.stdout.write('button returned:' + b + '\\n'); process.exit(0); };
+if (a === 'close') { process.stderr.write('execution error: User canceled. (-128)\\n'); process.exit(1); }
+else if (a === 'hang') { process.on('SIGTERM', () => process.exit(1)); setInterval(() => {}, 1000); }
+else if (a && a.waitFor) {
+  const until = Date.now() + 300000;
+  const poll = () => {
+    if (fs.existsSync(a.waitFor)) answer(a.then);
+    else if (Date.now() > until) { process.stderr.write('execution error: no answer (-1712)\\n'); process.exit(1); }
+    else setTimeout(poll, 100);
+  };
+  poll();
+} else answer(a);
+`;
+}
+
+// The world's open: records each call in <log> ({ argv }); an app named
+// "Squire Update.app" that is there is started as LaunchServices starts it,
+// in a process group of its own and in the world's environment: the
+// installed core's update.py --app, then the arguments after --args. Any
+// other app is only recorded; an app that is not there is refused as open
+// refuses it.
+function openScript({ log, python, home, env: launchEnv }) {
+  return `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
+const argv = process.argv.slice(2);
+const rec = { at: Date.now(), argv, pid: process.pid, parent: process.ppid };
+const cut = argv.indexOf('--args');
+const own = cut >= 0 ? argv.slice(0, cut) : argv;
+const passed = cut >= 0 ? argv.slice(cut + 1) : [];
+const a = own.indexOf('-a');
+const app = a >= 0 ? own[a + 1] : own.find((x) => !x.startsWith('-'));
+const done = (code, extra = {}) => { fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ ...rec, ...extra, code }) + '\\n'); process.exit(code); };
+if (!app || !fs.existsSync(app)) { process.stderr.write('Unable to find application named ' + JSON.stringify(app || '') + '\\n'); done(1); }
+if (path.basename(app) !== 'Squire Update.app') done(0);
+const child = spawn(${JSON.stringify(python)}, ['-B', ${JSON.stringify(path.join(home, 'core', 'tools', 'update.py'))}, '--app', ...passed],
+  { cwd: '/', env: ${JSON.stringify(launchEnv)}, stdio: 'ignore', detached: true });
+child.unref();
+done(0, { started: child.pid });
+`;
+}
+
+// The world's dscl in a world with the launchd model: the account's home, as
+// the account database answers it, is the world's home, so the world's home
+// is the account's own and lay-down loads its agents into the world's launchd.
+// Every other question goes to the Mac's own dscl.
+function dsclScript(userHome) {
+  return `#!${process.execPath}
+'use strict';
+const argv = process.argv.slice(2);
+if (argv.length === 4 && argv[0] === '.' && argv[1] === '-read' && argv[2].startsWith('/Users/') && argv[3] === 'NFSHomeDirectory') {
+  process.stdout.write('NFSHomeDirectory: ' + ${JSON.stringify(userHome)} + '\\n');
+  process.exit(0);
+}
+const r = require('child_process').spawnSync('/usr/bin/dscl', argv, { stdio: 'inherit' });
+process.exit(r.status === null ? 1 : r.status);
+`;
+}
+
 // The world's system folders: real commands as links, and the Mac's identity
 // answered with planted details where a careless diagnostic would read them.
 // mac changes the answers: { model, macOSVersion, sshKeygen: 'real' | 'none' |
-// 'fails' | 'hangs' }.
-function makeSystem(root, mac = {}) {
+// 'fails' | 'hangs' }. extra adds files ({ 'usr/bin/open': text }).
+function makeSystem(root, mac = {}, extra = {}) {
   const how = { model: 'MacBookAir10,1', macOSVersion: '26.3.1', sshKeygen: 'real', ...mac };
   const files = {
+    ...extra,
     'usr/sbin/sysctl': answeringCommand('/usr/sbin/sysctl', { '-n hw.model': how.model, 'hw.model': `hw.model: ${how.model}` }),
     'usr/sbin/scutil': answeringCommand('/usr/sbin/scutil', {
       '--get ComputerName': PLANTED.computerName, '--get LocalHostName': PLANTED.hostName, '--get HostName': PLANTED.hostName,
@@ -529,8 +663,11 @@ function setVersionAnswer(rw, how) {
 // it (its record, its release folder), with the stand-ins, the test keys,
 // Claude Code signed in, and the world's system folders (persona, when given,
 // is the owner's squire.json before the first lay-down). Nothing runs until
-// startSquire.
-function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null, intake = null } = {}) {
+// startSquire. launchd: 'model' runs Squire's agents under the launchd model
+// (tools/launchd.js) instead of the supervisor: startSquire lays core down
+// with the product's lay-down, which loads the agents it writes through the
+// world's launchctl, and the scheduler's tick runs as its agent when fired.
+function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null, intake = null, launchd = 'supervisor' } = {}) {
   const world = w.makeWorld({ approvalTimeoutSeconds });
   // The owner's own wake-ups are left out, so every wake-up a case reads is
   // one an update, a ticket or a recovery sent.
@@ -546,8 +683,19 @@ function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true,
     spawnSync('/bin/chmod', ['-R', 'u+rwX', world.owner]);
     w.cleanUp(world);
   });
-  world.system = makeSystem(path.join(world.root, 'system'), mac);
-  rw.system = world.system;
+  rw.system = path.join(world.root, 'system');
+  rw.model = launchd === 'model';
+  rw.launchdState = path.join(world.root, 'launchd');
+  const extra = {
+    'usr/bin/osascript': updateWindowsScript({ log: path.join(world.root, 'update-windows.jsonl'), answers: path.join(world.root, 'update-answers.json') }),
+    'usr/bin/open': openScript({ log: path.join(world.root, 'open-calls.jsonl'), python: w.PYTHON, home: world.home,
+      env: w.productEnv(world, env(rw)) }),
+  };
+  if (rw.model) {
+    extra['bin/launchctl'] = L.launchctlScript(rw.launchdState);
+    extra['usr/bin/dscl'] = dsclScript(world.userHome);
+  }
+  world.system = makeSystem(rw.system, mac, extra);
   rw.keys = makeKeys(path.join(world.root, 'keys'));
   startStandIns(rw);
   // intake, when given, makes the address core's release.json names for the
@@ -598,6 +746,14 @@ async function makeInstalledApp(t, { appVersion = INSTALLED } = {}) {
     },
   });
   assert.deepEqual(I.doneSteps(iw), I.STEPS, `set-up must finish from the app; got ${I.describeRun(run)}`);
+  // From now on the world's osascript also answers Squire Update's windows,
+  // handing set-up's own to the answering osascript set-up ran with.
+  const osascript = path.join(iw.system, 'usr', 'bin', 'osascript');
+  const setUpWindows = path.join(iw.system, 'usr', 'bin', '.osascript-set-up');
+  fs.renameSync(osascript, setUpWindows);
+  fs.writeFileSync(osascript, updateWindowsScript({ log: path.join(iw.root, 'update-windows.jsonl'),
+    answers: path.join(iw.root, 'update-answers.json'), delegate: setUpWindows }));
+  fs.chmodSync(osascript, 0o755);
   const healthy = await s.waitFor(() => health(rw).status === 0, 60000, 500);
   assert.ok(healthy, `the Squire the app set up must be healthy; health: ${w.describe(health(rw))}`);
   return rw;
@@ -652,9 +808,42 @@ function runAppAgain(rw) {
   return I.runApp(rw.iw, { launchd: false });
 }
 
+// The launchd model of a world made with launchd: 'model' (started once; a
+// log-out keeps it running, as launchd outlives a session).
+function startModel(rw) {
+  if (rw.launchdPid && !ended(rw.launchdPid)) return;
+  rw.launchdPid = L.start(rw.launchdState, { env: w.productEnv(rw.world, env(rw)),
+    agents: path.join(rw.world.userHome, 'Library', 'LaunchAgents'), intervals: false });
+}
+
+const AGENT_LABELS = ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup'];
+
+// Squire's agents the world's launchd model holds loaded, by label (a world
+// without the model has none).
+function agentsLoaded(rw) {
+  if (!rw.model) return [];
+  const st = L.control(rw.launchdState, { control: 'state' });
+  return AGENT_LABELS.filter((label) => st.jobs && st.jobs[label] && st.jobs[label].loaded);
+}
+
+// A login (launchd loads every agent in the world's Library/LaunchAgents) and
+// a log-out (every job ended with its process group and unloaded).
+function login(rw) { startModel(rw); return L.control(rw.launchdState, { control: 'login' }); }
+function logout(rw) { return L.control(rw.launchdState, { control: 'logout' }, { timeout: 60000 }); }
+
+// Every launchctl call the model answered, and every job event it recorded.
+const launchdCalls = (rw) => L.calls(rw.launchdState);
+const launchdEvents = (rw) => L.events(rw.launchdState);
+
+// The boot-outs the model saw made from inside the very job they name: a
+// Squire program stopping the agent it runs in.
+const stoppedFromInside = (rw) => launchdCalls(rw).filter((c) => c.argv[0] === 'bootout' && c.jobGroup && c.callerGroup === c.jobGroup);
+
 // Starts the world's launchd stand-in, which starts Squire's runner (as at
-// login, or when the Mac starts again), without waiting.
+// login, or when the Mac starts again), without waiting. In a world with the
+// launchd model this is a login.
 function launchSquire(rw, runnerEnv = null) {
+  if (rw.model) { login(rw); return; }
   fs.mkdirSync(rw.supervisorState, { recursive: true });
   rw.runnerEnv = runnerEnv || rw.runnerEnv || w.productEnv(rw.world, env(rw));
   fs.writeFileSync(path.join(rw.supervisorState, 'supervisor.json'), JSON.stringify({
@@ -667,8 +856,18 @@ function launchSquire(rw, runnerEnv = null) {
 }
 
 // The same, waiting for a live session and a health check with nothing to say.
+// Under the launchd model, Squire starts as set-up's lay-down starts it: core
+// laid down by the product's lay-down with the world's system folders, which
+// loads the three agents it writes through the world's launchd.
 async function startSquire(rw) {
-  launchSquire(rw);
+  if (rw.model) {
+    startModel(rw);
+    const laid = w.layDown(rw.world, rw.appCore, { env: env(rw) });
+    assert.equal(laid.status, 0, `lay-down must lay core down; got ${w.describe(laid)}`);
+    const loaded = await s.waitFor(() => agentsLoaded(rw).length === 3, 10000, 250);
+    assert.ok(loaded, `under the launchd model, lay-down must load Squire's three agents through the Mac's launchctl in the account's own home; ` +
+      `loaded: ${JSON.stringify(agentsLoaded(rw))}; launchctl calls: ${JSON.stringify(launchdCalls(rw))}`);
+  } else launchSquire(rw);
   const session = await s.waitFor(() => s.sessionRecords(rw.world).find((r) => !w.processGone(r.pid)), 30000);
   assert.ok(session, `the installed Squire must start its session; runner output: ${runnerOutput(rw).slice(-600) || '(none)'}`);
   const healthy = await s.waitFor(() => health(rw).status === 0, 30000, 500);
@@ -677,6 +876,18 @@ async function startSquire(rw) {
 }
 
 function stopSquire(rw) {
+  if (rw.model) {
+    // The Mac stops: launchd and every job it started, each with its group.
+    if (rw.launchdPid) {
+      L.control(rw.launchdState, { control: 'stop' });
+      const end = Date.now() + 5000;
+      while (!ended(rw.launchdPid) && Date.now() < end) sleepSync(0.05);
+      try { process.kill(-rw.launchdPid, 'SIGKILL'); } catch (e) { /* gone */ }
+      rw.launchdPid = null;
+    }
+    s.killFakes(rw.world);
+    return;
+  }
   if (!rw.supervisorPid) return;
   try { process.kill(-rw.supervisorPid, 'SIGTERM'); } catch (e) { /* gone */ }
   const end = Date.now() + 5000;
@@ -691,6 +902,7 @@ function stopSquire(rw) {
 
 // A runner start, as launchd makes one at login or when the Mac starts again.
 function askRunnerStart(rw) {
+  if (rw.model) { login(rw); return; }
   fs.writeFileSync(path.join(rw.supervisorState, 'start'), '');
 }
 
@@ -700,12 +912,104 @@ const runnerOutput = (rw) => { try { return fs.readFileSync(path.join(rw.supervi
 // ------------------------------------------------------------- running
 
 // One run of the wake-ups scheduler's tick, as its agent runs it (the
-// outside job), held until it ends.
+// outside job), held until it ends. The tick checks weekly and stages,
+// recovers an unfinished install where nothing needs laying down, runs the
+// known fixes and sends tickets; it never installs (Squire Update does).
+// Under the launchd model the tick runs as the agent itself: the model fires
+// the wake-ups job and the world waits for that run to end.
 function tick(rw, { timeout = 600000 } = {}) {
+  if (rw.model) return fireTick(rw, { timeout });
   const r = w.runPython(rw.world, path.join(rw.home, 'core', 'tools', 'wake-up.py'), ['--due'],
     { cwd: '/', env: env(rw), timeout });
   assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the scheduler's run must run; got ${w.describe(r)}`);
   return r;
+}
+
+// The scheduler's agent fired by the launchd model, as its StartInterval
+// fires it: one run of its program in its own job, waited for. Its output is
+// what the job wrote meanwhile.
+function fireTick(rw, { timeout = 600000 } = {}) {
+  const label = 'com.stravica.squire.wake-ups';
+  const out = path.join(rw.launchdState, `${label}.out`);
+  const from = fs.existsSync(out) ? fs.statSync(out).size : 0;
+  const fired = L.control(rw.launchdState, { control: 'fire', label });
+  assert.equal(fired.code, 0, `the scheduler's agent must be loaded for its tick to run; got ${JSON.stringify(fired)}; loaded: ${JSON.stringify(agentsLoaded(rw))}`);
+  const end = Date.now() + timeout;
+  let exit = null;
+  while (!exit && Date.now() < end) {
+    exit = launchdEvents(rw).find((e) => e.exited === label && e.pid === fired.pid) || null;
+    if (!exit) sleepSync(0.1);
+  }
+  const text = fs.existsSync(out) ? fs.readFileSync(out).subarray(from).toString('utf8') : '';
+  const r = { status: exit ? exit.status : null, signal: exit ? exit.signal : 'still running', stdout: text, stderr: text, error: '' };
+  assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the scheduler's run must run; got ${w.describe(r)}`);
+  return r;
+}
+
+// ------------------------------------------------------------- Squire Update
+
+const updateWindowsFile = (rw) => path.join(rw.root, 'update-windows.jsonl');
+// Every window Squire Update showed, in order ({ args, stdin, text, main,
+// buttons, answer }).
+const updateWindows = (rw) => readJsonLines(updateWindowsFile(rw)).filter((x) => !x.refused);
+// Every call of the world's open, in order ({ argv, code, started }).
+const openCalls = (rw) => readJsonLines(path.join(rw.root, 'open-calls.jsonl'));
+// Where Squire Update lives: the Applications folder of the owner's home.
+const squireUpdateApp = (rw) => path.join(rw.world.userHome, 'Applications', 'Squire Update.app');
+
+// Opens Squire Update as the owner opens it at the Mac (from Finder or
+// Spotlight): the installed core's update.py --app, in a process group of its
+// own, in the world's environment, its main window answered with answer.
+// Does not wait.
+function openSquireUpdate(rw, { answer = 'Install', args = [] } = {}) {
+  fs.writeFileSync(path.join(rw.root, 'update-answers.json'), JSON.stringify({ main: answer }));
+  rw.uiRuns = (rw.uiRuns || 0) + 1;
+  const errFile = path.join(rw.root, `update-app-${rw.uiRuns}.out`);
+  const out = fs.openSync(errFile, 'w');
+  const child = spawn(w.PYTHON, ['-B', path.join(rw.home, 'core', 'tools', 'update.py'), '--app', ...args],
+    { cwd: '/', env: w.productEnv(rw.world, env(rw)), stdio: ['ignore', out, out], detached: true });
+  fs.closeSync(out);
+  let exit = null;
+  child.on('exit', (status, signal) => { exit = { status, signal }; });
+  return { pid: child.pid, exited: () => exit || (ended(child.pid) ? { status: null, signal: 'gone' } : null),
+    output: () => { try { return fs.readFileSync(errFile, 'utf8'); } catch (e) { return ''; } } };
+}
+
+// Waits for the install Squire Update's engine runs to end: install.json gone,
+// and the process it last named gone.
+function engineDone(rw, within = 600000) {
+  let pid = null;
+  return s.waitFor(() => {
+    const rec = readJson(installRecordFile(rw));
+    if (rec && Number.isInteger(rec.pid)) pid = rec.pid;
+    if (fs.existsSync(installRecordFile(rw))) return false;
+    return !pid || ended(pid);
+  }, within, 250);
+}
+
+// Squire Update opened at the Mac, the owner answering its main window with
+// answer (Install, Not now, 'close' for the window closed, or
+// { waitFor, then }); waits for it to end, and for the install its engine
+// runs, in a session of its own, to end. Squire Update must open and show at
+// least one window. Returns what it showed and the wake-ups sent meanwhile.
+async function installAtMac(rw, release, answer = 'Install', { args = [], within = 600000 } = {}) {
+  const before = wakeUpIds(rw);
+  const shown = updateWindows(rw).length;
+  const ui = openSquireUpdate(rw, { answer, args });
+  await s.waitFor(() => ui.exited(), within, 250);
+  const windows = updateWindows(rw).slice(shown);
+  assert.ok(windows.length >= 1, `Squire Update must open (the installed core's update.py --app) and show its window` +
+    `${release ? ` for ${release.version}` : ''}; it ${ui.exited() ? `exited ${JSON.stringify(ui.exited())}` : 'did not end'}: ` +
+    `${ui.output().slice(-400) || '(no output)'}`);
+  await engineDone(rw, within);
+  return { ui: ui.exited(), windows, main: windows.filter((x) => x.main), sent: newWakeUps(rw, before) };
+}
+
+// The children of a process, each with its process group, read with ps.
+function childrenOf(pid) {
+  const r = spawnSync('/bin/ps', ['-axo', 'pid=,ppid=,pgid='], { encoding: 'utf8' });
+  return (r.stdout || '').split('\n').map((l) => l.trim().split(/\s+/).map(Number))
+    .filter((p) => p.length === 3 && p[1] === pid).map(([p, , g]) => ({ pid: p, pgid: g }));
 }
 
 // The same, started without waiting, in a process group of its own.
@@ -717,39 +1021,53 @@ function startTick(rw) {
   return { pid: child.pid, exited: () => exit };
 }
 
-// Runs the scheduler's tick and stops the install at exactly the named step.
-// The world steps the tick's whole process group (the tick and the install it
-// runs as its child): it holds the group (SIGSTOP), reads install.json, and
-// lets the group run again (SIGCONT) for a twentieth of a millisecond at a
-// time, so the moment the record names the step the group is held there, with
-// nothing in the product made to wait for a test. Then it kills the group
-// (SIGKILL: a power cut or a crash), or, with hold, leaves it held: the
-// returned resume() lets it run to its end, kill() ends it. Returns the step
-// the record named when the group was held (null if the tick ended first, or
-// the record named a later step: the case then fails on the step).
+// Opens Squire Update, answers Install, and stops its install at exactly the
+// named step. The install runs in Squire Update's engine, the process Squire
+// Update starts in a session and process group of its own: the world finds it
+// as Squire Update's child that leads its own process group (never by a
+// pattern), before it writes its record, and steps the engine's whole process
+// group: it holds the group (SIGSTOP), reads install.json, and lets the group
+// run again (SIGCONT) for a twentieth of a millisecond at a time, so the
+// moment the record names the step the group is held there, with nothing in
+// the product made to wait for a test. Then it kills the engine's group and
+// Squire Update's (SIGKILL: a power cut or a crash), or, with hold, leaves the
+// engine held: the returned resume() lets it run to its end, kill() ends it.
+// Returns the step the record named when the engine was held (null if no
+// engine started or it ended first, or the record named a later step: the
+// case then fails on the step).
 async function stopInstallAt(rw, step, { hold = false, within = 300000, slice = 0.05 } = {}) {
   const want = INSTALL_STEPS.indexOf(step);
   assert.ok(want >= 0, `no install step is named ${step}`);
-  const run = startTick(rw);
-  const signal = (sig) => { try { process.kill(-run.pid, sig); return true; } catch (e) { return false; } };
-  const spin = (ms) => { const until = process.hrtime.bigint() + BigInt(Math.round(ms * 1e6)); while (process.hrtime.bigint() < until) { /* the group runs */ } };
+  const ui = openSquireUpdate(rw, { answer: 'Install' });
   const end = Date.now() + within;
+  let engine = null;
+  while (!engine && Date.now() < end && !ended(ui.pid)) {
+    engine = childrenOf(ui.pid).find((c) => c.pid === c.pgid) || null;
+  }
+  const pid = engine ? engine.pid : null;
+  const signal = (sig) => { if (!pid) return false; try { process.kill(-pid, sig); return true; } catch (e) { return false; } };
+  const run = { pid, ui, exited: () => (!pid || ended(pid) ? { gone: true } : null) };
+  const spin = (ms) => { const until = process.hrtime.bigint() + BigInt(Math.round(ms * 1e6)); while (process.hrtime.bigint() < until) { /* the group runs */ } };
   let seen = null;
   let turns = 0;
-  while (!run.exited() && Date.now() < end) {
+  while (pid && Date.now() < end) {
     if (!signal('SIGSTOP')) break;
     const rec = readJson(installRecordFile(rw));
     if (rec && INSTALL_STEPS.indexOf(rec.step) >= want) { seen = rec.step; break; }
-    // Held, the world reads whether the tick has ended, now and then.
+    // Held, the world reads whether the engine has ended, now and then.
     turns += 1;
-    if (turns % 200 === 0) await new Promise((resolve) => setImmediate(resolve));
+    if (turns % 200 === 0) {
+      if (ended(pid)) break;
+      await new Promise((resolve) => setImmediate(resolve));
+    }
     signal('SIGCONT');
     spin(slice);
   }
-  const handle = { seen, run, resume: () => signal('SIGCONT'), kill: () => { signal('SIGKILL'); signal('SIGCONT'); } };
+  const killUi = () => { try { process.kill(-ui.pid, 'SIGKILL'); } catch (e) { /* gone */ } };
+  const handle = { seen, run, resume: () => signal('SIGCONT'), kill: () => { signal('SIGKILL'); signal('SIGCONT'); killUi(); } };
   if (hold && seen === step) return handle;
   handle.kill();
-  await s.waitFor(() => run.exited(), 5000);
+  await s.waitFor(() => run.exited() && ui.exited(), 5000);
   return handle;
 }
 
@@ -1056,9 +1374,23 @@ module.exports = {
   runnerStarts,
   runnerOutput,
   tick,
+  fireTick,
   startTick,
   stopInstallAt,
   killInstallAt,
+  openSquireUpdate,
+  installAtMac,
+  engineDone,
+  updateWindows,
+  openCalls,
+  squireUpdateApp,
+  AGENT_LABELS,
+  agentsLoaded,
+  login,
+  logout,
+  launchdCalls,
+  launchdEvents,
+  stoppedFromInside,
   health,
   installRecordFile,
   currentRelease,
