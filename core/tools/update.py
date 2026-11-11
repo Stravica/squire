@@ -258,8 +258,21 @@ class Releases:
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
 
+    @staticmethod
+    def floor_files():
+        """The floor files the installed core's lay-down records the digests
+        of (LayDown.FLOOR_FILES), each of which a release must carry."""
+        try:
+            spec = importlib.util.spec_from_file_location('squire_lay_down', os.path.join(CORE, 'tools', 'lay-down.py'))
+            lay_down = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(lay_down)
+            return tuple(lay_down.LayDown.FLOOR_FILES)
+        except Exception:
+            raise Refused('its floor files cannot be checked')
+
     def manifest(self, data, version=None):
-        """The manifest's four fields, each of its type; refused otherwise."""
+        """The manifest's four fields, each of its type, listing every floor
+        file; refused otherwise."""
         try:
             manifest = json.loads(data.decode('utf-8'))
         except (UnicodeDecodeError, ValueError):
@@ -280,6 +293,8 @@ class Releases:
             if not plain or not isinstance(digest, str) or not self.DIGEST.match(digest) or Paths.fold(rel) in seen:
                 raise Refused('its manifest cannot be read')
             seen.add(Paths.fold(rel))
+        if any(rel not in files for rel in self.floor_files()):
+            raise Refused('it is missing a floor file')
         changelog = manifest['changelog']
         if not isinstance(changelog, str) or not 1 <= len(changelog) <= 4000 \
                 or any(unicodedata.category(c) == 'Cc' and c != '\n' for c in changelog) \
