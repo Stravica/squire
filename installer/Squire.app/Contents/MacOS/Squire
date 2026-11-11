@@ -413,7 +413,7 @@ sq_yes_text() {
   if [[ -n $1 ]]; then
     REPLY+="• Apple's command line tools, from Apple's own installer, which asks for an administrator's password."$'\n'
   fi
-  REPLY+="• Squire itself, in your Library, with a folder of your own at ~/Squire."$'\n'
+  REPLY+="• Squire itself, in your Library, with a folder of your own at ~/Squire, and Squire Update, the program that installs Squire's updates, in the Applications folder in your home folder."$'\n'
   REPLY+="• Three background jobs: Squire's always-on session, its wake-ups, and a nightly backup of ~/Squire."$'\n\n'
   REPLY+="Nothing else is installed."
 }
