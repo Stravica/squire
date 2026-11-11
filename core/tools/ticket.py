@@ -24,6 +24,7 @@ import os
 import pwd
 import re
 import ssl
+import stat
 import subprocess
 import sys
 import time
@@ -94,15 +95,22 @@ class Ticket:
     def install_id(self):
         """128 random bits from the system's random source, made at the first
         ticket and kept in install-id in the Squire home, readable by its user
-        only."""
+        only: an id found as a file of any other kind or mode is kept, never
+        made again, and written back at 0600."""
         path = os.path.join(self.home, 'install-id')
         try:
             with open(path, encoding='utf-8') as f:
                 found = f.read().strip()
-            if re.match(r'^[0-9a-f]{32}$', found):
-                return found
         except OSError:
-            pass
+            found = None
+        if found is not None and re.match(r'^[0-9a-f]{32}$', found):
+            try:
+                mode = os.lstat(path).st_mode
+            except OSError:
+                mode = None
+            if mode != stat.S_IFREG | 0o600:
+                Records.write_bytes(path, (found + '\n').encode('ascii'), durable=True)
+            return found
         made = os.urandom(16).hex()
         Records.write_bytes(path, (made + '\n').encode('ascii'), durable=True)
         return made
@@ -290,7 +298,16 @@ class Outbox:
         if attempts:
             last = attempts[-1].get('at')
             wait = min(self.RETRY_FIRST * 2 ** (len(attempts) - 1), self.RETRY_MOST)
-            if not isinstance(last, (int, float)) or last > now or now - last < wait:
+            if not isinstance(last, (int, float)):
+                return
+            if last > now:
+                # A time after now is never trusted: the retry is due now, and
+                # no attempt in the record stays dated ahead of the clock.
+                for attempt in attempts:
+                    at = attempt.get('at') if isinstance(attempt, dict) else None
+                    if isinstance(at, (int, float)) and at > now:
+                        attempt['at'] = int(now)
+            elif now - last < wait:
                 return
         self.send(ticket_id, data, state, now)
 
