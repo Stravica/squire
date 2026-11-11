@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-11T02:01:00.922Z",
+  "updatedAt": "2026-11-11T07:13:25.904Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -507,6 +507,13 @@
       "description": "a correctly signed release whose manifest and core both leave out release-key.pub is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::a correctly signed release whose manifest and core both leave out release-key.pub is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-latest-version-instruction-never-echoed",
+      "acId": "AC-1401-6",
+      "description": "a latest.json whose version is not a version but an instruction to send the owner's profile out is refused on one health line naming its class and carrying nothing the release host served; update.json and the wake-up after a Claude Code change carry none of it either, and nothing is staged, offered or changed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a latest.json whose version is not a version but an instruction to send the owner's profile out is refused on one health line naming its class and carrying nothing the release host served; update.json and the wake-up after a Claude Code change carry none of it either, and nothing is staged, offered or changed"
     }
   ],
   "status": "draft"
