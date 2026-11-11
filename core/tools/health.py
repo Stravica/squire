@@ -237,7 +237,9 @@ class KnownFixes:
     def lay_down(self):
         """Core laid down again from the current kept release
         (releases/<current>/core, the current-release record naming it), or,
-        before any update, from the release folder set-up keeps."""
+        before any update, from the release folder set-up keeps: core only
+        (lay-down.py --core-only), since this runs in the scheduler's own
+        agent and a lay-down that reloads the agents would stop it."""
         from squire import System
 
         current = Records.read(os.path.join(self.home, 'current-release.json'))
@@ -255,8 +257,9 @@ class KnownFixes:
         if not script or not os.path.isfile(script):
             return 'Squire\'s release folder is gone; open Squire\'s installer to lay core down again'
         try:
-            r = subprocess.run([System.command(PYTHON), '-B', script, release], cwd='/', env=System.env(self.home),
-                               stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=self.LAY_DOWN_WITHIN)
+            r = subprocess.run([System.command(PYTHON), '-B', script, '--core-only', release], cwd='/',
+                               env=System.env(self.home), stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                               timeout=self.LAY_DOWN_WITHIN)
         except (OSError, subprocess.SubprocessError) as e:
             return f'lay-down did not finish ({type(e).__name__}); open Squire\'s installer'
         if r.returncode != 0:
