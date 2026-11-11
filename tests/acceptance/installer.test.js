@@ -425,7 +425,8 @@ test('after the one yes nothing outside the named list is installed', { timeout:
   assert.equal(installCalls(run).length, 1, 'Apple\'s tools are started once');
   const allowed = [/^Library\/Application Support\/Squire(\/|$)/, /^Squire(\/|$)/, /^\.claude(\/|$)/, /^\.claude\.json$/,
     /^\.local$/, /^\.local\/(bin|share|state)$/, /^\.local\/bin\/claude$/, /^\.local\/(share|state)\/claude(\/|$)/, /^\.cache$/, /^\.cache\/claude(\/|$)/,
-    /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup)\.plist$/];
+    /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup)\.plist$/,
+    /^Applications($|\/Squire Update\.app(\/|$))/];
   const added = Object.keys(I.contentOf(iw.userHome)).filter((rel) => !(rel in before));
   const outside = added.filter((rel) => !allowed.some((re) => re.test(rel)));
   assert.deepEqual(outside, [], 'set-up must add nothing outside Claude Code, Squire, its folder and its three background jobs');

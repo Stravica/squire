@@ -1139,6 +1139,41 @@ test("under a launchd that ends a stopped agent's process group, an install kill
   assertAgentsHeld(rw, 'after the recovery');
 });
 
+test("under a launchd that ends a stopped agent's process group, while an install that did not finish waits on Squire Update to lay core down, the scheduler's run opens Squire Update once, and its next run with the same install still waiting opens nothing", LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  // The install's engine held at its lay-down, holding its lock, while the agents load again.
+  const held = await R.stopInstallAt(rw, 'lay', { hold: true });
+  t.after(() => held.kill());
+  assert.equal(held.seen, 'lay', `the install must be held at exactly its step "lay"; the record named ${JSON.stringify(held.seen)}`);
+  // Squire Update stays open with its window unanswered: it keeps its
+  // one-at-a-time lock, so the Squire Update Squire opens settles nothing and
+  // the install keeps waiting.
+  process.kill(-held.run.ui.pid, 'SIGSTOP');
+  const loadedAt = Date.now();
+  R.login(rw);
+  // The runner's start finds the install still held and leaves it to run.
+  const runnerState = path.join(rw.home, 'runner.json');
+  const runnerUp = await s.waitFor(() => {
+    try { return fs.statSync(runnerState).mtimeMs >= loadedAt && JSON.parse(fs.readFileSync(runnerState, 'utf8')).problems.length === 0; } catch (e) { return false; }
+  }, 120000, 250);
+  assert.ok(runnerUp, `the runner must start again with no problem; it wrote ${fs.existsSync(runnerState) ? fs.readFileSync(runnerState, 'utf8') : 'nothing'}`);
+  // Then the engine ends, as a crash ends it, and its lock goes with it.
+  for (const sig of ['SIGKILL', 'SIGCONT']) {
+    try { process.kill(-held.run.pid, sig); } catch (e) { /* gone */ }
+  }
+  assert.ok(await s.waitFor(() => held.run.exited(), 10000, 100), 'the install\'s engine must end');
+  const toSquireUpdate = () => R.openCalls(rw).filter((c) => c.argv.some((a) => a.endsWith('Squire Update.app')));
+  const before = toSquireUpdate().length;
+  R.tick(rw);
+  assert.ok(fs.existsSync(R.installRecordFile(rw)), 'after the first run the install still waits on Squire Update');
+  R.tick(rw);
+  assert.ok(fs.existsSync(R.installRecordFile(rw)), 'after the second run the same install still waits on Squire Update');
+  const opened = toSquireUpdate().slice(before);
+  assert.equal(opened.length, 1, `across two runs of the scheduler with the same install waiting, Squire opens Squire Update once; open was called ${JSON.stringify(opened)}`);
+});
+
 test("under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
