@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-10T21:10:08.695Z",
+  "updatedAt": "2026-11-11T15:23:21.816Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -16,18 +16,18 @@
       "id": "AC-1401-1",
       "description": "Squire installs only updates signed by Stravica.",
       "testable": true,
-      "given": "A release whose signature is missing, made with a different key, or does not match the release",
-      "when": "Squire's update check fetches and checks it",
-      "then": "The release is refused and nothing of Squire's installed core, its kept releases, its agents or the Squire owner's folder changes; the refusal is named on the health check; a release correctly signed with Stravica's release key may be offered to the Squire owner.",
+      "given": "A release whose signature is missing, made with a different key, or does not match the release, when Squire's update check fetches it or when Squire Update checks it again before showing it",
+      "when": "Squire's update check fetches and checks it, or the Squire owner opens Squire Update",
+      "then": "The release is refused and nothing of Squire's installed core, its kept releases, its agents or the Squire owner's folder changes; the refusal is named on the health check and, in Squire Update, in plain words; a release correctly signed with Stravica's release key is staged and Squire tells the Squire owner it is waiting.",
       "verification": "testOnly"
     },
     {
       "id": "AC-1401-2",
-      "description": "Squire explains what an update changes and installs it only on the Squire owner's yes.",
+      "description": "Squire tells the Squire owner a signed update is waiting, and the update installs only from Squire Update on the Mac, after it has shown what the update changes.",
       "testable": true,
-      "given": "A signed update is ready",
-      "when": "Squire offers it and the Squire owner has not said yes",
-      "then": "The release's changelog is shown first and core stays unchanged; on the Squire owner's yes the update installs.",
+      "given": "A signed update is staged",
+      "when": "Squire tells the Squire owner, the session is asked to install it, and the Squire owner opens Squire Update and chooses Install, or Not now, or closes its window",
+      "then": "What Squire gives its session to tell the Squire owner names the version and Squire Update and holds no command, path or terminal; the session installs nothing and no request or yes for an install is recorded; Squire Update shows the version and the release's changelog exactly as the signed manifest holds them before it changes anything; only Install installs that release, as shown; on Not now or a closed window core stays unchanged.",
       "verification": "testOnly"
     },
     {
@@ -35,8 +35,8 @@
       "description": "If an update fails its health check, Squire restores the previous version by itself.",
       "testable": true,
       "given": "An update that fails Squire's health check once installed",
-      "when": "Squire installs it on the Squire owner's yes",
-      "then": "The previous version is running again with no one acting, and Squire tells the Squire owner it rolled the update back.",
+      "when": "The Squire owner installs it with Squire Update",
+      "then": "The previous version is running again with no one acting, all three of Squire's agents loaded; Squire Update and a message in the chat both tell the Squire owner it rolled the update back; the rolled-back release is not offered again until a newer one is published.",
       "verification": "testOnly"
     },
     {
@@ -44,8 +44,8 @@
       "description": "An update, and a rollback, never touch the Squire owner's folder or what Squire built for the Squire owner.",
       "testable": true,
       "given": "A Squire owner's folder holding a profile, memory, files, the Squire's name and things Squire built for the Squire owner",
-      "when": "A signed update installs, and an update that fails its health check is rolled back",
-      "then": "The Squire owner's folder hashes the same before the update, after it, and after the rollback, apart from Squire's own records inside it (the approvals ledger and Squire's state files there), whose only change is the one recorded use of the Squire owner's yes.",
+      "when": "A signed update installs with Squire Update, and an update that fails its health check is rolled back",
+      "then": "The Squire owner's folder hashes the same before the update, after it, and after the rollback, the approvals ledger and Squire's state files there included: an update and a rollback write nothing there.",
       "verification": "testOnly"
     },
     {
@@ -80,8 +80,8 @@
       "description": "An install interrupted at any step, or a download that does not complete, leaves Squire on one whole, checked version and says which.",
       "testable": true,
       "given": "An install stopped at any of its named steps by a killed process, a restart of the Mac or a log-out; or a download that fails, never ends or is cut short",
-      "when": "Squire's runner next starts or its scheduler next runs",
-      "then": "Squire stays on the new release only when its files, the installed core and the signed manifest all match and the check passes, and is otherwise on the previous release; either way one message tells the Squire owner which, the unfinished install's record is gone, the Squire owner's folder is unchanged, and a download never reaches the installed core.",
+      "when": "Squire's runner next starts, its scheduler next runs, or Squire Update is next opened",
+      "then": "Squire stays on the new release only when its files, the installed core and the signed manifest all match and the check passes, and is otherwise on the previous release, laid down again only by Squire Update, which Squire opens by itself when a lay-down is needed; either way one message tells the Squire owner which, all three agents are loaded, the unfinished install's record is gone, the Squire owner's folder is unchanged, and a download never reaches the installed core.",
       "verification": "testOnly"
     },
     {
@@ -91,6 +91,33 @@
       "given": "Claude Code's version answer or its launcher's target differs from what Squire's runner recorded at its start, or either cannot be read (a version answer that fails or never comes, a launcher pointing at nothing)",
       "when": "Squire's scheduler next runs",
       "then": "Squire runs its health check and tells the Squire owner its result in one message, with the known fixes it offers; a value it cannot read counts as a change, the same change is not reported twice, and no Claude Code downgrade is ever offered.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-10",
+      "description": "No Squire program is ended by what it stops.",
+      "testable": true,
+      "given": "A Mac whose launchd ends every process in a Squire agent's process group when that agent is stopped or its main process exits",
+      "when": "Squire Update installs a signed release, rolls one back, or finishes an interrupted install; Squire's runner or scheduler settles an interrupted install; and the scheduler runs a known fix that lays core down",
+      "then": "Each runs to its end and leaves all three of Squire's agents loaded; no install, rollback or lay-down runs in a Squire agent's process group, and no Squire program stops the agent it runs in.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1401-11",
+      "description": "Squire's session tells the Squire owner a release is waiting and never sends them to a terminal.",
+      "testable": true,
+      "given": "Squire on a Mac with a release staged, its session told by a wake-up that Claude Code labels as a message from another session, and by Squire's own note on the Squire owner's next message",
+      "when": "The Squire owner writes to Squire from the Mac or the phone",
+      "then": "The session tells the Squire owner, in plain words, that the release is waiting and to open Squire Update on the Mac; it names no command, file path or terminal, and runs nothing for the update.",
+      "verification": "external"
+    },
+    {
+      "id": "AC-1401-12",
+      "description": "Squire Update is on the Mac from the first install, and opening it is safe at any time.",
+      "testable": true,
+      "given": "A Mac where set-up has finished or an update has installed, and then nothing waiting, a release waiting, a waiting release whose signature or files no longer check, a health check naming a fault, Squire Update already open, or Squire Update closed after Install",
+      "when": "The Squire owner opens Squire Update",
+      "then": "Squire Update is in the Applications folder of the Squire owner's home, from the release installed, and opens with no Terminal window and no download; it says Squire is up to date, or shows the version and changelog and waits, or says the release was refused and nothing was changed, or says Squire must fix a problem first, or says it is already open; only one install runs at a time, and closing Squire Update after Install does not stop the install.",
       "verification": "testOnly"
     }
   ]
