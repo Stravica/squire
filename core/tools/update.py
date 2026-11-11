@@ -1,14 +1,18 @@
-"""Squire's updates: signed releases only, kept two deep, installed on the
-owner's yes outside the session, rolled back by themselves when the check
-after an install fails, and settled on one whole, checked version when an
-install does not finish.
+"""Squire's updates: signed releases only, kept two deep, installed only from
+Squire Update at the Mac, outside every agent and the session, rolled back by
+themselves when the check after an install fails, and settled on one whole,
+checked version when an install does not finish.
 
-    /usr/bin/python3 -B update.py --install <version>
-        the session's request; the safety floor asks the owner for it, showing
-        the version and the changelog, and never lets it run in the session
-    /usr/bin/python3 -B update.py --perform
-        the scheduler's install, outside the session, on the owner's fresh,
-        exact yes, held to its end
+    /usr/bin/python3 -B update.py --app [--recover]
+        Squire Update, as the owner opens it (its launcher in the Applications
+        folder of the owner's home runs this): an unfinished install settled
+        first, then the staged release checked again and shown, its version
+        and changelog as the signed manifest holds them, installed only on
+        Install; opened by Squire with --recover, it settles and ends
+    /usr/bin/python3 -B update.py --app-install <version> <manifest digest>
+        Squire Update's engine, started by its window in a session of its
+        own: installs the staged release whose manifest has that SHA-256,
+        held to its end
     /usr/bin/python3 -B update.py --recover
         an install that did not finish (install.json present, its lock free),
         settled: Squire stays on the new release when it is whole and checks,
@@ -931,7 +935,8 @@ class Recovery:
             return 0
         if not os.path.lexists(self.install.record_file):
             return 0
-        return self.settle()
+        self.settle()
+        return 0
 
     def readable(self, record):
         kept = self.releases.kept
@@ -940,6 +945,8 @@ class Recovery:
             and isinstance(record.get('started'), int) and os.path.isdir(os.path.join(kept, record['next'], 'core'))
 
     def settle(self):
+        """The version Squire is on once the install is settled, told in one
+        wake-up, the record gone."""
         record = Records.read(self.install.record_file)
         if self.readable(record):
             on = self.adopt(record['previous'], record['next'])
@@ -952,7 +959,7 @@ class Recovery:
             on = self.by_current()
         self.install.send(f'Squire\'s update did not finish; Squire is on {on}', 'recovery')
         self.install.remove_record()
-        return 0
+        return on
 
     def whole(self, version, key):
         """The kept release's files when it, its signed manifest and the
@@ -1005,22 +1012,282 @@ class Recovery:
         return version
 
 
+class SquireUpdate:
+    """Squire Update, the app the owner opens at the Mac (update.py --app),
+    one at a time (update-app.lock in the Squire home). An install that did
+    not finish is settled first, here, outside every agent. Then the staged
+    release is checked again and shown in one window, its version and its
+    changelog exactly as the signed manifest holds them; nothing changes
+    before Install. Install starts the engine (update.py --app-install
+    <version> <manifest digest>) in a session of its own, so neither the
+    agents it stops nor the owner closing the window can end it, and the
+    engine installs only the release the window showed. Opened by Squire with
+    --recover, it settles the install that did not finish and ends."""
+
+    TITLE = 'Squire Update'
+    WINDOW_WITHIN = 3600
+    POLL = 1.0
+    # The engine's exit: installed, not installed (rolled back, or nothing
+    # changed), the release changed since it was shown, refused when checked
+    # again, another install holding install.lock.
+    INSTALLED, NOT_INSTALLED, CHANGED, REFUSED, BUSY = 0, 1, 3, 4, 5
+    DIGEST = re.compile(r'^[0-9a-f]{64}\Z')
+
+    def __init__(self, config):
+        self.config = config
+        self.home = config.home
+        self.releases = Releases(config.home)
+        self.held = None
+
+    # ------------------------------------------------------------ windows
+
+    def window(self, text, buttons=('OK',), title=None, wait=True):
+        """One window drawn by the Mac's osascript, its last button the
+        default: the button chosen, or None when it was closed or not
+        answered. With wait False it is left on screen and returned."""
+        names = ', '.join(f'"{b}"' for b in buttons)
+        argv = [System.command('/usr/bin/osascript'), '-e', 'on run argv', '-e',
+                f'display dialog (item 2 of argv) with title (item 1 of argv) buttons {{{names}}} '
+                f'default button "{buttons[-1]}"', '-e', 'end run', title or self.TITLE, text]
+        if not wait:
+            try:
+                return subprocess.Popen(argv, cwd='/', env=System.env(), stdin=subprocess.DEVNULL,
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except OSError:
+                return None
+        try:
+            r = subprocess.run(argv, cwd='/', env=System.env(), stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                               timeout=self.WINDOW_WITHIN)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        said = r.stdout.strip()
+        chosen = said[len('button returned:'):] if said.startswith('button returned:') else None
+        return chosen if r.returncode == 0 and chosen in buttons else None
+
+    @staticmethod
+    def close(shown):
+        """A window left on screen, taken away."""
+        if shown is None:
+            return
+        if shown.poll() is None:
+            shown.terminate()
+        try:
+            shown.wait(10)
+        except subprocess.TimeoutExpired:
+            shown.kill()
+            shown.wait()
+
+    def log(self, text):
+        """One line in the Squire home's log of Squire Update."""
+        try:
+            os.makedirs(os.path.join(self.home, 'logs'), mode=0o700, exist_ok=True)
+            with open(os.path.join(self.home, 'logs', 'update.log'), 'a', encoding='utf-8') as f:
+                f.write(f'{time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())} Squire Update: {text}\n')
+        except OSError:
+            pass
+
+    def installing(self):
+        record = Records.read(os.path.join(self.home, 'install.json'))
+        version = record.get('next') if isinstance(record, dict) else None
+        if Version.of(version):
+            return f'Squire Update is installing Squire {version} now. It tells you when it is done.'
+        return 'Squire Update is installing an update to Squire now. It tells you when it is done.'
+
+    # ------------------------------------------------------------ the app
+
+    def lock(self):
+        try:
+            fd = os.open(os.path.join(self.home, 'update-app.lock'), os.O_RDWR | os.O_CREAT, 0o600)
+        except OSError:
+            return None
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            os.close(fd)
+            return None
+        return fd
+
+    def open(self, recover=False):
+        self.held = self.lock()
+        if self.held is None:
+            busy = not Install.lock_free(self.home)
+            self.window(self.installing() if busy else 'Squire Update is already open. Look for its window.')
+            return 0
+        if not Install.lock_free(self.home):
+            self.window(self.installing())
+            return 0
+        if Install.unfinished(self.home):
+            self.finish()
+        if recover:
+            return 0
+        return self.offer()
+
+    def finish(self):
+        """The install that did not finish, settled with lay-downs allowed:
+        Squire Update runs outside every agent. Its agents are loaded first,
+        so the check after it can run."""
+        install = Install(self.config)
+        fd = install.lock()
+        if fd is None:
+            self.window(self.installing())
+            return
+        record = Records.read(install.record_file)
+        record = record if isinstance(record, dict) else {}
+        shown = self.window('Squire Update is finishing an update that was interrupted. This takes up to three minutes.',
+                            wait=False)
+        try:
+            install.reload()
+            on = Recovery(install).settle()
+        finally:
+            os.close(fd)
+            self.close(shown)
+        mark = self.releases.record().get('rollbackFailed')
+        if not Version.of(on):
+            return
+        if on == record.get('next'):
+            self.window(f'Squire is on {on}. The interrupted update finished and all checks passed.')
+        elif isinstance(mark, dict) and mark.get('on') == on:
+            self.window(f'Squire is on {on}, and it did not pass its checks. Ask Squire in the chat to send a support '
+                        'ticket.')
+        elif on == record.get('previous'):
+            self.window(f'Squire is back on {on}. The interrupted update did not finish, so Squire Update put the '
+                        'previous version back.')
+        else:
+            self.window(f'Squire is on {on}. The interrupted update did not finish.')
+
+    def offer(self):
+        releases = self.releases
+        version, installed = releases.staged(), releases.installed()
+        if not version:
+            self.window(f'Squire is up to date ({installed}). There is nothing to install.' if installed
+                        else 'Squire is up to date. There is nothing to install.')
+            return 0
+        lines = HealthLines.read(self.config)
+        if lines is None or HealthLines.faults(lines):
+            self.window('Squire must fix a problem before it can update. Ask Squire about it in the chat, then open '
+                        'Squire Update again.')
+            return 0
+        folder = os.path.join(releases.staging, version)
+        try:
+            manifest, data = releases.check(folder, releases.key, version, work=releases.staging)
+        except Refused as e:
+            shutil.rmtree(folder, ignore_errors=True)
+            releases.note(outcome='refused', version=version, reason=str(e))
+            self.window(self.refused(version))
+            return 0
+        version = manifest['version']
+        answer = self.window(f'What\'s new:\n{manifest["changelog"]}\n\nInstalling takes about three minutes. Squire is '
+                             'unavailable while it installs.', buttons=('Not now', 'Install'),
+                             title=f'{self.TITLE}: Squire {version}')
+        try:
+            releases.note(lastShown=int(time.time()))
+        except OSError:
+            pass
+        if answer != 'Install':
+            return 0
+        # The click is recorded in update.json and the Squire home's log only.
+        try:
+            releases.note(chosen={'version': version, 'at': int(time.time())})
+        except OSError:
+            pass
+        self.log(f'Install chosen for release {version}')
+        return self.install(version, hashlib.sha256(data).hexdigest())
+
+    def install(self, version, digest):
+        """The engine started in a session of its own, then the window that
+        says it is installing; the outcome once the engine ends."""
+        try:
+            engine = subprocess.Popen([System.command(PYTHON), '-B', os.path.join(CORE, 'tools', 'update.py'),
+                                       '--app-install', version, digest], cwd='/', env=System.env(self.home),
+                                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                      start_new_session=True)
+        except OSError:
+            self.window(f'Squire Update could not start installing Squire {version}. Nothing was changed.')
+            return 1
+        shown = self.window(f'Installing Squire {version}. You can keep working. Do not log out or shut the Mac down '
+                            'until this says it is done.', buttons=('Hide',), wait=False)
+        while engine.poll() is None:
+            time.sleep(self.POLL)
+        self.close(shown)
+        self.window(self.outcome(version, engine.returncode))
+        return 0
+
+    @staticmethod
+    def refused(version):
+        return (f'Squire Update did not install release {version}: it is not signed by Stravica, or it changed after '
+                'Squire checked it. Nothing was changed.')
+
+    def outcome(self, version, code):
+        releases = self.releases
+        if code == self.INSTALLED:
+            return f'Squire is updated to {version}. All checks passed.'
+        if code == self.CHANGED:
+            return (f'Squire Update did not install {version}: it changed while this window was open. Nothing was '
+                    'changed. Open Squire Update again to see it as it is now.')
+        if code == self.REFUSED:
+            return self.refused(version)
+        if code == self.BUSY:
+            return self.installing()
+        record, installed = releases.record(), releases.installed()
+        mark = record.get('rollbackFailed')
+        if isinstance(mark, dict) and mark.get('from') == version and Version.of(mark.get('to')):
+            return (f'Squire {version} did not pass its checks, and {mark["to"]} did not pass them again either. Ask '
+                    'Squire in the chat to send a support ticket.')
+        if record.get('heldOut') == version and Version.of(installed) and installed != version:
+            return (f'Squire {version} did not pass its checks, so Squire Update put {installed} back. All checks '
+                    'passed. Nothing in your Squire folder changed.')
+        if os.path.lexists(os.path.join(self.home, 'install.json')):
+            return f'Squire Update did not finish installing {version}. Open Squire Update again to finish it.'
+        return f'Squire Update could not install {version}. Squire is still on {installed}.'
+
+    # ------------------------------------------------------------ the engine
+
+    def engine(self, version, digest):
+        """update.py --app-install: under install.lock for its whole life, an
+        unfinished install settled first, the staged release checked again,
+        its manifest's SHA-256 the one the window showed, then the install."""
+        if not Version.of(version) or not self.DIGEST.match(digest):
+            return 2
+        install = Install(self.config)
+        self.held = install.lock()
+        if self.held is None:
+            return self.BUSY
+        if os.path.lexists(install.record_file):
+            install.reload()
+            Recovery(install).settle()
+            return self.CHANGED
+        releases = install.releases
+        folder = os.path.join(releases.staging, version)
+        if releases.staged() != version:
+            return self.CHANGED
+        try:
+            manifest, data = releases.check(folder, releases.key, version, work=releases.staging)
+        except Refused as e:
+            shutil.rmtree(folder, ignore_errors=True)
+            releases.note(outcome='refused', version=version, reason=str(e))
+            return self.REFUSED
+        if hashlib.sha256(data).hexdigest() != digest:
+            return self.CHANGED
+        code = install.install(version, manifest)
+        if code == self.INSTALLED:
+            releases.note(installed={'version': version, 'at': int(time.time()), 'by': self.TITLE})
+            self.log(f'release {version} installed')
+        return code
+
+
 def main(argv):
     try:
         config = Config()
     except SquireError as e:
         sys.stderr.write(f'update: {e}.\n')
         return 2
-    if len(argv) == 2 and argv[0] == '--install':
-        print(f'Installing release {argv[1]} is asked for in Squire\'s session: the safety floor shows the owner its '
-              'version and changelog and asks for their yes, and Squire\'s scheduler installs it outside the session. '
-              'Nothing was changed here.')
-        return 0
-    if argv == ['--perform']:
-        return Install(config).perform()
+    if argv in (['--app'], ['--app', '--recover']):
+        return SquireUpdate(config).open(recover=argv == ['--app', '--recover'])
+    if len(argv) == 3 and argv[0] == '--app-install':
+        return SquireUpdate(config).engine(argv[1], argv[2])
     if argv == ['--recover']:
         return Recovery(Install(config)).run()
-    sys.stderr.write('update.py takes --install <version>, --perform or --recover\n')
+    sys.stderr.write('update.py takes --app, --app-install <version> <manifest digest> or --recover\n')
     return 2
 
 
