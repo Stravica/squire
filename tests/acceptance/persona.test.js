@@ -144,8 +144,8 @@ test('after core is laid down again from a changed release, the name and persona
 });
 
 // After a signed update and after a rollback (round 4, the design record
-// ADR-005 line 13): the update is installed by Squire's own install, through
-// the owner's yes, in the updates world.
+// ADR-005 line 13): the update is installed from Squire Update at the Mac, in
+// the updates world.
 
 const R = require('../fixtures/updates-world.js');
 
@@ -153,15 +153,12 @@ async function personaAcrossUpdate(t, shape) {
   const rw = R.makeReleaseWorld(t, { persona: { squireName: NAME, personality: PERSONALITY } });
   await R.startSquire(rw);
   const ownerConfig = fs.readFileSync(path.join(rw.owner, 'squire.json'));
-  R.buildRelease(rw, { version: '0.2.0', shape });
+  const release = R.buildRelease(rw, { version: '0.2.0', shape });
   R.tick(rw);
   assert.ok(R.staged(rw).includes('0.2.0'), `the weekly check must stage the signed release; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
-  const a = R.asked(rw, 'session-persona', R.updateRequest(rw, '0.2.0'), 'the request to install');
-  R.owner(rw, 'session-persona', `yes ${a.id}`);
   const calls = rw.inner.serverCalls().length;
-  const before = R.wakeUpIds(rw);
-  R.tick(rw);
-  return { rw, ownerConfig, sent: R.newWakeUps(rw, before), calls };
+  const { sent } = await R.installAtMac(rw, release);
+  return { rw, ownerConfig, sent, calls };
 }
 
 function assertPersonaKept(r, what) {

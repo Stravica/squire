@@ -1019,6 +1019,254 @@ test('a release rolled back by itself stays out of the offer at the next weekly 
   assert.equal(offers.filter((x) => x.includes(R.updateRequest(rw, LATER))).length, 1, `the newer release ${LATER} must be offered as usual; sent ${JSON.stringify(offers)}`);
 });
 
+// ------------------------------------------- the session only tells the owner
+
+test("a session run of the update tool to install a staged release is refused, never asked: no request is recorded, the owner's yes changes nothing, and the refusal names Squire Update", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const call = w.tools.bash(R.updateRequest(rw, NEXT));
+  const opts = { env: R.env(rw), coreDir: R.installedCore(rw) };
+  for (const when of ['with no yes', 'even after the owner said yes']) {
+    if (when !== 'with no yes') R.owner(rw, SESSION, 'yes');
+    const r = w.attempt(rw.world, SESSION, call, opts);
+    w.assertBlocked(r, `the session running update.py --install ${NEXT}, ${when}`);
+    assert.equal(w.requestIdIn(r.stderr), null, `${when}: the floor never asks the owner for an install (no request id); got ${w.describe(r)}`);
+    assert.match(r.stderr, /Squire Update/, `${when}: the refusal must say the update installs only from Squire Update; got ${w.describe(r)}`);
+  }
+  const ledger = R.ledgerRecords(rw);
+  assert.deepEqual(ledger.filter((x) => /update/.test(JSON.stringify(x.item || ''))), [], `no request or yes for an install may be recorded; the ledger holds ${JSON.stringify(ledger)}`);
+  assert.ok(R.coreIs(rw, rw.appCore), 'nothing is installed');
+});
+
+// The note the hook on the owner's messages adds for a waiting release: what
+// it printed for that message, when it names the version and Squire Update.
+const noteIn = (r, version) => (r.stdout.includes(version) && r.stdout.includes('Squire Update') ? r.stdout : null);
+
+test("Squire's own note that a release is waiting comes with the owner's next message once, names the version and Squire Update and no command, path or terminal, never comes with a bare yes or no, and comes again only after seven days", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const session = `${SESSION}-note`;
+  for (const bare of ['yes', 'no']) {
+    assert.equal(noteIn(R.owner(rw, session, bare), NEXT), null, `a bare "${bare}" never carries the note, so it cannot be read as part of an answer`);
+  }
+  const first = R.owner(rw, session, 'hello, how is the backup doing?');
+  const note = noteIn(first, NEXT);
+  assert.ok(note, `the owner's next message must carry Squire's own note naming ${NEXT} and Squire Update; the hook printed ${JSON.stringify(first.stdout)}`);
+  assert.doesNotMatch(note, NOT_IN_A_NOTICE, `the note names no command, path or terminal; got ${JSON.stringify(note)}`);
+  assert.equal(noteIn(R.owner(rw, session, 'and the weather?'), NEXT), null, 'the note comes once, not with every message');
+  // Six days on: still within the week.
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -6 * 86400);
+  assert.equal(noteIn(R.owner(rw, session, 'anything new?'), NEXT), null, 'the note does not come again within seven days');
+  // A further day and a minute: the week is past.
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -(86400 + 60));
+  assert.ok(noteIn(R.owner(rw, session, 'anything new today?'), NEXT), 'the note comes again once seven days have passed with the release still waiting');
+});
+
+// ------------------------------------------- no program ended by what it stops
+
+// A world whose agents run under the launchd model, Squire started healthy.
+async function modelWorld(t, opts = {}) {
+  return healthyWorld(t, { ...opts, launchd: 'model' });
+}
+
+function assertAgentsHeld(rw, what) {
+  assert.deepEqual(R.agentsLoaded(rw), R.AGENT_LABELS, `${what}: all three of Squire's agents must be loaded; loaded: ${JSON.stringify(R.agentsLoaded(rw))}`);
+  assert.deepEqual(R.stoppedFromInside(rw), [], `${what}: no Squire program may stop the agent it runs in; launchctl calls: ${JSON.stringify(R.launchdCalls(rw))}`);
+}
+
+test('under a launchd that ends a stopped agent\'s process group, an install from Squire Update runs to its end on 0.2.0 and leaves all three agents loaded', LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const { sent } = await R.installAtMac(rw, release);
+  assert.equal(updated(sent, NEXT).length, 1, `the install must run to its end and say so; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, release), 'the installed core must be the release\'s, file for file');
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500), 'the agents are loaded again');
+  assertAgentsHeld(rw, 'after the install');
+});
+
+test('under a launchd that ends a stopped agent\'s process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all three agents loaded', LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
+  stage(rw, bad);
+  const { sent } = await R.installAtMac(rw, bad);
+  assert.equal(rolledBack(sent, NEXT, R.INSTALLED).length, 1, `the rollback must run to its end and say so; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, rw.appCore), 'the previous release\'s core must be laid down again, file for file');
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500), 'the agents are loaded again');
+  assertAgentsHeld(rw, 'after the rollback');
+});
+
+test('under a launchd that ends a stopped agent\'s process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded', LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const seen = await R.killInstallAt(rw, 'lay');
+  assert.equal(seen, 'lay', `the install must be killed at exactly its step "lay"; the record named ${JSON.stringify(seen)}`);
+  const sentBefore = R.wakeUpIds(rw);
+  // A log-out and a login: launchd ends what is left and loads the agents again.
+  R.logout(rw);
+  R.login(rw);
+  const settled = await s.waitFor(() => !fs.existsSync(R.installRecordFile(rw)) && R.newWakeUps(rw, sentBefore).some((x) => ON.test(x)), 300000, 500);
+  const opened = R.openCalls(rw).filter((c) => c.argv.some((a) => a.endsWith('Squire Update.app')) && c.argv.includes('--recover'));
+  assert.ok(opened.length >= 1, `Squire must open Squire Update by itself (open ... Squire Update.app --args --recover) to lay core down; open was called ${JSON.stringify(R.openCalls(rw))}`);
+  assert.ok(settled, `the unfinished install must be settled and the owner told which version Squire is on; sent ${JSON.stringify(R.newWakeUps(rw, sentBefore))}`);
+  const which = R.newWakeUps(rw, sentBefore).filter((x) => ON.test(x));
+  assert.equal(which.length, 1, `exactly one message says which version Squire is on; sent ${JSON.stringify(which)}`);
+  const on = ON.exec(which[0])[1];
+  assert.ok(R.coreIs(rw, on === NEXT ? release : rw.appCore), `the installed core must be the whole of ${on}, file for file`);
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 60000, 500), 'the agents are loaded again');
+  assertAgentsHeld(rw, 'after the recovery');
+});
+
+test('under a launchd that ends a stopped agent\'s process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded', LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
+  fs.appendFileSync(floorFile, '# one line more\n');
+  const a = R.asked(rw, `${SESSION}-fix`, R.fixRequest(rw, 'floor'), 'the floor fix');
+  R.owner(rw, `${SESSION}-fix`, `yes ${a.id}`);
+  R.tick(rw);
+  assert.ok(fs.readFileSync(floorFile).equals(fs.readFileSync(path.join(rw.appCore, 'hooks', 'config-change.py'))),
+    'the scheduler\'s run must lay core down again from the release');
+  await s.sleep(3000);
+  assertAgentsHeld(rw, 'after the floor fix');
+  const h = R.health(rw);
+  assert.ok(/^\s*fixed:/m.test(h.stdout), `the health check must say plainly that the fix worked; got ${w.describe(h)}`);
+});
+
+// ------------------------------------------- Squire Update itself
+
+// Squire Update's bundle as laid down: its Info.plist read with the Mac's own
+// plutil, and its executable.
+function updateApp(rw) {
+  const app = R.squireUpdateApp(rw);
+  const plist = path.join(app, 'Contents', 'Info.plist');
+  const r = spawnSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plist], { encoding: 'utf8' });
+  let info = null;
+  try { info = JSON.parse(r.stdout); } catch (e) { info = null; }
+  const exe = info && info.CFBundleExecutable ? path.join(app, 'Contents', 'MacOS', info.CFBundleExecutable) : null;
+  let runnable = false;
+  try { runnable = Boolean(exe) && (fs.statSync(exe).mode & 0o111) !== 0; } catch (e) { runnable = false; }
+  return { app, info, exe, runnable };
+}
+
+function assertUpdateAppAt(rw, version, what) {
+  const u = updateApp(rw);
+  assert.ok(u.info, `${what}: Squire Update must be at ${u.app}, in the Applications folder of the owner's home, with its Info.plist`);
+  assert.equal(u.info.CFBundleName, 'Squire Update', `${what}: the app the owner sees is named Squire Update`);
+  assert.equal(u.info.CFBundleShortVersionString, version, `${what}: Squire Update must be the installed release's, ${version}`);
+  assert.ok(u.runnable, `${what}: Squire Update's executable must be there and runnable`);
+}
+
+test("set-up's lay-down puts Squire Update in the Applications folder of the owner's home, from the release installed", LONG, async (t) => {
+  const rw = await R.makeInstalledApp(t);
+  assertUpdateAppAt(rw, R.INSTALLED, 'after set-up');
+});
+
+test('an update lays down the new release\'s Squire Update', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const { sent } = await R.installAtMac(rw, release);
+  assert.equal(updated(sent, NEXT).length, 1, `the install must finish; sent ${JSON.stringify(sent)}`);
+  assertUpdateAppAt(rw, NEXT, 'after the update');
+});
+
+test('Squire Update opened with nothing waiting says Squire is up to date, offers nothing, downloads nothing and changes nothing', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  R.buildRelease(rw, { version: NEXT, publish: false });
+  const before = R.untouched(rw);
+  const requests = R.hostRequests(rw).length;
+  const r = await R.installAtMac(rw, null, 'Install');
+  assert.deepEqual(r.main, [], `nothing is offered to install; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assert.ok(r.windows.some((x) => /up to date/i.test(x.text) && x.text.includes(R.INSTALLED)), `Squire Update must say Squire is up to date (${R.INSTALLED}); windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assert.equal(R.hostRequests(rw).length, requests, 'Squire Update downloads nothing: no request reaches the release host');
+  assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], 'nothing may change');
+});
+
+test('Squire Update opened while the health check names a fault says Squire must fix a problem first, offers nothing and changes nothing', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
+  fs.appendFileSync(floorFile, '# one line more\n');
+  assert.notEqual(R.health(rw).status, 0, 'the world plants a fault the health check names');
+  const before = R.untouched(rw);
+  const r = await R.installAtMac(rw, release, 'Install');
+  assert.deepEqual(r.main, [], `nothing is offered to install over a fault; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assert.ok(r.windows.some((x) => /fix a problem/i.test(x.text)), `Squire Update must say Squire has a problem to fix first; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assert.deepEqual(updated(r.sent, NEXT), [], 'nothing is installed');
+  assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], 'nothing may change');
+  assert.ok(R.staged(rw).includes(NEXT), 'the staged release stays staged for later');
+});
+
+test('Squire Update opened a second time while it is open says it is already open and ends, and only one install runs', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const go = path.join(rw.root, 'click-install');
+  const sentBefore = R.wakeUpIds(rw);
+  const first = R.installAtMac(rw, release, { waitFor: go, then: 'Install' });
+  let settled = false;
+  first.then(() => { settled = true; }, () => { settled = true; });
+  await s.waitFor(() => settled || mainWindows(R.updateWindows(rw), NEXT).length >= 1, 120000, 250);
+  if (settled) await first;
+  const shownBefore = R.updateWindows(rw).length;
+  const again = R.openSquireUpdate(rw, { answer: { waitFor: go, then: 'Install' } });
+  const ended = await s.waitFor(() => again.exited(), 120000, 250);
+  assert.ok(ended, 'the second Squire Update must end by itself');
+  const said = R.updateWindows(rw).slice(shownBefore);
+  assert.ok(said.some((x) => /already open/i.test(x.text)) && said.every((x) => !x.main),
+    `the second Squire Update must say it is already open and offer nothing; windows: ${JSON.stringify(said.map((x) => x.text))}`);
+  fs.writeFileSync(go, '');
+  await first;
+  const sent = R.newWakeUps(rw, sentBefore);
+  assert.equal(updated(sent, NEXT).length, 1, `exactly one install runs; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, release), 'the installed core must be the release\'s, file for file');
+});
+
+test('Squire Update closed by the owner after Install does not stop the install: it finishes, and Squire Update opened again says so', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const sentBefore = R.wakeUpIds(rw);
+  const ui = R.openSquireUpdate(rw, { answer: 'Install' });
+  const started = await s.waitFor(() => fs.existsSync(R.installRecordFile(rw)) || ui.exited(), 120000, 50);
+  assert.ok(started && fs.existsSync(R.installRecordFile(rw)), `after Install, Squire Update's engine must start the install (install.json); Squire Update ${JSON.stringify(ui.exited())}: ${ui.output().slice(-400)}`);
+  // Force Quit: Squire Update's own process group ends at once.
+  try { process.kill(-ui.pid, 'SIGKILL'); } catch (e) { /* gone */ }
+  assert.ok(await R.engineDone(rw), 'the install must run to its end without Squire Update\'s window');
+  const sent = R.newWakeUps(rw, sentBefore);
+  assert.equal(updated(sent, NEXT).length, 1, `the install must finish and say so in the chat; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, release), 'the installed core must be the release\'s, file for file');
+  assert.equal((R.currentRelease(rw) || {}).current, NEXT, 'current-release.json must name the installed release');
+  const later = await R.installAtMac(rw, null, 'Not now');
+  assert.ok(later.windows.some((x) => x.text.includes(NEXT)), `Squire Update opened again must say Squire is on ${NEXT}; windows: ${JSON.stringify(later.windows.map((x) => x.text))}`);
+});
+
+// ------------------------------------------- Squire Update over an unfinished install
+
+test('Squire Update opened over an unfinished install settles it first: Squire ends on one whole version, the owner is told which, the record is gone and the owner\'s folder is unchanged', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const before = R.ownerHash(rw.owner);
+  const seen = await R.killInstallAt(rw, 'keep');
+  assert.equal(seen, 'keep', `the install must be killed at exactly its step "keep"; the record named ${JSON.stringify(seen)}`);
+  assert.ok(fs.existsSync(R.installRecordFile(rw)), 'the unfinished install leaves its record');
+  const r = await R.installAtMac(rw, release, 'Not now');
+  const settle = r.windows.findIndex((x) => /interrupted/i.test(x.text));
+  const offer = r.windows.findIndex((x) => x.main);
+  assert.ok(settle >= 0, `Squire Update must say it is finishing the interrupted update; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assert.ok(offer === -1 || settle < offer, 'the unfinished install is settled before anything is offered');
+  assert.ok(!fs.existsSync(R.installRecordFile(rw)), 'the unfinished install\'s record must be gone');
+  const told = [...r.windows.map((x) => x.text), ...r.sent].filter((x) => /Squire is (back )?on (\d+\.\d+\.\d+)|Squire is on (\d+\.\d+\.\d+)/.test(x));
+  assert.ok(told.length >= 1, `the owner must be told which version Squire is on; windows ${JSON.stringify(r.windows.map((x) => x.text))}; sent ${JSON.stringify(r.sent)}`);
+  assert.ok(R.coreIs(rw, rw.appCore), 'killed before anything was laid down, Squire stays on the whole previous release');
+  assert.deepEqual(R.hashDifferences(before, R.ownerHash(rw.owner)), [], 'the owner\'s folder must be unchanged');
+});
+
 // ------------------------------------------- the launchd model itself
 
 // Kept as evidence that the test world's model of launchd bites, bound to no
