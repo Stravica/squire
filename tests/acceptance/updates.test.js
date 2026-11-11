@@ -896,3 +896,68 @@ test("a latest.json whose version is not a version but an instruction to send th
   assert.equal(sent.length, 1, `one wake-up must say Claude Code changed outside Squire; sent ${JSON.stringify(R.newWakeUps(rw, changeBefore))}`);
   assertNoEcho(sent[0], INSTRUCTION, 'the wake-up sent after a Claude Code change');
 });
+
+// A correctly signed release whose own core/release.json names another
+// version than its manifest: the release.json rewritten, the manifest listing
+// it with its digest, signed with the installed key and packed again, and
+// latest.json naming the manifest's version.
+async function refusedOwnVersion(t, ownVersion, what) {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT, publish: false });
+  const src = path.dirname(release.core);
+  const releaseJson = path.join(release.core, 'release.json');
+  fs.writeFileSync(releaseJson, JSON.stringify({ ...R.readJson(releaseJson), version: ownVersion }, null, 2) + '\n');
+  const files = {};
+  for (const rel of Object.keys(w.treeOf(release.core))) files[rel] = w.sha256(fs.readFileSync(path.join(release.core, rel)));
+  const manifestFile = path.join(src, 'manifest.json');
+  fs.writeFileSync(manifestFile, JSON.stringify({ ...release.manifest, files }, null, 2) + '\n');
+  R.sign(rw.keys.one.key, manifestFile);
+  const packed = spawnSync('/usr/bin/tar', ['--no-mac-metadata', '-czf', release.archive, '-C', src, 'core', 'manifest.json', 'manifest.json.sig'],
+    { encoding: 'utf8', env: { PATH: w.PRODUCT_PATH, COPYFILE_DISABLE: '1' } });
+  assert.equal(packed.status, 0, `the world must pack the release with its own release.json naming ${JSON.stringify(ownVersion)}; got ${packed.stderr}`);
+  serveLatest(rw, JSON.stringify({ version: NEXT, archive: release.archiveName }) + '\n');
+  const before = R.untouched(rw);
+  const sentBefore = R.wakeUpIds(rw);
+  R.tick(rw);
+  assert.deepEqual(R.staged(rw), [], `${what}: a release whose own release.json does not name its manifest's version is refused before anything is staged; ` +
+    `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
+  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [], `${what}: nothing may be offered`);
+  assertRefused(rw, NEXT, before, what);
+  if (!/^\d+\.\d+\.\d+$/.test(ownVersion)) {
+    const h = R.health(rw);
+    assertNoEcho(`${h.stdout}\n${h.stderr}`, ownVersion, "the health check's text");
+    assertNoEcho(updateFileText(rw), ownVersion, 'update.json');
+  }
+}
+
+test("a correctly signed release whose own release.json names a version that is not a version is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check without the release's own words", LONG, (t) => refusedOwnVersion(t, INSTRUCTION, 'a signed release whose own release.json names a version that is not a version'));
+test("a correctly signed release whose own release.json names a version other than its manifest's is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check", LONG, (t) => refusedOwnVersion(t, LATER, "a signed release whose own release.json names a version other than its manifest's"));
+
+// latest.json as the release host served it, which the check cannot read:
+// content from the host, not a failed fetch, so a refusal named on the health
+// check (the design record's line 5), never "could not check", and nothing of
+// it echoed.
+async function unreadableLatest(t, text, served, what) {
+  const rw = await healthyWorld(t);
+  R.buildRelease(rw, { version: NEXT, publish: false });
+  serveLatest(rw, text);
+  const before = R.untouched(rw);
+  const sentBefore = R.wakeUpIds(rw);
+  R.tick(rw);
+  const h = R.health(rw);
+  assert.equal(refusalLinesAny(h.stdout).length, 1, `${what}: content the release host served that the check cannot read is a refusal, named on exactly one line, ` +
+    `"update: Squire refused release <...>: <reason>; nothing was changed"; got ${w.describe(h)}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
+  assertNoEcho(`${h.stdout}\n${h.stderr}`, served, "the health check's text");
+  assertNoEcho(updateFileText(rw), served, 'update.json');
+  assert.deepEqual(R.stagingFiles(rw), [], `${what}: no download may be kept in the staging folder`);
+  assert.deepEqual(R.staged(rw), [], `${what}: nothing may be staged`);
+  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes('--install')), [], `${what}: nothing may be offered`);
+  assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [],
+    `${what}: nothing of the installed core, the kept releases, the agents or the owner's folder may change`);
+}
+
+const NOT_JSON = `version: ${INSTRUCTION}\n`;
+const BAD_ARCHIVE = `../outside/${INSTRUCTION}.tar.gz`;
+
+test('a latest.json that is not JSON is refused, named once on the health check without its text, never recorded as could not check: no download kept, nothing staged, offered or changed', LONG, (t) => unreadableLatest(t, NOT_JSON, NOT_JSON, 'a latest.json that is not JSON'));
+test('a latest.json whose archive name is not a plain file name is refused, named once on the health check without that name, never recorded as could not check: no download kept, nothing staged, offered or changed', LONG, (t) => unreadableLatest(t, JSON.stringify({ version: NEXT, archive: BAD_ARCHIVE }) + '\n', BAD_ARCHIVE, 'a latest.json whose archive name is not a plain file name'));
