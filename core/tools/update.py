@@ -58,8 +58,9 @@ class Releases:
     (its version and addresses) and key, current-release.json, the kept
     releases under releases/ and the staged one under staging/; and the check
     a release must pass, fail closed: its archive's listing, its signature
-    with the installed key, its manifest's four fields, and its files against
-    the manifest's digests."""
+    with the installed key, its manifest's four fields, its files against
+    the manifest's digests, and its own release.json naming the manifest's
+    version."""
 
     NAMESPACE = 'squire-release'
     VERIFY_WITHIN = 30
@@ -315,6 +316,12 @@ class Releases:
         manifest = self.manifest(data, version)
         if self.digests(os.path.join(folder, 'core')) != manifest['files']:
             raise Refused('its files do not match its manifest')
+        own = Records.read(os.path.join(folder, 'core', 'release.json'))
+        own = own.get('version') if isinstance(own, dict) else None
+        if not Version.of(own):
+            raise Refused('the version its release.json names is not a version')
+        if own != manifest['version']:
+            raise Refused('its release.json names another version than its manifest')
         return manifest, data
 
 
@@ -422,7 +429,7 @@ class WeeklyCheck:
     for it."""
 
     WEEK = 7 * 86400
-    ARCHIVE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*$')
+    ARCHIVE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*\Z')
 
     def __init__(self, config, send):
         self.config = config
@@ -450,15 +457,23 @@ class WeeklyCheck:
         if not Releases.plain(host, folder=True):
             return releases.note(lastCheck=now, outcome='could not check')
         try:
-            latest = json.loads(Fetch.get(host + 'latest.json').decode('utf-8'))
-            version, archive = latest.get('version'), latest.get('archive')
-        except (Fetch.FAILURES + (AttributeError, UnicodeError)):
+            served = Fetch.get(host + 'latest.json')
+        except Fetch.FAILURES:
             return releases.note(lastCheck=now, outcome='could not check')
+        # What the host served and the check cannot read is a refusal, never "could not check".
+        try:
+            latest = json.loads(served.decode('utf-8'))
+        except (ValueError, RecursionError):
+            latest = None
+        if not isinstance(latest, dict):
+            return releases.note(lastCheck=now, outcome='refused', reason='its latest.json cannot be read')
+        version, archive = latest.get('version'), latest.get('archive')
         if not Version.of(version):
             # Nothing the release host served is kept: a value that is not a version is never recorded.
             return releases.note(lastCheck=now, outcome='refused', reason='its version is not a version')
         if not isinstance(archive, str) or not self.ARCHIVE.match(archive):
-            return releases.note(lastCheck=now, outcome='could not check')
+            return releases.note(lastCheck=now, outcome='refused', version=version,
+                                 reason='its archive name is not a plain file name')
         installed = releases.installed()
         if Version.of(version) <= Version.of(installed):
             return releases.note(lastCheck=now, outcome='nothing newer')
