@@ -20,6 +20,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
@@ -286,6 +287,35 @@ test('a correctly signed release whose version, as latest.json and its manifest 
 test('a correctly signed release whose version, as latest.json and its manifest both name it, has a part with a leading zero is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, '0.02.0', 'a signed release whose version has a part with a leading zero'));
 test('a correctly signed release whose version, as latest.json and its manifest both name it, has a space before it is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, ' 0.2.0', 'a signed release whose version has a space before it'));
 test('a correctly signed release whose version, as latest.json and its manifest both name it, carries a plus sign is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedNotAVersion(t, '+0.2.0', 'a signed release whose version carries a plus sign'));
+
+// A correctly signed release whose manifest and core both leave out a floor
+// file lay-down digests (core/release.json or core/release-key.pub): the
+// check cannot fully check it, and without it every later check ends.
+async function refusedWithoutFloorFile(t, floorFile, what) {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT, publish: false });
+  const src = path.dirname(release.core);
+  fs.rmSync(path.join(release.core, floorFile));
+  const files = {};
+  for (const rel of Object.keys(w.treeOf(release.core))) files[rel] = w.sha256(fs.readFileSync(path.join(release.core, rel)));
+  const manifestFile = path.join(src, 'manifest.json');
+  fs.writeFileSync(manifestFile, JSON.stringify({ ...release.manifest, files }, null, 2) + '\n');
+  R.sign(rw.keys.one.key, manifestFile);
+  const packed = spawnSync('/usr/bin/tar', ['--no-mac-metadata', '-czf', release.archive, '-C', src, 'core', 'manifest.json', 'manifest.json.sig'],
+    { encoding: 'utf8', env: { PATH: w.PRODUCT_PATH, COPYFILE_DISABLE: '1' } });
+  assert.equal(packed.status, 0, `the world must pack the release without ${floorFile}; got ${packed.stderr}`);
+  fs.writeFileSync(path.join(path.dirname(release.archive), 'latest.json'), JSON.stringify({ version: NEXT, archive: release.archiveName }) + '\n');
+  const before = R.untouched(rw);
+  const sentBefore = R.wakeUpIds(rw);
+  R.tick(rw);
+  assert.deepEqual(R.staged(rw), [], `${what}: a release without ${floorFile} is refused before anything is staged; ` +
+    `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
+  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [], `${what}: nothing may be offered`);
+  assertRefused(rw, NEXT, before, what);
+}
+
+test('a correctly signed release whose manifest and core both leave out release.json is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedWithoutFloorFile(t, 'release.json', 'a signed release without release.json'));
+test('a correctly signed release whose manifest and core both leave out release-key.pub is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check', LONG, (t) => refusedWithoutFloorFile(t, 'release-key.pub', 'a signed release without release-key.pub'));
 
 test("a signed release whose archive holds any entry that is not a plain file or folder at one plain, unique path inside it is refused on its listing, and nothing of it is ever extracted: absolute and dot-segment paths, duplicates, case-folded and Unicode-equivalent twins, symbolic and hard links inside core or out, an AppleDouble entry, a folder holding no listed file, bytes after the gzip stream", LONG, async (t) => {
   const rw = await healthyWorld(t);

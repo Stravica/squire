@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-11T02:00:29.018Z",
+  "updatedAt": "2026-11-11T02:01:00.922Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -493,6 +493,20 @@
       "description": "a correctly signed release whose version, as latest.json and its manifest both name it, carries a plus sign is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::a correctly signed release whose version, as latest.json and its manifest both name it, carries a plus sign is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-signed-release-without-release-json",
+      "acId": "AC-1401-6",
+      "description": "a correctly signed release whose manifest and core both leave out release.json is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a correctly signed release whose manifest and core both leave out release.json is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check"
+    },
+    {
+      "id": "TC-011-signed-release-without-release-key",
+      "acId": "AC-1401-6",
+      "description": "a correctly signed release whose manifest and core both leave out release-key.pub is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::a correctly signed release whose manifest and core both leave out release-key.pub is refused as an unsigned one is: never staged or offered, download removed, nothing changed, named once on the health check"
     }
   ],
   "status": "draft"
