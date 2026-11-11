@@ -443,19 +443,25 @@ class BackupLines:
 
 class UpdateLines:
     """What Squire's updates leave for the owner: a release record and an
-    installed core naming different versions (a fault), the last weekly
-    check's refusal, and the mark of a rollback that did not end checked,
-    naming both versions, printed while Squire stays on that release."""
+    installed core naming different versions (a fault), an install that did
+    not finish and waits for Squire Update, the last weekly check's refusal,
+    and the mark of a rollback that did not end checked, naming both
+    versions, printed while Squire stays on that release."""
 
     @staticmethod
     def lines(home):
         """(lines, the rollback mark or None)."""
         from squire import Version
-        from update import Releases
+        from update import Install, Releases
 
         releases = Releases(home)
         record = releases.record()
         lines = []
+        if Install.unfinished(home):
+            unfinished = Records.read(os.path.join(home, 'install.json'))
+            previous = unfinished.get('previous') if isinstance(unfinished, dict) else None
+            lines.append('update: Squire\'s update did not finish; open Squire Update on your Mac to '
+                         + (f'put Squire back on {previous}' if Version.of(previous) else 'finish it'))
         current, version = releases.current(), releases.config().get('version')
         if current and Version.of(version) and current['current'] != version:
             lines.append(f'release: Squire\'s record names release {current["current"]} as current, but its installed '

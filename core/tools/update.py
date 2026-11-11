@@ -15,8 +15,10 @@ checked version when an install does not finish.
         held to its end
     /usr/bin/python3 -B update.py --recover
         an install that did not finish (install.json present, its lock free),
-        settled: Squire stays on the new release when it is whole and checks,
-        and lays the previous one down otherwise
+        run inside an agent (the runner at its start, the scheduler's tick):
+        settled when nothing needs laying down, Squire staying on the new
+        release when it is whole and checks; any lay-down or rollback is
+        handed to Squire Update, opened by itself with --recover
 
 The weekly check runs inside the scheduler's tick (wake-up.py --due), which
 reads this file for it; it stages a release and tells the owner it is
@@ -880,19 +882,48 @@ class Recovery:
     """An install that did not finish: install.json present and its lock
     free. A record that cannot be read is set aside, never adopted, and
     Squire settles by current-release.json. Either way Squire ends on one
-    whole, checked version and one wake-up says which."""
+    whole, checked version and one wake-up says which.
 
-    def __init__(self, install):
+    With lay False (update.py --recover, run by the runner at its start and
+    by the scheduler's tick, both inside an agent) nothing is laid down and
+    no agent is stopped: an install stopped before its lay-down, with core
+    still the previous release's, and a new release laid down whole that
+    checks, settle as with lay True; every other outcome is handed to Squire
+    Update, opened by itself with --recover outside every agent, and the
+    record stays until it settles there. With lay True (Squire Update) the
+    rollback runs as built."""
+
+    BEFORE_LAY = ('record', 'keep', 'stop')
+    APP = 'Squire Update.app'
+    OPEN_WITHIN = 30
+
+    def __init__(self, install, lay=True):
         self.install = install
         self.releases = install.releases
+        self.lay = lay
 
     def run(self):
-        if self.install.lock() is None:
+        fd = self.install.lock()
+        if fd is None:
             return 0
         if not os.path.lexists(self.install.record_file):
             return 0
-        self.settle()
+        if self.settle() is None:
+            # Squire Update takes the lock as it opens: it is let go first.
+            os.close(fd)
+            self.hand_over()
         return 0
+
+    def hand_over(self):
+        """Squire Update opened by itself, as the owner opens it, to settle
+        the install outside every agent: open -a <app> --args --recover. When
+        it cannot be opened, the health check's line says to open it."""
+        app = os.path.join(os.path.expanduser('~'), 'Applications', self.APP)
+        try:
+            subprocess.run([System.command('/usr/bin/open'), '-a', app, '--args', '--recover'], cwd='/',
+                           env=System.env(), stdin=subprocess.DEVNULL, capture_output=True, timeout=self.OPEN_WITHIN)
+        except (OSError, subprocess.SubprocessError):
+            pass
 
     def readable(self, record):
         kept = self.releases.kept
@@ -902,20 +933,30 @@ class Recovery:
 
     def settle(self):
         """The version Squire is on once the install is settled, told in one
-        wake-up, the record gone."""
+        wake-up, the record gone; None, with the record left as it is, when
+        it is for Squire Update to settle (lay False only)."""
         record = Records.read(self.install.record_file)
         if self.readable(record):
-            on = self.adopt(record['previous'], record['next'])
-        else:
-            aside = os.path.join(self.install.home, f'install-set-aside-{int(time.time() * 1000)}-{os.getpid()}.json')
-            try:
-                os.rename(self.install.record_file, aside)
-            except OSError:
-                pass
+            on = self.adopt(record['previous'], record['next'], record['step'])
+        elif self.lay:
+            self.set_aside()
             on = self.by_current()
+        else:
+            on = self.by_current()
+            if on is not None:
+                self.set_aside()
+        if on is None:
+            return None
         self.install.send(f'Squire\'s update did not finish; Squire is on {on}', 'recovery')
         self.install.remove_record()
         return on
+
+    def set_aside(self):
+        aside = os.path.join(self.install.home, f'install-set-aside-{int(time.time() * 1000)}-{os.getpid()}.json')
+        try:
+            os.rename(self.install.record_file, aside)
+        except OSError:
+            pass
 
     def whole(self, version, key):
         """The kept release's files when it, its signed manifest and the
@@ -927,7 +968,7 @@ class Recovery:
             return None
         return files if Releases.digests(self.releases.core) == files else None
 
-    def adopt(self, previous, version):
+    def adopt(self, previous, version, step):
         key = os.path.join(self.releases.kept, previous, 'core', 'release-key.pub')
         if not os.path.isfile(key):
             key = os.path.join(self.releases.app_release, 'release-key.pub')
@@ -939,13 +980,21 @@ class Recovery:
                               durable=True)
             if self.install.check(files):
                 return version
-            return self.install.rollback(version, previous, {'current': previous, 'previous': None, 'verified': False})
-        if Releases.digests(self.releases.core) == self.install.files_of(previous):
+            return self.rollback(version, previous)
+        if (self.lay or step in self.BEFORE_LAY) \
+                and Releases.digests(self.releases.core) == self.install.files_of(previous):
             current = self.releases.current() or {}
             if current.get('current') not in (None, previous):
                 Records.write(self.releases.current_file, {'current': previous, 'previous': None, 'verified': False},
                               durable=True)
             return previous
+        return self.rollback(version, previous)
+
+    def rollback(self, version, previous):
+        """The rollback, run only where lay-downs are allowed (Squire
+        Update); None, for Squire Update to settle, everywhere else."""
+        if not self.lay:
+            return None
         return self.install.rollback(version, previous, {'current': previous, 'previous': None, 'verified': False})
 
     def by_current(self):
@@ -964,7 +1013,7 @@ class Recovery:
             return version
         previous = current.get('previous')
         if Version.of(previous) and os.path.isdir(os.path.join(self.releases.kept, previous, 'core')):
-            return self.install.rollback(version, previous, {'current': previous, 'previous': None, 'verified': False})
+            return self.rollback(version, previous)
         return version
 
 
@@ -1242,7 +1291,7 @@ def main(argv):
     if len(argv) == 3 and argv[0] == '--app-install':
         return SquireUpdate(config).engine(argv[1], argv[2])
     if argv == ['--recover']:
-        return Recovery(Install(config)).run()
+        return Recovery(Install(config), lay=False).run()
     sys.stderr.write('update.py takes --app, --app-install <version> <manifest digest> or --recover\n')
     return 2
 
