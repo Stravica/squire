@@ -1,0 +1,426 @@
+{
+  "version": 1,
+  "head": "996282421c64d62349e8fbe3367a2df04550a62e",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-2001-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/tools/ticket.py#Outbox.file",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.file",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.file",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.state_file",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.state_file",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.state_file",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.waiting",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.waiting",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.waiting",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.pending",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.pending",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.pending",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.request",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.request",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.request",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.offers",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.offers",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.offers",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.answered",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.answered",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.answered",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.build",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.build",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.build",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.perform",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.perform",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.perform",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.one",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.one",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.one",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.use",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.use",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.use",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.set_aside",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::with the owner's no nothing is posted and the ticket is set aside"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.set_aside",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::with the owner's no nothing is posted and the ticket is set aside"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.set_aside",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.send",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.send",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.send",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.post",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.post",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/tools/ticket.py#Outbox.post",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.read",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.read",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.read",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.shown",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.shown",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.shown",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+          ]
+        }
+      ],
+      "result": "fail"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 1,
+    "structuralPassed": 1,
+    "mutants": 54,
+    "killed": 36,
+    "survived": 4,
+    "timeout": 0,
+    "notApplicable": 14,
+    "blocked": 0
+  },
+  "wallMs": 365029,
+  "node": "v24.14.0"
+}
