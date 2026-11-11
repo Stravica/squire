@@ -410,8 +410,10 @@ test('before the one yes nothing is installed, and Not now or a closed window in
 test("the one yes names every piece set-up adds: Claude Code with its own updates, Apple's tools with the administrator's password prompt, Squire, and each background job", { timeout: 60000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, answers: { [TITLES.setUp]: 'button returned:Not now' } } });
   const run = await I.runApp(iw);
-  assertWindow(run, TITLES.setUp, [/Claude Code/, /updat/i, /command line tools/i, /password/i, /Squire/, /session/i, /wake-up/i, /backup/i],
-    'the one yes');
+  // Squire Update, the installer program set-up places in the Applications
+  // folder of the owner's home, is named with them (the words are the app's).
+  assertWindow(run, TITLES.setUp, [/Claude Code/, /updat/i, /command line tools/i, /password/i, /Squire/, /session/i, /wake-up/i, /backup/i,
+    /Squire Update/, /Applications/], 'the one yes');
 });
 
 test('after the one yes nothing outside the named list is installed', { timeout: FULL_RUN }, async (t) => {

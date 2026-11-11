@@ -1129,7 +1129,7 @@ test("under a launchd that ends a stopped agent's process group, an install kill
   R.login(rw);
   const settled = await s.waitFor(() => !fs.existsSync(R.installRecordFile(rw)) && R.newWakeUps(rw, sentBefore).some((x) => ON.test(x)), 300000, 500);
   const opened = R.openCalls(rw).filter((c) => c.argv.some((a) => a.endsWith('Squire Update.app')) && c.argv.includes('--recover'));
-  assert.ok(opened.length >= 1, `Squire must open Squire Update by itself (open ... Squire Update.app --args --recover) to lay core down; open was called ${JSON.stringify(R.openCalls(rw))}`);
+  assert.equal(opened.length, 1, `Squire must open Squire Update by itself (open ... Squire Update.app --args --recover) once to lay core down; open was called ${JSON.stringify(R.openCalls(rw))}`);
   assert.ok(settled, `the unfinished install must be settled and the owner told which version Squire is on; sent ${JSON.stringify(R.newWakeUps(rw, sentBefore))}`);
   const which = R.newWakeUps(rw, sentBefore).filter((x) => ON.test(x));
   assert.equal(which.length, 1, `exactly one message says which version Squire is on; sent ${JSON.stringify(which)}`);
@@ -1172,6 +1172,38 @@ test("under a launchd that ends a stopped agent's process group, while an instal
   assert.ok(fs.existsSync(R.installRecordFile(rw)), 'after the second run the same install still waits on Squire Update');
   const opened = toSquireUpdate().slice(before);
   assert.equal(opened.length, 1, `across two runs of the scheduler with the same install waiting, Squire opens Squire Update once; open was called ${JSON.stringify(opened)}`);
+});
+
+test("under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all three agents loaded, and the health check names Squire Update on one line and exits non-zero", LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  // The Applications folder of the owner's home, where set-up laid Squire
+  // Update down, made read-only: the install cannot lay the new release's
+  // Squire Update down there. Opened again before the world is removed.
+  const apps = path.dirname(R.squireUpdateApp(rw));
+  fs.mkdirSync(apps, { recursive: true });
+  fs.chmodSync(apps, 0o555);
+  t.after(() => { try { fs.chmodSync(apps, 0o755); } catch (e) { /* gone */ } });
+  try {
+    const { sent } = await R.installAtMac(rw, release);
+    const coreVersion = () => { try { return JSON.parse(fs.readFileSync(path.join(R.installedCore(rw), 'release.json'), 'utf8')).version; } catch (e) { return null; } };
+    const state = () => `the installed core is release ${JSON.stringify(coreVersion())}; ` +
+      `agents loaded: ${JSON.stringify(R.agentsLoaded(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}; sent ${JSON.stringify(sent)}`;
+    assert.ok(!fs.existsSync(R.installRecordFile(rw)), `the install must run to its end; ${state()}`);
+    assert.ok(R.coreIs(rw, release), `the installed core must be the release's, file for file; ${state()}`);
+    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500), `the agents are loaded again; ${state()}`);
+    assertAgentsHeld(rw, 'after the install');
+    // The one fault: Squire Update, the installer program, was not laid down
+    // (the words of the line are the product's).
+    let h = R.health(rw);
+    const naming = () => h.stdout.split('\n').map((l) => l.trim()).filter((l) => l.includes('Squire Update'));
+    await s.waitFor(() => { h = R.health(rw); return naming().length === 1; }, 60000, 1000);
+    assert.equal(naming().length, 1, `the health check must name Squire Update, which could not be laid down, on exactly one line; got ${w.describe(h)}`);
+    assert.notEqual(h.status, 0, `the health check must exit non-zero for that fault; got ${w.describe(h)}`);
+  } finally {
+    fs.chmodSync(apps, 0o755);
+  }
 });
 
 test("under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded", LONG, async (t) => {
