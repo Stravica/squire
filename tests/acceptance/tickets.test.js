@@ -472,3 +472,55 @@ test('a request to send a waiting ticket whose ticket id ends in a newline insid
   R.tick(rw);
   assert.deepEqual(posted(rw, ticket.id), [], `${what}: nothing may be posted`);
 });
+
+// ------------------------------------------------- the install id, kept
+
+test('an install id found readable by others is kept, for its user only, when the next ticket is built: the same id, its file at 0600, on that ticket and every later one', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const first = offered(rw);
+  const id = R.installId(rw);
+  assert.match(id || '', /^[0-9a-f]{32}$/, 'the first ticket makes the install id');
+  const file = path.join(rw.home, 'install-id');
+  // The world opens the install id to others, as a copy or a restore could leave it.
+  fs.chmodSync(file, 0o644);
+  approve(rw, first);
+  R.tick(rw);
+  // The fault gone and back: the next ticket from the same home.
+  fs.rmSync(path.join(rw.owner, 'overlay'), { recursive: true, force: true });
+  R.health(rw);
+  plantFault(rw);
+  const second = offered(rw, 'the fault back after the first ticket was sent');
+  assert.notEqual(second.id, first.id, 'a fault back after its ticket was sent builds a new ticket');
+  assert.equal(fs.statSync(file).mode & 0o777, 0o600, 'once the next ticket is built, the install id is readable by its user only');
+  assert.equal(R.installId(rw), id, 'the install id is kept, never made again: the same on every ticket from one Squire home');
+  assert.equal(JSON.parse(second.bytes).installId, id, 'the next ticket carries the same install id');
+});
+
+// ------------------------------------------------- a clock read ahead
+
+test('an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once', LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  approve(rw, ticket);
+  R.standIns(rw, { intake: 'fail' });
+  R.tick(rw);
+  assert.equal(posted(rw, ticket.id).length, 1, 'the first run must try to send it');
+  // A clock read ahead: the attempt recorded an hour after now.
+  R.moveRecordTimes(path.join(rw.home, 'outbox', `${ticket.id}.state.json`), 3600, ['at']);
+  R.tick(rw);
+  const ended = Math.floor(R.nowSeconds());
+  assert.equal(posted(rw, ticket.id).length, 2, 'an attempt dated ahead of the clock never holds the retry off: the next run retries it as due now');
+  const state = R.outboxState(rw, ticket.id) || {};
+  const ahead = (state.attempts || []).filter((x) => !(x && typeof x.at === 'number' && x.at <= ended));
+  assert.deepEqual(ahead, [], `once the run ends no attempt in the ticket's record may be dated after now; record: ${JSON.stringify(state)}`);
+  R.standIns(rw, { intake: 'ok' });
+  older(rw, ticket.id, 300);
+  R.tick(rw);
+  const posts = posted(rw, ticket.id);
+  assert.equal(posts.length, 3, 'a third attempt once the wait has passed and the intake answers');
+  assert.ok(posts.every((p) => p.bytes.equals(ticket.bytes)), 'every attempt carries exactly the approved bytes and the same ticket id');
+  assert.equal(posts.filter((p) => p.filedAs === 'new').length, 1, 'the intake files it once');
+  assert.ok(!fs.existsSync(R.outboxFile(rw, ticket.id)), 'the 2xx answer clears it from the outbox');
+});

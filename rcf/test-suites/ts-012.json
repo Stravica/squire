@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-11T07:15:17.350Z",
+  "updatedAt": "2026-11-11T07:15:52.651Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -189,6 +189,20 @@
       "description": "a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted"
+    },
+    {
+      "id": "TC-012-install-id-found-open-kept-at-0600",
+      "acId": "AC-2001-3",
+      "description": "an install id found readable by others is kept, for its user only, when the next ticket is built: the same id, its file at 0600, on that ticket and every later one",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an install id found readable by others is kept, for its user only, when the next ticket is built: the same id, its file at 0600, on that ticket and every later one"
+    },
+    {
+      "id": "TC-012-attempt-dated-ahead-holds-no-retry-off",
+      "acId": "AC-2001-4",
+      "description": "an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once"
     }
   ],
   "status": "draft"
