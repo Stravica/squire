@@ -467,11 +467,15 @@ class Persona:
     stored, and the block lay-down and the runner write into CLAUDE.md in
     Squire's config folder, which Claude Code loads as the user's own
     instructions for Squire's session. The owner's squire.json is the one
-    authority for both."""
+    authority for both. The block also carries Squire's one standing line on
+    updates: they install only from Squire Update on the owner's Mac."""
 
     LIMITS = {'squireName': 40, 'personality': 400}
     OPEN = '<!-- squire persona -->'
     CLOSE = '<!-- end squire persona -->'
+    UPDATES = ('Squire\'s updates install only from Squire Update on the owner\'s Mac, never from this session and never '
+               'from the phone. When Squire tells you a release is waiting, tell the owner to open Squire Update on '
+               'their Mac, and run nothing for it yourself.')
 
     @classmethod
     def problem(cls, key, value):
@@ -512,6 +516,7 @@ class Persona:
                          'this Mac; use your name when you introduce yourself.')
         if 'personality' in values:
             lines.append(f'Your personality, in the owner\'s words: {values["personality"]}')
+        lines.append(cls.UPDATES)
         lines.append(cls.CLOSE)
         return '\n'.join(lines) + '\n'
 

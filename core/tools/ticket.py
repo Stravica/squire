@@ -36,7 +36,7 @@ sys.path.insert(0, os.path.join(CORE, 'lib'))
 sys.path.insert(0, os.path.join(CORE, 'tools'))
 
 from squire import ClaudeCode, Config, Ledger, Records, SquireError, System, Version  # noqa: E402
-from update import Install, Releases  # noqa: E402
+from update import Releases  # noqa: E402
 
 
 class Ticket:
@@ -164,6 +164,7 @@ class Outbox:
     RETRY_FIRST = 60
     RETRY_MOST = 6 * 3600
     POST_WITHIN = 30
+    FRESH = 1800
     ID = re.compile(r'^t-[0-9a-f]{32}$')
 
     def __init__(self, config):
@@ -196,6 +197,13 @@ class Outbox:
 
     def request(self, ticket_id):
         return f'{PYTHON} {os.path.join(self.home, "core", "tools", "ticket.py")} --send {ticket_id}'
+
+    @classmethod
+    def fresh(cls, answer, now):
+        """The owner's yes to send a ticket, given under 30 minutes ago and
+        not timed after now."""
+        at = answer.get('at')
+        return isinstance(at, (int, float)) and not isinstance(at, bool) and at <= now and now - at < cls.FRESH
 
     # ----------------------------------------------------- the health check
 
@@ -284,7 +292,7 @@ class Outbox:
         exact = f'ticket:{ticket_id}:{digest}:{state.get("digest")}'
         for request, answer in reversed(requests):
             if request.get('item') == exact and answer and answer.get('answer') == 'yes' \
-                    and Install.fresh(answer, now) and not ledger.used(request.get('id')):
+                    and self.fresh(answer, now) and not ledger.used(request.get('id')):
                 if self.use(request.get('id'), now):
                     state['request'], state['digest'] = request['id'], digest
                     Records.write(self.state_file(ticket_id), state, canonical=True)

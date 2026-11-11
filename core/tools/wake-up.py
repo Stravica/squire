@@ -11,9 +11,10 @@
                                             within seven days; then, once core
                                             is installed, an update that did
                                             not finish, the Claude Code watch,
-                                            the weekly update check, the
-                                            owner's yes to an install, and the
-                                            support tickets to send
+                                            the weekly update check (which
+                                            stages and tells, and never
+                                            installs), and the support
+                                            tickets to send
 
 A wake-up reaches only Squire's own session: the one session record in the
 Squire home, its process alive and the one it was, its socket its own and
@@ -295,12 +296,12 @@ class ClaudeCodeWatch:
 class OutsideJobs:
     """The scheduler's outside jobs for updates and support tickets, once core
     is installed with its release.json, in this order: an install that did
-    not finish is settled (update.py --recover); Claude Code is compared with
-    its record; the weekly check runs (before any install); the owner's
-    fresh yes to install the staged release is acted on (update.py
-    --perform); and the outbox's tickets are set aside, sent or retried
-    (ticket.py --perform). Each child runs in this run's process group, held
-    to its end."""
+    not finish is settled where nothing needs laying down, and otherwise
+    handed to Squire Update (update.py --recover); Claude Code is compared
+    with its record; the weekly check runs; and the outbox's tickets are set
+    aside, sent or retried (ticket.py --perform). The tick never installs:
+    Squire Update does, at the Mac. Each child runs in this run's process
+    group, held to its end, and none stops an agent."""
 
     WITHIN = 1500
 
@@ -326,8 +327,6 @@ class OutsideJobs:
             self.child('update.py', '--recover')
         ClaudeCodeWatch(self.router).run(now)
         WeeklyCheck(self.config, self.send).run(time.time())
-        if Install.pending(self.config, time.time()):
-            self.child('update.py', '--perform')
         if Outbox.pending(self.home):
             self.child('ticket.py', '--perform')
 

@@ -19,10 +19,12 @@ checked version when an install does not finish.
         and lays the previous one down otherwise
 
 The weekly check runs inside the scheduler's tick (wake-up.py --due), which
-reads this file for it. Everything an update writes is in the Squire home
-(staging/, releases/, current-release.json, update.json, install.json) and,
-for the agents, Library/LaunchAgents; the owner's folder only gains the
-approvals ledger's use of the owner's yes.
+reads this file for it; it stages a release and tells the owner it is
+waiting, and never installs. Everything an update writes is in the Squire
+home (staging/, releases/, current-release.json, update.json, install.json,
+logs/update.log) and, for the agents and Squire Update, Library/LaunchAgents
+and Applications in the home folder; nothing is written in the owner's
+folder.
 """
 
 import calendar
@@ -50,7 +52,7 @@ CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 PYTHON = '/usr/bin/python3'
 sys.path.insert(0, os.path.join(CORE, 'lib'))
 
-from squire import Config, Ledger, Paths, Process, Records, SquireError, System, Version  # noqa: E402
+from squire import Config, Paths, Process, Records, SquireError, System, Version  # noqa: E402
 
 
 class Refused(Exception):
@@ -429,11 +431,19 @@ class WeeklyCheck:
     """The scheduler's weekly check: when update.json records no check in the
     last 7 days and the health check names no fault, latest.json is fetched
     from the release host; a newer release, other than one a rollback holds
-    out, is downloaded into staging/, checked and staged, and one wake-up
-    offers it with the request that asks for it."""
+    out, is downloaded into staging/, checked and staged, and one wake-up at
+    the staging tells the owner it is waiting, in the notice's words: its
+    version from the signed manifest, Squire Update named, no command, path
+    or terminal. A release already staged is not told again here (the note
+    on the owner's next message comes at most once a week)."""
 
     WEEK = 7 * 86400
     ARCHIVE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*\Z')
+    NOTICE = ('Squire release {version} is ready to install. Tell the owner, in these words or close to them: "A new '
+              'version of Squire ({version}) is ready. To install it, open Squire Update on your Mac: it\'s in the '
+              'Applications folder in your home folder, or press Command and Space and type Squire Update. It shows '
+              'you what\'s new before it changes anything. You can\'t install it from your phone; it will wait until '
+              'you\'re at your Mac." Do not run anything for it, and never give the owner anything to type or run.')
 
     def __init__(self, config, send):
         self.config = config
@@ -484,8 +494,7 @@ class WeeklyCheck:
         if version == releases.record().get('heldOut'):
             return releases.note(lastCheck=now, outcome='held out', version=version)
         if releases.staged() == version:
-            releases.note(lastCheck=now, outcome='staged', version=version)
-            return self.offer(version, now)
+            return releases.note(lastCheck=now, outcome='staged', version=version)
         os.makedirs(releases.staging, mode=0o700, exist_ok=True)
         fd, download = tempfile.mkstemp(prefix='.download-', dir=releases.staging)
         unpacked = tempfile.mkdtemp(prefix='.unpack-', dir=releases.staging)
@@ -498,7 +507,7 @@ class WeeklyCheck:
                 return releases.note(lastCheck=now, outcome='could not check')
             try:
                 releases.unpack(download, unpacked)
-                releases.check(unpacked, releases.key, version, work=releases.staging)
+                manifest = releases.check(unpacked, releases.key, version, work=releases.staging)[0]
             except (Refused, OSError) as e:
                 reason = str(e) if isinstance(e, Refused) else 'its archive does not unpack'
                 return releases.note(lastCheck=now, outcome='refused', version=version, reason=reason)
@@ -513,23 +522,23 @@ class WeeklyCheck:
                 elif os.path.lexists(leftover):
                     os.unlink(leftover)
         releases.note(lastCheck=now, outcome='staged', version=version)
-        self.offer(version, now)
+        self.offer(manifest['version'], now)
 
     def offer(self, version, now):
-        request = f'{PYTHON} {os.path.join(self.home, "core", "tools", "update.py")} --install {version}'
-        self.send(f'Squire release {version} is ready to install. To install it, ask: {request}',
-                  f'update-{version}-{now}')
+        """The wake-up at the staging: the notice, the version the signed
+        manifest names (the check has made it the one latest.json names)."""
+        self.send(self.NOTICE.format(version=version), f'update-{version}-{now}')
 
 
 class Install:
-    """The scheduler's install, from the installed (previous) release's own
-    code, under an exclusive lock on install.lock held for its whole life.
-    install.json names the two versions, this process and the step reached,
-    written durably before each step: record, keep, stop, lay, switch,
-    reload, check, clear. A failed check rolls the previous release back."""
+    """The install, run only by Squire Update's engine (outside every agent),
+    from the installed (previous) release's own code, under an exclusive
+    lock on install.lock held for its whole life. install.json names the two
+    versions, this process and the step reached, written durably before each
+    step: record, keep, stop, lay, switch, reload, check, clear. A failed
+    check rolls the previous release back."""
 
     STEPS = ('record', 'keep', 'stop', 'lay', 'switch', 'reload', 'check', 'clear')
-    FRESH = 1800
     RUNNER_WITHIN = 30
     SESSION_WITHIN = 120
     LAY_DOWN_WITHIN = 300
@@ -571,21 +580,6 @@ class Install:
     def unfinished(cls, home):
         return os.path.lexists(os.path.join(home, 'install.json')) and cls.lock_free(home)
 
-    @classmethod
-    def pending(cls, config, now):
-        """True when the ledger holds the owner's fresh yes, not yet used, to
-        install the staged version. One read under a shared lock."""
-        version = Releases(config.home).staged()
-        if not version:
-            return False
-        return bool([1 for request, answer in Ledger.yeses_in(config.ledger_path, 'update:')
-                     if request['item'].split(':')[1:2] == [version] and cls.fresh(answer, now)])
-
-    @classmethod
-    def fresh(cls, answer, now):
-        at = answer.get('at')
-        return isinstance(at, (int, float)) and not isinstance(at, bool) and at <= now and now - at < cls.FRESH
-
     def lock(self):
         fd = os.open(self.lock_file, os.O_RDWR | os.O_CREAT, 0o600)
         try:
@@ -604,45 +598,7 @@ class Install:
         except SquireError:
             pass
 
-    # ------------------------------------------------------------- perform
-
-    def perform(self):
-        if self.lock() is None:
-            return 0
-        if os.path.lexists(self.record_file):
-            return Recovery(self).settle()
-        version = self.releases.staged()
-        if not version:
-            return 0
-        digest = self.approved(version, time.time())
-        if digest is None:
-            return 0
-        folder = os.path.join(self.releases.staging, version)
-        try:
-            manifest, data = self.releases.check(folder, self.releases.key, version, work=self.releases.staging)
-        except Refused as e:
-            shutil.rmtree(folder, ignore_errors=True)
-            self.releases.note(outcome='refused', version=version, reason=str(e))
-            return 1
-        if hashlib.sha256(data).hexdigest() != digest:
-            return 0
-        return self.install(version, manifest)
-
-    def approved(self, version, now):
-        """The owner's fresh yes, not yet used, to install this version:
-        marked used under the ledger's lock, and the staged manifest's digest
-        its request recorded returned; None when there is none."""
-        try:
-            with Ledger(self.config.ledger_path) as ledger:
-                for request, answer in ledger.yeses('update:'):
-                    parts = request['item'].split(':')
-                    if len(parts) != 3 or parts[1] != version or not self.fresh(answer, now):
-                        continue
-                    ledger.append({'type': 'use', 'request': request['id'], 'at': int(now)})
-                    return parts[2]
-        except SquireError:
-            return None
-        return None
+    # ------------------------------------------------------------- install
 
     def install(self, version, manifest):
         releases = self.releases
