@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-11T15:23:21.816Z",
+  "updatedAt": "2026-11-11T17:00:10.603Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -99,7 +99,7 @@
       "testable": true,
       "given": "A Mac whose launchd ends every process in a Squire agent's process group when that agent is stopped or its main process exits",
       "when": "Squire Update installs a signed release, rolls one back, or finishes an interrupted install; Squire's runner or scheduler settles an interrupted install; and the scheduler runs a known fix that lays core down",
-      "then": "Each runs to its end and leaves all three of Squire's agents loaded; no install, rollback or lay-down runs in a Squire agent's process group, and no Squire program stops the agent it runs in.",
+      "then": "Each runs to its end and leaves all three of Squire's agents loaded; nothing that stops a Squire agent runs in a Squire agent's process group, and no Squire program stops the agent it runs in.",
       "verification": "testOnly"
     },
     {
