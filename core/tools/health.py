@@ -458,9 +458,10 @@ class UpdateLines:
             lines.append(f'release: Squire\'s record names release {current["current"]} as current, but its installed '
                          f'core is release {version}; open Squire\'s installer to lay core down again')
         if record.get('outcome') == 'refused' and isinstance(record.get('reason'), str):
-            # A version that is not a version is shown in its JSON form, on one line.
+            # A refusal names its class, never text the release host served: a
+            # version is shown only when it is a version.
             refused = record.get('version')
-            shown = refused if Version.of(refused) else json.dumps(refused)
+            shown = refused if Version.of(refused) else '(version not shown)'
             lines.append(f'update: Squire refused release {shown}: {record["reason"]}; nothing was changed')
         mark = record.get('rollbackFailed')
         if isinstance(mark, dict) and Version.of(mark.get('from')) and Version.of(mark.get('to')) \

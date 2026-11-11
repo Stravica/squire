@@ -455,7 +455,8 @@ class WeeklyCheck:
         except (Fetch.FAILURES + (AttributeError, UnicodeError)):
             return releases.note(lastCheck=now, outcome='could not check')
         if not Version.of(version):
-            return releases.note(lastCheck=now, outcome='refused', version=version, reason='its version is not a version')
+            # Nothing the release host served is kept: a value that is not a version is never recorded.
+            return releases.note(lastCheck=now, outcome='refused', reason='its version is not a version')
         if not isinstance(archive, str) or not self.ARCHIVE.match(archive):
             return releases.note(lastCheck=now, outcome='could not check')
         installed = releases.installed()
