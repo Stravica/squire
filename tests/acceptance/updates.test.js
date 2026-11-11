@@ -991,3 +991,112 @@ test('a release rolled back by itself stays out of the offer at the next weekly 
   const offers = stage(rw, newer, 'the weekly check after a newer release is published');
   assert.equal(offers.filter((x) => x.includes(R.updateRequest(rw, LATER))).length, 1, `the newer release ${LATER} must be offered as usual; sent ${JSON.stringify(offers)}`);
 });
+
+// ------------------------------------------- the launchd model itself
+
+// Kept as evidence that the test world's model of launchd bites, bound to no
+// criterion: a stand-in program in the shape of the route launchd ended on a
+// real Mac (a job whose main process runs a child that boots that same job
+// out) is ended before the child finishes, a job's main process exiting ends
+// the rest of its group, and no world's launchctl is the Mac's own.
+const L = require('../fixtures/tools/launchd.js');
+const I = require('../fixtures/installer-world.js');
+
+// A launchd agent file for the model, written as plistlib writes one (XML),
+// by the Mac's own plutil.
+function writePlist(file, body) {
+  fs.writeFileSync(`${file}.json`, JSON.stringify(body));
+  const r = spawnSync('/usr/bin/plutil', ['-convert', 'xml1', '-o', file, `${file}.json`], { encoding: 'utf8' });
+  assert.equal(r.status, 0, `the world writes the agent file ${path.basename(file)}; got ${r.stderr}`);
+  fs.rmSync(`${file}.json`);
+}
+
+// The world's launchctl is never the Mac's own: not a link to /bin/launchctl,
+// and a call to it is refused (exit 64) and recorded.
+function assertOwnLaunchctl(system, what) {
+  const file = path.join(system, 'bin', 'launchctl');
+  const st = fs.lstatSync(file);
+  assert.ok(!st.isSymbolicLink() && fs.realpathSync(file) !== '/bin/launchctl',
+    `${what}: <system root>/bin/launchctl must never be a link to this Mac's /bin/launchctl`);
+  const r = spawnSync(file, ['print', `gui/${process.getuid()}/com.stravica.squire.runner`], { encoding: 'utf8' });
+  assert.equal(r.status, 64, `${what}: the world's own launchctl refuses every call (exit 64); got ${r.status} ${r.stderr}`);
+  const log = path.join(system, 'launchctl-refused.jsonl');
+  assert.ok(fs.existsSync(log) && fs.readFileSync(log, 'utf8').includes('com.stravica.squire.runner'), `${what}: the refused call is recorded`);
+}
+
+test('the launchd model ends a job whose own child boots that job out before the child finishes, as launchd ended the install on a real Mac; a job whose main process exits loses the rest of its process group; nothing booted out starts again by itself; and no world\'s launchctl is the Mac\'s own', LONG, async (t) => {
+  const world = w.makeWorld();
+  const state = path.join(world.root, 'launchd');
+  t.after(() => { L.control(state, { control: 'stop' }); w.cleanUp(world); });
+  const system = I.makeSystemRoot(path.join(world.root, 'system'));
+  assertOwnLaunchctl(system, 'a bare system root');
+  const launchctl = path.join(system, 'bin', 'launchctl');
+  fs.writeFileSync(launchctl, L.launchctlScript(state));
+  fs.chmodSync(launchctl, 0o755);
+  const agents = path.join(world.userHome, 'Library', 'LaunchAgents');
+  fs.mkdirSync(agents, { recursive: true });
+  L.start(state, { env: { PATH: '/usr/bin:/bin', HOME: world.userHome }, agents });
+  const uid = process.getuid();
+  const marks = path.join(world.root, 'marks');
+  fs.mkdirSync(marks);
+  const mark = (name) => fs.existsSync(path.join(marks, name));
+  const label = 'test.launchd-model.stops-its-own-job';
+  // The job's main process runs a child in its own process group, as the
+  // scheduler's tick ran the install; the child boots the job out, then would
+  // go on to finish.
+  const child = path.join(world.root, 'child.js');
+  fs.writeFileSync(child, `'use strict';
+const fs = require('fs');
+const { spawnSync } = require('child_process');
+fs.writeFileSync(${JSON.stringify(path.join(marks, 'started'))}, '');
+const r = spawnSync(${JSON.stringify(launchctl)}, ['bootout', 'gui/${uid}/${label}']);
+spawnSync('/bin/sleep', ['3']);
+fs.writeFileSync(${JSON.stringify(path.join(marks, 'finished'))}, String(r.status));
+`);
+  const main = path.join(world.root, 'main.js');
+  fs.writeFileSync(main, `'use strict';
+require('child_process').spawnSync(${JSON.stringify(process.execPath)}, [${JSON.stringify(child)}], { stdio: 'inherit' });
+`);
+  const plist = path.join(agents, `${label}.plist`);
+  writePlist(plist, { Label: label, ProgramArguments: [process.execPath, main], RunAtLoad: true });
+  const loaded = spawnSync(launchctl, ['bootstrap', `gui/${uid}`, plist], { encoding: 'utf8' });
+  assert.equal(loaded.status, 0, `the model loads the job; got ${loaded.status} ${loaded.stderr}`);
+  const ended = await s.waitFor(() => L.events(state).some((e) => e.exited === label), 20000, 100);
+  assert.ok(ended, `the job must have ended; events: ${JSON.stringify(L.events(state))}`);
+  await s.sleep(L.KILL_AFTER_MS + 2000);
+  assert.ok(mark('started'), 'the child must have started');
+  assert.ok(!mark('finished'), 'the child that booted out its own job must be ended with the job\'s process group before it finishes');
+  const call = L.calls(state).find((c) => c.argv[0] === 'bootout' && c.label === label);
+  assert.ok(call && call.jobGroup && call.callerGroup === call.jobGroup,
+    `the model must record the boot-out as made from inside the job's own process group; calls: ${JSON.stringify(L.calls(state))}`);
+  assert.equal(spawnSync(launchctl, ['print', `gui/${uid}/${label}`]).status, 113, 'a booted-out job is not loaded');
+  assert.equal(L.events(state).filter((e) => e.started === label).length, 1, 'a booted-out job is never started again by the model itself');
+  // A job whose main process exits while a child it started in its group is
+  // still working: the child is ended with the group.
+  const orphanLabel = 'test.launchd-model.main-exits';
+  const late = path.join(world.root, 'late.js');
+  fs.writeFileSync(late, `'use strict';
+require('child_process').spawnSync('/bin/sleep', ['3']);
+require('fs').writeFileSync(${JSON.stringify(path.join(marks, 'late-finished'))}, '');
+`);
+  const quick = path.join(world.root, 'quick.js');
+  fs.writeFileSync(quick, `'use strict';
+require('child_process').spawn(${JSON.stringify(process.execPath)}, [${JSON.stringify(late)}], { stdio: 'ignore' }).unref();
+`);
+  const orphanPlist = path.join(agents, `${orphanLabel}.plist`);
+  writePlist(orphanPlist, { Label: orphanLabel, ProgramArguments: [process.execPath, quick], RunAtLoad: true });
+  assert.equal(spawnSync(launchctl, ['bootstrap', `gui/${uid}`, orphanPlist]).status, 0, 'the model loads the second job');
+  assert.equal(spawnSync(launchctl, ['bootstrap', `gui/${uid}`, orphanPlist]).status, 5, 'a label already loaded is refused with exit 5');
+  await s.sleep(5000);
+  assert.ok(!mark('late-finished'), 'a child left in a job\'s process group when its main process exits is ended with the group');
+  assert.equal(spawnSync(launchctl, ['kickstart', `gui/${uid}/${orphanLabel}`]).status, 64, 'a verb the model does not know is refused with exit 64');
+  // No world's launchctl is the Mac's own: the updates world, a world laid as
+  // the known fixes' cases lay theirs, and the installer world.
+  const rw = R.makeReleaseWorld(t);
+  assertOwnLaunchctl(rw.system, 'the updates world');
+  const fixes = w.makeWorld();
+  t.after(() => w.cleanUp(fixes));
+  assertOwnLaunchctl(I.makeSystemRoot(path.join(fixes.root, 'system')), 'the known fixes\' world');
+  const iw = I.makeInstallerWorld(t);
+  assertOwnLaunchctl(iw.system, 'the installer world');
+});
