@@ -123,7 +123,8 @@ test("a fault not on the known-fixes list offers a ticket on a line of its own; 
   const ticket = offered(rw);
   const faultLines = ticket.h.stdout.split('\n').filter((l) => /^ignored: overlay\//.test(l.trim()));
   assert.ok(faultLines.length >= 1, `the overlays must still be named; got ${w.describe(ticket.h)}`);
-  assert.ok(faultLines.every((l) => !l.includes('ticket') && !l.includes('--send')), 'no offer may sit on a fault\'s own line');
+  // An overlay's own path is not an offer: each fault line is the ignored form and nothing more.
+  assert.ok(faultLines.every((l) => /^ignored: overlay\/\S+ \(safety floor\)$/.test(l)), 'no offer may sit on a fault\'s own line');
 });
 
 // ------------------------------------------------- diagnostics only
