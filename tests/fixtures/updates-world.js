@@ -236,12 +236,13 @@ done(0, { started: child.pid });
 // The world's dscl in a world with the launchd model: the account's home, as
 // the account database answers it, is the world's home, so the world's home
 // is the account's own and lay-down loads its agents into the world's launchd.
-// Every other question goes to the Mac's own dscl.
+// A read of any account record's NFSHomeDirectory gets the world's home (the
+// world has one account); every other question goes to the Mac's own dscl.
 function dsclScript(userHome) {
   return `#!${process.execPath}
 'use strict';
 const argv = process.argv.slice(2);
-if (argv.length === 4 && argv[0] === '.' && argv[1] === '-read' && argv[2].startsWith('/Users/') && argv[3] === 'NFSHomeDirectory') {
+if (argv.length === 4 && argv[0] === '.' && argv[1] === '-read' && argv[3] === 'NFSHomeDirectory') {
   process.stdout.write('NFSHomeDirectory: ' + ${JSON.stringify(userHome)} + '\\n');
   process.exit(0);
 }
