@@ -424,9 +424,9 @@ class HealthLines:
 class WeeklyCheck:
     """The scheduler's weekly check: when update.json records no check in the
     last 7 days and the health check names no fault, latest.json is fetched
-    from the release host; a newer release is downloaded into staging/,
-    checked and staged, and one wake-up offers it with the request that asks
-    for it."""
+    from the release host; a newer release, other than one a rollback holds
+    out, is downloaded into staging/, checked and staged, and one wake-up
+    offers it with the request that asks for it."""
 
     WEEK = 7 * 86400
     ARCHIVE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*\Z')
@@ -477,6 +477,8 @@ class WeeklyCheck:
         installed = releases.installed()
         if Version.of(version) <= Version.of(installed):
             return releases.note(lastCheck=now, outcome='nothing newer')
+        if version == releases.record().get('heldOut'):
+            return releases.note(lastCheck=now, outcome='held out', version=version)
         if releases.staged() == version:
             releases.note(lastCheck=now, outcome='staged', version=version)
             return self.offer(version, now)
@@ -883,7 +885,13 @@ class Install:
 
     def rollback(self, version, previous, before, previous_files=None):
         """The previous release laid down again, checked first; returns the
-        version Squire is on."""
+        version Squire is on. The rolled-back version is held out of the
+        weekly check's offer (update.json's heldOut) until a newer one is
+        published."""
+        try:
+            self.releases.note(heldOut=version)
+        except OSError:
+            pass
         key_version = (before or {}).get('previous') if (before or {}).get('current') == previous else None
         files = self.recheck(previous, key_version)
         if files is None or (previous_files is not None and files != previous_files):
