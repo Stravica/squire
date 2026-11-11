@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-11T15:23:34.116Z",
+  "updatedAt": "2026-11-11T15:36:45.821Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -24,9 +24,9 @@
     {
       "id": "TC-011-a-release-signed-with-the-installed-key",
       "acId": "AC-1401-1",
-      "description": "a release signed with the installed key is staged outside core and offered in one wake-up naming its version and the request that asks for it",
+      "description": "a release signed with the installed key is staged outside core and told to the owner in one wake-up naming its version and Squire Update, with no command, path or terminal",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::a release signed with the installed key is staged outside core and offered in one wake-up naming its version and the request that asks for it"
+      "testPointer": "tests/acceptance/updates.test.js::a release signed with the installed key is staged outside core and told to the owner in one wake-up naming its version and Squire Update, with no command, path or terminal"
     },
     {
       "id": "TC-011-a-release-with-no-signature-is-refused",
@@ -66,9 +66,9 @@
     {
       "id": "TC-011-a-signed-release-carrying-a-new-key",
       "acId": "AC-1401-1",
-      "description": "a signed release carrying a new key installs on a yes, and the next release is checked with the new key only",
+      "description": "a signed release carrying a new key installs from Squire Update, and the next release is checked with the new key only",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::a signed release carrying a new key installs on a yes, and the next release is checked with the new key only"
+      "testPointer": "tests/acceptance/updates.test.js::a signed release carrying a new key installs from Squire Update, and the next release is checked with the new key only"
     },
     {
       "id": "TC-011-after-a-signed-update-opening-an-app",
@@ -157,65 +157,51 @@
     {
       "id": "TC-011-weekly-check-runs-once-week-second-run-scheduler-fetches",
       "acId": "AC-1401-2",
-      "description": "the weekly check runs once a week: a second run of the scheduler fetches nothing and offers nothing again",
+      "description": "the weekly check runs once a week: a second run of the scheduler fetches nothing and tells the owner nothing again",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::the weekly check runs once a week: a second run of the scheduler fetches nothing and offers nothing again"
+      "testPointer": "tests/acceptance/updates.test.js::the weekly check runs once a week: a second run of the scheduler fetches nothing and tells the owner nothing again"
     },
     {
       "id": "TC-011-floor-block-install-carries-version-changelog-exactly-release-manifest",
       "acId": "AC-1401-2",
-      "description": "the floor's block for an install carries the version and the changelog exactly as the release's manifest has them, and the owner's fresh, exact yes installs that release",
+      "description": "Squire Update's window carries the version and the changelog exactly as the signed manifest holds them before anything changes, and Install installs that release",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::the floor's block for an install carries the version and the changelog exactly as the release's manifest has them, and the owner's fresh, exact yes installs that release"
+      "testPointer": "tests/acceptance/updates.test.js::Squire Update's window carries the version and the changelog exactly as the signed manifest holds them before anything changes, and Install installs that release"
     },
     {
       "id": "TC-011-nothing-installed-no-answer-from-owner-core-digests-kept",
       "acId": "AC-1401-2",
-      "description": "nothing is installed with no answer from the owner: core's digests and the kept releases stay as they are",
+      "description": "nothing is installed when Squire Update's window is closed: core's digests and the kept releases stay as they are",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with no answer from the owner: core's digests and the kept releases stay as they are"
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed when Squire Update's window is closed: core's digests and the kept releases stay as they are"
     },
     {
       "id": "TC-011-nothing-installed-owner-no-core-digests-kept-releases-stay",
       "acId": "AC-1401-2",
-      "description": "nothing is installed with the owner's no: core's digests and the kept releases stay as they are",
+      "description": "nothing is installed when the owner chooses Not now: core's digests and the kept releases stay as they are",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with the owner's no: core's digests and the kept releases stay as they are"
-    },
-    {
-      "id": "TC-011-nothing-installed-yes-given-more-than-30-minutes-before",
-      "acId": "AC-1401-2",
-      "description": "nothing is installed with a yes given more than 30 minutes before the run: core's digests and the kept releases stay as they are",
-      "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with a yes given more than 30 minutes before the run: core's digests and the kept releases stay as they are"
-    },
-    {
-      "id": "TC-011-nothing-installed-yes-timed-after-now-core-digests-kept",
-      "acId": "AC-1401-2",
-      "description": "nothing is installed with a yes timed after now: core's digests and the kept releases stay as they are",
-      "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with a yes timed after now: core's digests and the kept releases stay as they are"
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed when the owner chooses Not now: core's digests and the kept releases stay as they are"
     },
     {
       "id": "TC-011-nothing-installed-yes-version-no-longer-staged-core-digests",
       "acId": "AC-1401-2",
-      "description": "nothing is installed with a yes for a version no longer the staged one: core's digests and the kept releases stay as they are",
+      "description": "nothing is installed when a newer release is staged while Squire Update's window is open and the owner then clicks Install: core's digests and the kept releases stay as they are",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::nothing is installed with a yes for a version no longer the staged one: core's digests and the kept releases stay as they are"
+      "testPointer": "tests/acceptance/updates.test.js::nothing is installed when a newer release is staged while Squire Update's window is open and the owner then clicks Install: core's digests and the kept releases stay as they are"
     },
     {
       "id": "TC-011-while-health-check-names-fault-no-update-staged-offered",
       "acId": "AC-1401-2",
-      "description": "while the health check names a fault no update is staged or offered, and once it is gone the next run stages and offers it",
+      "description": "while the health check names a fault no update is staged or told to the owner, and once it is gone the next run stages it and tells the owner",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::while the health check names a fault no update is staged or offered, and once it is gone the next run stages and offers it"
+      "testPointer": "tests/acceptance/updates.test.js::while the health check names a fault no update is staged or told to the owner, and once it is gone the next run stages it and tells the owner"
     },
     {
       "id": "TC-011-signed-release-whose-runner-exits-once-installs-yes-rolled",
       "acId": "AC-1401-3",
-      "description": "a signed release whose runner exits at once installs on a yes, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing",
+      "description": "a signed release whose runner exits at once installs from Squire Update, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::a signed release whose runner exits at once installs on a yes, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing"
+      "testPointer": "tests/acceptance/updates.test.js::a signed release whose runner exits at once installs from Squire Update, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing"
     },
     {
       "id": "TC-011-when-check-after-rollback-fails-too-health-line-names",
@@ -227,16 +213,16 @@
     {
       "id": "TC-011-owner-folder-hashes-same-before-signed-install-after-apart",
       "acId": "AC-1401-4",
-      "description": "the owner's folder hashes the same before a signed install and after it, apart from the one recorded use of the owner's yes in the approvals ledger",
+      "description": "the owner's folder hashes the same before a signed install and after it, the approvals ledger and Squire's state files there included",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::the owner's folder hashes the same before a signed install and after it, apart from the one recorded use of the owner's yes in the approvals ledger"
+      "testPointer": "tests/acceptance/updates.test.js::the owner's folder hashes the same before a signed install and after it, the approvals ledger and Squire's state files there included"
     },
     {
       "id": "TC-011-owner-folder-hashes-same-before-install-rolled-back-after",
       "acId": "AC-1401-4",
-      "description": "the owner's folder hashes the same before an install that is rolled back and after the rollback, apart from the one recorded use of the owner's yes",
+      "description": "the owner's folder hashes the same before an install that is rolled back and after the rollback, the approvals ledger and Squire's state files there included",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::the owner's folder hashes the same before an install that is rolled back and after the rollback, apart from the one recorded use of the owner's yes"
+      "testPointer": "tests/acceptance/updates.test.js::the owner's folder hashes the same before an install that is rolled back and after the rollback, the approvals ledger and Squire's state files there included"
     },
     {
       "id": "TC-011-whatever-owner-folder-holds-file-no-may-read-file",
@@ -388,9 +374,9 @@
     {
       "id": "TC-011-a-home-the-round-3-app-laid-down-takes",
       "acId": "AC-1401-1",
-      "description": "a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs on a yes, keeping the app's release with no manifest or signature made up for it",
+      "description": "a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs from Squire Update, keeping the app's release with no manifest or signature made up for it",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs on a yes, keeping the app's release with no manifest or signature made up for it"
+      "testPointer": "tests/acceptance/updates.test.js::a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs from Squire Update, keeping the app's release with no manifest or signature made up for it"
     },
     {
       "id": "TC-011-after-a-newer-app-s-lay-down-over-an",
@@ -409,16 +395,16 @@
     {
       "id": "TC-011-a-staged-file-changed-after-the-offer-is",
       "acId": "AC-1401-1",
-      "description": "a staged file changed after the offer is found when the staged release is checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check",
+      "description": "a staged file changed while Squire Update's window shows the release is found when the staged release is checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::a staged file changed after the offer is found when the staged release is checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check"
+      "testPointer": "tests/acceptance/updates.test.js::a staged file changed while Squire Update's window shows the release is found when the staged release is checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check"
     },
     {
       "id": "TC-011-a-staged-file-and-the-staged-manifest-s",
       "acId": "AC-1401-1",
-      "description": "a staged file and the staged manifest's digest for it, changed together after the offer, are found by the signature checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check",
+      "description": "a staged file and the staged manifest's digest for it, changed together while Squire Update's window shows the release, are found by the signature checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::a staged file and the staged manifest's digest for it, changed together after the offer, are found by the signature checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check"
+      "testPointer": "tests/acceptance/updates.test.js::a staged file and the staged manifest's digest for it, changed together while Squire Update's window shows the release, are found by the signature checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check"
     },
     {
       "id": "TC-011-a-kept-previous-release-changed-before-a",
@@ -430,9 +416,9 @@
     {
       "id": "TC-011-an-install-holds-its-lock-for-its-whole",
       "acId": "AC-1401-8",
-      "description": "an install holds its lock for its whole life: a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither installs nor recovers, and the install finishes as one",
+      "description": "an install holds its lock for its whole life: a second Squire Update and a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither install nor recover, and the install finishes as one",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::an install holds its lock for its whole life: a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither installs nor recovers, and the install finishes as one"
+      "testPointer": "tests/acceptance/updates.test.js::an install holds its lock for its whole life: a second Squire Update and a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither install nor recover, and the install finishes as one"
     },
     {
       "id": "TC-011-an-install-record-squire-cannot-read-not",

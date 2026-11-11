@@ -1,22 +1,26 @@
 'use strict';
 
 // Squire's updates (the design record ADR-005): signed releases only, the
-// changelog first and then the owner's yes, a rollback by itself when the
-// check after an install fails, the owner's folder never touched, and an
-// install that cannot finish leaving Squire on one whole, checked version;
-// and Claude Code changed outside Squire, noticed and checked.
+// owner told a release is waiting, the install made only from Squire Update
+// at the Mac after its window shows the version and the changelog, a rollback
+// by itself when the check after an install fails, the owner's folder never
+// touched, and an install that cannot finish leaving Squire on one whole,
+// checked version; and Claude Code changed outside Squire, noticed and
+// checked.
 //
 // Every case runs an installed, healthy Squire in a test world (the release
 // world): core laid down with a test key as core/release-key.pub and
 // core/release.json naming the world's loopback release host and intake, the
-// runner kept by the world's stand-in for launchd, and Claude Code as round
-// 2's fake behind its launcher. The scheduler's tick (wake-up.py --due, the
-// agent lay-down writes) is the outside job that checks weekly, installs on a
-// yes and recovers; the session asks for an install through the safety floor
-// (update.py --install <version>), whose block carries the version and the
-// changelog, and the owner's yes is the approvals ledger's. Releases are
-// signed with test keys made at run time with the Mac's own ssh-keygen; no
-// case uses Stravica's key.
+// runner kept by the world's stand-in for launchd (or, where a case says so,
+// the agents run under the world's model of launchd), and Claude Code as
+// round 2's fake behind its launcher. The scheduler's tick (wake-up.py --due,
+// the agent lay-down writes) checks weekly, stages and tells the owner, and
+// recovers what lays nothing down; it never installs. The owner installs with
+// Squire Update, opened at the Mac as Finder or Spotlight opens it (the
+// installed core's update.py --app, in a process group of its own), whose
+// main window the world answers with Install, Not now or a closed window; its
+// engine installs in a session of its own. Releases are signed with test keys
+// made at run time with the Mac's own ssh-keygen; no case uses Stravica's key.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -42,7 +46,7 @@ async function healthyWorld(t, opts = {}) {
 }
 
 // The scheduler's weekly check stages the release: a precondition of every
-// case that goes on to offer or install it.
+// case that goes on to tell the owner of it or install it.
 function stage(rw, release, what = 'the weekly check') {
   const before = R.wakeUpIds(rw);
   R.tick(rw);
@@ -52,15 +56,14 @@ function stage(rw, release, what = 'the weekly check') {
   return R.newWakeUps(rw, before);
 }
 
-// The session asks for the install, the owner says yes, the scheduler's next
-// run installs (or rolls back): the wake-ups it sent.
-function installOnYes(rw, release, session = SESSION) {
-  const a = R.asked(rw, session, R.updateRequest(rw, release.version), `the request to install ${release.version}`);
-  R.owner(rw, session, `yes ${a.id}`);
-  const before = R.wakeUpIds(rw);
-  R.tick(rw);
-  return { ...a, sent: R.newWakeUps(rw, before) };
-}
+// What Squire gives its session to tell the owner a release is waiting may
+// carry no command, file path or terminal.
+const NOT_IN_A_NOTICE = /usr\/bin|update\.py|--install|[Tt]erminal/;
+// The wake-ups telling the owner a release is waiting (in any words: the
+// notice, or an offer carrying a request).
+const notices = (sent) => sent.filter((x) => /Squire Update|ready to install|--install/.test(x));
+// The notices naming a version and Squire Update.
+const noticesOf = (sent, version) => sent.filter((x) => x.includes(version) && x.includes('Squire Update'));
 
 function refusalLines(rw, version) {
   const h = R.health(rw);
@@ -85,13 +88,16 @@ const rolledBack = (sent, from, to) => sent.filter((x) => new RegExp(`Squire rol
 
 // ------------------------------------------------------- signed only
 
-test('a release signed with the installed key is staged outside core and offered in one wake-up naming its version and the request that asks for it', LONG, async (t) => {
+test('a release signed with the installed key is staged outside core and told to the owner in one wake-up naming its version and Squire Update, with no command, path or terminal', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   const before = R.untouched(rw);
   const sent = stage(rw, release);
-  const offers = sent.filter((x) => x.includes(NEXT) && x.includes(R.updateRequest(rw, NEXT)));
-  assert.equal(offers.length, 1, `exactly one wake-up must offer ${NEXT} with the request that asks for it; sent ${JSON.stringify(sent)}`);
+  const told = noticesOf(sent, NEXT);
+  assert.equal(told.length, 1, `exactly one wake-up must tell the owner ${NEXT} is waiting, naming Squire Update; sent ${JSON.stringify(sent)}`);
+  for (const x of notices(sent)) {
+    assert.doesNotMatch(x, NOT_IN_A_NOTICE, `what Squire gives its session to tell the owner names no command, path or terminal; got ${JSON.stringify(x)}`);
+  }
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], 'staging an update must change nothing of core, the kept releases, the agents or the owner\'s folder');
   assert.ok(typeof (R.updateRecord(rw) || {}).lastCheck === 'number', 'update.json must record the check\'s time (seconds since the epoch)');
 });
@@ -103,7 +109,7 @@ async function refusedRelease(t, shape, what) {
   const sentBefore = R.wakeUpIds(rw);
   R.tick(rw);
   assertRefused(rw, NEXT, before, what);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [], `${what}: nothing may be offered`);
+  assert.deepEqual(notices(R.newWakeUps(rw, sentBefore)), [], `${what}: the owner may not be told of it`);
 }
 
 test('a release with no signature is refused: its download removed, nothing changed, the refusal named once on the health check', LONG, (t) => refusedRelease(t, "unsigned", "a release with no signature"));
@@ -123,11 +129,11 @@ test('a signed release older than the installed one is never staged, offered or 
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], 'nothing may change');
 });
 
-test('a signed release carrying a new key installs on a yes, and the next release is checked with the new key only', LONG, async (t) => {
+test('a signed release carrying a new key installs from Squire Update, and the next release is checked with the new key only', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const rotate = R.buildRelease(rw, { version: NEXT, shape: 'newKey' });
   stage(rw, rotate, 'the release carrying a new key');
-  const { sent } = installOnYes(rw, rotate);
+  const { sent } = await R.installAtMac(rw, rotate);
   assert.equal(updated(sent, NEXT).length, 1, `the install must finish and say so in one wake-up; sent ${JSON.stringify(sent)}`);
   assert.equal(fs.readFileSync(path.join(R.installedCore(rw), 'release-key.pub'), 'utf8'), rw.keys.two.text, 'the installed core must now trust the new key');
   // A later release signed with the old key is refused; signed with the new one, it is staged.
@@ -144,12 +150,12 @@ test('a signed release carrying a new key installs on a yes, and the next releas
 // ------------------------------- the re-run guard, the first design fact
 
 // Squire set up by its own app at the installed version, then updated by a
-// signed release on the owner's yes.
+// signed release from Squire Update.
 async function appUpdated(t) {
   const rw = await R.makeInstalledApp(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const { sent } = installOnYes(rw, release);
+  const { sent } = await R.installAtMac(rw, release);
   assert.equal(updated(sent, NEXT).length, 1, `the signed update must install; sent ${JSON.stringify(sent)}`);
   return { rw, release };
 }
@@ -193,7 +199,7 @@ test("after a signed update, the floor fix lays down the current kept release, n
 // The files of a core folder, by relative path, as one comparable list.
 const filesList = (dir) => Object.entries(w.treeOf(dir)).map(([k, v]) => `${k} ${v.sha256}`);
 
-test("a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs on a yes, keeping the app's release with no manifest or signature made up for it", LONG, async (t) => {
+test("a home the round 3 app laid down takes its first update after the round 4 app's re-run: the re-run lays the release record and the key down with its core and names its release unverified, and the signed update installs from Squire Update, keeping the app's release with no manifest or signature made up for it", LONG, async (t) => {
   const rw = await R.makeInstalledApp(t);
   await R.layRound3Home(rw);
   assert.equal(R.currentRelease(rw), null, 'a home the round 3 app laid down has no current-release.json');
@@ -205,8 +211,8 @@ test("a home the round 3 app laid down takes its first update after the round 4 
   assert.ok(healthy, `Squire must be healthy after the re-run; health: ${w.describe(R.health(rw))}`);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release, 'the first weekly check after the re-run');
-  const { sent } = installOnYes(rw, release);
-  assert.equal(updated(sent, NEXT).length, 1, `the first update must install on the owner's yes and say so in one wake-up; sent ${JSON.stringify(sent)}`);
+  const { sent } = await R.installAtMac(rw, release);
+  assert.equal(updated(sent, NEXT).length, 1, `the first update must install from Squire Update and say so in one wake-up; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, release), 'the installed core must be the signed release\'s, file for file');
   assert.deepEqual(R.currentRelease(rw), { current: NEXT, previous: R.INSTALLED, verified: true },
     `current-release.json must name the signed release, verified, and the app's release as the previous one; got ${JSON.stringify(R.currentRelease(rw))}`);
@@ -272,7 +278,7 @@ async function refusedNotAVersion(t, version, what) {
   R.tick(rw);
   assert.deepEqual(R.staged(rw), [], `${what}: a version that is not a version is refused before anything is staged; ` +
     `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes('--install')), [], `${what}: nothing may be offered`);
+  assert.deepEqual(notices(R.newWakeUps(rw, sentBefore)), [], `${what}: the owner may not be told of it`);
   assert.deepEqual(R.stagingFiles(rw), [], `${what}: the refused download must be removed from the staging folder`);
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [],
     `${what}: nothing of the installed core, the kept releases, the agents or the owner's folder may change`);
@@ -310,7 +316,7 @@ async function refusedWithoutFloorFile(t, floorFile, what) {
   R.tick(rw);
   assert.deepEqual(R.staged(rw), [], `${what}: a release without ${floorFile} is refused before anything is staged; ` +
     `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [], `${what}: nothing may be offered`);
+  assert.deepEqual(notices(R.newWakeUps(rw, sentBefore)), [], `${what}: the owner may not be told of it`);
   assertRefused(rw, NEXT, before, what);
 }
 
@@ -353,38 +359,48 @@ test('a correctly signed release checked with an ssh-keygen that never answers (
 
 // ------------------------------------------- the changelog, then a yes
 
-test('the weekly check runs once a week: a second run of the scheduler fetches nothing and offers nothing again', LONG, async (t) => {
+test('the weekly check runs once a week: a second run of the scheduler fetches nothing and tells the owner nothing again', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   const first = stage(rw, release);
-  assert.equal(first.filter((x) => x.includes(NEXT)).length, 1, `the first check must offer ${NEXT} in one wake-up; sent ${JSON.stringify(first)}`);
+  assert.equal(noticesOf(first, NEXT).length, 1, `the first check must tell the owner ${NEXT} is waiting, naming Squire Update, in one wake-up; sent ${JSON.stringify(first)}`);
   const fetches = R.latestFetches(rw).length;
   const before = R.wakeUpIds(rw);
   R.tick(rw);
   R.tick(rw);
   assert.equal(R.latestFetches(rw).length, fetches, 'a check within the week must not run again');
   assert.deepEqual(R.newWakeUps(rw, before), [], 'a staged release is mentioned at most once a week');
+  // Six days on, still within the week: no second notice.
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -6 * 86400);
+  R.tick(rw);
+  assert.deepEqual(notices(R.newWakeUps(rw, before)), [], 'no second notice of the same release within a week');
 });
 
-test("the floor's block for an install carries the version and the changelog exactly as the release's manifest has them, and the owner's fresh, exact yes installs that release", LONG, async (t) => {
+// The main window Squire Update showed for a release: the one with an Install
+// button whose text names the version.
+const mainWindows = (windows, version) => windows.filter((x) => x.main && x.text.includes(version));
+
+test("Squire Update's window carries the version and the changelog exactly as the signed manifest holds them before anything changes, and Install installs that release", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  // The version and the changelog exactly as the manifest has them, each as
-  // whole lines once, then one empty line and the relay words that make the
-  // session show the text byte for byte inside a fenced code block.
-  R.assertBlockShape(a.block, [NEXT, release.changelog], 'the floor\'s block for the install');
-  R.owner(rw, SESSION, `yes ${a.id}`);
-  const before = R.wakeUpIds(rw);
-  R.tick(rw);
-  const sent = R.newWakeUps(rw, before);
+  const before = R.untouched(rw);
+  const looked = await R.installAtMac(rw, release, 'Not now');
+  const shown = mainWindows(looked.windows, NEXT);
+  assert.equal(shown.length, 1, `Squire Update must show one window naming ${NEXT} with an Install button; windows: ${JSON.stringify(looked.windows.map((x) => x.text))}`);
+  // The changelog byte for byte, as one piece of the window's text: never
+  // rewritten, escaped or cut.
+  const pieces = [...shown[0].args, shown[0].stdin];
+  assert.ok(pieces.some((p) => p.includes(release.changelog)), `the window's text must carry the changelog exactly as the signed manifest holds it; got ${JSON.stringify(pieces)}`);
+  assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], 'showing the window changes nothing');
+  const { sent, windows } = await R.installAtMac(rw, release, 'Install');
+  assert.equal(mainWindows(windows, NEXT).length, 1, `Install is chosen on the window naming ${NEXT}; windows: ${JSON.stringify(windows.map((x) => x.text))}`);
   assert.equal(updated(sent, NEXT).length, 1, `the install must finish and say so in one wake-up; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, release), 'the installed core must be the release\'s core, file for file');
   assert.equal((R.currentRelease(rw) || {}).current, NEXT, 'current-release.json must name the installed release');
   const kept = R.readJson(path.join(rw.home, 'releases', NEXT, 'manifest.json'));
   assert.ok(kept, 'the installed release\'s manifest must be kept with it');
-  R.assertBlockShape(a.block, [kept.changelog], 'the changelog shown must be the installed release\'s, byte for byte');
+  assert.ok([...shown[0].args, shown[0].stdin].some((p) => p.includes(kept.changelog)), 'the changelog shown must be the installed release\'s, byte for byte');
   assert.deepEqual(R.keptReleases(rw), [R.INSTALLED, NEXT], 'the current release and the previous one are kept');
 });
 
@@ -392,69 +408,81 @@ async function notInstalled(t, variant, what) {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  if (variant === 'no') R.owner(rw, SESSION, `no ${a.id}`);
-  if (['stale', 'future', 'otherVersion'].includes(variant)) R.owner(rw, SESSION, `yes ${a.id}`);
-  if (variant === 'stale') R.moveLedgerTime(rw, R.yesFor(a.id), -31 * 60);
-  if (variant === 'future') R.moveLedgerTime(rw, R.yesFor(a.id), 3600);
+  const before = R.untouched(rw);
+  let r;
+  if (variant === 'closed') r = await R.installAtMac(rw, release, 'close');
+  if (variant === 'notNow') r = await R.installAtMac(rw, release, 'Not now');
   if (variant === 'otherVersion') {
+    // A newer release is staged while the window showing this one is open;
+    // then the owner clicks Install on what the window showed.
+    const go = path.join(rw.root, 'click-install');
+    const run = R.installAtMac(rw, release, { waitFor: go, then: 'Install' });
+    let settled = false;
+    run.then(() => { settled = true; }, () => { settled = true; });
+    await s.waitFor(() => settled || mainWindows(R.updateWindows(rw), NEXT).length >= 1, 120000, 250);
+    if (settled) await run;
+    const open = mainWindows(R.updateWindows(rw), NEXT).length >= 1;
+    assert.ok(open,`Squire Update must show the window naming ${NEXT}; windows: ${JSON.stringify(R.updateWindows(rw).map((x) => x.text))}`);
     R.buildRelease(rw, { version: '0.2.1' });
     R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
+    R.tick(rw);
+    assert.ok(R.staged(rw).includes('0.2.1') && !R.staged(rw).includes(NEXT), `the newer verified release must replace the staged one; staging holds ${JSON.stringify(R.staged(rw))}`);
+    fs.writeFileSync(go, '');
+    r = await run;
   }
-  const before = R.untouched(rw);
-  R.tick(rw);
+  assert.ok(mainWindows(r.windows, NEXT).length >= 1, `${what}: Squire Update must have shown ${NEXT} first; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assert.deepEqual(updated(r.sent, NEXT), [], `${what}: nothing may be installed; sent ${JSON.stringify(r.sent)}`);
+  assert.deepEqual(updated(r.sent, '0.2.1'), [], `${what}: a release the window did not show is never installed by its click; sent ${JSON.stringify(r.sent)}`);
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], `${what}: nothing of core, the kept releases, the agents or the owner's folder may change`);
   assert.ok(R.coreIs(rw, rw.appCore), `${what}: the installed core must still be the installed release's`);
-  if (variant === 'future' || variant === 'stale') {
-    const again = R.asked(rw, `${SESSION}-again`, R.updateRequest(rw, NEXT), `${what}: the request asked again`);
-    R.assertBlockShape(again.block, [NEXT, release.changelog], `${what}: the request asked again, with the version and the changelog`);
-  }
-  if (variant === 'otherVersion') {
-    assert.ok(R.staged(rw).includes('0.2.1') && !R.staged(rw).includes(NEXT), `the newer verified release must replace the staged one; staging holds ${JSON.stringify(R.staged(rw))}`);
-  }
 }
 
-test("nothing is installed with no answer from the owner: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "none", "with no answer from the owner"));
-test("nothing is installed with the owner's no: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "no", "with the owner's no"));
-test("nothing is installed with a yes given more than 30 minutes before the run: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "stale", "with a yes given more than 30 minutes before the run"));
-test("nothing is installed with a yes timed after now: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "future", "with a yes timed after now"));
-test("nothing is installed with a yes for a version no longer the staged one: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "otherVersion", "with a yes for a version no longer the staged one"));
+test("nothing is installed when Squire Update's window is closed: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "closed", "with Squire Update's window closed"));
+test("nothing is installed when the owner chooses Not now: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "notNow", "with Not now"));
+test("nothing is installed when a newer release is staged while Squire Update's window is open and the owner then clicks Install: core's digests and the kept releases stay as they are", LONG, (t) => notInstalled(t, "otherVersion", "with a newer release staged while the window was open"));
 
-// The staged release changed after the offer, before the owner's yes is acted
-// on: a staged file alone, or a staged file and the staged manifest's digest
-// for it together, so that only the signature, checked again, can tell.
+// The staged release changed while Squire Update's window shows it, before
+// the owner clicks Install: a staged file alone, or a staged file and the
+// staged manifest's digest for it together, so that only the signature,
+// checked again, can tell.
 async function stagedChanged(t, how, what) {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  R.owner(rw, SESSION, `yes ${a.id}`);
+  const before = R.untouched(rw);
+  const go = path.join(rw.root, 'click-install');
+  const run = R.installAtMac(rw, release, { waitFor: go, then: 'Install' });
+  let settled = false;
+  run.then(() => { settled = true; }, () => { settled = true; });
+  const open = await s.waitFor(() => settled || mainWindows(R.updateWindows(rw), NEXT).length >= 1, 120000, 250)
+    && mainWindows(R.updateWindows(rw), NEXT).length >= 1;
   const dir = path.join(rw.home, 'staging', NEXT);
   const file = path.join(dir, 'core', 'tools', 'backup.py');
-  assert.ok(fs.existsSync(file), `the world changes a staged file, which must be there; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
-  fs.appendFileSync(file, '# changed after the offer\n');
-  if (how === 'manifest') {
-    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
-    manifest.files['tools/backup.py'] = w.sha256(fs.readFileSync(file));
-    fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  if (open) {
+    assert.ok(fs.existsSync(file), `the world changes a staged file, which must be there; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
+    fs.appendFileSync(file, '# changed while the window was open\n');
+    if (how === 'manifest') {
+      const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
+      manifest.files['tools/backup.py'] = w.sha256(fs.readFileSync(file));
+      fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+    }
   }
-  const before = R.untouched(rw);
-  const sentBefore = R.wakeUpIds(rw);
-  R.tick(rw);
-  const sent = R.newWakeUps(rw, sentBefore);
-  assert.deepEqual(updated(sent, NEXT), [], `${what}: nothing may be installed on the owner's yes; sent ${JSON.stringify(sent)}`);
+  fs.writeFileSync(go, '');
+  const { sent } = await run;
+  assert.ok(open, `Squire Update must show the window naming ${NEXT}; windows: ${JSON.stringify(R.updateWindows(rw).map((x) => x.text))}`);
+  assert.deepEqual(updated(sent, NEXT), [], `${what}: nothing may be installed on Install; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, rw.appCore), `${what}: the installed core must still be the installed release's`);
-  const moved = R.untouchedDifferences(before, R.untouched(rw)).filter((d) => !d.includes(R.LEDGER));
-  assert.deepEqual(moved, [], `${what}: nothing of core, the kept releases or the agents may change, nor the owner's folder beyond the yes's use`);
+  const moved = R.untouchedDifferences(before, R.untouched(rw));
+  assert.deepEqual(moved, [], `${what}: nothing of core, the kept releases, the agents or the owner's folder may change`);
   const { h, lines } = refusalLines(rw, NEXT);
   assert.equal(lines.length, 1, `${what}: the health check must name the refusal on exactly one line, "update: Squire refused release ${NEXT}: <reason>; nothing was changed"; got ${w.describe(h)}`);
   assert.ok(!R.staged(rw).includes(NEXT), `${what}: the changed staging is removed, so it is never offered again`);
 }
 
-test("a staged file changed after the offer is found when the staged release is checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'file', 'a staged file changed after the offer'));
-test("a staged file and the staged manifest's digest for it, changed together after the offer, are found by the signature checked again before the install: on the owner's fresh, exact yes nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'manifest', 'a staged file and its digest in the staged manifest changed after the offer'));
+test("a staged file changed while Squire Update's window shows the release is found when the staged release is checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'file', 'a staged file changed while the window was open'));
+test("a staged file and the staged manifest's digest for it, changed together while Squire Update's window shows the release, are found by the signature checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'manifest', 'a staged file and its digest in the staged manifest changed while the window was open'));
 
-test('while the health check names a fault no update is staged or offered, and once it is gone the next run stages and offers it', LONG, async (t) => {
+test('while the health check names a fault no update is staged or told to the owner, and once it is gone the next run stages it and tells the owner', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
@@ -464,19 +492,19 @@ test('while the health check names a fault no update is staged or offered, and o
   const before = R.wakeUpIds(rw);
   R.tick(rw);
   assert.deepEqual(R.staged(rw), [], 'no update may be staged over a fault');
-  assert.deepEqual(R.newWakeUps(rw, before).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [], 'no update may be offered over a fault');
+  assert.deepEqual(notices(R.newWakeUps(rw, before)), [], 'the owner may not be told of an update over a fault');
   fs.writeFileSync(floorFile, kept);
   const sent = stage(rw, release, 'the first run after the fault is gone');
-  assert.equal(sent.filter((x) => x.includes(R.updateRequest(rw, NEXT))).length, 1, `the release must be offered once the fault is gone; sent ${JSON.stringify(sent)}`);
+  assert.equal(noticesOf(sent, NEXT).length, 1, `the owner must be told the release is waiting, naming Squire Update, once the fault is gone; sent ${JSON.stringify(sent)}`);
 });
 
 // ------------------------------------------------------- the rollback
 
-test('a signed release whose runner exits at once installs on a yes, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing', LONG, async (t) => {
+test('a signed release whose runner exits at once installs from Squire Update, is rolled back by itself, and one wake-up names both versions; the previous version runs and a second run reinstalls nothing', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
   stage(rw, bad);
-  const { sent } = installOnYes(rw, bad);
+  const { sent } = await R.installAtMac(rw, bad);
   assert.equal(rolledBack(sent, NEXT, R.INSTALLED).length, 1, `one wake-up must say Squire rolled ${NEXT} back to ${R.INSTALLED}; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, rw.appCore), 'the previous release\'s core must be laid down again, file for file');
   assert.equal((R.currentRelease(rw) || {}).current, R.INSTALLED, 'current-release.json must name the previous release');
@@ -484,7 +512,7 @@ test('a signed release whose runner exits at once installs on a yes, is rolled b
   assert.ok(healthy, `the previous version must be running, every floor file at its digest; health: ${w.describe(R.health(rw))}`);
   const before = R.wakeUpIds(rw);
   R.tick(rw);
-  assert.ok(R.coreIs(rw, rw.appCore), 'the used yes must never install the rolled-back release again');
+  assert.ok(R.coreIs(rw, rw.appCore), 'a second run must never install the rolled-back release again');
   assert.deepEqual(R.newWakeUps(rw, before).filter((x) => x.includes(NEXT)), [], 'the rolled-back release stays out of the offer until a newer one is published');
 });
 
@@ -492,7 +520,7 @@ test('when the check after a rollback fails too, a health line names both versio
   const rw = await healthyWorld(t);
   const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExitsAndSignsOut' });
   stage(rw, bad);
-  const { sent } = installOnYes(rw, bad);
+  const { sent } = await R.installAtMac(rw, bad);
   // No session works now (the sign-in has ended), so the owner hears of it in
   // two ways: the one wake-up naming both versions, kept by the router until a
   // session can take it ("sent" is durably queued), and the health line, a
@@ -513,7 +541,7 @@ test("a kept previous release changed before a rollback is never laid down: the 
   const rw = await healthyWorld(t);
   const good = R.buildRelease(rw, { version: NEXT });
   stage(rw, good);
-  const first = installOnYes(rw, good);
+  const first = await R.installAtMac(rw, good);
   assert.equal(updated(first.sent, NEXT).length, 1, `the first signed update must install; sent ${JSON.stringify(first.sent)}`);
   const bad = R.buildRelease(rw, { version: LATER, shape: 'runnerExits' });
   R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
@@ -522,7 +550,7 @@ test("a kept previous release changed before a rollback is never laid down: the 
   assert.ok(fs.existsSync(kept), 'the world changes a file of the kept previous release, which must be there');
   fs.appendFileSync(kept, '# changed while kept\n');
   const changed = fs.readFileSync(kept);
-  const { sent } = installOnYes(rw, bad, `${SESSION}-later`);
+  const { sent } = await R.installAtMac(rw, bad);
   assert.deepEqual(rolledBack(sent, LATER, NEXT), [], `the changed previous release must never be laid down; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, bad), 'nothing is laid down over the new release: the installed core is still the new release\'s, file for file');
   assert.ok(!fs.readFileSync(path.join(R.installedCore(rw), 'tools', 'backup.py')).equals(changed), 'the changed file never reaches the installed core');
@@ -538,40 +566,34 @@ async function folderAcrossInstall(t, shape, planting = null) {
   if (planting) planting(rw);
   const release = R.buildRelease(rw, { version: NEXT, shape });
   stage(rw, release);
-  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  R.owner(rw, SESSION, `yes ${a.id}`);
   // The hash brackets the install with the session stopped.
   R.stopSquire(rw);
-  const before = R.ownerHash(rw.owner, { except: [R.LEDGER] });
+  const before = R.ownerHash(rw.owner);
   const ledgerBefore = R.ledgerRecords(rw);
   await R.startSquire(rw);
-  const sentBefore = R.wakeUpIds(rw);
-  R.tick(rw);
-  const sent = R.newWakeUps(rw, sentBefore);
+  const { sent } = await R.installAtMac(rw, release);
   R.stopSquire(rw);
-  return { rw, a, before, ledgerBefore, sent, after: R.ownerHash(rw.owner, { except: [R.LEDGER] }), ledgerAfter: R.ledgerRecords(rw) };
+  return { rw, before, ledgerBefore, sent, after: R.ownerHash(rw.owner), ledgerAfter: R.ledgerRecords(rw) };
 }
 
-function assertOneUse(ledgerBefore, ledgerAfter, id, what) {
-  assert.deepEqual(ledgerAfter.slice(0, ledgerBefore.length), ledgerBefore, `${what}: the approvals ledger keeps every record it held`);
-  const added = ledgerAfter.slice(ledgerBefore.length);
-  assert.equal(added.length, 1, `${what}: the ledger may gain exactly one line, the use of the owner's yes; gained ${JSON.stringify(added)}`);
-  assert.equal(added[0].type, 'use', `${what}: the one line is the yes used`);
-  assert.equal(added[0].request, id, `${what}: the one line uses the yes for that install`);
+// An update writes nothing in the owner's folder: the approvals ledger gains
+// no line at all.
+function assertNoLedgerChange(ledgerBefore, ledgerAfter, what) {
+  assert.deepEqual(ledgerAfter, ledgerBefore, `${what}: the approvals ledger must not change at all, no request, yes or use of one recorded for an update`);
 }
 
-test("the owner's folder hashes the same before a signed install and after it, apart from the one recorded use of the owner's yes in the approvals ledger", LONG, async (t) => {
+test("the owner's folder hashes the same before a signed install and after it, the approvals ledger and Squire's state files there included", LONG, async (t) => {
   const r = await folderAcrossInstall(t, 'good');
   assert.equal(updated(r.sent, NEXT).length, 1, `the install must finish; sent ${JSON.stringify(r.sent)}`);
   assert.deepEqual(R.hashDifferences(r.before, r.after), [], 'every entry of the owner\'s folder must be the same: path, type, permissions, bytes and link target');
-  assertOneUse(r.ledgerBefore, r.ledgerAfter, r.a.id, 'across the install');
+  assertNoLedgerChange(r.ledgerBefore, r.ledgerAfter, 'across the install');
 });
 
-test("the owner's folder hashes the same before an install that is rolled back and after the rollback, apart from the one recorded use of the owner's yes", LONG, async (t) => {
+test("the owner's folder hashes the same before an install that is rolled back and after the rollback, the approvals ledger and Squire's state files there included", LONG, async (t) => {
   const r = await folderAcrossInstall(t, 'runnerExits');
   assert.equal(rolledBack(r.sent, NEXT, R.INSTALLED).length, 1, `the install must be rolled back; sent ${JSON.stringify(r.sent)}`);
   assert.deepEqual(R.hashDifferences(r.before, r.after), [], 'every entry of the owner\'s folder must be the same after the rollback');
-  assertOneUse(r.ledgerBefore, r.ledgerAfter, r.a.id, 'across the install and the rollback');
+  assertNoLedgerChange(r.ledgerBefore, r.ledgerAfter, 'across the install and the rollback');
 });
 
 test("whatever the owner's folder holds (a file no one may read, a file only its owner may read, a link to nothing, a link outside it, an empty folder, a closed folder, a named pipe), an install and a rollback leave every entry as it was", LONG, async (t) => {
@@ -594,7 +616,7 @@ test("whatever the owner's folder holds (a file no one may read, a file only its
   fs.chmodSync(path.join(r.rw.owner, 'workspace', 'closed'), 0o755);
   assert.equal(rolledBack(r.sent, NEXT, R.INSTALLED).length, 1, `the install must be rolled back; sent ${JSON.stringify(r.sent)}`);
   assert.deepEqual(R.hashDifferences(r.before, r.after), [], 'every entry, whatever its kind or permissions, must be the same');
-  assertOneUse(r.ledgerBefore, r.ledgerAfter, r.a.id, 'across the install and the rollback');
+  assertNoLedgerChange(r.ledgerBefore, r.ledgerAfter, 'across the install and the rollback');
 });
 
 // ------------------------------------- an install that does not finish
@@ -606,7 +628,7 @@ test('after a signed install no process of the previous release is left running:
   const oldRunners = R.runnerStarts(rw).map((x) => x.started);
   const oldSessions = rw.inner.sessions().map((x) => x.pid);
   const oldServers = rw.inner.serverCalls().map((x) => x.pid);
-  const { sent } = installOnYes(rw, release);
+  const { sent } = await R.installAtMac(rw, release);
   assert.equal(updated(sent, NEXT).length, 1, `the install must finish; sent ${JSON.stringify(sent)}`);
   for (const pid of [...oldRunners, ...oldSessions, ...oldServers]) {
     assert.ok(w.processGone(pid), `process ${pid} of the previous release must not be running after the install`);
@@ -615,15 +637,14 @@ test('after a signed install no process of the previous release is left running:
 
 const ON = /did not finish.*Squire is on (\d+\.\d+\.\d+)/;
 
-// Kills the install at a step, then a runner start (launchd at login) and a
-// scheduler run; returns what Squire is on and what it said.
+// Kills the install Squire Update's engine runs at a step, then a runner
+// start (launchd at login) and a scheduler run; returns what Squire is on and
+// what it said.
 async function interrupted(t, step) {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  R.owner(rw, SESSION, `yes ${a.id}`);
-  const before = R.ownerHash(rw.owner, { except: [R.LEDGER] });
+  const before = R.ownerHash(rw.owner);
   const seen = await R.killInstallAt(rw, step);
   assert.equal(seen, step, `the install must be killed at exactly its step "${step}" (install.json naming it, written before the step starts); the record named ${JSON.stringify(seen)}; install.json: ${JSON.stringify(R.readJson(R.installRecordFile(rw)))}`);
   const sentBefore = R.wakeUpIds(rw);
@@ -649,7 +670,7 @@ function assertWhole(r, allowed, what) {
   assert.ok(R.coreIs(rw, on === NEXT ? release : rw.appCore), `${what}: the installed core must be the whole of ${on}, file for file`);
   assert.equal((R.currentRelease(rw) || {}).current || R.INSTALLED, on, `${what}: current-release.json must name ${on}`);
   assert.ok(!fs.existsSync(R.installRecordFile(rw)), `${what}: the install record must be gone`);
-  assert.deepEqual(R.hashDifferences(r.before, R.ownerHash(rw.owner, { except: [R.LEDGER] })), [], `${what}: the owner's folder must be unchanged`);
+  assert.deepEqual(R.hashDifferences(r.before, R.ownerHash(rw.owner)), [], `${what}: the owner's folder must be unchanged`);
 }
 
 test("an install killed part way through its lay-down leaves Squire on one whole version, says which in one wake-up, and leaves the owner's folder unchanged", LONG, async (t) => {
@@ -677,12 +698,10 @@ test('an install killed at its step "reload" is found unfinished at the next run
 test('an install killed at its step "check" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which', LONG, (t) => killedAtStep(t, "check"));
 test('an install killed at its step "clear" is found unfinished at the next runner start: Squire is on 0.2.0, whole and checked, and one wake-up says which', LONG, (t) => killedAtStep(t, "clear"));
 
-test("an install holds its lock for its whole life: a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither installs nor recovers, and the install finishes as one", LONG, async (t) => {
+test("an install holds its lock for its whole life: a second Squire Update and a second scheduler run while it is held at a step, finding a record that names an install process already gone, neither install nor recover, and the install finishes as one", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const a = R.asked(rw, SESSION, R.updateRequest(rw, NEXT), 'the request to install');
-  R.owner(rw, SESSION, `yes ${a.id}`);
   const sentBefore = R.wakeUpIds(rw);
   const held = await R.stopInstallAt(rw, 'reload', { hold: true });
   t.after(() => held.kill());
@@ -692,6 +711,14 @@ test("an install holds its lock for its whole life: a second scheduler run while
   fs.writeFileSync(R.installRecordFile(rw), JSON.stringify({ ...record, pid: s.deadPid() }) + '\n');
   const second = R.tick(rw, { timeout: 120000 });
   assert.equal(second.signal, null, `a second scheduler run must end by itself, never wait on a held install; got ${w.describe(second)}`);
+  // Squire Update opened again while the install runs: it says so and ends by
+  // itself, offering nothing to install and recovering nothing.
+  const shownBefore = R.updateWindows(rw).length;
+  const again = R.openSquireUpdate(rw, { answer: 'Install' });
+  const ended = await s.waitFor(() => again.exited(), 120000, 250);
+  assert.ok(ended, 'a second Squire Update must end by itself, never wait on a held install');
+  const said = R.updateWindows(rw).slice(shownBefore);
+  assert.ok(said.length >= 1 && said.every((x) => !x.main), `a second Squire Update must say Squire Update is already open or installing, and offer no Install; windows: ${JSON.stringify(said.map((x) => x.text))}`);
   assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => ON.test(x)), [], 'a second run must never recover an install whose lock is held');
   assert.ok(R.coreIs(rw, release), 'a second run must leave the held install\'s core as it was: the new release\'s');
   held.resume();
@@ -708,7 +735,7 @@ test("an install record Squire cannot read (not JSON, cut short, naming a step t
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
-  const { sent } = installOnYes(rw, release);
+  const { sent } = await R.installAtMac(rw, release);
   assert.equal(updated(sent, NEXT).length, 1, `the signed update must install; sent ${JSON.stringify(sent)}`);
   const good = { previous: R.INSTALLED, next: NEXT, pid: s.deadPid(), started: Math.floor(R.nowSeconds()) - 60, step: 'lay' };
   const records = {
@@ -877,7 +904,7 @@ test("a latest.json whose version is not a version but an instruction to send th
   const sentBefore = R.wakeUpIds(rw);
   R.tick(rw);
   assert.deepEqual(R.staged(rw), [], `${what}: nothing may be staged; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes('--install')), [], `${what}: nothing may be offered`);
+  assert.deepEqual(notices(R.newWakeUps(rw, sentBefore)), [], `${what}: the owner may not be told of it`);
   assert.deepEqual(R.stagingFiles(rw), [], `${what}: nothing of a download may be left in the staging folder`);
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [],
     `${what}: nothing of the installed core, the kept releases, the agents or the owner's folder may change`);
@@ -921,7 +948,7 @@ async function refusedOwnVersion(t, ownVersion, what) {
   R.tick(rw);
   assert.deepEqual(R.staged(rw), [], `${what}: a release whose own release.json does not name its manifest's version is refused before anything is staged; ` +
     `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [], `${what}: nothing may be offered`);
+  assert.deepEqual(notices(R.newWakeUps(rw, sentBefore)), [], `${what}: the owner may not be told of it`);
   assertRefused(rw, NEXT, before, what);
   if (!/^\d+\.\d+\.\d+$/.test(ownVersion)) {
     const h = R.health(rw);
@@ -951,7 +978,7 @@ async function unreadableLatest(t, text, served, what) {
   assertNoEcho(updateFileText(rw), served, 'update.json');
   assert.deepEqual(R.stagingFiles(rw), [], `${what}: no download may be kept in the staging folder`);
   assert.deepEqual(R.staged(rw), [], `${what}: nothing may be staged`);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes('--install')), [], `${what}: nothing may be offered`);
+  assert.deepEqual(notices(R.newWakeUps(rw, sentBefore)), [], `${what}: the owner may not be told of it`);
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [],
     `${what}: nothing of the installed core, the kept releases, the agents or the owner's folder may change`);
 }
