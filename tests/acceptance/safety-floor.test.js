@@ -1271,7 +1271,7 @@ test("the floor refuses the session changing folder into Squire's core, home or 
   });
 });
 
-test('the session can never write into the Squire Update app in the Applications folder of the owner\'s home, by any tool, yes or no, and the refusal names the safety floor', { timeout: 120000 }, (t) => {
+test("the session can never write into the Squire Update app in the Applications folder of the owner's home, by any tool, yes or no, and the refusal names the safety floor", { timeout: 120000 }, (t) => {
   const world = floorWorld(t);
   const app = path.join(world.userHome, 'Applications', 'Squire Update.app');
   const exe = path.join(app, 'Contents', 'MacOS', 'Squire Update');

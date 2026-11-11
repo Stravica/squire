@@ -1095,7 +1095,7 @@ function assertAgentsHeld(rw, what) {
   assert.deepEqual(R.stoppedFromInside(rw), [], `${what}: no Squire program may stop the agent it runs in; launchctl calls: ${JSON.stringify(R.launchdCalls(rw))}`);
 }
 
-test('under a launchd that ends a stopped agent\'s process group, an install from Squire Update runs to its end on 0.2.0 and leaves all three agents loaded', LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all three agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1106,7 +1106,7 @@ test('under a launchd that ends a stopped agent\'s process group, an install fro
   assertAgentsHeld(rw, 'after the install');
 });
 
-test('under a launchd that ends a stopped agent\'s process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all three agents loaded', LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all three agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
   stage(rw, bad);
@@ -1117,7 +1117,7 @@ test('under a launchd that ends a stopped agent\'s process group, a rollback fro
   assertAgentsHeld(rw, 'after the rollback');
 });
 
-test('under a launchd that ends a stopped agent\'s process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded', LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1139,7 +1139,7 @@ test('under a launchd that ends a stopped agent\'s process group, an install kil
   assertAgentsHeld(rw, 'after the recovery');
 });
 
-test('under a launchd that ends a stopped agent\'s process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded', LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
   fs.appendFileSync(floorFile, '# one line more\n');
@@ -1183,7 +1183,7 @@ test("set-up's lay-down puts Squire Update in the Applications folder of the own
   assertUpdateAppAt(rw, R.INSTALLED, 'after set-up');
 });
 
-test('an update lays down the new release\'s Squire Update', LONG, async (t) => {
+test("an update lays down the new release's Squire Update", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1266,7 +1266,7 @@ test('Squire Update closed by the owner after Install does not stop the install:
 
 // ------------------------------------------- Squire Update over an unfinished install
 
-test('Squire Update opened over an unfinished install settles it first: Squire ends on one whole version, the owner is told which, the record is gone and the owner\'s folder is unchanged', LONG, async (t) => {
+test("Squire Update opened over an unfinished install settles it first: Squire ends on one whole version, the owner is told which, the record is gone and the owner's folder is unchanged", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1318,7 +1318,7 @@ function assertOwnLaunchctl(system, what) {
   assert.ok(fs.existsSync(log) && fs.readFileSync(log, 'utf8').includes('com.stravica.squire.runner'), `${what}: the refused call is recorded`);
 }
 
-test('the launchd model ends a job whose own child boots that job out before the child finishes, as launchd ended the install on a real Mac; a job whose main process exits loses the rest of its process group; nothing booted out starts again by itself; and no world\'s launchctl is the Mac\'s own', LONG, async (t) => {
+test("the launchd model ends a job whose own child boots that job out before the child finishes, as launchd ended the install on a real Mac; a job whose main process exits loses the rest of its process group; nothing booted out starts again by itself; and no world's launchctl is the Mac's own", LONG, async (t) => {
   const world = w.makeWorld();
   const state = path.join(world.root, 'launchd');
   t.after(() => { L.control(state, { control: 'stop' }); w.cleanUp(world); });

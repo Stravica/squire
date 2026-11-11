@@ -140,7 +140,7 @@ function assertTold(reply, version, what) {
   assert.doesNotMatch(reply, NOT_TO_THE_OWNER, `${what}: the reply names no command, file path or terminal; it said: ${reply.slice(0, 400)}`);
 }
 
-test('on a real Mac with a release staged, the session tells the owner the release is waiting and to open Squire Update, after the wake-up that arrives as another session\'s message and after the owner\'s next message, naming no command, file path or terminal and running nothing for the update', { skip: SKIP, timeout: (WAIT_MINUTES + 5) * 60000 }, async (t) => {
+test("on a real Mac with a release staged, the session tells the owner the release is waiting and to open Squire Update, after the wake-up that arrives as another session's message and after the owner's next message, naming no command, file path or terminal and running nothing for the update", { skip: SKIP, timeout: (WAIT_MINUTES + 5) * 60000 }, async (t) => {
   if (SKIP) { t.skip(SKIP); return; }
   let now = read();
   assert.ok(!(now.uid === process.getuid() && now.host === os.hostname()),
