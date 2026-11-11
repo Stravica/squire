@@ -993,30 +993,49 @@ test('a latest.json whose archive name is not a plain file name is refused, name
 
 // The design record's line 11: "A rolled-back release stays out of the offer
 // until a newer one is published."
-test('a release rolled back by itself stays out of the offer at the next weekly check while latest.json still names it: nothing staged or offered, and update.json names it as held out; a newer release published after it is staged and offered as usual', LONG, async (t) => {
+// The scheduler's tick run until its weekly check has run (update.json's
+// lastCheck moved past the time given), tried again for a minute while the
+// check holds off, as it does while the health check names a fault (the
+// previous release's runner starting again after a rollback): the wake-ups
+// sent meanwhile.
+async function tickUntilChecked(rw, after) {
+  const before = R.wakeUpIds(rw);
+  const end = Date.now() + 60000;
+  for (;;) {
+    R.tick(rw);
+    const last = (R.updateRecord(rw) || {}).lastCheck;
+    if (typeof last === 'number' && last > after) break;
+    assert.ok(Date.now() < end, `the weekly check must run within a minute of ticks; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
+    await s.sleep(2000);
+  }
+  return R.newWakeUps(rw, before);
+}
+
+test('a release rolled back by itself stays out of what Squire tells the owner at the next weekly check while latest.json still names it: nothing staged or told, and update.json names it as held out; a newer release published after it is staged and told to the owner as usual', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
   stage(rw, bad);
-  const { sent } = installOnYes(rw, bad);
+  const { sent } = await R.installAtMac(rw, bad);
   assert.equal(rolledBack(sent, NEXT, R.INSTALLED).length, 1, `one wake-up must say Squire rolled ${NEXT} back to ${R.INSTALLED}; sent ${JSON.stringify(sent)}`);
-  const healthy = await s.waitFor(() => R.health(rw).status === 0, 30000, 500);
-  assert.ok(healthy, `the previous version must be running; health: ${w.describe(R.health(rw))}`);
+  // The rollback's own record: update.json names the rolled-back release as held out.
+  assert.equal((R.updateRecord(rw) || {}).heldOut, NEXT, `update.json must name ${NEXT} as held out once it is rolled back; got ${JSON.stringify(R.updateRecord(rw))}`);
   // A week on, latest.json still names the rolled-back release.
   R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
-  const sentBefore = R.wakeUpIds(rw);
-  R.tick(rw);
-  assert.deepEqual(R.newWakeUps(rw, sentBefore).filter((x) => x.includes(R.updateRequest(rw, NEXT))), [],
-    `the rolled-back release ${NEXT} stays out of the offer at the next weekly check while latest.json still names it; ` +
+  const movedTo = (R.updateRecord(rw) || {}).lastCheck;
+  const heldSent = await tickUntilChecked(rw, movedTo);
+  assert.deepEqual(notices(heldSent).filter((x) => x.includes(NEXT)), [],
+    `the rolled-back release ${NEXT} stays out of what Squire tells the owner at the next weekly check while latest.json still names it; ` +
     `staging holds ${JSON.stringify(R.stagingFiles(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}`);
   assert.ok(!R.staged(rw).includes(NEXT), `the rolled-back release ${NEXT} is never staged again; staging holds ${JSON.stringify(R.staged(rw))}`);
   const record = R.updateRecord(rw) || {};
-  assert.ok(JSON.stringify(record).includes(NEXT) && !Object.values(record).includes('staged'),
-    `update.json must name ${NEXT} as held out of the offer, the check's outcome not "staged"; got ${JSON.stringify(record)}`);
-  // A newer release is published: the next weekly check stages and offers it.
-  const newer = R.buildRelease(rw, { version: LATER });
+  assert.ok(record.heldOut === NEXT && record.outcome !== 'staged',
+    `update.json must name ${NEXT} as held out, the check's outcome not "staged"; got ${JSON.stringify(record)}`);
+  // A newer release is published: the next weekly check stages it and tells the owner.
+  R.buildRelease(rw, { version: LATER });
   R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
-  const offers = stage(rw, newer, 'the weekly check after a newer release is published');
-  assert.equal(offers.filter((x) => x.includes(R.updateRequest(rw, LATER))).length, 1, `the newer release ${LATER} must be offered as usual; sent ${JSON.stringify(offers)}`);
+  const offers = await tickUntilChecked(rw, (R.updateRecord(rw) || {}).lastCheck);
+  assert.ok(R.staged(rw).includes(LATER), `the newer release ${LATER} must be staged; staging holds ${JSON.stringify(R.stagingFiles(rw))}`);
+  assert.equal(noticesOf(offers, LATER).length, 1, `the owner must be told the newer release ${LATER} is waiting, as usual; sent ${JSON.stringify(offers)}`);
 });
 
 // ------------------------------------------- the session only tells the owner

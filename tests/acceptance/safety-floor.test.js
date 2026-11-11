@@ -1247,6 +1247,30 @@ test("the session can never run Squire's update tool, by any of its options, yes
   ], 'session-update-tool', /Squire Update/);
 });
 
+// Kept bound to no criterion: the floor's words when the session changes
+// folder into Squire's core, home or config. The refusal stands (a relative
+// path after the change would be judged against the wrong folder); its words
+// say what the session may do instead, and never that the files there may
+// never change.
+test("the floor refuses the session changing folder into Squire's core, home or config with words saying it may not change folder there and to read files by their full path, never that they may never change", { timeout: 120000 }, (t) => {
+  const world = floorWorld(t);
+  const config = path.join(world.home, 'claude-config');
+  fs.mkdirSync(config, { recursive: true });
+  const cases = [
+    ['changing folder into core, then listing it', tools.bash(`cd ${world.core} && ls`)],
+    ['changing folder into core\'s tools, then reading a file', tools.bash(`cd ${path.join(world.core, 'tools')} && sed -n 1,20p update.py`)],
+    ['changing folder into the Squire home', tools.bash(`cd "${world.home}"`)],
+    ['changing folder into the config folder, then reading the settings', tools.bash(`cd "${config}" && cat settings.json`)],
+  ];
+  cases.forEach(([what, call], i) => {
+    const r = w.attempt(world, `session-cd-${i}`, call);
+    w.assertBlocked(r, what);
+    assert.match(r.stderr, /change folder/i, `${what}: the refusal must say the session may not change folder there; got ${w.describe(r)}`);
+    assert.match(r.stderr, /full path/i, `${what}: the refusal must say to read files there by their full path; got ${w.describe(r)}`);
+    assert.doesNotMatch(r.stderr, /may never change/i, `${what}: the refusal must not say the files there may never change; got ${w.describe(r)}`);
+  });
+});
+
 test('the session can never write into the Squire Update app in the Applications folder of the owner\'s home, by any tool, yes or no, and the refusal names the safety floor', { timeout: 120000 }, (t) => {
   const world = floorWorld(t);
   const app = path.join(world.userHome, 'Applications', 'Squire Update.app');
