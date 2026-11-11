@@ -33,7 +33,7 @@ PYTHON = '/usr/bin/python3'
 
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
-    from squire import Config, Ledger, Paths, SquireError, Version
+    from squire import Config, Ledger, Paths, SquireError
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
     sys.exit(2)
@@ -308,20 +308,19 @@ class FixRequest:
 
 
 class ShownRequest:
-    """The session's request to install the staged release (update.py
-    --install <version>) or to send a support ticket (ticket.py --send
-    <ticket id>), as the health check and the offers print it. It never runs
-    in the session, yes or no. The floor asks the owner for it with a block
-    that shows exactly what the yes approves: one line naming the request,
-    then the version alone on a line and the changelog's lines as the staged
-    manifest holds them, or the outbox file's bytes, then one empty line and
-    the words that make the session show that text inside one fenced code
-    block. The request records what its block showed (the staged manifest's
-    SHA-256, or the outbox file's and its state record's digest), so a yes
-    binds only those bytes; the scheduler acts on it outside the session."""
+    """The session's request to send a support ticket (ticket.py --send
+    <ticket id>), as the health check prints it. It never runs in the
+    session, yes or no. The floor asks the owner for it with a block that
+    shows exactly what the yes approves: one line naming the request, then
+    the outbox file's bytes, then one empty line and the words that make the
+    session show that text inside one fenced code block. The request records
+    what its block showed (the outbox file's and its state record's digest),
+    so a yes binds only those bytes; the scheduler acts on it outside the
+    session. Squire's updates are never asked for here: the session may
+    never run Squire's update tool (Floor.NEVER_UPDATE)."""
 
-    TOOLS = {'--install': 'update.py', '--send': 'ticket.py'}
-    VALUES = {'--install': Version.PATTERN, '--send': re.compile(r'^t-[0-9a-f]{32}\Z')}
+    TOOLS = {'--send': 'ticket.py'}
+    VALUES = {'--send': re.compile(r'^t-[0-9a-f]{32}\Z')}
     RELAY = ('Show the owner the text above inside a fenced code block: a line of three backticks with no language name, '
              'then the text exactly as written, unchanged, with nothing added inside the fence, then a line of three '
              'backticks. Your own words go only outside the fence. Then wait for their answer.')
@@ -357,18 +356,6 @@ class ShownRequest:
     @classmethod
     def shown(cls, home, flag, value):
         """(item, what, the text the block shows), or (None, why, None)."""
-        if flag == '--install':
-            data = cls.read(os.path.join(home, 'staging', value, 'manifest.json'))
-            try:
-                manifest = json.loads(data.decode('utf-8')) if data is not None else None
-            except (UnicodeDecodeError, ValueError):
-                manifest = None
-            if not isinstance(manifest, dict) or manifest.get('version') != value \
-                    or not isinstance(manifest.get('changelog'), str) or '\r' in manifest['changelog']:
-                return None, f'Squire has no staged, checked release {value} to install, so nothing was asked.', None
-            return (f'update:{value}:{hashlib.sha256(data).hexdigest()}',
-                    f'install Squire release {value}, staged and checked; its version and changelog follow',
-                    value + '\n' + manifest['changelog'].rstrip('\n'))
         data = cls.read(os.path.join(home, 'outbox', f'{value}.json'))
         state = cls.read(os.path.join(home, 'outbox', f'{value}.state.json'))
         try:
@@ -438,6 +425,12 @@ class Floor:
 
     NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
                    'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
+    NEVER_UPDATE = ('Squire\'s safety floor: the session may never run Squire\'s update tool, yes or no. Squire\'s updates '
+                    'install only from Squire Update on the owner\'s Mac; when a release is waiting, tell the owner to '
+                    'open Squire Update there. Nothing ran.')
+    NEVER_CD = ('Squire\'s safety floor: the session may not change folder into Squire\'s core, home or config; read '
+                'the files there by their full path instead. Nothing ran: {what}')
+    UPDATE_APP = 'Squire Update.app'
     NEVER_KEYCHAIN = ('The session may never read the Keychain, yes or no: a secret reaches a tool only through '
                       'Squire\'s secret helper, and is never shown.')
     ASK = ('Request {id}: this needs the owner\'s yes first: {what}\n'
@@ -455,7 +448,8 @@ class Floor:
         self.cwd = cwd
         self.owner = config.owner_folder
         self.cores = [CORE, Paths.canonical(os.path.join(config.home, 'core'), cwd)]
-        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path]
+        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path,
+                            os.path.realpath(os.path.join(os.path.expanduser('~'), 'Applications', self.UPDATE_APP))]
         self.keychain = Paths.canonical(config.keychain, cwd) if config.keychain else None
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
         self.inbox = os.path.join(self.owner, 'workspace', 'inbox')
@@ -673,6 +667,14 @@ class Floor:
         # the floor cannot know what it reads.
         elsewhere = os.path.basename(argv[0]) in self.LISTED and not self.is_mac_command(argv[0])
         free = self.is_free(argv) and not elsewhere
+        if not free or not plain:
+            # Squire's update tool, named in any word, or inside a word a
+            # shell runs (zsh -c '...'): never run from the session.
+            pieces = [p for t in argv for p in re.split(r'[\s()|<>;&`\'"=]+', t) if p]
+            if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
+                return 'never', self.NEVER_UPDATE, []
+            if argv[0] == 'cd' and any(self.is_floor(p) for p in paths):
+                return 'never', self.NEVER_CD, []
         if (not free or not plain) and any(self.is_floor(p) for p in paths):
             return 'never', self.NEVER_FLOOR, []
         # Every word of a program, or of a read the list cannot resolve, may
@@ -810,6 +812,12 @@ class Floor:
 
     def is_floor(self, path):
         return any(Paths.within(path, floor) for floor in self.floor_paths) or self.is_settings(path)
+
+    def is_update_tool(self, path):
+        """Squire's update tool: update.py in the floor (the installed core,
+        a kept release, the hook's own core), its name folded as the volume
+        folds it."""
+        return Paths.fold(os.path.basename(path)) == 'update.py' and self.is_floor(path)
 
     def is_settings(self, path):
         """Claude Code's settings for a folder in the owner's: a hook switched
