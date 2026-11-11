@@ -595,10 +595,12 @@ class Records:
 
 
 class Version:
-    """A Squire version: three whole numbers joined by dots, compared as
-    numbers part by part. Anything else is not a version."""
+    """A Squire version: three whole numbers in ASCII digits joined by dots,
+    each part 0 or starting 1 to 9, with nothing before or after it (not even
+    a final newline), compared as numbers part by part. Anything else is not
+    a version."""
 
-    PATTERN = re.compile(r'^(\d{1,9})\.(\d{1,9})\.(\d{1,9})$')
+    PATTERN = re.compile(r'^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\Z')
 
     @classmethod
     def of(cls, text):

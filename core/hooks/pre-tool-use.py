@@ -33,7 +33,7 @@ PYTHON = '/usr/bin/python3'
 
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
-    from squire import Config, Ledger, Paths, SquireError
+    from squire import Config, Ledger, Paths, SquireError, Version
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
     sys.exit(2)
@@ -321,7 +321,7 @@ class ShownRequest:
     binds only those bytes; the scheduler acts on it outside the session."""
 
     TOOLS = {'--install': 'update.py', '--send': 'ticket.py'}
-    VALUES = {'--install': re.compile(r'^\d+\.\d+\.\d+$'), '--send': re.compile(r'^t-[0-9a-f]{32}$')}
+    VALUES = {'--install': Version.PATTERN, '--send': re.compile(r'^t-[0-9a-f]{32}$')}
     RELAY = ('Show the owner the text above inside a fenced code block: a line of three backticks with no language name, '
              'then the text exactly as written, unchanged, with nothing added inside the fence, then a line of three '
              'backticks. Your own words go only outside the fence. Then wait for their answer.')
