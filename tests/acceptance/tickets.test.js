@@ -572,3 +572,20 @@ test("when the owner asks for a support ticket and none is offered, the floor le
   assert.deepEqual(R.outboxIds(rw), [], 'nothing waits in the outbox');
   assertSessionKnowsRoute(sessionLoads(rw), 'with no ticket offered');
 });
+
+test("the health check Squire's session loads, run exactly as written in a Squire home whose path holds a space, runs without asking the owner, and the same check unquoted is asked", LONG, async (t) => {
+  const rw = await R.makeInstalledApp(t);
+  assert.match(rw.home, / /, `the Squire home the app sets up must hold a space in its path; got ${JSON.stringify(rw.home)}`);
+  const loaded = sessionLoads(rw);
+  const named = [...loaded.matchAll(/`([^`\n]*health\.py[^`\n]*)`/g)].map((m) => m[1]);
+  assert.equal(named.length, 1, `what the session loads must name one command for Squire's health check; named ${JSON.stringify(named)}; the session loads ${JSON.stringify(loaded)}`);
+  const [command] = named;
+  assert.match(command, /'[^']* [^']*health\.py'/, `the command the session loads names the check by its path in the Squire home, which holds a space; got ${JSON.stringify(command)}`);
+  const as = { env: R.env(rw), coreDir: R.installedCore(rw) };
+  const free = w.attempt(rw.world, SESSION, w.tools.bash(command), as);
+  w.assertAllowed(free, 'the session\'s run of the health check exactly as written in what it loads');
+  assert.equal(w.requestIdIn(`${free.stderr}\n${free.stdout}`), null, `the session's run of the health check exactly as written runs without asking the owner; got ${w.describe(free)}`);
+  const unquoted = command.replace(/'/g, '');
+  const asked = w.attempt(rw.world, SESSION, w.tools.bash(unquoted), as);
+  assert.notEqual(w.requestIdIn(`${asked.stderr}\n${asked.stdout}`), null, `the same check with its quotes removed splits at the space, so the floor asks the owner; got ${w.describe(asked)}`);
+});
