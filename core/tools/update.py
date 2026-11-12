@@ -814,7 +814,10 @@ class Install:
         return not any(Process.started_at(pid) == started for pid, started in self.stopped)
 
     def clear(self, version, previous):
-        """The release before the previous one removed: two are kept."""
+        """Every kept release but these two removed, a half-made copy among
+        them: at a finished install's clear step the release before the
+        previous one, after a rollback or a settled install whatever
+        current-release.json does not name. Two are kept."""
         try:
             names = os.listdir(self.releases.kept)
         except OSError:
@@ -850,7 +853,9 @@ class Install:
         """The previous release laid down again, checked first; returns the
         version Squire is on. The rolled-back version is held out of the
         weekly check's offer (update.json's heldOut) until a newer one is
-        published."""
+        published. Once the previous release is laid down and its check has
+        run, releases/ keeps it and the release current-release.json names
+        before it, and nothing else: the rolled-back release goes."""
         try:
             self.releases.note(heldOut=version)
         except OSError:
@@ -866,10 +871,12 @@ class Install:
             self.mark_failed(version, previous, on=version)
             self.remove_record()
             return version
-        Records.write(self.releases.current_file, before or {'current': previous, 'previous': None, 'verified': False},
-                      durable=True)
+        record = before or {'current': previous, 'previous': None, 'verified': False}
+        Records.write(self.releases.current_file, record, durable=True)
         self.reload()
-        if self.check(files):
+        checked = self.check(files)
+        self.clear(previous, record.get('previous'))
+        if checked:
             self.send(f'Squire rolled {version} back to {previous}; all checks passed', 'rollback')
         else:
             self.mark_failed(version, previous, on=previous)
@@ -956,7 +963,9 @@ class Recovery:
     def settle(self):
         """The version Squire is on once the install is settled, told in one
         wake-up, the record gone; None, with the record left as it is, when
-        it is for Squire Update to settle (lay False only)."""
+        it is for Squire Update to settle (lay False only). Settled on the
+        release current-release.json names, releases/ keeps it and the one
+        the record names before it, and nothing else."""
         record = Records.read(self.install.record_file)
         if self.readable(record):
             on = self.adopt(record['previous'], record['next'], record['step'])
@@ -969,6 +978,9 @@ class Recovery:
                 self.set_aside()
         if on is None:
             return None
+        current = self.releases.current()
+        if current and current['current'] == on:
+            self.install.clear(on, current.get('previous'))
         self.install.send(f'Squire\'s update did not finish; Squire is on {on}', 'recovery')
         self.install.remove_record()
         return on
