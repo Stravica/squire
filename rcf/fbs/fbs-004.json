@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:44.717Z",
-  "updatedAt": "2026-11-11T20:05:06.131Z",
+  "updatedAt": "2026-11-12T12:19:24.640Z",
   "summary": "Areas A14 and A20. Signed update and rollback, the health check, the ticket preview, enrolment and durable save-and-retry. The ticket criteria are proven here against a local stand-in intake; the live receiver is round 7. The Squire's name and personality survive an update.",
   "dependsOnFbsIds": [
     "FBS-003"
@@ -25,7 +25,8 @@
     "AC-2001-6",
     "AC-1401-10",
     "AC-1401-11",
-    "AC-1401-12"
+    "AC-1401-12",
+    "AC-2001-7"
   ],
   "fbsId": "FBS-004",
   "prdId": "PRD-001",

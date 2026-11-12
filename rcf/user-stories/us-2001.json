@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:16.737Z",
-  "updatedAt": "2026-11-10T18:48:26.285Z",
+  "updatedAt": "2026-11-12T12:19:10.714Z",
   "asA": "Squire owner",
   "iWant": "when Squire cannot fix something, to see exactly what a support ticket will say and send it only if I say yes",
   "soThat": "I get help without giving away anything personal",
@@ -64,6 +64,15 @@
       "given": "A ticket the Squire owner said yes to, whose send fails, finds the intake offline, gets its answer only after the time allowed, or whose waiting file has changed since the yes",
       "when": "Squire's scheduler runs",
       "then": "The ticket stays waiting with a health line saying so, and is retried carrying the same bytes and ticket id until an answer in the 2xx range clears it, filed once; a changed ticket is never sent until the Squire owner says yes again to the changed text.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2001-7",
+      "description": "Squire's session knows Squire has a health check and a support-ticket route, and takes the Squire owner to a ticket when they ask.",
+      "testable": true,
+      "given": "Squire set up on a Mac, its session started with the instructions Squire writes for it, and a fault whose health check offers a support ticket, or no ticket offered",
+      "when": "The Squire owner asks Squire in the chat about Squire's health or for a support ticket, including after a Squire Update window sends them to the chat",
+      "then": "The session runs Squire's health check; when the check offers a ticket, the session shows the ticket as one fenced line of JSON and asks for the Squire owner's yes, and the ticket is sent only on that yes; when the check offers none, the session says plainly that there is nothing to send; the Squire owner is shown no command, file path or tool name.",
       "verification": "testOnly"
     }
   ]
