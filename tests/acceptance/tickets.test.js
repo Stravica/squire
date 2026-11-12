@@ -524,3 +524,80 @@ test('an approved ticket whose last attempt is dated ahead of the clock is retri
   assert.equal(posts.filter((p) => p.filedAs === 'new').length, 1, 'the intake files it once');
   assert.ok(!fs.existsSync(R.outboxFile(rw, ticket.id)), 'the 2xx answer clears it from the outbox');
 });
+
+// ------------------------------------------------- the session's route to a ticket
+
+// What the session loads: CLAUDE.md in Squire's Claude Code config folder,
+// which Squire writes whole at every lay-down and before every runner start.
+const sessionLoads = (rw) => {
+  const file = path.join(rw.home, 'claude-config', 'CLAUDE.md');
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+};
+const sentencesOf = (text) => text.split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+// A sentence telling the session that Squire has no health check, unless it
+// tells the session never to say so.
+const DENIES_CHECK = /(don't|do not|doesn't|does not|can't|cannot) (have|run) (a |any )?(Squire'?s? )?health check/i;
+const NEVER_SAY = /\b(never|don't|do not)\b[^.]*\b(say|tell|claim)/i;
+// What the session may never be told to show a Squire owner about updates.
+const NOT_IN_A_NOTICE = /usr\/bin|update\.py|--install|[Tt]erminal/;
+
+// What the session loads tells it of Squire's health check and the ticket
+// route, as the criterion's properties (never the builder's words), and
+// still carries the updates line.
+function assertSessionKnowsRoute(text, what) {
+  const got = `; the session loads ${JSON.stringify(text)}`;
+  const said = sentencesOf(text);
+  const any = (...res) => said.some((x) => res.every((re) => re.test(x)));
+  assert.ok(text.length > 0, `${what}: the session must load the instructions Squire writes for it (claude-config/CLAUDE.md)${got}`);
+  assert.ok(any(/health check/i), `${what}: what the session loads must name Squire's health check${got}`);
+  assert.ok(any(/health/i, /\brun/i, /\bask/i), `${what}: what the session loads must tell it to run the health check when the owner asks about Squire's health${got}`);
+  assert.ok(any(/support ticket/i), `${what}: what the session loads must name a support ticket as the reason to run it${got}`);
+  assert.ok(any(/ticket/i, /fence|```|code block/i), `${what}: what the session loads must tell it to show the ticket the check offers in a fence${got}`);
+  assert.ok(any(/\byes\b/i, /\bsen[dt]/i, /\b(only|never|without|until)\b/i), `${what}: what the session loads must say the ticket is sent only on the owner's yes${got}`);
+  assert.ok(any(/nothing to send|no (support )?ticket/i), `${what}: what the session loads must tell it what to say when no ticket is offered${got}`);
+  assert.ok(any(/\b(never|no|not|don't|without)\b/i, /command/i, /path/i, /tool/i), `${what}: what the session loads must tell it to show the owner no command, file path or tool name${got}`);
+  assert.deepEqual(said.filter((x) => DENIES_CHECK.test(x) && !NEVER_SAY.test(x)), [], `${what}: nothing the session loads may tell it Squire has no health check${got}`);
+  assert.ok(said.some((x) => /Squire Update/.test(x) && !NOT_IN_A_NOTICE.test(x)), `${what}: the updates line still names Squire Update with no command, path or terminal${got}`);
+}
+
+// The session's own run of a command, through the safety floor as Claude
+// Code runs it: it must go ahead without asking the owner.
+function assertRunsFree(rw, command, what) {
+  const r = w.attempt(rw.world, SESSION, w.tools.bash(command), { env: R.env(rw), coreDir: R.installedCore(rw) });
+  w.assertAllowed(r, what);
+  assert.equal(w.requestIdIn(`${r.stderr}\n${r.stdout}`), null, `${what}: it runs without asking the owner; got ${w.describe(r)}`);
+}
+const healthCheck = (rw) => `${w.PYTHON} ${path.join(R.installedCore(rw), 'tools', 'health.py')}`;
+
+test("what Squire's session loads, written at lay-down and again before the runner starts the session, names Squire's health check and the ticket route, tells the session what to say when no ticket is offered and to show the owner no command, path or tool name, and keeps the updates line", LONG, async (t) => {
+  const rw = R.makeReleaseWorld(t);
+  const laid = sessionLoads(rw);
+  await R.startSquire(rw);
+  assertSessionKnowsRoute(laid, 'after lay-down');
+  assertSessionKnowsRoute(sessionLoads(rw), 'after the runner starts the session');
+});
+
+test("when the owner asks for the support ticket the health check offers, the session's route reaches it: the floor lets the session run the health check without asking, the check offers the outbox ticket on its own line, the session's request to send it is blocked with the ticket's bytes as one line of JSON for the fence, and what the session loads names that route", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  assertRunsFree(rw, healthCheck(rw), 'the session\'s run of the health check');
+  const ticket = offered(rw, 'the session\'s run of the health check');
+  const bytes = ticket.bytes.toString('utf8');
+  assert.ok(bytes.endsWith('\n') && !bytes.slice(0, -1).includes('\n'), `the outbox ticket's bytes are one line; got ${JSON.stringify(bytes)}`);
+  const body = JSON.parse(bytes);
+  assert.ok(body && typeof body === 'object' && !Array.isArray(body) && body.ticketId === ticket.id, `the one line is the ticket as one JSON object; got ${JSON.stringify(bytes)}`);
+  assert.doesNotMatch(bytes, /usr\/bin|python|\.py\b|~\/|\/Users\/|Library\/Application Support/, 'the ticket the owner is shown carries no command or path');
+  const a = R.asked(rw, SESSION, ticket.request, 'the session\'s request to send the ticket the check offered');
+  R.assertBlockShape(a.block, [bytes], 'the floor\'s block for the session to show in a fence');
+  assertSessionKnowsRoute(sessionLoads(rw), 'with a ticket offered');
+});
+
+test("when the owner asks for a support ticket and none is offered, the floor lets the session run the health check without asking, the check offers no ticket and nothing waits in the outbox, and what the session loads tells the session what to say when there is nothing to send", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  assertRunsFree(rw, healthCheck(rw), 'the session\'s run of the health check');
+  const h = R.health(rw);
+  assert.equal(h.status, 0, `the check finds nothing wrong; got ${w.describe(h)}`);
+  assert.deepEqual(R.ticketLines(h.stdout), [], `the check offers no ticket; got ${w.describe(h)}`);
+  assert.deepEqual(R.outboxIds(rw), [], 'nothing waits in the outbox');
+  assertSessionKnowsRoute(sessionLoads(rw), 'with no ticket offered');
+});

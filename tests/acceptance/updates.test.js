@@ -537,6 +537,82 @@ test('when the check after a rollback fails too, a health line names both versio
   assert.ok(later.stdout.split('\n').some((l) => l.includes(NEXT) && l.includes(R.INSTALLED)), `the mark stands at the next run of the health check; got ${w.describe(later)}`);
 });
 
+// What the session loads: CLAUDE.md in Squire's Claude Code config folder,
+// which Squire writes whole at every lay-down and before every runner start.
+const sessionLoads = (rw) => {
+  const file = path.join(rw.home, 'claude-config', 'CLAUDE.md');
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+};
+const sentencesOf = (text) => text.split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+// A sentence telling the session that Squire has no health check, unless it
+// tells the session never to say so.
+const DENIES_CHECK = /(don't|do not|doesn't|does not|can't|cannot) (have|run) (a |any )?(Squire'?s? )?health check/i;
+const NEVER_SAY = /\b(never|don't|do not)\b[^.]*\b(say|tell|claim)/i;
+
+// What the session loads tells it of Squire's health check and the ticket
+// route, as the criterion's properties (never the builder's words), and
+// still carries the updates line.
+function assertSessionKnowsRoute(text, what) {
+  const got = `; the session loads ${JSON.stringify(text)}`;
+  const said = sentencesOf(text);
+  const any = (...res) => said.some((x) => res.every((re) => re.test(x)));
+  assert.ok(text.length > 0, `${what}: the session must load the instructions Squire writes for it (claude-config/CLAUDE.md)${got}`);
+  assert.ok(any(/health check/i), `${what}: what the session loads must name Squire's health check${got}`);
+  assert.ok(any(/health/i, /\brun/i, /\bask/i), `${what}: what the session loads must tell it to run the health check when the owner asks about Squire's health${got}`);
+  assert.ok(any(/support ticket/i), `${what}: what the session loads must name a support ticket as the reason to run it${got}`);
+  assert.ok(any(/ticket/i, /fence|```|code block/i), `${what}: what the session loads must tell it to show the ticket the check offers in a fence${got}`);
+  assert.ok(any(/\byes\b/i, /\bsen[dt]/i, /\b(only|never|without|until)\b/i), `${what}: what the session loads must say the ticket is sent only on the owner's yes${got}`);
+  assert.ok(any(/nothing to send|no (support )?ticket/i), `${what}: what the session loads must tell it what to say when no ticket is offered${got}`);
+  assert.ok(any(/\b(never|no|not|don't|without)\b/i, /command/i, /path/i, /tool/i), `${what}: what the session loads must tell it to show the owner no command, file path or tool name${got}`);
+  assert.deepEqual(said.filter((x) => DENIES_CHECK.test(x) && !NEVER_SAY.test(x)), [], `${what}: nothing the session loads may tell it Squire has no health check${got}`);
+  assert.ok(said.some((x) => /Squire Update/.test(x) && !NOT_IN_A_NOTICE.test(x)), `${what}: the updates line still names Squire Update with no command, path or terminal${got}`);
+}
+
+// The session's own run of Squire's health check, through the safety floor
+// as Claude Code runs it: it must go ahead without asking the owner.
+function assertCheckRunsFree(rw, what) {
+  const command = `${w.PYTHON} ${path.join(R.installedCore(rw), 'tools', 'health.py')}`;
+  const r = w.attempt(rw.world, SESSION, w.tools.bash(command), { env: R.env(rw), coreDir: R.installedCore(rw) });
+  w.assertAllowed(r, what);
+  assert.equal(w.requestIdIn(`${r.stderr}\n${r.stdout}`), null, `${what}: it runs without asking the owner; got ${w.describe(r)}`);
+}
+
+test("when the check after a rollback fails too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExitsAndSignsOut' });
+  stage(rw, bad);
+  const r = await R.installAtMac(rw, bad);
+  assert.ok(r.windows.some((x) => /in the chat/i.test(x.text || '') && /support ticket/i.test(x.text || '')),
+    `Squire Update's window must send the owner to the chat for a support ticket; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assertCheckRunsFree(rw, 'the session\'s run of the health check after the window');
+  const h = R.health(rw);
+  assert.ok(R.ticketLines(h.stdout).length >= 1, `the session's run of the health check must offer a support ticket on its own line; got ${w.describe(h)}`);
+  assertSessionKnowsRoute(sessionLoads(rw), 'after the window that sends the owner to the chat for a ticket');
+});
+
+test("when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExitsAndSignsOut' });
+  stage(rw, bad);
+  const seen = await R.killInstallAt(rw, 'check');
+  assert.equal(seen, 'check', `the install must be killed at its check; the record named ${JSON.stringify(seen)}`);
+  const shown = R.updateWindows(rw).length;
+  // The Mac starts again: launchd starts the runner at login; then the scheduler runs.
+  R.stopSquire(rw);
+  R.launchSquire(rw);
+  await s.waitFor(() => !fs.existsSync(R.installRecordFile(rw)), 60000, 250);
+  R.tick(rw);
+  const settled = await s.waitFor(() => !fs.existsSync(R.installRecordFile(rw)), 180000, 250);
+  assert.ok(settled, `the unfinished install must be finished and its record removed; install.json: ${JSON.stringify(R.readJson(R.installRecordFile(rw)))}`);
+  const windows = R.updateWindows(rw).slice(shown).map((x) => x.text || '');
+  assert.ok(windows.some((x) => /did not pass its checks/i.test(x) && /in the chat/i.test(x) && /support ticket/i.test(x)),
+    `Squire Update's window after the unfinished install must send the owner to the chat for a support ticket; windows: ${JSON.stringify(windows)}`);
+  assertCheckRunsFree(rw, 'the session\'s run of the health check after the window');
+  const h = R.health(rw);
+  assert.ok(R.ticketLines(h.stdout).length >= 1, `the session's run of the health check must offer a support ticket on its own line; got ${w.describe(h)}`);
+  assertSessionKnowsRoute(sessionLoads(rw), 'after the window that finishes an unfinished install and sends the owner to the chat for a ticket');
+});
+
 test("a kept previous release changed before a rollback is never laid down: the rollback checks it again and lays nothing down, a health line names both versions, and a support ticket is offered", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const good = R.buildRelease(rw, { version: NEXT });
@@ -1285,6 +1361,22 @@ test('Squire Update opened while the health check names a fault says Squire must
   assert.deepEqual(updated(r.sent, NEXT), [], 'nothing is installed');
   assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], 'nothing may change');
   assert.ok(R.staged(rw).includes(NEXT), 'the staged release stays staged for later');
+});
+
+test("Squire Update opened while the health check names a fault sends the owner to the chat, and the session's route reaches the fault: the floor lets the session run the health check without asking, the check names the fault, and what the session loads names Squire's health check", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
+  fs.appendFileSync(floorFile, '# one line more\n');
+  const r = await R.installAtMac(rw, release, 'Install');
+  assert.ok(r.windows.some((x) => /fix a problem/i.test(x.text || '') && /in the chat/i.test(x.text || '')),
+    `Squire Update's window must send the owner to the chat about the problem; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  assertCheckRunsFree(rw, 'the session\'s run of the health check after the window');
+  const h = R.health(rw);
+  assert.notEqual(h.status, 0, `the session's run of the health check must name the fault; got ${w.describe(h)}`);
+  assert.match(h.stdout, /config-change\.py/, `the session's run of the health check must name the changed file; got ${w.describe(h)}`);
+  assertSessionKnowsRoute(sessionLoads(rw), 'after the window that sends the owner to the chat about a fault');
 });
 
 test('Squire Update opened a second time while it is open says it is already open and ends, and only one install runs', LONG, async (t) => {

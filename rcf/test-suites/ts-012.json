@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-12T12:19:27.070Z",
+  "updatedAt": "2026-11-12T12:31:57.317Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -204,6 +204,48 @@
       "description": "an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once"
+    },
+    {
+      "id": "TC-012-session-loads-names-health-check-ticket-route",
+      "acId": "AC-2001-7",
+      "description": "what Squire's session loads, written at lay-down and again before the runner starts the session, names Squire's health check and the ticket route, tells the session what to say when no ticket is offered and to show the owner no command, path or tool name, and keeps the updates line",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::what Squire's session loads, written at lay-down and again before the runner starts the session, names Squire's health check and the ticket route, tells the session what to say when no ticket is offered and to show the owner no command, path or tool name, and keeps the updates line"
+    },
+    {
+      "id": "TC-012-owner-asks-ticket-session-route-reaches-fence",
+      "acId": "AC-2001-7",
+      "description": "when the owner asks for the support ticket the health check offers, the session's route reaches it: the floor lets the session run the health check without asking, the check offers the outbox ticket on its own line, the session's request to send it is blocked with the ticket's bytes as one line of JSON for the fence, and what the session loads names that route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::when the owner asks for the support ticket the health check offers, the session's route reaches it: the floor lets the session run the health check without asking, the check offers the outbox ticket on its own line, the session's request to send it is blocked with the ticket's bytes as one line of JSON for the fence, and what the session loads names that route"
+    },
+    {
+      "id": "TC-012-owner-asks-ticket-none-offered-nothing-to-send",
+      "acId": "AC-2001-7",
+      "description": "when the owner asks for a support ticket and none is offered, the floor lets the session run the health check without asking, the check offers no ticket and nothing waits in the outbox, and what the session loads tells the session what to say when there is nothing to send",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::when the owner asks for a support ticket and none is offered, the floor lets the session run the health check without asking, the check offers no ticket and nothing waits in the outbox, and what the session loads tells the session what to say when there is nothing to send"
+    },
+    {
+      "id": "TC-012-rollback-failed-window-chat-session-reaches-ticket",
+      "acId": "AC-2001-7",
+      "description": "when the check after a rollback fails too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the check after a rollback fails too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route"
+    },
+    {
+      "id": "TC-012-fault-held-window-chat-session-reaches-check",
+      "acId": "AC-2001-7",
+      "description": "Squire Update opened while the health check names a fault sends the owner to the chat, and the session's route reaches the fault: the floor lets the session run the health check without asking, the check names the fault, and what the session loads names Squire's health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::Squire Update opened while the health check names a fault sends the owner to the chat, and the session's route reaches the fault: the floor lets the session run the health check without asking, the check names the fault, and what the session loads names Squire's health check"
+    },
+    {
+      "id": "TC-012-recovery-window-chat-session-reaches-ticket",
+      "acId": "AC-2001-7",
+      "description": "when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route"
     }
   ],
   "status": "draft"
