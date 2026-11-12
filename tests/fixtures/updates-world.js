@@ -1336,6 +1336,55 @@ function carriesAccountName(text, ticket = null) {
   return accountNames().some((n) => new RegExp(`(^|[^A-Za-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^A-Za-z0-9])`, 'i').test(scrubbed));
 }
 
+// ------------------------------------------------- the session's route to a ticket
+
+// What the session loads: CLAUDE.md in Squire's Claude Code config folder,
+// which Squire writes whole at every lay-down and before every runner start.
+function sessionLoads(rw) {
+  const file = path.join(rw.home, 'claude-config', 'CLAUDE.md');
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+}
+const sentencesOf = (text) => text.split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+
+// A clause that tells the session never to say, tell or claim something is cut
+// out of its sentence, up to the next comma, full stop or semicolon, before the
+// sentence is read for a denial: what it forbids is not what the session is
+// told. Nothing else in the sentence is exempt.
+const NEVER_SAY_CLAUSE = /\b(?:never|do\s+not|don['’]?t)\s+(?:say|tell|claim)\b[^.;,]*/gi;
+const outsideNeverSay = (sentence) => sentence.replace(NEVER_SAY_CLAUSE, ' ');
+// Telling the session that Squire has no health check, or that it cannot run it.
+const SQUIRES = String.raw`(?:Squire['’]?s?\s+)?`;
+const DENIES_CHECK = [
+  new RegExp(String.raw`\bno\s+${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\b(?:do|does|did)(?:\s+not|\s*n['’]?t)\s+have\s+(?:a\s+|any\s+|the\s+)?${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\b(?:is|are|was)(?:\s+not|n['’]?t)\s+(?:a\s+|any\s+)${SQUIRES}health\s+check`, 'i'),
+  new RegExp(String.raw`\b(?:lacks?|lacking|without)\s+(?:a\s+|any\s+)?${SQUIRES}health\s+check`, 'i'),
+  new RegExp(String.raw`\b(?:can\s*not|can['’]?t|could\s+not|couldn['’]?t|unable\s+to|not\s+able\s+to)\s+run` +
+    String.raw`(?:\s*(?:[.,;:!?]|$)|\s+(?:it|this|that|the\s+(?:health\s+)?check|(?:a\s+|any\s+|the\s+)?${SQUIRES}health)\b)`, 'i'),
+];
+const deniesCheck = (sentence) => DENIES_CHECK.some((re) => re.test(outsideNeverSay(sentence)));
+// What the session may never be told to show a Squire owner about updates.
+const NOT_IN_A_NOTICE = /usr\/bin|update\.py|--install|[Tt]erminal/;
+
+// What the session loads tells it of Squire's health check and the ticket
+// route, as the criterion's properties (never the builder's words), and still
+// carries the updates line. A denial of the check fails the first property.
+function assertSessionKnowsRoute(text, what) {
+  const got = `; the session loads ${JSON.stringify(text)}`;
+  const said = sentencesOf(text);
+  const any = (...res) => said.some((x) => res.every((re) => re.test(x)));
+  assert.ok(text.length > 0, `${what}: the session must load the instructions Squire writes for it (claude-config/CLAUDE.md)${got}`);
+  assert.ok(any(/health check/i), `${what}: what the session loads must name Squire's health check${got}`);
+  assert.deepEqual(said.filter(deniesCheck), [], `${what}: nothing the session loads may tell it Squire has no health check or that it cannot run it${got}`);
+  assert.ok(any(/health/i, /\brun/i, /\bask/i), `${what}: what the session loads must tell it to run the health check when the owner asks about Squire's health${got}`);
+  assert.ok(any(/support ticket/i), `${what}: what the session loads must name a support ticket as the reason to run it${got}`);
+  assert.ok(any(/ticket/i, /fence|```|code block/i), `${what}: what the session loads must tell it to show the ticket the check offers in a fence${got}`);
+  assert.ok(any(/\byes\b/i, /\bsen[dt]/i, /\b(only|never|without|until)\b/i), `${what}: what the session loads must say the ticket is sent only on the owner's yes${got}`);
+  assert.ok(any(/nothing to send|no (support )?ticket/i), `${what}: what the session loads must tell it what to say when no ticket is offered${got}`);
+  assert.ok(any(/\b(never|no|not|don't|without)\b/i, /command/i, /path/i, /tool/i), `${what}: what the session loads must tell it to show the owner no command, file path or tool name${got}`);
+  assert.ok(said.some((x) => /Squire Update/.test(x) && !NOT_IN_A_NOTICE.test(x)), `${what}: the updates line still names Squire Update with no command, path or terminal${got}`);
+}
+
 module.exports = {
   NAMESPACE,
   INSTALLED,
@@ -1430,4 +1479,11 @@ module.exports = {
   readJson,
   nowSeconds,
   env,
+  sessionLoads,
+  sentencesOf,
+  NEVER_SAY_CLAUSE,
+  outsideNeverSay,
+  DENIES_CHECK,
+  deniesCheck,
+  assertSessionKnowsRoute,
 };

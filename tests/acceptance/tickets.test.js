@@ -527,38 +527,9 @@ test('an approved ticket whose last attempt is dated ahead of the clock is retri
 
 // ------------------------------------------------- the session's route to a ticket
 
-// What the session loads: CLAUDE.md in Squire's Claude Code config folder,
-// which Squire writes whole at every lay-down and before every runner start.
-const sessionLoads = (rw) => {
-  const file = path.join(rw.home, 'claude-config', 'CLAUDE.md');
-  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-};
-const sentencesOf = (text) => text.split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
-// A sentence telling the session that Squire has no health check, unless it
-// tells the session never to say so.
-const DENIES_CHECK = /(don't|do not|doesn't|does not|can't|cannot) (have|run) (a |any )?(Squire'?s? )?health check/i;
-const NEVER_SAY = /\b(never|don't|do not)\b[^.]*\b(say|tell|claim)/i;
-// What the session may never be told to show a Squire owner about updates.
-const NOT_IN_A_NOTICE = /usr\/bin|update\.py|--install|[Tt]erminal/;
-
-// What the session loads tells it of Squire's health check and the ticket
-// route, as the criterion's properties (never the builder's words), and
-// still carries the updates line.
-function assertSessionKnowsRoute(text, what) {
-  const got = `; the session loads ${JSON.stringify(text)}`;
-  const said = sentencesOf(text);
-  const any = (...res) => said.some((x) => res.every((re) => re.test(x)));
-  assert.ok(text.length > 0, `${what}: the session must load the instructions Squire writes for it (claude-config/CLAUDE.md)${got}`);
-  assert.ok(any(/health check/i), `${what}: what the session loads must name Squire's health check${got}`);
-  assert.ok(any(/health/i, /\brun/i, /\bask/i), `${what}: what the session loads must tell it to run the health check when the owner asks about Squire's health${got}`);
-  assert.ok(any(/support ticket/i), `${what}: what the session loads must name a support ticket as the reason to run it${got}`);
-  assert.ok(any(/ticket/i, /fence|```|code block/i), `${what}: what the session loads must tell it to show the ticket the check offers in a fence${got}`);
-  assert.ok(any(/\byes\b/i, /\bsen[dt]/i, /\b(only|never|without|until)\b/i), `${what}: what the session loads must say the ticket is sent only on the owner's yes${got}`);
-  assert.ok(any(/nothing to send|no (support )?ticket/i), `${what}: what the session loads must tell it what to say when no ticket is offered${got}`);
-  assert.ok(any(/\b(never|no|not|don't|without)\b/i, /command/i, /path/i, /tool/i), `${what}: what the session loads must tell it to show the owner no command, file path or tool name${got}`);
-  assert.deepEqual(said.filter((x) => DENIES_CHECK.test(x) && !NEVER_SAY.test(x)), [], `${what}: nothing the session loads may tell it Squire has no health check${got}`);
-  assert.ok(said.some((x) => /Squire Update/.test(x) && !NOT_IN_A_NOTICE.test(x)), `${what}: the updates line still names Squire Update with no command, path or terminal${got}`);
-}
+// What the session loads (claude-config/CLAUDE.md in the Squire home) and the
+// route's properties it must hold, shared with the updates cases.
+const { sessionLoads, assertSessionKnowsRoute } = R;
 
 // The session's own run of a command, through the safety floor as Claude
 // Code runs it: it must go ahead without asking the owner.
