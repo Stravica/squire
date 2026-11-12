@@ -484,7 +484,11 @@ class Persona:
     Squire's config folder, which Claude Code loads as the user's own
     instructions for Squire's session. The owner's squire.json is the one
     authority for both. The block also carries Squire's one standing line on
-    updates: they install only from Squire Update on the owner's Mac."""
+    updates (they install only from Squire Update on the owner's Mac) and the
+    session's two routes: Squire's health check, which the session runs when
+    the owner asks about Squire's health or for a support ticket, and the
+    ticket route, a ticket the check offers shown in a fence and sent only on
+    the owner's yes."""
 
     LIMITS = {'squireName': 40, 'personality': 400}
     OPEN = '<!-- squire persona -->'
@@ -492,6 +496,14 @@ class Persona:
     UPDATES = ('Squire\'s updates install only from Squire Update on the owner\'s Mac, never from this session and never '
                'from the phone. When Squire tells you a release is waiting, tell the owner to open Squire Update on '
                'their Mac, and run nothing for it yourself.')
+    HEALTH = ('Squire has a health check, and you run it yourself whenever the owner asks about Squire\'s health or for '
+              'a support ticket, including when a Squire Update window has sent them to the chat.')
+    TICKETS = ('When the check offers a support ticket, it names the request to send it on a line of its own: run that '
+               'request, and when the safety floor shows you the ticket, show it to the owner as one line of JSON in a '
+               'code fence and ask for their yes. The ticket is sent only on the owner\'s yes, by Squire outside this '
+               'session; never send it any other way. When the check offers no ticket, tell the owner plainly that '
+               'there is nothing to send, and never say that Squire has no health check or that you cannot run it. '
+               'Show the owner no command, file path or tool name, only what the check found, in plain words.')
 
     @classmethod
     def problem(cls, key, value):
@@ -533,6 +545,8 @@ class Persona:
         if 'personality' in values:
             lines.append(f'Your personality, in the owner\'s words: {values["personality"]}')
         lines.append(cls.UPDATES)
+        lines.append(cls.HEALTH)
+        lines.append(cls.TICKETS)
         lines.append(cls.CLOSE)
         return '\n'.join(lines) + '\n'
 
