@@ -577,8 +577,13 @@ test("when an install killed at its check is finished by Squire Update after a l
   R.tick(rw);
   const settled = await s.waitFor(() => !fs.existsSync(R.installRecordFile(rw)), 180000, 250);
   assert.ok(settled, `the unfinished install must be finished and its record removed; install.json: ${JSON.stringify(R.readJson(R.installRecordFile(rw)))}`);
-  const windows = R.updateWindows(rw).slice(shown).map((x) => x.text || '');
-  assert.ok(windows.some((x) => /did not pass its checks/i.test(x) && /in the chat/i.test(x) && /support ticket/i.test(x)),
+  // Squire Update shows its outcome window after the record goes: wait for
+  // that window itself, up to two minutes, never a fixed pause.
+  const sendsToChat = (x) => /did not pass its checks/i.test(x) && /in the chat/i.test(x) && /support ticket/i.test(x);
+  const windowsSince = () => R.updateWindows(rw).slice(shown).map((x) => x.text || '');
+  const told = await s.waitFor(() => windowsSince().some(sendsToChat), 120000, 250);
+  const windows = windowsSince();
+  assert.ok(told && windows.some(sendsToChat),
     `Squire Update's window after the unfinished install must send the owner to the chat for a support ticket; windows: ${JSON.stringify(windows)}`);
   assertCheckRunsFree(rw, 'the session\'s run of the health check after the window');
   const h = R.health(rw);
