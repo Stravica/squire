@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-12T12:31:57.317Z",
+  "updatedAt": "2026-11-12T12:32:15.791Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -246,6 +246,20 @@
       "description": "when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route"
+    },
+    {
+      "id": "TC-012-real-mac-ticket-waiting-session-shows-fence",
+      "acId": "AC-2001-7",
+      "description": "on a real Mac with a support ticket waiting, when the owner asks Squire in the chat for the ticket its health check offers, the session runs the health check and shows the waiting ticket's bytes as one fenced line, naming no command, file path or tool outside it",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-4-update.test.js::on a real Mac with a support ticket waiting, when the owner asks Squire in the chat for the ticket its health check offers, the session runs the health check and shows the waiting ticket's bytes as one fenced line, naming no command, file path or tool outside it"
+    },
+    {
+      "id": "TC-012-real-mac-no-ticket-session-says-nothing-to-send",
+      "acId": "AC-2001-7",
+      "description": "on a real Mac with no support ticket offered, when the owner asks Squire in the chat for a support ticket, the session runs the health check and says plainly there is nothing to send, never that Squire has no health check, naming no command, file path or tool",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-4-update.test.js::on a real Mac with no support ticket offered, when the owner asks Squire in the chat for a support ticket, the session runs the health check and says plainly there is nothing to send, never that Squire has no health check, naming no command, file path or tool"
     }
   ],
   "status": "draft"
