@@ -1363,25 +1363,67 @@ const DENIES_CHECK = [
     String.raw`(?:\s*(?:[.,;:!?]|$)|\s+(?:it|this|that|the\s+(?:health\s+)?check|(?:a\s+|any\s+|the\s+)?${SQUIRES}health)\b)`, 'i'),
 ];
 const deniesCheck = (sentence) => DENIES_CHECK.some((re) => re.test(outsideNeverSay(sentence)));
+// For each of the route's properties, what says its opposite.
+const NEGATED = String.raw`(?:never|do\s+not|don['’]?t|must\s+not|mustn['’]?t|should\s+not|shouldn['’]?t)`;
+const ROUTE_OPPOSITES = {
+  run: [
+    new RegExp(String.raw`\b${NEGATED}\s+(?:\w+\s+)?run\s+(?:it|the\s+(?:health\s+)?check|(?:a\s+|the\s+)?${SQUIRES}health\s+check)\b`, 'i'),
+  ],
+  supportTicket: [
+    /\b(?:has|have|there\s+is|there['’]s|there\s+are)\s+no\s+support\s+tickets?\b/i,
+    new RegExp(String.raw`\b${NEGATED}\s+(?:offer|mention|make|build|have)\w*\s+(?:a\s+|any\s+|the\s+)?support\s+tickets?\b`, 'i'),
+  ],
+  fence: [
+    new RegExp(String.raw`\b${NEGATED}\s+(?:show|display|print|put|give)\w*\s+(?:the\s+owner\s+)?(?:it|them|(?:the|a|any)\s+(?:support\s+)?ticket)\b`, 'i'),
+    /\bticket\b[^.;]*\b(?:is|are|be)\s+(?:never|not)\s+(?:\w+\s+)?shown\b/i,
+    /\b(?:without|outside(?:\s+of)?|not\s+in)\s+(?:a\s+|the\s+|any\s+)?(?:code\s+)?(?:fence|code\s+block)\b/i,
+  ],
+  yes: [
+    /\bwithout\b[^.;]*\byes\b/i,
+    /\bsen[dt]\w*\s+(?:it\s+|them\s+|the\s+(?:support\s+)?ticket\s+)?(?:straight\s+away|at\s+once|right\s+away|immediately|now|directly|yourself)\b/i,
+    /\b(?:no|not|never|don['’]?t|doesn['’]?t|needn['’]?t)\s+(?:need|wait|ask|require)\w*\b[^.;]*\byes\b/i,
+    /\bsen[dt]\w*\b[^.;]*\bbefore\b[^.;]*\byes\b/i,
+  ],
+  nothingToSend: [
+    /\bthere\s+(?:is|['’]s)\s+(?:a|one|always\s+a)\s+(?:support\s+)?ticket\s+(?:to\s+send|waiting)\b/i,
+    new RegExp(String.raw`\b${NEGATED}\s+(?:say|tell)\w*\b[^.;,]*\bnothing\s+to\s+send\b`, 'i'),
+  ],
+  noCommand: [
+    /\b(?:show|give|tell|read\s+out|paste|share|display)\w*\s+(?:the\s+owner\s+|them\s+|to\s+the\s+owner\s+)?(?:the\s+|its\s+|each\s+|every\s+|that\s+)?(?:exact\s+|full\s+)?(?:command|file\s+path|path|tool(?:\s+name)?)s?\b/i,
+    /\bname\s+(?:the\s+|its\s+|each\s+)?(?:tool|command|file|path)s?\b/i,
+    new RegExp(String.raw`\b${NEGATED}\s+hide\b`, 'i'),
+  ],
+};
 // What the session may never be told to show a Squire owner about updates.
 const NOT_IN_A_NOTICE = /usr\/bin|update\.py|--install|[Tt]erminal/;
 
 // What the session loads tells it of Squire's health check and the ticket
-// route, as the criterion's properties (never the builder's words), and still
-// carries the updates line. A denial of the check fails the first property.
+// route, as the criterion's properties (never the builder's words), says the
+// opposite of none of them, and still carries the updates line. A denial of
+// the check fails the first property; each opposite fails its own property.
 function assertSessionKnowsRoute(text, what) {
   const got = `; the session loads ${JSON.stringify(text)}`;
   const said = sentencesOf(text);
   const any = (...res) => said.some((x) => res.every((re) => re.test(x)));
+  const none = (property, about) => {
+    const against = said.filter((x) => ROUTE_OPPOSITES[property].some((re) => re.test(x)));
+    assert.deepEqual(against, [], `${what}: nothing the session loads may ${about}${got}`);
+  };
   assert.ok(text.length > 0, `${what}: the session must load the instructions Squire writes for it (claude-config/CLAUDE.md)${got}`);
   assert.ok(any(/health check/i), `${what}: what the session loads must name Squire's health check${got}`);
   assert.deepEqual(said.filter(deniesCheck), [], `${what}: nothing the session loads may tell it Squire has no health check or that it cannot run it${got}`);
   assert.ok(any(/health/i, /\brun/i, /\bask/i), `${what}: what the session loads must tell it to run the health check when the owner asks about Squire's health${got}`);
+  none('run', 'tell it not to run the health check');
   assert.ok(any(/support ticket/i), `${what}: what the session loads must name a support ticket as the reason to run it${got}`);
+  none('supportTicket', 'tell it there is no support ticket to offer');
   assert.ok(any(/ticket/i, /fence|```|code block/i), `${what}: what the session loads must tell it to show the ticket the check offers in a fence${got}`);
+  none('fence', 'tell it not to show the ticket, or to show it outside a fence');
   assert.ok(any(/\byes\b/i, /\bsen[dt]/i, /\b(only|never|without|until)\b/i), `${what}: what the session loads must say the ticket is sent only on the owner's yes${got}`);
+  none('yes', 'tell it the ticket is sent without the owner\'s yes');
   assert.ok(any(/nothing to send|no (support )?ticket/i), `${what}: what the session loads must tell it what to say when no ticket is offered${got}`);
+  none('nothingToSend', 'tell it to say there is a ticket to send, or never to say there is nothing to send');
   assert.ok(any(/\b(never|no|not|don't|without)\b/i, /command/i, /path/i, /tool/i), `${what}: what the session loads must tell it to show the owner no command, file path or tool name${got}`);
+  none('noCommand', 'tell it to show the owner a command, file path or tool name');
   assert.ok(said.some((x) => /Squire Update/.test(x) && !NOT_IN_A_NOTICE.test(x)), `${what}: the updates line still names Squire Update with no command, path or terminal${got}`);
 }
 
@@ -1485,5 +1527,6 @@ module.exports = {
   outsideNeverSay,
   DENIES_CHECK,
   deniesCheck,
+  ROUTE_OPPOSITES,
   assertSessionKnowsRoute,
 };
