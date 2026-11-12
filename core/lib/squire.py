@@ -497,7 +497,8 @@ class Persona:
                'from the phone. When Squire tells you a release is waiting, tell the owner to open Squire Update on '
                'their Mac, and run nothing for it yourself.')
     HEALTH = ('Squire has a health check, and you run it yourself whenever the owner asks about Squire\'s health or for '
-              'a support ticket, including when a Squire Update window has sent them to the chat.')
+              'a support ticket, including when a Squire Update window has sent them to the chat. Run it as this one '
+              'command, exactly as written here, its path in quotes and nothing added: `{command}`')
     TICKETS = ('When the check offers a support ticket, it names the request to send it on a line of its own: run that '
                'request, and when the safety floor shows you the ticket, show it to the owner as one line of JSON in a '
                'code fence and ask for their yes. The ticket is sent only on the owner\'s yes, by Squire outside this '
@@ -537,7 +538,12 @@ class Persona:
         return {key: data[key] for key in cls.LIMITS if key in data and cls.problem(key, data[key]) is None}
 
     @classmethod
-    def block(cls, values):
+    def block(cls, values, home):
+        """The block, the health check named by its path in the Squire home,
+        single-quoted: the default Squire home's path holds a space, and the
+        floor lets the check run without asking only when its path is one
+        word."""
+        check = os.path.join(home, 'core', 'tools', 'health.py').replace("'", "'\"'\"'")
         lines = [cls.OPEN]
         if 'squireName' in values:
             lines.append(f'Your name is {values["squireName"]}. You are the owner\'s own Squire, their assistant on '
@@ -545,7 +551,7 @@ class Persona:
         if 'personality' in values:
             lines.append(f'Your personality, in the owner\'s words: {values["personality"]}')
         lines.append(cls.UPDATES)
-        lines.append(cls.HEALTH)
+        lines.append(cls.HEALTH.format(command=f"/usr/bin/python3 '{check}'"))
         lines.append(cls.TICKETS)
         lines.append(cls.CLOSE)
         return '\n'.join(lines) + '\n'
@@ -563,7 +569,7 @@ class Persona:
         fd, tmp = tempfile.mkstemp(prefix='.CLAUDE.md-', dir=folder)
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
-                f.write(cls.block(values))
+                f.write(cls.block(values, home))
             os.chmod(tmp, 0o600)
             os.replace(tmp, os.path.join(folder, 'CLAUDE.md'))
         except OSError:
