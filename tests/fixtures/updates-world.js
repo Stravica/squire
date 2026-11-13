@@ -1361,6 +1361,10 @@ const DENIES_CHECK = [
   new RegExp(String.raw`\b(?:lacks?|lacking|without)\s+(?:a\s+|any\s+)?${SQUIRES}health\s+check`, 'i'),
   new RegExp(String.raw`\b(?:can\s*not|can['’]?t|could\s+not|couldn['’]?t|unable\s+to|not\s+able\s+to)\s+run` +
     String.raw`(?:\s*(?:[.,;:!?]|$)|\s+(?:it|this|that|the\s+(?:health\s+)?check|(?:a\s+|any\s+|the\s+)?${SQUIRES}health)\b)`, 'i'),
+  new RegExp(String.raw`\b${SQUIRES}health\s+checks?\s+(?:can\s*not|can['’]?t)\s+be\s+run\b`, 'i'),
+  new RegExp(String.raw`\bhave(?:\s+not|\s*n['’]?t)\s+got\s+(?:a\s+)?${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\bhave\s+no\s+way\s+to\s+run\s+(?:the\s+)?${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\b${SQUIRES}health\s+checks?\s+(?:do|does)(?:\s+not|\s*n['’]?t)\s+exist\b`, 'i'),
 ];
 const deniesCheck = (sentence) => DENIES_CHECK.some((re) => re.test(outsideNeverSay(sentence)));
 // For each of the route's properties, what says its opposite.
@@ -1368,6 +1372,7 @@ const NEGATED = String.raw`(?:never|do\s+not|don['’]?t|must\s+not|mustn['’]?
 const ROUTE_OPPOSITES = {
   run: [
     new RegExp(String.raw`\b${NEGATED}\s+(?:\w+\s+)?run\s+(?:it|the\s+(?:health\s+)?check|(?:a\s+|the\s+)?${SQUIRES}health\s+check)\b`, 'i'),
+    new RegExp(String.raw`\b(?:it|the\s+(?:health\s+)?check|(?:a\s+|the\s+)?${SQUIRES}health\s+check)\s+is(?:\s+not|n['’]?t)\s+run\b`, 'i'),
   ],
   supportTicket: [
     /\b(?:has|have|there\s+is|there['’]s|there\s+are)\s+no\s+support\s+tickets?\b/i,
