@@ -4,429 +4,181 @@
   "scope": "acs",
   "criteria": [
     {
-      "acId": "AC-2001-1",
+      "acId": "AC-1401-9",
       "structural": {
         "result": "pass",
         "findings": []
       },
       "mutants": [
         {
-          "symbol": "core/tools/ticket.py#Outbox.file",
+          "symbol": "core/lib/squire.py#ClaudeCode.version",
           "operator": "stubToThrow",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.file",
+          "symbol": "core/lib/squire.py#ClaudeCode.version",
           "operator": "noOp",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when claude --version fails, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.file",
+          "symbol": "core/lib/squire.py#ClaudeCode.version",
           "operator": "callRemoval",
           "result": "notApplicable",
           "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.state_file",
+          "symbol": "core/lib/squire.py#ClaudeCode.values",
           "operator": "stubToThrow",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.state_file",
+          "symbol": "core/lib/squire.py#ClaudeCode.values",
           "operator": "noOp",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.state_file",
+          "symbol": "core/lib/squire.py#ClaudeCode.values",
           "operator": "callRemoval",
           "result": "notApplicable",
           "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.waiting",
+          "symbol": "core/lib/squire.py#ClaudeCode.record_once",
           "operator": "stubToThrow",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.waiting",
+          "symbol": "core/lib/squire.py#ClaudeCode.record_once",
           "operator": "noOp",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.waiting",
+          "symbol": "core/lib/squire.py#ClaudeCode.record_once",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.changes",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.changes",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.changes",
           "operator": "callRemoval",
           "result": "notApplicable",
           "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.pending",
+          "symbol": "core/tools/update.py#HealthLines.run",
           "operator": "stubToThrow",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.pending",
+          "symbol": "core/tools/update.py#HealthLines.run",
           "operator": "noOp",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again"
           ]
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.pending",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.request",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.request",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.request",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.fresh",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.fresh",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.fresh",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.offers",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.offers",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.offers",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.answered",
-          "operator": "stubToThrow",
-          "result": "survived",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.answered",
-          "operator": "noOp",
-          "result": "survived",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.answered",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.build",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.build",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.build",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.perform",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.perform",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.perform",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.one",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.one",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.one",
-          "operator": "callRemoval",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.use",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.use",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.use",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.set_aside",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::with the owner's no nothing is posted and the ticket is set aside"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.set_aside",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::with the owner's no nothing is posted and the ticket is set aside"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.set_aside",
+          "symbol": "core/tools/update.py#HealthLines.run",
           "operator": "callRemoval",
           "result": "survived",
           "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.send",
+          "symbol": "core/tools/update.py#HealthLines.read",
           "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
+          "result": "survived",
+          "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.send",
+          "symbol": "core/tools/update.py#HealthLines.read",
           "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
+          "result": "survived",
+          "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.send",
+          "symbol": "core/tools/update.py#HealthLines.read",
           "operator": "callRemoval",
           "result": "survived",
           "killedBy": []
         },
         {
-          "symbol": "core/tools/ticket.py#Outbox.post",
+          "symbol": "core/tools/update.py#HealthLines.faults",
           "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.post",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/tools/ticket.py#Outbox.post",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.of",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.of",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.of",
-          "operator": "callRemoval",
-          "result": "notApplicable",
-          "killedBy": []
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.read",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.read",
-          "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.read",
-          "operator": "callRemoval",
           "result": "survived",
           "killedBy": []
         },
         {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.shown",
-          "operator": "stubToThrow",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
-        },
-        {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.shown",
+          "symbol": "core/tools/update.py#HealthLines.faults",
           "operator": "noOp",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
+          "result": "survived",
+          "killedBy": []
         },
         {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.shown",
+          "symbol": "core/tools/update.py#HealthLines.faults",
           "operator": "callRemoval",
           "result": "notApplicable",
           "killedBy": []
         },
         {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.settle",
+          "symbol": "core/tools/wake-up.py#ClaudeCodeWatch.run",
           "operator": "stubToThrow",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.settle",
+          "symbol": "core/tools/wake-up.py#ClaudeCodeWatch.run",
           "operator": "noOp",
           "result": "killed",
           "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
           ]
         },
         {
-          "symbol": "core/hooks/pre-tool-use.py#ShownRequest.settle",
+          "symbol": "core/tools/wake-up.py#ClaudeCodeWatch.run",
           "operator": "callRemoval",
-          "result": "killed",
-          "killedBy": [
-            "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
-          ]
+          "result": "survived",
+          "killedBy": []
         }
       ],
       "result": "fail"
@@ -436,13 +188,13 @@
   "totals": {
     "criteria": 1,
     "structuralPassed": 1,
-    "mutants": 57,
-    "killed": 38,
-    "survived": 5,
+    "mutants": 24,
+    "killed": 13,
+    "survived": 7,
     "timeout": 0,
-    "notApplicable": 14,
+    "notApplicable": 4,
     "blocked": 0
   },
-  "wallMs": 397118,
+  "wallMs": 630133,
   "node": "v24.14.0"
 }
