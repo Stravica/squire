@@ -1,0 +1,36 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "a3bb7cdd32758449c19a2232eb247f4c5c361258",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-601-1",
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-1401-5",
+    "AC-2001-4",
+    "AC-1101-2",
+    "AC-2001-3",
+    "AC-1401-6",
+    "AC-1401-7",
+    "AC-1401-8",
+    "AC-1401-9",
+    "AC-2001-5",
+    "AC-2001-6",
+    "AC-1401-10",
+    "AC-1401-11",
+    "AC-1401-12",
+    "AC-2001-7"
+  ],
+  "code": "MERGE",
+  "adequacy": "PASS",
+  "findings": [],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-13T08:23:12.736Z"
+}
