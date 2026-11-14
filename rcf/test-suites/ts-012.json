@@ -1,16 +1,294 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-07T17:40:41.663Z",
-  "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end.",
+  "updatedAt": "2026-11-14T14:14:33.753Z",
+  "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
     "AC-2001-1",
     "AC-2001-2",
-    "AC-2001-3"
+    "AC-2001-3",
+    "AC-2001-4",
+    "AC-2001-5",
+    "AC-2001-6",
+    "AC-2001-7"
   ],
   "id": "TS-012",
   "usId": "US-2001",
   "title": "Ticket preview and yes, diagnostics only, receiver privacy and deletion",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-012-ticket-built-once-into-outbox-digest-floor-shows-exact",
+      "acId": "AC-2001-1",
+      "description": "a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket is built once into the outbox with its digest, the floor shows its exact bytes with the install id and destination, and on the yes the intake receives exactly those bytes"
+    },
+    {
+      "id": "TC-012-owner-no-nothing-posted-ticket-set-aside",
+      "acId": "AC-2001-1",
+      "description": "with the owner's no nothing is posted and the ticket is set aside",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the owner's no nothing is posted and the ticket is set aside"
+    },
+    {
+      "id": "TC-012-no-answer-within-ledger-timeout-nothing-posted-ticket-set",
+      "acId": "AC-2001-1",
+      "description": "with no answer within the ledger's timeout nothing is posted and the ticket is set aside",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with no answer within the ledger's timeout nothing is posted and the ticket is set aside"
+    },
+    {
+      "id": "TC-012-yes-naming-another-request-posts-nothing",
+      "acId": "AC-2001-1",
+      "description": "a yes naming another request posts nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a yes naming another request posts nothing"
+    },
+    {
+      "id": "TC-012-fault-not-known-fixes-list-offers-ticket-line-own",
+      "acId": "AC-2001-1",
+      "description": "a fault not on the known-fixes list offers a ticket on a line of its own; the fault's own line carries no offer",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a fault not on the known-fixes list offers a ticket on a line of its own; the fault's own line carries no offer"
+    },
+    {
+      "id": "TC-012-personal-details-planted-owner-folder-error-logs-paths-computer",
+      "acId": "AC-2001-2",
+      "description": "personal details planted in the owner's folder, the error logs, the paths, the computer's name and the account never reach a ticket, its preview or the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::personal details planted in the owner's folder, the error logs, the paths, the computer's name and the account never reach a ticket, its preview or the intake"
+    },
+    {
+      "id": "TC-012-mac-model-outside-known-set-ticket-leaves-out-macmodelclass",
+      "acId": "AC-2001-5",
+      "description": "with a Mac model outside the known set, the ticket leaves out macModelClass and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a Mac model outside the known set, the ticket leaves out macModelClass and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-macos-version-not-whole-numbers-dots-ticket-leaves-out",
+      "acId": "AC-2001-5",
+      "description": "with a macOS version that is not whole numbers and dots, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a macOS version that is not whole numbers and dots, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-claude-code-version-answer-not-version-ticket-leaves-out",
+      "acId": "AC-2001-5",
+      "description": "with a Claude Code version answer that is not a version, the ticket leaves out claudeCodeVersion and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a Claude Code version answer that is not a version, the ticket leaves out claudeCodeVersion and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-macos-version-inside-pattern-privacy-patterns-read-card-number",
+      "acId": "AC-2001-5",
+      "description": "with a macOS version inside its pattern that the privacy patterns read as a card number, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with a macOS version inside its pattern that the privacy patterns read as a card number, the ticket leaves out macOSVersion and keeps the rest, and the value reaches neither the preview nor the intake"
+    },
+    {
+      "id": "TC-012-approved-ticket-whose-send-fails-kept-health-line-saying",
+      "acId": "AC-2001-4",
+      "description": "an approved ticket whose send fails is kept with a health line saying it waits, retried with a growing wait carrying the same bytes and id, and cleared by an answer in the 2xx range; the intake files it once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose send fails is kept with a health line saying it waits, retried with a growing wait carrying the same bytes and id, and cleared by an answer in the 2xx range; the intake files it once"
+    },
+    {
+      "id": "TC-012-intake-offline-approved-ticket-kept-shown-waiting-then-sent",
+      "acId": "AC-2001-6",
+      "description": "with the intake offline, the approved ticket is kept and shown as waiting, then sent again with the same id and filed once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the intake offline, the approved ticket is kept and shown as waiting, then sent again with the same id and filed once"
+    },
+    {
+      "id": "TC-012-answer-coming-after-bound-30-seconds-approved-ticket-kept",
+      "acId": "AC-2001-6",
+      "description": "with the answer coming after the bound (30 seconds), the approved ticket is kept and shown as waiting, then sent again with the same id and filed once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the answer coming after the bound (30 seconds), the approved ticket is kept and shown as waiting, then sent again with the same id and filed once"
+    },
+    {
+      "id": "TC-012-ticket-file-changed-after-yes-never-sent-sent-changed",
+      "acId": "AC-2001-6",
+      "description": "a ticket file changed after the yes is never sent, and is sent as changed only after another yes to the changed bytes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket file changed after the yes is never sent, and is sent as changed only after another yes to the changed bytes"
+    },
+    {
+      "id": "TC-012-install-id-made-first-ticket-32-lower-case-hex",
+      "acId": "AC-2001-3",
+      "description": "the install id is made at the first ticket: 32 lower-case hex digits kept in the Squire home for its user only, the same on every ticket from that home",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::the install id is made at the first ticket: 32 lower-case hex digits kept in the Squire home for its user only, the same on every ticket from that home"
+    },
+    {
+      "id": "TC-012-two-squire-homes-have-different-install-ids-made-from",
+      "acId": "AC-2001-3",
+      "description": "two Squire homes have different install ids, made from nothing about the owner, the Mac or the account, and nothing is posted anywhere but the tickets",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::two Squire homes have different install ids, made from nothing about the owner, the Mac or the account, and nothing is posted anywhere but the tickets"
+    },
+    {
+      "id": "TC-012-an-approved-ticket-whose-file-and-the",
+      "acId": "AC-2001-6",
+      "description": "an approved ticket whose file and the digest in its state record are changed together after the yes is never sent: the yes holds the digest the floor recorded with the request",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose file and the digest in its state record are changed together after the yes is never sent: the yes holds the digest the floor recorded with the request"
+    },
+    {
+      "id": "TC-012-a-ticket-changed-between-its-preview-and",
+      "acId": "AC-2001-1",
+      "description": "a ticket changed between its preview and the owner's yes is never sent on that yes: the yes approves only the bytes its block showed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket changed between its preview and the owner's yes is never sent on that yes: the yes approves only the bytes its block showed"
+    },
+    {
+      "id": "TC-012-a-ticket-whose-configured-intake-changed",
+      "acId": "AC-2001-1",
+      "description": "a ticket whose configured intake changed after the yes is sent nowhere: neither to the address its preview showed nor to the new one",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket whose configured intake changed after the yes is sent nowhere: neither to the address its preview showed nor to the new one"
+    },
+    {
+      "id": "TC-012-an-approved-ticket-whose-post-is",
+      "acId": "AC-2001-6",
+      "description": "an approved ticket whose post is answered by a redirect is never sent where it points: the redirect is a send failure, and the ticket stays waiting",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose post is answered by a redirect is never sent where it points: the redirect is a send failure, and the ticket stays waiting"
+    },
+    {
+      "id": "TC-012-an-approved-ticket-is-cleared-only-by-an",
+      "acId": "AC-2001-6",
+      "description": "an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket is cleared only by an answer in the 2xx range from the configured intake: a redirect to another host that would answer 201 is never followed, and the ticket stays waiting"
+    },
+    {
+      "id": "TC-012-a-ticket-s-post-carries-the-approved",
+      "acId": "AC-2001-2",
+      "description": "a ticket's post carries the approved bytes and nothing else: one POST to the configured intake's path with Host, Content-Type application/json and Content-Length alone, no transfer encoding, and no planted detail in its path, its headers or its body",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a ticket's post carries the approved bytes and nothing else: one POST to the configured intake's path with Host, Content-Type application/json and Content-Length alone, no transfer encoding, and no planted detail in its path, its headers or its body"
+    },
+    {
+      "id": "TC-012-a-person-s-name-planted-where-a-code-of",
+      "acId": "AC-2001-5",
+      "description": "a person's name planted where a code of the right pattern could carry it (an error code in Squire's logs, a folder and a file in the owner's folder) never reaches a ticket: its codes come from closed sets, the name appears nowhere, and the rest of the ticket is built",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a person's name planted where a code of the right pattern could carry it (an error code in Squire's logs, a folder and a file in the owner's folder) never reaches a ticket: its codes come from closed sets, the name appears nowhere, and the rest of the ticket is built"
+    },
+    {
+      "id": "TC-012-a-configured-intake-that-is-not-a-plain",
+      "acId": "AC-2001-2",
+      "description": "a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a configured intake that is not a plain address (here one carrying a person's name as its user) builds no ticket: nothing is offered or posted, and a health line names Squire's config without the address"
+    },
+    {
+      "id": "TC-012-send-request-id-final-newline-refused",
+      "acId": "AC-2001-1",
+      "description": "a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a request to send a waiting ticket whose ticket id ends in a newline inside its quoted word is refused outright by the safety floor: no request is raised for the owner, the refusal names the floor, the same after a yes, and nothing is posted"
+    },
+    {
+      "id": "TC-012-install-id-found-open-kept-at-0600",
+      "acId": "AC-2001-3",
+      "description": "an install id found readable by others is kept, for its user only, when the next ticket is built: the same id, its file at 0600, on that ticket and every later one",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an install id found readable by others is kept, for its user only, when the next ticket is built: the same id, its file at 0600, on that ticket and every later one"
+    },
+    {
+      "id": "TC-012-attempt-dated-ahead-holds-no-retry-off",
+      "acId": "AC-2001-4",
+      "description": "an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once"
+    },
+    {
+      "id": "TC-012-session-loads-names-health-check-ticket-route",
+      "acId": "AC-2001-7",
+      "description": "what Squire's session loads, written at lay-down and again before the runner starts the session, names Squire's health check and the ticket route, tells the session what to say when no ticket is offered and to show the owner no command, path or tool name, and keeps the updates line",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::what Squire's session loads, written at lay-down and again before the runner starts the session, names Squire's health check and the ticket route, tells the session what to say when no ticket is offered and to show the owner no command, path or tool name, and keeps the updates line"
+    },
+    {
+      "id": "TC-012-owner-asks-ticket-session-route-reaches-fence",
+      "acId": "AC-2001-7",
+      "description": "when the owner asks for the support ticket the health check offers, the session's route reaches it: the floor lets the session run the health check without asking, the check offers the outbox ticket on its own line, the session's request to send it is blocked with the ticket's bytes as one line of JSON for the fence, and what the session loads names that route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::when the owner asks for the support ticket the health check offers, the session's route reaches it: the floor lets the session run the health check without asking, the check offers the outbox ticket on its own line, the session's request to send it is blocked with the ticket's bytes as one line of JSON for the fence, and what the session loads names that route"
+    },
+    {
+      "id": "TC-012-owner-asks-ticket-none-offered-nothing-to-send",
+      "acId": "AC-2001-7",
+      "description": "when the owner asks for a support ticket and none is offered, the floor lets the session run the health check without asking, the check offers no ticket and nothing waits in the outbox, and what the session loads tells the session what to say when there is nothing to send",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::when the owner asks for a support ticket and none is offered, the floor lets the session run the health check without asking, the check offers no ticket and nothing waits in the outbox, and what the session loads tells the session what to say when there is nothing to send"
+    },
+    {
+      "id": "TC-012-rollback-failed-window-chat-session-reaches-ticket",
+      "acId": "AC-2001-7",
+      "description": "when the check after a rollback fails too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when the check after a rollback fails too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route"
+    },
+    {
+      "id": "TC-012-fault-held-window-chat-session-reaches-check",
+      "acId": "AC-2001-7",
+      "description": "Squire Update opened while the health check names a fault sends the owner to the chat, and the session's route reaches the fault: the floor lets the session run the health check without asking, the check names the fault, and what the session loads names Squire's health check",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::Squire Update opened while the health check names a fault sends the owner to the chat, and the session's route reaches the fault: the floor lets the session run the health check without asking, the check names the fault, and what the session loads names Squire's health check"
+    },
+    {
+      "id": "TC-012-recovery-window-chat-session-reaches-ticket",
+      "acId": "AC-2001-7",
+      "description": "when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::when an install killed at its check is finished by Squire Update after a login and the return to the previous release fails its check too, Squire Update's window sends the owner to the chat for a support ticket, and the session's route reaches it: the floor lets the session run the health check without asking, the check offers a ticket on its own line, and what the session loads names that route"
+    },
+    {
+      "id": "TC-012-real-mac-ticket-waiting-session-shows-fence",
+      "acId": "AC-2001-7",
+      "description": "on a real Mac with a support ticket waiting, when the owner asks Squire in the chat for the ticket its health check offers, the session runs the health check and shows the waiting ticket's bytes as one fenced line, naming no command, file path or tool outside it",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-4-update.test.js::on a real Mac with a support ticket waiting, when the owner asks Squire in the chat for the ticket its health check offers, the session runs the health check and shows the waiting ticket's bytes as one fenced line, naming no command, file path or tool outside it"
+    },
+    {
+      "id": "TC-012-real-mac-no-ticket-session-says-nothing-to-send",
+      "acId": "AC-2001-7",
+      "description": "on a real Mac with no support ticket offered, when the owner asks Squire in the chat for a support ticket, the session runs the health check and says plainly there is nothing to send, never that Squire has no health check, naming no command, file path or tool",
+      "status": "pending",
+      "testPointer": "tests/e2e/round-4-update.test.js::on a real Mac with no support ticket offered, when the owner asks Squire in the chat for a support ticket, the session runs the health check and says plainly there is nothing to send, never that Squire has no health check, naming no command, file path or tool"
+    },
+    {
+      "id": "TC-012-loaded-check-runs-free-home-with-space",
+      "acId": "AC-2001-7",
+      "description": "the health check Squire's session loads, run exactly as written in a Squire home whose path holds a space, runs without asking the owner, and the same check unquoted is asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::the health check Squire's session loads, run exactly as written in a Squire home whose path holds a space, runs without asking the owner, and the same check unquoted is asked"
+    },
+    {
+      "id": "TC-012-session-loads-routes-squire-json-unreadable",
+      "acId": "AC-2001-7",
+      "description": "with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written"
+    },
+    {
+      "id": "TC-012-install-id-folder-named-check-runs-never-replaced",
+      "acId": "AC-2001-3",
+      "description": "a folder in place of the install id's file is named by the health check in one plain line of its own, the rest of the check runs, the folder is never replaced by a new id, and no ticket carries an install id",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a folder in place of the install id's file is named by the health check in one plain line of its own, the rest of the check runs, the folder is never replaced by a new id, and no ticket carries an install id"
+    },
+    {
+      "id": "TC-012-install-id-unreadable-named-never-made-again",
+      "acId": "AC-2001-3",
+      "description": "an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id"
+    }
+  ],
   "status": "draft"
 }

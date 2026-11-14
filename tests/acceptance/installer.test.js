@@ -90,6 +90,46 @@ test('a declared plan below Pro, or the plan window closed, stops set-up before 
   }
 });
 
+// Every entry named name under dir, a link never followed.
+function entriesNamed(dir, name) {
+  const found = [];
+  const visit = (abs) => {
+    let st;
+    try { st = fs.lstatSync(abs); } catch (e) { return; }
+    if (path.basename(abs) === name) found.push(abs);
+    if (!st.isDirectory()) return;
+    let names = [];
+    try { names = fs.readdirSync(abs); } catch (e) { return; }
+    for (const n of names) visit(path.join(abs, n));
+  };
+  visit(dir);
+  return found;
+}
+
+test("first set-up on a Mac whose Applications folder in the owner's home cannot be written is refused before any change, in plain words naming that folder, and Squire Update is put nowhere else", { timeout: 120000 }, async (t) => {
+  // Should set-up go on past the check, the owner says Not now at the one
+  // yes, so nothing is installed either way.
+  const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.setUp]: 'button returned:Not now' } } });
+  // The Applications folder of the owner's home, where set-up puts Squire
+  // Update, made read-only. Opened again before the world is removed.
+  const apps = path.join(iw.userHome, 'Applications');
+  fs.mkdirSync(apps, { recursive: true });
+  fs.chmodSync(apps, 0o555);
+  t.after(() => { try { fs.chmodSync(apps, 0o755); } catch (e) { /* gone */ } });
+  const system = '/Applications/Squire Update.app';
+  const systemBefore = fs.existsSync(system);
+  try {
+    const before = w.snapshot(iw.userHome);
+    const run = await I.runApp(iw);
+    assertRefusedBeforeAnyChange(iw, before, run, [/Applications/], 'an Applications folder in the owner\'s home that cannot be written');
+    assert.deepEqual(entriesNamed(iw.root, 'Squire Update.app'), [],
+      'Squire Update is put in no other place: no Squire Update.app anywhere in the world');
+    assert.equal(fs.existsSync(system), systemBefore, 'Squire Update is never put in the Mac\'s own Applications folder instead');
+  } finally {
+    fs.chmodSync(apps, 0o755);
+  }
+});
+
 // ------------------------------------------------------------ the plan read
 
 test("a plan found below Pro at sign-in stops set-up and leaves the home folder as set-up found it, signing Squire's config folder out, with Apple's tools never started", { timeout: 120000 }, async (t) => {
@@ -410,8 +450,10 @@ test('before the one yes nothing is installed, and Not now or a closed window in
 test("the one yes names every piece set-up adds: Claude Code with its own updates, Apple's tools with the administrator's password prompt, Squire, and each background job", { timeout: 60000 }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, answers: { [TITLES.setUp]: 'button returned:Not now' } } });
   const run = await I.runApp(iw);
-  assertWindow(run, TITLES.setUp, [/Claude Code/, /updat/i, /command line tools/i, /password/i, /Squire/, /session/i, /wake-up/i, /backup/i],
-    'the one yes');
+  // Squire Update, the installer program set-up places in the Applications
+  // folder of the owner's home, is named with them (the words are the app's).
+  assertWindow(run, TITLES.setUp, [/Claude Code/, /updat/i, /command line tools/i, /password/i, /Squire/, /session/i, /wake-up/i, /backup/i,
+    /Squire Update/, /Applications/], 'the one yes');
 });
 
 test('after the one yes nothing outside the named list is installed', { timeout: FULL_RUN }, async (t) => {
@@ -425,7 +467,8 @@ test('after the one yes nothing outside the named list is installed', { timeout:
   assert.equal(installCalls(run).length, 1, 'Apple\'s tools are started once');
   const allowed = [/^Library\/Application Support\/Squire(\/|$)/, /^Squire(\/|$)/, /^\.claude(\/|$)/, /^\.claude\.json$/,
     /^\.local$/, /^\.local\/(bin|share|state)$/, /^\.local\/bin\/claude$/, /^\.local\/(share|state)\/claude(\/|$)/, /^\.cache$/, /^\.cache\/claude(\/|$)/,
-    /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup)\.plist$/];
+    /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup)\.plist$/,
+    /^Applications($|\/Squire Update\.app(\/|$))/];
   const added = Object.keys(I.contentOf(iw.userHome)).filter((rel) => !(rel in before));
   const outside = added.filter((rel) => !allowed.some((re) => re.test(rel)));
   assert.deepEqual(outside, [], 'set-up must add nothing outside Claude Code, Squire, its folder and its three background jobs');
@@ -686,14 +729,22 @@ const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-
 
 // Squire set up in a session world: core laid down and kept as the Squire
 // home's release folder, set-up's record, and a fake Claude Code that says
-// when the sign-in ends.
+// when the sign-in ends. The core's release.json keeps its version and names a
+// loopback release host and intake where nothing answers, written before the
+// lay-down records its digests, so the scheduler's tick never reaches the
+// real release host.
 function renewWorld(t, behaviour) {
   const world = w.makeWorld();
   t.after(() => { s.killFakes(world); w.cleanUp(world); });
   world.system = I.makeSystemRoot(path.join(world.root, 'system'));
-  s.layDownCore(world);
+  const core = path.join(world.root, 'renew-core');
+  w.copyTree(w.CORE, core);
+  const { version } = JSON.parse(fs.readFileSync(path.join(w.CORE, 'release.json'), 'utf8'));
+  fs.writeFileSync(path.join(core, 'release.json'),
+    JSON.stringify({ version, releaseHost: 'http://127.0.0.1:9/releases/', intake: 'http://127.0.0.1:9/tickets' }, null, 2) + '\n');
+  s.layDownCore(world, core);
   world.release = path.join(world.home, 'release', 'core');
-  w.copyTree(w.CORE, world.release);
+  w.copyTree(core, world.release);
   fs.writeFileSync(path.join(world.home, 'set-up.json'), JSON.stringify({ done: STEPS, added: [], release: world.release }, null, 2) + '\n');
   world.fake = s.installFakeClaudeCode(world, behaviour);
   return world;

@@ -446,6 +446,150 @@
       "reason": "Judged: the backup keeps plain copies of the owner's files in current/ and archive/<run time>/, readable without Squire, and its one record, backup.json, is a last-run report each run writes whole; there is no stored schema to migrate in this round, and a layout change would come with REQ-014's signed update",
       "operatorAckAt": "2026-11-09T13:27:13.411Z",
       "reqId": "REQ-011"
+    },
+    {
+      "id": "boo-2026-11-10-001",
+      "createdAt": "2026-11-10T18:10:15.613Z",
+      "baselineKey": "httpApi.authBoundary",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates: a per-user Mac app and launchd agents under the owner's own Claude sign-in, whose scheduler makes one outbound check against a release host and installs on the owner's yes; Squire serves no HTTP endpoint of its own, so the HTTP API baseline (httpApi.authBoundary) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:15.613Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-002",
+      "createdAt": "2026-11-10T18:10:15.895Z",
+      "baselineKey": "httpApi.contentType",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates: a per-user Mac app and launchd agents under the owner's own Claude sign-in, whose scheduler makes one outbound check against a release host and installs on the owner's yes; Squire serves no HTTP endpoint of its own, so the HTTP API baseline (httpApi.contentType) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:15.895Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-003",
+      "createdAt": "2026-11-10T18:10:16.179Z",
+      "baselineKey": "httpApi.errorEnvelope",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates: a per-user Mac app and launchd agents under the owner's own Claude sign-in, whose scheduler makes one outbound check against a release host and installs on the owner's yes; Squire serves no HTTP endpoint of its own, so the HTTP API baseline (httpApi.errorEnvelope) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:16.179Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-004",
+      "createdAt": "2026-11-10T18:10:16.466Z",
+      "baselineKey": "httpApi.rateLimitDisclosure",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates: a per-user Mac app and launchd agents under the owner's own Claude sign-in, whose scheduler makes one outbound check against a release host and installs on the owner's yes; Squire serves no HTTP endpoint of its own, so the HTTP API baseline (httpApi.rateLimitDisclosure) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:16.466Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-005",
+      "createdAt": "2026-11-10T18:10:16.750Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates, offered and reported to the owner in words inside Squire's own session at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.contrastFloor) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:16.750Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-006",
+      "createdAt": "2026-11-10T18:10:17.033Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates, offered and reported to the owner in words inside Squire's own session at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.focusRings) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:17.033Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-007",
+      "createdAt": "2026-11-10T18:10:17.311Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates, offered and reported to the owner in words inside Squire's own session at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.oneJourneyOrMore) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:17.311Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-008",
+      "createdAt": "2026-11-10T18:10:17.593Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates, offered and reported to the owner in words inside Squire's own session at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.sharedNav) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:17.593Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-009",
+      "createdAt": "2026-11-10T18:10:17.879Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates, offered and reported to the owner in words inside Squire's own session at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.signedInAffordance) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:17.879Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-010",
+      "createdAt": "2026-11-10T18:10:18.167Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-014 is Squire's own updates, offered and reported to the owner in words inside Squire's own session at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.themeToggle) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:18.167Z",
+      "reqId": "REQ-014"
+    },
+    {
+      "id": "boo-2026-11-10-011",
+      "createdAt": "2026-11-10T18:10:18.465Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.contrastFloor) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:18.465Z",
+      "reqId": "REQ-020"
+    },
+    {
+      "id": "boo-2026-11-10-012",
+      "createdAt": "2026-11-10T18:10:18.754Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.focusRings) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:18.754Z",
+      "reqId": "REQ-020"
+    },
+    {
+      "id": "boo-2026-11-10-013",
+      "createdAt": "2026-11-10T18:10:19.049Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.oneJourneyOrMore) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:19.049Z",
+      "reqId": "REQ-020"
+    },
+    {
+      "id": "boo-2026-11-10-014",
+      "createdAt": "2026-11-10T18:10:19.331Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.sharedNav) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:19.331Z",
+      "reqId": "REQ-020"
+    },
+    {
+      "id": "boo-2026-11-10-015",
+      "createdAt": "2026-11-10T18:10:19.616Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.signedInAffordance) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:19.616Z",
+      "reqId": "REQ-020"
+    },
+    {
+      "id": "boo-2026-11-10-016",
+      "createdAt": "2026-11-10T18:10:19.904Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.themeToggle) does not apply to this requirement",
+      "operatorAckAt": "2026-11-10T18:10:19.904Z",
+      "reqId": "REQ-020"
     }
   ]
 }

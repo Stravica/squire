@@ -8,7 +8,13 @@
                                             health check's known fixes the
                                             owner said yes to, and once a day
                                             the warning of a sign-in that ends
-                                            within seven days
+                                            within seven days; then, once core
+                                            is installed, an update that did
+                                            not finish, the Claude Code watch,
+                                            the weekly update check (which
+                                            stages and tells, and never
+                                            installs), and the support
+                                            tickets to send
 
 A wake-up reaches only Squire's own session: the one session record in the
 Squire home, its process alive and the one it was, its socket its own and
@@ -252,6 +258,93 @@ class SignInWarning:
         self.router.attempt(state, now)
 
 
+class ClaudeCodeWatch:
+    """Claude Code changed outside Squire: each tick compares its version and
+    launcher with the record the runner made (claude-code.json); a
+    difference, or a value it cannot read, runs the health check and sends
+    its result in one wake-up, then the values read become the record, so
+    the same change is never reported twice. No downgrade is offered."""
+
+    TEXT = 'Claude Code changed outside Squire ({what}); the health check says: {said}'
+
+    def __init__(self, router):
+        self.router = router
+        self.file = os.path.join(router.home, 'claude-code.json')
+
+    def run(self, now):
+        from squire import ClaudeCode, Records
+
+        before = Records.read(self.file)
+        if not isinstance(before, dict):
+            return
+        values = ClaudeCode.values(self.router.home)
+        changes = ClaudeCode.changes(before, values)
+        if not changes:
+            return
+        sys.path.insert(0, os.path.join(CORE, 'tools'))
+        from update import HealthLines
+
+        lines = HealthLines.run(self.router.home)
+        said = 'the health check could not run' if lines is None else ('; '.join(lines) or 'all checks passed')
+        state = {'id': f'claude-code-{int(now * 1000)}-{os.urandom(3).hex()}',
+                 'text': self.TEXT.format(what=', and '.join(changes), said=said), 'session': None, 'attempts': [],
+                 'state': 'retrying'}
+        self.router.attempt(state, now)
+        Records.write(self.file, values)
+
+
+class OutsideJobs:
+    """The scheduler's outside jobs for updates and support tickets, once core
+    is installed with its release.json, in this order: an install that did
+    not finish is settled where nothing needs laying down, and otherwise
+    handed to Squire Update (update.py --recover); Claude Code is compared
+    with its record; the weekly check runs; and the outbox's tickets are set
+    aside, sent or retried (ticket.py --perform). The tick never installs:
+    Squire Update does, at the Mac. Each child runs in this run's process
+    group, held to its end, and none stops an agent."""
+
+    WITHIN = 1500
+
+    def __init__(self, router):
+        self.router = router
+        self.config = router.config
+        self.home = router.home
+
+    def run(self, now):
+        if not os.path.isfile(os.path.join(self.home, 'core', 'release.json')):
+            return
+        try:
+            self.jobs(now)
+        except Exception as e:
+            self.router.log(f'the outside jobs for updates and tickets stopped ({type(e).__name__}: {e})')
+
+    def jobs(self, now):
+        sys.path.insert(0, os.path.join(CORE, 'tools'))
+        from update import Install, WeeklyCheck
+        from ticket import Outbox
+
+        if Install.unfinished(self.home):
+            self.child('update.py', '--recover')
+        ClaudeCodeWatch(self.router).run(now)
+        WeeklyCheck(self.config, self.send).run(time.time())
+        if Outbox.pending(self.home):
+            self.child('ticket.py', '--perform')
+
+    def send(self, text, wake_id):
+        self.router.attempt({'id': wake_id, 'text': text, 'session': None, 'attempts': [], 'state': 'retrying'},
+                            time.time())
+
+    def child(self, tool, flag):
+        from squire import System
+
+        try:
+            subprocess.run([System.command('/usr/bin/python3'), '-B', os.path.join(CORE, 'tools', tool), flag], cwd='/',
+                           env=System.env(self.home), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=self.WITHIN)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
+
 class WakeUpRouter:
     RETRIES = 3
     RETRY_GAP = 60
@@ -284,6 +377,7 @@ class WakeUpRouter:
                 router.due(time.time())
                 FixTick(router.config).run()
                 SignInWarning(router).run(time.time())
+                OutsideJobs(router).run(time.time())
                 return 0
             now = time.time()
             state = {'id': f'fired-{int(now * 1000)}-{os.urandom(3).hex()}', 'text': argv[0], 'session': None,

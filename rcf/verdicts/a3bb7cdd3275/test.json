@@ -1,0 +1,21 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "a3bb7cdd32758449c19a2232eb247f4c5c361258",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "result": "PASS",
+  "suite": {
+    "pass": 351,
+    "fail": 0,
+    "skip": 7,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "MacBook Pro (Mac17,2), Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, /bin/zsh 5.9, /usr/bin/ssh-keygen OpenSSH_10.2p1, node v24.14.0, pnpm 10.32.1; fresh clone served 9e0ded3 (reviewed head a3bb7cd), pnpm install --frozen-lockfile; suite: env -u SQUIRE_TARGET_HOST -u RCF_TARGET_URL node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js'; SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, six External tests and the Journey test skipped in this run, AC-2001-7's two External tests among them; temporary homes and keychains, fake claude and fake Mac commands, loopback release host and intake only; walk: the ticket leg on a standard user of the same Mac under real launchd, the reviewed head's core laid down onto an existing set-up, a stand-in key and a loopback intake: with a ticket offered the session ran the health check yes, showed it as one fenced line equal to the bytes built yes, posted on the owner's yes byte for byte yes; with none offered it said there was nothing to send yes; the fault-held window reached (owner saw nothing at first; the session ran the check and named the fault); Claude Code 2.1.322; evidence walk/",
+  "node": "v24.14.0",
+  "reason": null,
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-13T11:11:32.670Z"
+}

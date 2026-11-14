@@ -1,0 +1,58 @@
+#!/bin/zsh -f
+# Squire Update: the app the owner opens at the Mac to install a waiting
+# Squire release. Lay-down writes this file into the app it lays down in the
+# Applications folder of the owner's home, with the Squire home written in
+# below. It checks that Apple's command line tools answer, then hands over to
+# the installed core, which shows every window:
+#   /usr/bin/python3 -B <Squire home>/core/tools/update.py --app [--recover]
+#
+# The Mac's own commands run only from /usr/bin, /bin, /usr/sbin and /sbin
+# (under SQUIRE_SYSTEM_ROOT when it names an existing absolute folder), each
+# by its full path, in an environment built from nothing, stdin from
+# /dev/null, each call bounded. zsh reads this file as it runs, so lay-down
+# replaces the app whole, never this file in place.
+
+emulate -R zsh
+setopt extended_glob
+zmodload zsh/datetime zsh/zselect || exit 1
+
+typeset -g SQ_HOME=__SQUIRE_HOME__
+typeset -g SQ_TITLE='Squire Update'
+typeset -g SQ_ROOT= SQ_USER=${USERNAME:-${LOGNAME-}}
+if [[ -n ${SQUIRE_SYSTEM_ROOT-} && $SQUIRE_SYSTEM_ROOT == /* && -d $SQUIRE_SYSTEM_ROOT ]]; then
+  SQ_ROOT=${SQUIRE_SYSTEM_ROOT%%/#}
+fi
+typeset -g SQ_PATH=$SQ_ROOT/usr/bin:$SQ_ROOT/bin:$SQ_ROOT/usr/sbin:$SQ_ROOT/sbin
+typeset -ga SQ_ENV SQ_ARGS
+SQ_ENV=($SQ_ROOT/usr/bin/env -i HOME=$HOME USER=$SQ_USER LOGNAME=$SQ_USER LANG=en_US.UTF-8 PATH=$SQ_PATH SQUIRE_HOME=$SQ_HOME)
+[[ -n ${TMPDIR-} ]] && SQ_ENV+=(TMPDIR=$TMPDIR)
+[[ -n $SQ_ROOT ]] && SQ_ENV+=(SQUIRE_SYSTEM_ROOT=$SQ_ROOT)
+# Opened by Squire itself to finish an install that did not finish.
+(( ${argv[(Ie)--recover]} )) && SQ_ARGS=(--recover)
+
+# sq_bounded <seconds> <command> [args...]: one command in the environment
+# above, stdin from /dev/null, its output dropped. Returns its exit status,
+# or 124 when the bound passed and it was killed.
+sq_bounded() {
+  local bound=$1
+  shift
+  $SQ_ENV "$@" </dev/null >/dev/null 2>&1 &
+  local pid=$! end=$(( EPOCHREALTIME + bound ))
+  while kill -0 $pid 2>/dev/null; do
+    if (( EPOCHREALTIME >= end )); then
+      kill -KILL $pid 2>/dev/null
+      wait $pid 2>/dev/null
+      return 124
+    fi
+    zselect -t 10
+  done
+  wait $pid
+}
+
+if ! sq_bounded 10 $SQ_ROOT/usr/bin/python3 -c ''; then
+  sq_bounded 3600 $SQ_ROOT/usr/bin/osascript -e 'on run argv' \
+    -e 'display dialog (item 2 of argv) with title (item 1 of argv) buttons {"OK"} default button "OK"' \
+    -e 'end run' $SQ_TITLE "Squire Update cannot start: Apple's command line tools are missing. Open Squire, the app you set Squire up with, to put them back."
+  exit 1
+fi
+exec $SQ_ENV $SQ_ROOT/usr/bin/python3 -B $SQ_HOME/core/tools/update.py --app $SQ_ARGS </dev/null

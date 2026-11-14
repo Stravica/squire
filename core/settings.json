@@ -48,5 +48,6 @@
     ]
   },
   "autoCompactWindow": 500000,
+  "autoUpdatesChannel": "stable",
   "crossSessionInbound": "accept"
 }

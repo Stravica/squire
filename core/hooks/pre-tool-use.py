@@ -307,6 +307,87 @@ class FixRequest:
         return 2, reason
 
 
+class ShownRequest:
+    """The session's request to send a support ticket (ticket.py --send
+    <ticket id>), as the health check prints it. It never runs in the
+    session, yes or no. The floor asks the owner for it with a block that
+    shows exactly what the yes approves: one line naming the request, then
+    the outbox file's bytes, then one empty line and the words that make the
+    session show that text inside one fenced code block. The request records
+    what its block showed (the outbox file's and its state record's digest),
+    so a yes binds only those bytes; the scheduler acts on it outside the
+    session. Squire's updates are never asked for here: the session may
+    never run Squire's update tool (Floor.NEVER_UPDATE)."""
+
+    TOOLS = {'--send': 'ticket.py'}
+    VALUES = {'--send': re.compile(r'^t-[0-9a-f]{32}\Z')}
+    RELAY = ('Show the owner the text above inside a fenced code block: a line of three backticks with no language name, '
+             'then the text exactly as written, unchanged, with nothing added inside the fence, then a line of three '
+             'backticks. Your own words go only outside the fence. Then wait for their answer.')
+    APPROVED = ('The owner said yes to request {id}: {what}. Squire\'s scheduler does this outside the session within a '
+                'minute; the session never does, so nothing ran here.')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """(flag, value) for a Bash call that is one of these requests, or None."""
+        command = data.get('command') if tool == 'Bash' else None
+        if not isinstance(command, str):
+            return None
+        shell = ShellCommand(command)
+        if not shell.plain or len(shell.segments) != 1:
+            return None
+        argv = shell.segments[0]
+        if len(argv) < 4 or argv[0] != PYTHON or argv[-2] not in cls.TOOLS \
+                or not all(getattr(word, 'literal', True) for word in argv):
+            return None
+        script = floor.path(' '.join(argv[1:-2]), strict=False)
+        if not floor.is_core_tool(script, cls.TOOLS[argv[-2]]) or not cls.VALUES[argv[-2]].match(argv[-1]):
+            return None
+        return argv[-2], str(argv[-1])
+
+    @staticmethod
+    def read(path):
+        try:
+            with open(path, 'rb') as f:
+                return f.read()
+        except OSError:
+            return None
+
+    @classmethod
+    def shown(cls, home, flag, value):
+        """(item, what, the text the block shows), or (None, why, None)."""
+        data = cls.read(os.path.join(home, 'outbox', f'{value}.json'))
+        state = cls.read(os.path.join(home, 'outbox', f'{value}.state.json'))
+        try:
+            text = data.decode('ascii') if data is not None else None
+            digest = json.loads(state.decode('utf-8')).get('digest') if state is not None else None
+        except (UnicodeDecodeError, ValueError, AttributeError):
+            text, digest = None, None
+        if text is None or not isinstance(digest, str) or '\r' in text:
+            return None, f'Squire has no support ticket {value} waiting to send, so nothing was asked.', None
+        return (f'ticket:{value}:{hashlib.sha256(data).hexdigest()}:{digest}',
+                'send this support ticket to Squire\'s support intake, exactly as it follows', text.rstrip('\n'))
+
+    @classmethod
+    def settle(cls, floor, ledger, session, flag, value):
+        item, what, text = cls.shown(floor.config.home, flag, value)
+        if item is None:
+            return 2, what
+        now = time.time()
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            return 2, cls.APPROVED.format(id=approved['id'], what=what)
+        pending = ledger.open_requests(session, now, floor.config.timeout)
+        mine = next((r for r in pending if r.get('item') == item), None)
+        if mine is None:
+            mine = ledger.request(session, item, now)
+            pending.append(mine)
+        head = Floor.ASK.format(id=mine['id'], what=what)
+        if len(pending) > 1:
+            head += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, f'{head}\n{text}\n\n{cls.RELAY}'
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -344,6 +425,12 @@ class Floor:
 
     NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
                    'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
+    NEVER_UPDATE = ('Squire\'s safety floor: the session may never run Squire\'s update tool, yes or no. Squire\'s updates '
+                    'install only from Squire Update on the owner\'s Mac; when a release is waiting, tell the owner to '
+                    'open Squire Update there. Nothing ran.')
+    NEVER_CD = ('Squire\'s safety floor: the session may not change folder into Squire\'s core, home or config; read '
+                'the files there by their full path instead. Nothing ran: {what}')
+    UPDATE_APP = 'Squire Update.app'
     NEVER_KEYCHAIN = ('The session may never read the Keychain, yes or no: a secret reaches a tool only through '
                       'Squire\'s secret helper, and is never shown.')
     ASK = ('Request {id}: this needs the owner\'s yes first: {what}\n'
@@ -361,7 +448,8 @@ class Floor:
         self.cwd = cwd
         self.owner = config.owner_folder
         self.cores = [CORE, Paths.canonical(os.path.join(config.home, 'core'), cwd)]
-        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path]
+        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path,
+                            os.path.realpath(os.path.join(os.path.expanduser('~'), 'Applications', self.UPDATE_APP))]
         self.keychain = Paths.canonical(config.keychain, cwd) if config.keychain else None
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
         self.inbox = os.path.join(self.owner, 'workspace', 'inbox')
@@ -385,6 +473,13 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        shown = ShownRequest.of(self, tool, data)
+        if shown:
+            try:
+                with Ledger(self.config.ledger_path) as ledger:
+                    return ShownRequest.settle(self, ledger, session, *shown)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         fault = FixRequest.of(self, tool, data)
         if fault:
             try:
@@ -572,6 +667,14 @@ class Floor:
         # the floor cannot know what it reads.
         elsewhere = os.path.basename(argv[0]) in self.LISTED and not self.is_mac_command(argv[0])
         free = self.is_free(argv) and not elsewhere
+        if not free or not plain:
+            # Squire's update tool, named in any word, or inside a word a
+            # shell runs (zsh -c '...'): never run from the session.
+            pieces = [p for t in argv for p in re.split(r'[\s()|<>;&`\'"=]+', t) if p]
+            if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
+                return 'never', self.NEVER_UPDATE, []
+            if argv[0] == 'cd' and any(self.is_floor(p) for p in paths):
+                return 'never', self.NEVER_CD, []
         if (not free or not plain) and any(self.is_floor(p) for p in paths):
             return 'never', self.NEVER_FLOOR, []
         # Every word of a program, or of a read the list cannot resolve, may
@@ -709,6 +812,12 @@ class Floor:
 
     def is_floor(self, path):
         return any(Paths.within(path, floor) for floor in self.floor_paths) or self.is_settings(path)
+
+    def is_update_tool(self, path):
+        """Squire's update tool: update.py in the floor (the installed core,
+        a kept release, the hook's own core), its name folded as the volume
+        folds it."""
+        return Paths.fold(os.path.basename(path)) == 'update.py' and self.is_floor(path)
 
     def is_settings(self, path):
         """Claude Code's settings for a folder in the owner's: a hook switched

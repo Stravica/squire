@@ -1,0 +1,49 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "2a5bbc8961742d6e7d9c18a56b298b8f32eaed09",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-601-1",
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-1401-5",
+    "AC-2001-4",
+    "AC-1101-2",
+    "AC-2001-3",
+    "AC-1401-6",
+    "AC-1401-7",
+    "AC-1401-8",
+    "AC-1401-9",
+    "AC-2001-5",
+    "AC-2001-6",
+    "AC-1401-10",
+    "AC-1401-11",
+    "AC-1401-12",
+    "AC-2001-7"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": "AC-2001-7",
+      "text": "tests/fixtures/updates-world.js:1357-1365, asserted at 1414: the check that nothing the session loads tells it Squire has no health check still lets plain denials through. Its fifth pattern (1362-1363) needs run straight after cannot or can't, so the passive 'The health check cannot be run.' is missed, and no pattern covers 'You haven't got a health check.', 'You have no way to run the health check.' or 'Squire's health check does not exist.' Each of the four, added alone to the instruction block the product's lay-down writes in a test world and read back as the session loads it, leaves the shared assertion green, so the six cases that call it stay green on a block that tells the session its check cannot be run."
+    },
+    {
+      "id": "F-2",
+      "locus": "test",
+      "acId": "AC-2001-7",
+      "text": "tests/fixtures/updates-world.js:1370, asserted at 1416: the check that what the session loads never says the opposite of running the health check when the owner asks needs a never-word (never, do not, don't, must not, should not) straight before run, so a passive opposite passes. 'The check is not run when the owner asks.' added to the written instruction block leaves the shared assertion green, and a block whose own running sentence is replaced by 'Squire has a health check, and it is not run when the owner asks about Squire's health or for a support ticket, including when a Squire Update window has sent them to the chat.' passes whole, since that sentence alone also meets the positive check (health, run and ask in one sentence). For a block written in the passive, the six cases prove the words are present, not that the session is told to run the check. CI at this head when this verdict was recorded: push run 43306851342 green, pull request run 43306863530 green."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-12T22:02:38.638Z"
+}

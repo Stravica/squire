@@ -1,0 +1,39 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "3418f8b6e4d480e85b3d15e10b66f4a3d2202d94",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-601-1",
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-1401-5",
+    "AC-2001-4",
+    "AC-1101-2",
+    "AC-2001-3",
+    "AC-1401-6",
+    "AC-1401-7",
+    "AC-1401-8",
+    "AC-1401-9",
+    "AC-2001-5",
+    "AC-2001-6"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1401-6",
+      "text": "core/tools/health.py lines 460 to 464 print a refused latest.json version that is not a version on the health check in its JSON form, whatever text the release host served (core/tools/update.py line 458 records it as served, up to the 64 KB latest.json bound), where the cases ask only for one refusal line; the scheduler's Claude Code change wake-up (core/tools/wake-up.py lines 286 to 289) carries the health check's lines into Squire's session and the floor marks neither a wake-up nor the health check as untrusted input, so text the release host chose reaches a job the Rule of Two does not split (AC-1901-3); a latest.json whose version was an instruction to read operator/profile.md and send it to an outside address was delivered word for word in that wake-up, and in that job a private read and then a WebFetch were only asked of the owner, while the same calls after an inbox read were refused as one job; at f15d5a6 the same latest.json recorded could not check and the wake-up said all checks passed; a value that is not a version must not reach the health check's text or a wake-up"
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-11T06:32:36.867Z"
+}

@@ -1,0 +1,1537 @@
+'use strict';
+
+// Round 4's additions to the test world: Squire's updates and support
+// tickets, driven at the product's own entry points as processes. Nothing here
+// imports or copies product logic. What stands in for the outside:
+//
+//   test keys            two Ed25519 keys made with the Mac's own ssh-keygen
+//                        in the world's temporary folder at run time (never
+//                        Stravica's key, never committed); "one" is the key the
+//                        installed core trusts, "two" is another
+//   a release host       on loopback, serving the releases a case builds
+//                        (latest.json and squire-<version>.tar.gz) and able to
+//                        fail, hang or cut a download short (tools/stand-ins.js)
+//   a support intake     on loopback, recording each post's bytes and answering
+//                        as told, filing a ticket id once (tools/stand-ins.js)
+//   launchd              a supervisor that starts the installed runner and
+//                        starts it again after a lay-down, or when a case asks
+//                        for a runner start (tools/supervisor.js); or, in a
+//                        world made with launchd: 'model', the model of
+//                        launchd (tools/launchd.js) behind the world's
+//                        bin/launchctl, which loads the agents lay-down
+//                        writes, ends a job's process group when the job is
+//                        booted out or its main process exits, and runs the
+//                        scheduler's tick as its agent when the case fires it
+//   Squire Update        opened as the owner opens it at the Mac: the
+//                        installed core's update.py --app, started in a
+//                        process group of its own as Finder or Spotlight
+//                        starts an app, never in a Squire agent's; its
+//                        windows answered by the world's osascript by their
+//                        title (Squire Update's name), each recorded, the
+//                        main window (the one with an Install button) with
+//                        the case's answer: Install, Not now, closed, or
+//                        Install once a file the case makes appears
+//   open                 the Mac's open: records what it was asked to open,
+//                        and starts Squire Update as LaunchServices would
+//                        (the installed core's update.py --app with the
+//                        arguments it was opened with, in a process group of
+//                        its own); any other app it only records
+//   Claude Code          round 2's fake behind a launcher link into
+//                        ~/.local/share/claude/versions/, as Claude Code's
+//                        installer lays it, answering --version as told
+//   the Mac              the world's system folders (SQUIRE_SYSTEM_ROOT, the
+//                        design record's route to the Mac's own commands): the
+//                        real ssh-keygen as a link by default, or a fake that
+//                        fails or hangs, or none; sysctl, scutil and sw_vers
+//                        answering a model, a computer name and a version
+//
+// The core a world lays down is this repository's core with two files the
+// world writes, as a release names its own: core/release.json (the version,
+// and the world's loopback release host and intake) and core/release-key.pub
+// (test key one). No environment variable or other switch redirects updates
+// or tickets: the addresses and the key arrive in the core, and only there.
+
+const { spawn, spawnSync } = require('node:child_process');
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const w = require('./squire-world.js');
+const s = require('./session-world.js');
+const I = require('./installer-world.js');
+const L = require('./tools/launchd.js');
+
+const SSH_KEYGEN = '/usr/bin/ssh-keygen';
+const TAR = '/usr/bin/tar';
+const NAMESPACE = 'squire-release';
+const INSTALLED = '0.1.0';
+const CLAUDE_CODE = '2.1.319';
+// The install's named steps, in order (the design record's line 10).
+const INSTALL_STEPS = ['record', 'keep', 'stop', 'lay', 'switch', 'reload', 'check', 'clear'];
+// The words a floor block ends with, measured to make a session show the text
+// above them byte for byte inside a fenced code block (the relay probe's third
+// run): "shown" and "previewed" mean the body of that fence.
+const FENCE_WORDS = 'Show the owner the text above inside a fenced code block: a line of three backticks with no language name, ' +
+  'then the text exactly as written, unchanged, with nothing added inside the fence, then a line of three backticks. ' +
+  'Your own words go only outside the fence. Then wait for their answer.';
+const CHANGELOG = 'The morning brief lists today\'s wake-ups in the order they arrive, and a wake-up that could not be delivered ' +
+  'is tried again for up to ten minutes. The health check names an unplugged backup_drive instead of a *general* failure.\n' +
+  'Nothing in the owner\'s folder changes.';
+// Personal details a ticket must never carry, planted where a careless
+// diagnostic could pick them up.
+const PLANTED = {
+  computerName: 'Ada Lovelace\'s MacBook Air',
+  hostName: 'ada-lovelace-macbook',
+  fullName: 'Ada Lovelace',
+  email: 'ada.lovelace@example.net',
+  phone: '+44 7700 900123',
+  card: '4111 1111 1111 1111',
+};
+
+const sleepSync = (seconds) => spawnSync('/bin/sleep', [String(seconds)]);
+// Gone, or ended and waiting only to be reaped by its parent (this test).
+const ended = (pid) => {
+  const r = spawnSync('/bin/ps', ['-o', 'stat=', '-p', String(pid)], { encoding: 'utf8' });
+  const stat = (r.stdout || '').trim();
+  return !stat || stat.startsWith('Z');
+};
+const readJson = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return null; } };
+const readJsonLines = (file) => (fs.existsSync(file)
+  ? fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
+const nowSeconds = () => Date.now() / 1000;
+
+// ------------------------------------------------------------- test keys
+
+// Two Ed25519 test keys made with the Mac's own ssh-keygen in dir.
+function makeKeys(dir) {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const keys = {};
+  for (const name of ['one', 'two']) {
+    const key = path.join(dir, name);
+    const r = spawnSync(SSH_KEYGEN, ['-q', '-t', 'ed25519', '-N', '', '-C', `squire-test-${name}`, '-f', key], { encoding: 'utf8' });
+    assert.equal(r.status, 0, `the world must make test key ${name}; got ${r.stderr}`);
+    keys[name] = { key, pub: `${key}.pub`, text: fs.readFileSync(`${key}.pub`, 'utf8') };
+  }
+  return keys;
+}
+
+// Signs a file's exact bytes with a test key and namespace squire-release:
+// writes <file>.sig, as the release is signed.
+function sign(key, file) {
+  fs.rmSync(`${file}.sig`, { force: true });
+  const r = spawnSync(SSH_KEYGEN, ['-Y', 'sign', '-f', key, '-n', NAMESPACE, file], { encoding: 'utf8' });
+  assert.equal(r.status, 0, `the world must sign ${path.basename(file)}; got ${r.stderr}`);
+}
+
+// ------------------------------------------------------------- the Mac
+
+// A fake command at a system path: answers the arguments given in answers
+// (joined by spaces) with that text, and runs the real command otherwise.
+function answeringCommand(real, answers) {
+  return `#!${process.execPath}
+'use strict';
+const answers = ${JSON.stringify(answers)};
+const key = process.argv.slice(2).join(' ');
+if (key in answers) { process.stdout.write(answers[key] + '\\n'); process.exit(0); }
+const r = require('child_process').spawnSync(${JSON.stringify(real)}, process.argv.slice(2), { stdio: 'inherit' });
+process.exit(r.status === null ? 1 : r.status);
+`;
+}
+
+// The world's osascript for Squire Update's windows: a window whose text
+// names Squire Update (and no set-up window's title) is answered and recorded
+// in <log>, one JSON line each ({ args, stdin, text, main, buttons, answer }).
+// The main window is the one with an Install button; it is answered from
+// <answers> ({ main }): a button's name, 'close' (the window closed: osascript
+// exits 1, User canceled), 'hang' (left open), { waitFor, then } (the answer
+// held until the file appears) or { sequence: [...] } (the nth main window gets
+// the nth answer, the last after that). Every other window is answered with
+// its default button. A window that is not Squire Update's goes to delegate
+// (set-up's own answering osascript, in a world set up by its app) or is
+// refused.
+function updateWindowsScript({ log, answers, delegate = null }) {
+  return `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const { spawnSync } = require('child_process');
+const argv = process.argv.slice(2);
+let stdin = '';
+try { stdin = fs.readFileSync(0, 'utf8'); } catch (e) { stdin = ''; }
+const text = argv.join('\\n') + '\\n' + stdin;
+const setUp = ${JSON.stringify(Object.values(I.TITLES))};
+const delegate = ${JSON.stringify(delegate)};
+const mine = text.includes('Squire Update') && !setUp.some((t) => text.includes(t));
+const log = (rec) => fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ at: Date.now(), pid: process.pid, ...rec }) + '\\n');
+if (!mine) {
+  if (delegate) {
+    const r = spawnSync(delegate, argv, { input: stdin, stdio: ['pipe', 'inherit', 'inherit'] });
+    process.exit(r.status === null ? 1 : r.status);
+  }
+  log({ args: argv, stdin, text, refused: true });
+  process.stderr.write('execution error: not one of Squire Update\\'s windows (-2700)\\n');
+  process.exit(1);
+}
+const listed = /buttons\\s*[{\\[]([^}\\]]*)[}\\]]/.exec(text);
+const buttons = listed ? [...listed[1].matchAll(/"([^"]*)"|'([^']*)'/g)].map((m) => m[1] === undefined ? m[2] : m[1]) : [];
+const main = buttons.includes('Install') || /["']Install["']/.test(text);
+let how = {};
+try { how = JSON.parse(fs.readFileSync(${JSON.stringify(answers)}, 'utf8')); } catch (e) { how = {}; }
+let a;
+if (main) {
+  a = how.main === undefined ? 'close' : how.main;
+  if (a && Array.isArray(a.sequence)) {
+    let seen = 0;
+    try { seen = fs.readFileSync(${JSON.stringify(log)}, 'utf8').split('\\n').filter(Boolean).map((l) => JSON.parse(l)).filter((d) => d.main).length; } catch (e) { seen = 0; }
+    a = a.sequence[Math.min(seen, a.sequence.length - 1)];
+  }
+} else {
+  const d = /default button\\s+"([^"]*)"/.exec(text);
+  a = d ? d[1] : (buttons.length ? buttons[buttons.length - 1] : 'OK');
+}
+log({ args: argv, stdin, text, main, buttons, answer: a });
+const answer = (b) => { process.stdout.write('button returned:' + b + '\\n'); process.exit(0); };
+if (a === 'close') { process.stderr.write('execution error: User canceled. (-128)\\n'); process.exit(1); }
+else if (a === 'hang') { process.on('SIGTERM', () => process.exit(1)); setInterval(() => {}, 1000); }
+else if (a && a.waitFor) {
+  const until = Date.now() + 300000;
+  const poll = () => {
+    if (fs.existsSync(a.waitFor)) answer(a.then);
+    else if (Date.now() > until) { process.stderr.write('execution error: no answer (-1712)\\n'); process.exit(1); }
+    else setTimeout(poll, 100);
+  };
+  poll();
+} else answer(a);
+`;
+}
+
+// The world's open: records each call in <log> ({ argv }); an app named
+// "Squire Update.app" that is there is started as LaunchServices starts it,
+// in a process group of its own and in the world's environment: the
+// installed core's update.py --app, then the arguments after --args. Any
+// other app is only recorded; an app that is not there is refused as open
+// refuses it.
+function openScript({ log, python, home, env: launchEnv }) {
+  return `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
+const argv = process.argv.slice(2);
+const rec = { at: Date.now(), argv, pid: process.pid, parent: process.ppid };
+const cut = argv.indexOf('--args');
+const own = cut >= 0 ? argv.slice(0, cut) : argv;
+const passed = cut >= 0 ? argv.slice(cut + 1) : [];
+const a = own.indexOf('-a');
+const app = a >= 0 ? own[a + 1] : own.find((x) => !x.startsWith('-'));
+const done = (code, extra = {}) => { fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ ...rec, ...extra, code }) + '\\n'); process.exit(code); };
+if (!app || !fs.existsSync(app)) { process.stderr.write('Unable to find application named ' + JSON.stringify(app || '') + '\\n'); done(1); }
+if (path.basename(app) !== 'Squire Update.app') done(0);
+const child = spawn(${JSON.stringify(python)}, ['-B', ${JSON.stringify(path.join(home, 'core', 'tools', 'update.py'))}, '--app', ...passed],
+  { cwd: '/', env: ${JSON.stringify(launchEnv)}, stdio: 'ignore', detached: true });
+child.unref();
+done(0, { started: child.pid });
+`;
+}
+
+// The world's dscl in a world with the launchd model: the account's home, as
+// the account database answers it, is the world's home, so the world's home
+// is the account's own and lay-down loads its agents into the world's launchd.
+// A read of any account record's NFSHomeDirectory gets the world's home (the
+// world has one account); every other question goes to the Mac's own dscl.
+function dsclScript(userHome) {
+  return `#!${process.execPath}
+'use strict';
+const argv = process.argv.slice(2);
+if (argv.length === 4 && argv[0] === '.' && argv[1] === '-read' && argv[3] === 'NFSHomeDirectory') {
+  process.stdout.write('NFSHomeDirectory: ' + ${JSON.stringify(userHome)} + '\\n');
+  process.exit(0);
+}
+const r = require('child_process').spawnSync('/usr/bin/dscl', argv, { stdio: 'inherit' });
+process.exit(r.status === null ? 1 : r.status);
+`;
+}
+
+// The world's system folders: real commands as links, and the Mac's identity
+// answered with planted details where a careless diagnostic would read them.
+// mac changes the answers: { model, macOSVersion, sshKeygen: 'real' | 'none' |
+// 'fails' | 'hangs' }. extra adds files ({ 'usr/bin/open': text }).
+function makeSystem(root, mac = {}, extra = {}) {
+  const how = { model: 'MacBookAir10,1', macOSVersion: '26.3.1', sshKeygen: 'real', ...mac };
+  const files = {
+    ...extra,
+    'usr/sbin/sysctl': answeringCommand('/usr/sbin/sysctl', { '-n hw.model': how.model, 'hw.model': `hw.model: ${how.model}` }),
+    'usr/sbin/scutil': answeringCommand('/usr/sbin/scutil', {
+      '--get ComputerName': PLANTED.computerName, '--get LocalHostName': PLANTED.hostName, '--get HostName': PLANTED.hostName,
+    }),
+    'bin/hostname': answeringCommand('/bin/hostname', { '': PLANTED.hostName, '-s': PLANTED.hostName }),
+    'usr/bin/sw_vers': answeringCommand('/usr/bin/sw_vers', { '-productVersion': how.macOSVersion }),
+  };
+  if (how.sshKeygen === 'fails') {
+    files['usr/bin/ssh-keygen'] = `#!${process.execPath}\nprocess.stderr.write('ssh-keygen: the key could not be read\\n');\nprocess.exit(255);\n`;
+  } else if (how.sshKeygen === 'hangs') {
+    files['usr/bin/ssh-keygen'] = `#!${process.execPath}\nprocess.on('SIGTERM', () => {});\nsetInterval(() => {}, 1000);\n`;
+  }
+  I.makeSystemRoot(root, files);
+  if (how.sshKeygen === 'none') fs.rmSync(path.join(root, 'usr', 'bin', 'ssh-keygen'), { force: true });
+  return root;
+}
+
+// ------------------------------------------------------------- the cores
+
+// A core as a release carries it: this repository's core (or from), with the
+// world's release.json and release-key.pub written in.
+function makeCore(rw, dir, { version, key = rw.keys.one.pub, from = w.CORE }) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  w.copyTree(from, dir);
+  fs.writeFileSync(path.join(dir, 'release.json'),
+    JSON.stringify({ version, releaseHost: rw.releaseHost, intake: rw.intake }, null, 2) + '\n');
+  fs.copyFileSync(key, path.join(dir, 'release-key.pub'));
+  return dir;
+}
+
+// Every file under a core, by its path relative to the core, to its SHA-256.
+function filesOf(dir) {
+  const out = {};
+  for (const [rel] of Object.entries(w.treeOf(dir))) out[rel] = w.sha256(fs.readFileSync(path.join(dir, rel)));
+  return out;
+}
+
+// A release, built and published on the world's release host. shape is one
+// of: good; unsigned (no signature); wrongKey (signed with key two); altered
+// (manifest.json changed by one byte after signing); ownKeyOnly (signed with
+// key two and carrying key two as its own release-key.pub); newKey (signed
+// with the installed key, carrying key two); unknownField; badManifest (not
+// JSON); badVersion; unlisted (a file under core/ the manifest does not
+// list); missing (a listed file absent); notAnArchive; runnerExits (its
+// runner exits at once); runnerExitsAndSignsOut (also ends the world's
+// Claude sign-in, so the check after the rollback fails too). signWith names
+// the key that signs (default the one the installed core trusts).
+function buildRelease(rw, { version, shape = 'good', changelog = CHANGELOG, signWith = null, carryKey = null, publish = true } = {}) {
+  rw.built = (rw.built || 0) + 1;
+  const src = path.join(rw.root, 'build', `${rw.built}-${version}-${shape}`);
+  const core = path.join(src, 'core');
+  fs.mkdirSync(src, { recursive: true });
+  const keyName = carryKey || ((shape === 'newKey' || shape === 'ownKeyOnly') ? 'two' : 'one');
+  makeCore(rw, core, { version: shape === 'badVersion' ? `${version}-beta` : version, key: rw.keys[keyName].pub, from: rw.appCore });
+  // One line more in a file outside the floor and in a floor file, so the
+  // installed core shows which release it is.
+  fs.appendFileSync(path.join(core, 'tools', 'backup.py'), `# release ${version}\n`);
+  fs.appendFileSync(path.join(core, 'hooks', 'config-change.py'), `# release ${version}\n`);
+  if (shape === 'runnerExits' || shape === 'runnerExitsAndSignsOut') {
+    const signOut = shape === 'runnerExitsAndSignsOut'
+      ? `open(${JSON.stringify(path.join(rw.root, 'fake-claude-code.json'))}, 'w').write('{"signedIn": false}')\n` : '';
+    fs.writeFileSync(path.join(core, 'tools', 'runner.py'), `import sys\n${signOut}sys.exit(1)\n`);
+  }
+  const manifest = { version: shape === 'badVersion' ? `${version}-beta` : version, files: filesOf(core), changelog, claudeCodeTested: CLAUDE_CODE };
+  if (shape === 'unknownField') manifest.installAlso = 'tools/extra.py';
+  if (shape === 'unlisted') fs.writeFileSync(path.join(core, 'tools', 'extra.py'), 'print("not in the manifest")\n');
+  if (shape === 'missing') fs.rmSync(path.join(core, 'tools', 'backup.py'));
+  const manifestFile = path.join(src, 'manifest.json');
+  const text = shape === 'badManifest' ? `{"version": "${version}", "files": {` : JSON.stringify(manifest, null, 2) + '\n';
+  fs.writeFileSync(manifestFile, text);
+  if (shape !== 'unsigned') {
+    sign(rw.keys[signWith || ((shape === 'wrongKey' || shape === 'ownKeyOnly') ? 'two' : 'one')].key, manifestFile);
+  }
+  if (shape === 'altered') {
+    const bytes = fs.readFileSync(manifestFile);
+    const at = bytes.indexOf(Buffer.from('Nothing'));
+    bytes[at] = 'M'.charCodeAt(0);
+    fs.writeFileSync(manifestFile, bytes);
+  }
+  const archiveName = `squire-${version}.tar.gz`;
+  const archive = path.join(rw.state, 'serve', archiveName);
+  fs.mkdirSync(path.dirname(archive), { recursive: true });
+  if (shape === 'notAnArchive') {
+    fs.writeFileSync(archive, crypto.randomBytes(4096));
+  } else {
+    const parts = ['core', 'manifest.json', ...(fs.existsSync(`${manifestFile}.sig`) ? ['manifest.json.sig'] : [])];
+    const r = spawnSync(TAR, ['--no-mac-metadata', '-czf', archive, '-C', src, ...parts],
+      { encoding: 'utf8', env: { PATH: w.PRODUCT_PATH, COPYFILE_DISABLE: '1' } });
+    assert.equal(r.status, 0, `the world must pack release ${version}; got ${r.stderr}`);
+  }
+  if (publish) fs.writeFileSync(path.join(rw.state, 'serve', 'latest.json'), JSON.stringify({ version, archive: archiveName }) + '\n');
+  return { version, shape, core, manifest, manifestBytes: fs.readFileSync(manifestFile), changelog, archive, archiveName };
+}
+
+// ------------------------------------------------------------- archives
+
+// The entry shapes no release may hold, each refused on the archive's listing
+// before anything is extracted (the design record's line 5): what each one is.
+const ARCHIVE_SHAPES = {
+  absolute: 'an entry with an absolute path',
+  dotSegment: 'an entry whose path holds a dot segment',
+  duplicate: 'two entries with the same path',
+  caseFolded: 'two entries whose paths are the same once case is folded',
+  unicodeEquivalent: 'two entries whose paths are the same once Unicode is normalised',
+  symlinkInside: 'a symbolic link to a file inside core',
+  symlinkOutside: 'a symbolic link to a folder outside the release, and a file written through it',
+  hardLinkInside: 'a hard link to a file inside core',
+  hardLinkOutside: 'a hard link to a file outside the release',
+  appleDouble: 'an AppleDouble entry',
+  emptyFolder: 'a folder that is the parent of no listed file',
+  trailingBytes: 'bytes after the end of the gzip stream',
+};
+// Every odd entry's name carries this, so an extraction anywhere shows.
+const MARKER = 'squire-marker-';
+
+const octal = (n, width) => n.toString(8).padStart(width - 1, '0') + '\0';
+
+// One POSIX ustar header for an entry: type '0' a file, '1' a hard link, '2' a
+// symbolic link, '5' a folder; a name past 100 bytes is split into prefix and
+// name at a slash, as ustar holds it.
+function tarHeader({ name, type, size, mode, linkname = '' }) {
+  const h = Buffer.alloc(512, 0);
+  let nameBytes = Buffer.from(name, 'utf8');
+  let prefixBytes = Buffer.alloc(0);
+  if (nameBytes.length > 100) {
+    let split = false;
+    for (let i = name.length - 1; i > 0 && !split; i--) {
+      if (name[i] !== '/') continue;
+      const p = Buffer.from(name.slice(0, i), 'utf8');
+      const n = Buffer.from(name.slice(i + 1), 'utf8');
+      if (p.length <= 155 && n.length > 0 && n.length <= 100) { prefixBytes = p; nameBytes = n; split = true; }
+    }
+    assert.ok(split, `the world's archive cannot hold the name ${name}`);
+  }
+  nameBytes.copy(h, 0);
+  h.write(octal(mode, 8), 100, 'ascii');
+  h.write(octal(0, 8), 108, 'ascii');
+  h.write(octal(0, 8), 116, 'ascii');
+  h.write(octal(size, 12), 124, 'ascii');
+  h.write(octal(Math.floor(Date.now() / 1000), 12), 136, 'ascii');
+  h.write('        ', 148, 'ascii');
+  h.write(type, 156, 'ascii');
+  Buffer.from(linkname, 'utf8').copy(h, 157);
+  h.write('ustar\0', 257, 'ascii');
+  h.write('00', 263, 'ascii');
+  prefixBytes.copy(h, 345);
+  let sum = 0;
+  for (const b of h) sum += b;
+  h.write(sum.toString(8).padStart(6, '0') + '\0 ', 148, 'ascii');
+  return h;
+}
+
+// A tar stream of the entries, in order, as written (a duplicate stays a
+// duplicate): [{ name, type, mode, data, linkname }].
+function tarBytes(entries) {
+  const parts = [];
+  // A POSIX extended header carries a link target past ustar's 100 bytes.
+  const paxRecord = (key, value) => {
+    const body = ` ${key}=${value}\n`;
+    let n = Buffer.byteLength(body) + 1;
+    while (String(n).length + Buffer.byteLength(body) !== n) n = String(n).length + Buffer.byteLength(body);
+    return Buffer.from(`${n}${body}`, 'utf8');
+  };
+  for (const e of entries) {
+    const data = e.type === '0' ? (e.data || Buffer.alloc(0)) : Buffer.alloc(0);
+    let linkname = e.linkname || '';
+    if (Buffer.byteLength(linkname) > 100) {
+      const pax = paxRecord('linkpath', linkname);
+      parts.push(tarHeader({ name: 'PaxHeader/link', type: 'x', size: pax.length, mode: 0o644 }), pax, Buffer.alloc((512 - (pax.length % 512)) % 512));
+      linkname = linkname.slice(0, 100);
+      while (Buffer.byteLength(linkname) > 100) linkname = linkname.slice(0, -1);
+    }
+    parts.push(tarHeader({ name: e.name, type: e.type, size: data.length, mode: e.mode || (e.type === '5' ? 0o755 : 0o644), linkname }));
+    if (data.length) parts.push(data, Buffer.alloc((512 - (data.length % 512)) % 512));
+  }
+  parts.push(Buffer.alloc(1024));
+  return Buffer.concat(parts);
+}
+
+// A release whose archive holds one entry of the given shape (a key of
+// ARCHIVE_SHAPES) and is otherwise a good release, signed with the installed
+// key, its manifest listing every file the archive carries under core/ with its
+// digest, and well inside the bound (a few hundred entries, under a megabyte
+// unpacked), so the shape alone is what the check refuses. The archive is
+// written entry by entry, since a folder on this Mac cannot hold two names
+// that differ only in case. Published on the world's release host.
+function buildArchiveRelease(rw, { version, shape }) {
+  assert.ok(shape in ARCHIVE_SHAPES, `no archive shape is named ${shape}`);
+  rw.built = (rw.built || 0) + 1;
+  const src = path.join(rw.root, 'build', `${rw.built}-${version}-${shape}`);
+  const core = path.join(src, 'core');
+  fs.mkdirSync(src, { recursive: true });
+  makeCore(rw, core, { version, from: rw.appCore });
+  fs.appendFileSync(path.join(core, 'tools', 'backup.py'), `# release ${version}\n`);
+  fs.appendFileSync(path.join(core, 'hooks', 'config-change.py'), `# release ${version}\n`);
+  const files = filesOf(core);
+  const entries = [{ name: 'core/', type: '5' }];
+  const walk = (abs, rel) => {
+    for (const n of fs.readdirSync(abs).sort()) {
+      const a = path.join(abs, n);
+      const st = fs.lstatSync(a);
+      if (st.isDirectory()) { entries.push({ name: `${rel}/${n}/`, type: '5' }); walk(a, `${rel}/${n}`); }
+      else entries.push({ name: `${rel}/${n}`, type: '0', mode: st.mode & 0o777, data: fs.readFileSync(a) });
+    }
+  };
+  walk(core, 'core');
+  const outside = path.join(rw.root, 'outside');
+  fs.mkdirSync(outside, { recursive: true });
+  const victim = path.join(outside, 'victim.txt');
+  if (!fs.existsSync(victim)) fs.writeFileSync(victim, 'a file outside the release\n');
+  const backup = fs.readFileSync(path.join(core, 'tools', 'backup.py'));
+  const file = (name, data, listed = true) => {
+    entries.push({ name, type: '0', data });
+    if (listed) files[name.slice('core/'.length)] = w.sha256(data);
+  };
+  const odd = (text) => Buffer.from(`${MARKER}${shape}: ${text}\n`);
+  if (shape === 'absolute') file(path.join(outside, `${MARKER}absolute.txt`), odd('an absolute entry'), false);
+  if (shape === 'dotSegment') file(`core/tools/../../../../${MARKER}dot-segment.txt`, odd('past a dot segment'), false);
+  if (shape === 'duplicate') entries.push({ name: 'core/tools/backup.py', type: '0', data: odd('the same path again') });
+  if (shape === 'caseFolded') {
+    file(`core/tools/${MARKER}Case.py`, odd('one spelling'));
+    file(`core/tools/${MARKER}case.py`, odd('the other spelling'));
+  }
+  if (shape === 'unicodeEquivalent') {
+    file(`core/tools/${MARKER}café.py`, odd('composed'));
+    file(`core/tools/${MARKER}café.py`, odd('decomposed'));
+  }
+  if (shape === 'symlinkInside') {
+    entries.push({ name: `core/tools/${MARKER}alias.py`, type: '2', linkname: 'backup.py' });
+    files[`tools/${MARKER}alias.py`] = w.sha256(backup);
+  }
+  if (shape === 'symlinkOutside') {
+    entries.push({ name: `core/tools/${MARKER}link`, type: '2', linkname: outside });
+    file(`core/tools/${MARKER}link/${MARKER}through.txt`, odd('written through a link'));
+  }
+  if (shape === 'hardLinkInside') {
+    entries.push({ name: `core/tools/${MARKER}hard.py`, type: '1', linkname: 'core/tools/backup.py' });
+    files[`tools/${MARKER}hard.py`] = w.sha256(backup);
+  }
+  if (shape === 'hardLinkOutside') {
+    entries.push({ name: `core/tools/${MARKER}hard-outside.txt`, type: '1', linkname: victim });
+    files[`tools/${MARKER}hard-outside.txt`] = w.sha256(fs.readFileSync(victim));
+  }
+  if (shape === 'appleDouble') {
+    file(`core/tools/._${MARKER}backup.py`, Buffer.concat([Buffer.from('0005160700020000', 'hex'), Buffer.alloc(16), Buffer.from('0000', 'hex')]));
+  }
+  if (shape === 'emptyFolder') entries.push({ name: `core/${MARKER}empty/`, type: '5' });
+  const manifest = { version, files, changelog: CHANGELOG, claudeCodeTested: CLAUDE_CODE };
+  const manifestFile = path.join(src, 'manifest.json');
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
+  sign(rw.keys.one.key, manifestFile);
+  entries.push({ name: 'manifest.json', type: '0', data: fs.readFileSync(manifestFile) });
+  entries.push({ name: 'manifest.json.sig', type: '0', data: fs.readFileSync(`${manifestFile}.sig`) });
+  assert.ok(entries.length < 2000, 'the world\'s adversarial archive stays well inside the entry bound');
+  let gz = require('node:zlib').gzipSync(tarBytes(entries));
+  if (shape === 'trailingBytes') gz = Buffer.concat([gz, odd('after the gzip stream')]);
+  const archiveName = `squire-${version}.tar.gz`;
+  fs.mkdirSync(path.join(rw.state, 'serve'), { recursive: true });
+  fs.writeFileSync(path.join(rw.state, 'serve', archiveName), gz);
+  fs.writeFileSync(path.join(rw.state, 'serve', 'latest.json'), JSON.stringify({ version, archive: archiveName }) + '\n');
+  return { version, shape, what: ARCHIVE_SHAPES[shape], victim, victimBytes: fs.readFileSync(victim) };
+}
+
+// One run of the scheduler's tick while the world watches the Squire home:
+// every path created or changed in it during the run, relative to the home.
+async function tickWatching(rw) {
+  const seen = new Set();
+  const watcher = fs.watch(rw.home, { recursive: true }, (event, name) => { if (name) seen.add(String(name)); });
+  try {
+    const run = startTick(rw);
+    await s.waitFor(() => run.exited(), 600000, 50);
+    await s.sleep(1000);
+  } finally {
+    watcher.close();
+  }
+  return [...seen].sort();
+}
+
+// Paths under the world's root, outside the release builds and the release
+// host's files, whose names carry the marker: anything an archive's odd entry
+// put there.
+function markersOutside(rw) {
+  const out = [];
+  const skip = new Set([path.join(rw.root, 'build'), path.join(rw.state, 'serve')]);
+  const walk = (dir) => {
+    let names = [];
+    try { names = fs.readdirSync(dir); } catch (e) { return; }
+    for (const n of names) {
+      const p = path.join(dir, n);
+      if (skip.has(p)) continue;
+      if (n.includes(MARKER)) out.push(path.relative(rw.root, p));
+      let st = null;
+      try { st = fs.lstatSync(p); } catch (e) { continue; }
+      if (st.isDirectory()) walk(p);
+    }
+  };
+  walk(rw.root);
+  return out;
+}
+
+// ------------------------------------------------------------- stand-ins
+
+function startStandIns(rw) {
+  fs.mkdirSync(path.join(rw.state, 'serve'), { recursive: true });
+  fs.writeFileSync(path.join(rw.state, 'control.json'), JSON.stringify({ archive: 'ok', latest: 'ok', intake: 'ok' }));
+  const child = spawn(process.execPath, [path.join(__dirname, 'tools', 'stand-ins.js'), rw.state],
+    { cwd: rw.root, stdio: 'ignore', detached: true });
+  child.unref();
+  rw.standInsPid = child.pid;
+  const portFile = path.join(rw.state, 'port');
+  const end = Date.now() + 10000;
+  while (!fs.existsSync(portFile) && Date.now() < end) sleepSync(0.05);
+  assert.ok(fs.existsSync(portFile), 'the world\'s loopback stand-ins must start');
+  const port = Number(fs.readFileSync(portFile, 'utf8'));
+  rw.releaseHost = `http://127.0.0.1:${port}/releases/`;
+  rw.intake = `http://127.0.0.1:${port}/tickets`;
+  // The other intake on the IPv6 loopback address: not the configured one.
+  const otherPort = path.join(rw.state, 'port-other');
+  rw.otherIntake = fs.existsSync(otherPort) ? `http://[::1]:${Number(fs.readFileSync(otherPort, 'utf8'))}/tickets` : null;
+}
+
+// Changes how the stand-ins answer from now on: { archive, latest, intake }.
+function standIns(rw, changes) {
+  const file = path.join(rw.state, 'control.json');
+  fs.writeFileSync(file, JSON.stringify({ ...readJson(file), ...changes }));
+}
+
+const hostRequests = (rw) => readJsonLines(path.join(rw.state, 'requests.jsonl'));
+const latestFetches = (rw) => hostRequests(rw).filter((r) => r.method === 'GET' && /latest\.json$/.test(r.path));
+const intakePosts = (rw) => readJsonLines(path.join(rw.state, 'posts.jsonl')).map((p) => ({ ...p, bytes: Buffer.from(p.bytes, 'base64') }));
+
+// ------------------------------------------------------------- Claude Code
+
+// Round 2's fake Claude Code behind a launcher at ~/.local/bin/claude, a link
+// into ~/.local/share/claude/versions/<version>, as Claude Code lays itself.
+// The versions file answers --version from <root>/claude-version.json
+// ({ answer } prints "<answer> (Claude Code)"; { fail: true } exits 1 with
+// nothing; { hang: true } never answers) and hands every other command to the
+// fake.
+function installClaudeCode(rw, { signedIn = true } = {}) {
+  const inner = s.installFakeClaudeCode(rw.world, { signedIn }, { dir: path.join(rw.root, 'claude-code-inner') });
+  rw.inner = inner;
+  rw.claudeVersionFile = path.join(rw.root, 'claude-version.json');
+  fs.writeFileSync(rw.claudeVersionFile, JSON.stringify({ answer: CLAUDE_CODE }));
+  setLauncherTarget(rw, CLAUDE_CODE);
+  return inner;
+}
+
+function versionsScript(rw) {
+  return `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const { spawn } = require('child_process');
+const argv = process.argv.slice(2);
+if (argv[0] === '--version' || argv[0] === '-v') {
+  const how = JSON.parse(fs.readFileSync(${JSON.stringify(rw.claudeVersionFile)}, 'utf8'));
+  if (how.hang) { process.on('SIGTERM', () => {}); setInterval(() => {}, 1000); }
+  else if (how.fail) process.exit(1);
+  else { process.stdout.write(how.answer + ' (Claude Code)\\n'); process.exit(0); }
+} else {
+  const child = spawn(${JSON.stringify(rw.inner.bin)}, argv, { stdio: 'inherit' });
+  const forward = (sig) => () => { try { child.kill(sig); } catch (e) {} };
+  process.on('SIGTERM', forward('SIGTERM'));
+  process.on('SIGINT', forward('SIGINT'));
+  child.on('exit', (code) => process.exit(code === null ? 1 : code));
+}
+`;
+}
+
+// Points the launcher at versions/<name> (written if new), as an update of
+// Claude Code made outside Squire does; null leaves it pointing at nothing.
+// With replace, the file at versions/<name> is written again even though it
+// is there: new contents at the same path, put in place by a rename (a new
+// file), answering --version the same, as a reinstall of the same version
+// would leave it.
+function setLauncherTarget(rw, name, { replace = false } = {}) {
+  const versions = path.join(rw.world.userHome, '.local', 'share', 'claude', 'versions');
+  const bin = path.join(rw.world.userHome, '.local', 'bin');
+  fs.mkdirSync(versions, { recursive: true });
+  fs.mkdirSync(bin, { recursive: true });
+  const target = path.join(versions, name || 'gone');
+  if (name && (replace || !fs.existsSync(target))) {
+    rw.rewrites = (rw.rewrites || 0) + 1;
+    const extra = replace ? `// written again (${rw.rewrites})\n` : '';
+    fs.writeFileSync(`${target}.new`, versionsScript(rw) + extra);
+    fs.chmodSync(`${target}.new`, 0o755);
+    fs.renameSync(`${target}.new`, target);
+  }
+  const launcher = path.join(bin, 'claude');
+  fs.rmSync(launcher, { force: true });
+  fs.symlinkSync(target, launcher);
+  return target;
+}
+
+// What claude --version answers from now on.
+function setVersionAnswer(rw, how) {
+  fs.writeFileSync(rw.claudeVersionFile, JSON.stringify(typeof how === 'string' ? { answer: how } : how));
+}
+
+// ------------------------------------------------------------- the world
+
+// An installed, healthy Squire at version installed, set up as set-up leaves
+// it (its record, its release folder), with the stand-ins, the test keys,
+// Claude Code signed in, and the world's system folders (persona, when given,
+// is the owner's squire.json before the first lay-down). Nothing runs until
+// startSquire. launchd: 'model' runs Squire's agents under the launchd model
+// (tools/launchd.js) instead of the supervisor: startSquire lays core down
+// with the product's lay-down, which loads the agents it writes through the
+// world's launchctl, and the scheduler's tick runs as its agent when fired.
+function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null, intake = null, launchd = 'supervisor' } = {}) {
+  const world = w.makeWorld({ approvalTimeoutSeconds });
+  // The owner's own wake-ups are left out, so every wake-up a case reads is
+  // one an update, a ticket or a recovery sent.
+  const ownerConfig = persona || (({ wakeUps, ...rest }) => rest)(JSON.parse(fs.readFileSync(path.join(world.owner, 'squire.json'), 'utf8')));
+  fs.writeFileSync(path.join(world.owner, 'squire.json'), JSON.stringify(ownerConfig, null, 2) + '\n');
+  const rw = { world, root: world.root, home: world.home, owner: world.owner, state: path.join(world.root, 'stand-ins'),
+    supervisorState: path.join(world.root, 'supervisor') };
+  t.after(() => {
+    stopSquire(rw);
+    try { if (rw.standInsPid) process.kill(-rw.standInsPid, 'SIGKILL'); } catch (e) { /* gone */ }
+    s.killFakes(world);
+    // A case may close a folder or a file in the owner's folder; opened again so the world can be removed.
+    spawnSync('/bin/chmod', ['-R', 'u+rwX', world.owner]);
+    w.cleanUp(world);
+  });
+  rw.system = path.join(world.root, 'system');
+  rw.model = launchd === 'model';
+  rw.launchdState = path.join(world.root, 'launchd');
+  const extra = {
+    'usr/bin/osascript': updateWindowsScript({ log: path.join(world.root, 'update-windows.jsonl'), answers: path.join(world.root, 'update-answers.json') }),
+    'usr/bin/open': openScript({ log: path.join(world.root, 'open-calls.jsonl'), python: w.PYTHON, home: world.home,
+      env: w.productEnv(world, env(rw)) }),
+  };
+  if (rw.model) {
+    extra['bin/launchctl'] = L.launchctlScript(rw.launchdState);
+    extra['usr/bin/dscl'] = dsclScript(world.userHome);
+  }
+  world.system = makeSystem(rw.system, mac, extra);
+  rw.keys = makeKeys(path.join(world.root, 'keys'));
+  startStandIns(rw);
+  // intake, when given, makes the address core's release.json names for the
+  // intake from the world's (a case's configured intake that is not plain).
+  if (intake) rw.intake = intake(rw);
+  rw.appCore = makeCore(rw, path.join(world.root, 'app-core'), { version: installed });
+  s.layDownCore(world, rw.appCore);
+  world.release = path.join(world.home, 'release', 'core');
+  w.copyTree(rw.appCore, world.release);
+  fs.writeFileSync(path.join(world.home, 'set-up.json'),
+    JSON.stringify({ done: I.STEPS, added: [], release: world.release }, null, 2) + '\n');
+  installClaudeCode(rw, { signedIn });
+  // The config folder signed in, as a sign-in leaves it.
+  const claudeJson = path.join(world.home, 'claude-config', '.claude.json');
+  const state = readJson(claudeJson) || {};
+  if (signedIn) state.oauthAccount = { accountUuid: 'acct-test', organizationUuid: 'org-test' };
+  fs.writeFileSync(claudeJson, JSON.stringify(state, null, 2));
+  return rw;
+}
+
+const env = (rw, extra = {}) => ({ SQUIRE_SYSTEM_ROOT: rw.system, USER: process.env.USER || 'owner', ...extra });
+
+// Squire set up by its own app (round 3's installer world: the app opened as
+// Finder opens it, on a Mac of fakes) from an app whose core is a release of
+// version appVersion naming the world's stand-ins and trusting test key one;
+// the runner is kept by the world's launchd stand-in from the moment set-up
+// writes its agent. The same helpers then drive it: the Squire home is the
+// app's (~/Library/Application Support/Squire), the owner's folder ~/Squire.
+async function makeInstalledApp(t, { appVersion = INSTALLED } = {}) {
+  const iw = I.makeInstallerWorld(t);
+  const world = { ...iw.world, home: iw.squireHome, owner: iw.ownerFolder, userHome: iw.userHome };
+  const rw = { iw, world, root: iw.root, home: iw.squireHome, owner: iw.ownerFolder, system: iw.system,
+    state: path.join(iw.root, 'stand-ins'), supervisorState: path.join(iw.root, 'supervisor'), inner: iw.inner };
+  t.after(() => {
+    stopSquire(rw);
+    try { if (rw.standInsPid) process.kill(-rw.standInsPid, 'SIGKILL'); } catch (e) { /* gone */ }
+  });
+  rw.keys = makeKeys(path.join(iw.root, 'keys'));
+  startStandIns(rw);
+  rw.appCore = path.join(iw.app, 'Contents', 'Resources', 'core');
+  makeCore(rw, rw.appCore, { version: appVersion });
+  const plist = path.join(iw.userHome, 'Library', 'LaunchAgents', 'com.stravica.squire.runner.plist');
+  const run = await I.runApp(iw, {
+    launchd: false,
+    killWhen: () => {
+      if (!rw.supervisorPid && fs.existsSync(plist)) launchSquire(rw, { ...I.appEnv(iw), PATH: I.MAC_PATH, ...plistEnv(plist) });
+      return false;
+    },
+  });
+  assert.deepEqual(I.doneSteps(iw), I.STEPS, `set-up must finish from the app; got ${I.describeRun(run)}`);
+  // From now on the world's osascript also answers Squire Update's windows,
+  // handing set-up's own to the answering osascript set-up ran with.
+  const osascript = path.join(iw.system, 'usr', 'bin', 'osascript');
+  const setUpWindows = path.join(iw.system, 'usr', 'bin', '.osascript-set-up');
+  fs.renameSync(osascript, setUpWindows);
+  fs.writeFileSync(osascript, updateWindowsScript({ log: path.join(iw.root, 'update-windows.jsonl'),
+    answers: path.join(iw.root, 'update-answers.json'), delegate: setUpWindows }));
+  fs.chmodSync(osascript, 0o755);
+  const healthy = await s.waitFor(() => health(rw).status === 0, 60000, 500);
+  assert.ok(healthy, `the Squire the app set up must be healthy; health: ${w.describe(health(rw))}`);
+  return rw;
+}
+
+// A core as the round 3 app carried it: this repository's core without the
+// two files a release names its own (core/release.json, core/release-key.pub).
+function makeRound3Core(dir) {
+  fs.rmSync(dir, { recursive: true, force: true });
+  w.copyTree(w.CORE, dir);
+  for (const name of ['release.json', 'release-key.pub']) fs.rmSync(path.join(dir, name), { force: true });
+  return dir;
+}
+
+// Makes the Squire the app set up (makeInstalledApp) a home as the round 3 app
+// left it: core laid down from a round 3 core (no release.json, no key), that
+// core as the release folder set-up keeps (release/core), no
+// current-release.json, no releases/, no staging/ and no update.json, and
+// set-up.json holding only what round 3's set-up wrote. Squire then runs
+// again, healthy. Returns the round 3 core.
+async function layRound3Home(rw) {
+  stopSquire(rw);
+  const core = makeRound3Core(path.join(rw.root, 'round-3-core'));
+  s.layDownCore(rw.world, core);
+  const release = path.join(rw.home, 'release', 'core');
+  fs.rmSync(release, { recursive: true, force: true });
+  w.copyTree(core, release);
+  for (const name of ['current-release.json', 'releases', 'staging', 'update.json', 'install.json']) {
+    fs.rmSync(path.join(rw.home, name), { recursive: true, force: true });
+  }
+  const record = readJson(path.join(rw.home, 'set-up.json')) || {};
+  const round3 = {};
+  for (const k of ['done', 'squireName', 'personality', 'release']) if (k in record) round3[k] = record[k];
+  fs.writeFileSync(path.join(rw.home, 'set-up.json'), JSON.stringify(round3, null, 2) + '\n', { mode: 0o600 });
+  for (const name of ['release.json', 'release-key.pub']) {
+    assert.ok(!fs.existsSync(path.join(installedCore(rw), name)), `a home the round 3 app laid down holds no core/${name}`);
+  }
+  launchSquire(rw);
+  const healthy = await s.waitFor(() => health(rw).status === 0, 60000, 500);
+  assert.ok(healthy, `the home the round 3 app laid down must be healthy; health: ${w.describe(health(rw))}`);
+  return core;
+}
+
+function plistEnv(file) {
+  const r = spawnSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', file], { encoding: 'utf8' });
+  try { return JSON.parse(r.stdout).EnvironmentVariables || {}; } catch (e) { return {}; }
+}
+
+// Opens the app again as Finder would, the world's launchd stand-in still
+// keeping the runner.
+function runAppAgain(rw) {
+  return I.runApp(rw.iw, { launchd: false });
+}
+
+// The launchd model of a world made with launchd: 'model' (started once; a
+// log-out keeps it running, as launchd outlives a session).
+function startModel(rw) {
+  if (rw.launchdPid && !ended(rw.launchdPid)) return;
+  rw.launchdPid = L.start(rw.launchdState, { env: w.productEnv(rw.world, env(rw)),
+    agents: path.join(rw.world.userHome, 'Library', 'LaunchAgents'), intervals: false });
+}
+
+const AGENT_LABELS = ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup'];
+
+// Squire's agents the world's launchd model holds loaded, by label (a world
+// without the model has none).
+function agentsLoaded(rw) {
+  if (!rw.model) return [];
+  const st = L.control(rw.launchdState, { control: 'state' });
+  return AGENT_LABELS.filter((label) => st.jobs && st.jobs[label] && st.jobs[label].loaded);
+}
+
+// A login (launchd loads every agent in the world's Library/LaunchAgents) and
+// a log-out (every job ended with its process group and unloaded).
+function login(rw) { startModel(rw); return L.control(rw.launchdState, { control: 'login' }); }
+function logout(rw) { return L.control(rw.launchdState, { control: 'logout' }, { timeout: 60000 }); }
+
+// Every launchctl call the model answered, and every job event it recorded.
+const launchdCalls = (rw) => L.calls(rw.launchdState);
+const launchdEvents = (rw) => L.events(rw.launchdState);
+
+// The boot-outs the model saw made from inside the very job they name: a
+// Squire program stopping the agent it runs in.
+const stoppedFromInside = (rw) => launchdCalls(rw).filter((c) => c.argv[0] === 'bootout' && c.jobGroup && c.callerGroup === c.jobGroup);
+
+// Starts the world's launchd stand-in, which starts Squire's runner (as at
+// login, or when the Mac starts again), without waiting. In a world with the
+// launchd model this is a login.
+function launchSquire(rw, runnerEnv = null) {
+  if (rw.model) { login(rw); return; }
+  fs.mkdirSync(rw.supervisorState, { recursive: true });
+  rw.runnerEnv = runnerEnv || rw.runnerEnv || w.productEnv(rw.world, env(rw));
+  fs.writeFileSync(path.join(rw.supervisorState, 'supervisor.json'), JSON.stringify({
+    python: w.PYTHON, home: rw.home, env: rw.runnerEnv,
+  }));
+  const child = spawn(process.execPath, [path.join(__dirname, 'tools', 'supervisor.js'), rw.supervisorState],
+    { cwd: rw.root, stdio: 'ignore', detached: true });
+  child.unref();
+  rw.supervisorPid = child.pid;
+}
+
+// The same, waiting for a live session and a health check with nothing to say.
+// Under the launchd model, Squire starts as set-up's lay-down starts it: core
+// laid down by the product's lay-down with the world's system folders, which
+// loads the three agents it writes through the world's launchd.
+async function startSquire(rw) {
+  if (rw.model) {
+    startModel(rw);
+    const laid = w.layDown(rw.world, rw.appCore, { env: env(rw) });
+    assert.equal(laid.status, 0, `lay-down must lay core down; got ${w.describe(laid)}`);
+    const loaded = await s.waitFor(() => agentsLoaded(rw).length === 3, 10000, 250);
+    assert.ok(loaded, `under the launchd model, lay-down must load Squire's three agents through the Mac's launchctl in the account's own home; ` +
+      `loaded: ${JSON.stringify(agentsLoaded(rw))}; launchctl calls: ${JSON.stringify(launchdCalls(rw))}`);
+  } else launchSquire(rw);
+  const session = await s.waitFor(() => s.sessionRecords(rw.world).find((r) => !w.processGone(r.pid)), 30000);
+  assert.ok(session, `the installed Squire must start its session; runner output: ${runnerOutput(rw).slice(-600) || '(none)'}`);
+  const healthy = await s.waitFor(() => health(rw).status === 0, 30000, 500);
+  assert.ok(healthy, `the installed Squire must be healthy once started; health: ${w.describe(health(rw))}`);
+  return session;
+}
+
+function stopSquire(rw) {
+  if (rw.model) {
+    // The Mac stops: launchd and every job it started, each with its group.
+    if (rw.launchdPid) {
+      L.control(rw.launchdState, { control: 'stop' });
+      const end = Date.now() + 5000;
+      while (!ended(rw.launchdPid) && Date.now() < end) sleepSync(0.05);
+      try { process.kill(-rw.launchdPid, 'SIGKILL'); } catch (e) { /* gone */ }
+      rw.launchdPid = null;
+    }
+    s.killFakes(rw.world);
+    return;
+  }
+  if (!rw.supervisorPid) return;
+  try { process.kill(-rw.supervisorPid, 'SIGTERM'); } catch (e) { /* gone */ }
+  const end = Date.now() + 5000;
+  while (!ended(rw.supervisorPid) && Date.now() < end) sleepSync(0.05);
+  try { process.kill(-rw.supervisorPid, 'SIGKILL'); } catch (e) { /* gone */ }
+  for (const st of runnerStarts(rw)) {
+    try { process.kill(-st.started, 'SIGKILL'); } catch (e) { /* gone */ }
+  }
+  s.killFakes(rw.world);
+  rw.supervisorPid = null;
+}
+
+// A runner start, as launchd makes one at login or when the Mac starts again.
+function askRunnerStart(rw) {
+  if (rw.model) { login(rw); return; }
+  fs.writeFileSync(path.join(rw.supervisorState, 'start'), '');
+}
+
+const runnerStarts = (rw) => readJsonLines(path.join(rw.supervisorState, 'starts.jsonl')).filter((r) => r.started);
+const runnerOutput = (rw) => { try { return fs.readFileSync(path.join(rw.supervisorState, 'runner.out'), 'utf8'); } catch (e) { return ''; } };
+
+// ------------------------------------------------------------- running
+
+// One run of the wake-ups scheduler's tick, as its agent runs it (the
+// outside job), held until it ends. The tick checks weekly and stages,
+// recovers an unfinished install where nothing needs laying down, runs the
+// known fixes and sends tickets; it never installs (Squire Update does).
+// Under the launchd model the tick runs as the agent itself: the model fires
+// the wake-ups job and the world waits for that run to end.
+function tick(rw, { timeout = 600000 } = {}) {
+  if (rw.model) return fireTick(rw, { timeout });
+  const r = w.runPython(rw.world, path.join(rw.home, 'core', 'tools', 'wake-up.py'), ['--due'],
+    { cwd: '/', env: env(rw), timeout });
+  assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the scheduler's run must run; got ${w.describe(r)}`);
+  return r;
+}
+
+// The scheduler's agent fired by the launchd model, as its StartInterval
+// fires it: one run of its program in its own job, waited for. Its output is
+// what the job wrote meanwhile.
+function fireTick(rw, { timeout = 600000 } = {}) {
+  const label = 'com.stravica.squire.wake-ups';
+  const out = path.join(rw.launchdState, `${label}.out`);
+  const from = fs.existsSync(out) ? fs.statSync(out).size : 0;
+  const fired = L.control(rw.launchdState, { control: 'fire', label });
+  assert.equal(fired.code, 0, `the scheduler's agent must be loaded for its tick to run; got ${JSON.stringify(fired)}; loaded: ${JSON.stringify(agentsLoaded(rw))}`);
+  const end = Date.now() + timeout;
+  let exit = null;
+  while (!exit && Date.now() < end) {
+    exit = launchdEvents(rw).find((e) => e.exited === label && e.pid === fired.pid) || null;
+    if (!exit) sleepSync(0.1);
+  }
+  const text = fs.existsSync(out) ? fs.readFileSync(out).subarray(from).toString('utf8') : '';
+  const r = { status: exit ? exit.status : null, signal: exit ? exit.signal : 'still running', stdout: text, stderr: text, error: '' };
+  assert.doesNotMatch(r.stderr, /can't open file|Traceback/, `the scheduler's run must run; got ${w.describe(r)}`);
+  return r;
+}
+
+// ------------------------------------------------------------- Squire Update
+
+const updateWindowsFile = (rw) => path.join(rw.root, 'update-windows.jsonl');
+// Every window Squire Update showed, in order ({ args, stdin, text, main,
+// buttons, answer }).
+const updateWindows = (rw) => readJsonLines(updateWindowsFile(rw)).filter((x) => !x.refused);
+// Every call of the world's open, in order ({ argv, code, started }).
+const openCalls = (rw) => readJsonLines(path.join(rw.root, 'open-calls.jsonl'));
+// Where Squire Update lives: the Applications folder of the owner's home.
+const squireUpdateApp = (rw) => path.join(rw.world.userHome, 'Applications', 'Squire Update.app');
+
+// Opens Squire Update as the owner opens it at the Mac (from Finder or
+// Spotlight): the installed core's update.py --app, in a process group of its
+// own, in the world's environment, its main window answered with answer.
+// Does not wait.
+function openSquireUpdate(rw, { answer = 'Install', args = [] } = {}) {
+  fs.writeFileSync(path.join(rw.root, 'update-answers.json'), JSON.stringify({ main: answer }));
+  rw.uiRuns = (rw.uiRuns || 0) + 1;
+  const errFile = path.join(rw.root, `update-app-${rw.uiRuns}.out`);
+  const out = fs.openSync(errFile, 'w');
+  const child = spawn(w.PYTHON, ['-B', path.join(rw.home, 'core', 'tools', 'update.py'), '--app', ...args],
+    { cwd: '/', env: w.productEnv(rw.world, env(rw)), stdio: ['ignore', out, out], detached: true });
+  fs.closeSync(out);
+  let exit = null;
+  child.on('exit', (status, signal) => { exit = { status, signal }; });
+  return { pid: child.pid, exited: () => exit || (ended(child.pid) ? { status: null, signal: 'gone' } : null),
+    output: () => { try { return fs.readFileSync(errFile, 'utf8'); } catch (e) { return ''; } } };
+}
+
+// Waits for the install Squire Update's engine runs to end: install.json gone,
+// and the process it last named gone.
+function engineDone(rw, within = 600000) {
+  let pid = null;
+  return s.waitFor(() => {
+    const rec = readJson(installRecordFile(rw));
+    if (rec && Number.isInteger(rec.pid)) pid = rec.pid;
+    if (fs.existsSync(installRecordFile(rw))) return false;
+    return !pid || ended(pid);
+  }, within, 250);
+}
+
+// Squire Update opened at the Mac, the owner answering its main window with
+// answer (Install, Not now, 'close' for the window closed, or
+// { waitFor, then }); waits for it to end, and for the install its engine
+// runs, in a session of its own, to end. Squire Update must open and show at
+// least one window. Returns what it showed and the wake-ups sent meanwhile.
+async function installAtMac(rw, release, answer = 'Install', { args = [], within = 600000 } = {}) {
+  const before = wakeUpIds(rw);
+  const shown = updateWindows(rw).length;
+  const ui = openSquireUpdate(rw, { answer, args });
+  await s.waitFor(() => ui.exited(), within, 250);
+  const windows = updateWindows(rw).slice(shown);
+  assert.ok(windows.length >= 1, `Squire Update must open (the installed core's update.py --app) and show its window` +
+    `${release ? ` for ${release.version}` : ''}; it ${ui.exited() ? `exited ${JSON.stringify(ui.exited())}` : 'did not end'}: ` +
+    `${ui.output().slice(-400) || '(no output)'}`);
+  await engineDone(rw, within);
+  return { ui: ui.exited(), windows, main: windows.filter((x) => x.main), sent: newWakeUps(rw, before) };
+}
+
+// The children of a process, each with its process group, read with ps.
+function childrenOf(pid) {
+  const r = spawnSync('/bin/ps', ['-axo', 'pid=,ppid=,pgid='], { encoding: 'utf8' });
+  return (r.stdout || '').split('\n').map((l) => l.trim().split(/\s+/).map(Number))
+    .filter((p) => p.length === 3 && p[1] === pid).map(([p, , g]) => ({ pid: p, pgid: g }));
+}
+
+// The same, started without waiting, in a process group of its own.
+function startTick(rw) {
+  const child = spawn(w.PYTHON, [path.join(rw.home, 'core', 'tools', 'wake-up.py'), '--due'],
+    { cwd: '/', env: w.productEnv(rw.world, env(rw)), stdio: 'ignore', detached: true });
+  let exit = null;
+  child.on('exit', (status, signal) => { exit = { status, signal }; });
+  return { pid: child.pid, exited: () => exit };
+}
+
+// Opens Squire Update, answers Install, and stops its install at exactly the
+// named step. The install runs in Squire Update's engine, the process Squire
+// Update starts in a session and process group of its own: the world finds it
+// as Squire Update's child that leads its own process group (never by a
+// pattern), before it writes its record, and steps the engine's whole process
+// group: it holds the group (SIGSTOP), reads install.json, and lets the group
+// run again (SIGCONT) for a twentieth of a millisecond at a time, so the
+// moment the record names the step the group is held there, with nothing in
+// the product made to wait for a test. Then it kills the engine's group and
+// Squire Update's (SIGKILL: a power cut or a crash), or, with hold, leaves the
+// engine held: the returned resume() lets it run to its end, kill() ends it.
+// Returns the step the record named when the engine was held (null if no
+// engine started or it ended first, or the record named a later step: the
+// case then fails on the step).
+async function stopInstallAt(rw, step, { hold = false, within = 300000, slice = 0.05 } = {}) {
+  const want = INSTALL_STEPS.indexOf(step);
+  assert.ok(want >= 0, `no install step is named ${step}`);
+  const ui = openSquireUpdate(rw, { answer: 'Install' });
+  const end = Date.now() + within;
+  let engine = null;
+  while (!engine && Date.now() < end && !ended(ui.pid)) {
+    engine = childrenOf(ui.pid).find((c) => c.pid === c.pgid) || null;
+  }
+  const pid = engine ? engine.pid : null;
+  const signal = (sig) => { if (!pid) return false; try { process.kill(-pid, sig); return true; } catch (e) { return false; } };
+  const run = { pid, ui, exited: () => (!pid || ended(pid) ? { gone: true } : null) };
+  const spin = (ms) => { const until = process.hrtime.bigint() + BigInt(Math.round(ms * 1e6)); while (process.hrtime.bigint() < until) { /* the group runs */ } };
+  let seen = null;
+  let turns = 0;
+  while (pid && Date.now() < end) {
+    if (!signal('SIGSTOP')) break;
+    const rec = readJson(installRecordFile(rw));
+    if (rec && INSTALL_STEPS.indexOf(rec.step) >= want) { seen = rec.step; break; }
+    // Held, the world reads whether the engine has ended, now and then.
+    turns += 1;
+    if (turns % 200 === 0) {
+      if (ended(pid)) break;
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    signal('SIGCONT');
+    spin(slice);
+  }
+  const killUi = () => { try { process.kill(-ui.pid, 'SIGKILL'); } catch (e) { /* gone */ } };
+  const handle = { seen, run, resume: () => signal('SIGCONT'), kill: () => { signal('SIGKILL'); signal('SIGCONT'); killUi(); } };
+  if (hold && seen === step) return handle;
+  handle.kill();
+  await s.waitFor(() => run.exited() && ui.exited(), 5000);
+  return handle;
+}
+
+// Kills the install at exactly the named step; returns the step the record
+// named when it was killed.
+async function killInstallAt(rw, step, opts = {}) {
+  return (await stopInstallAt(rw, step, opts)).seen;
+}
+
+function health(rw) {
+  return w.runPython(rw.world, path.join(rw.home, 'core', 'tools', 'health.py'), [], { cwd: '/', env: env(rw), timeout: 60000 });
+}
+
+// ------------------------------------------------------------- reading
+
+const installRecordFile = (rw) => path.join(rw.home, 'install.json');
+const currentRelease = (rw) => readJson(path.join(rw.home, 'current-release.json'));
+const keptReleases = (rw) => { try { return fs.readdirSync(path.join(rw.home, 'releases')).sort(); } catch (e) { return []; } };
+const staged = (rw) => { try { return fs.readdirSync(path.join(rw.home, 'staging')).sort(); } catch (e) { return []; } };
+const updateRecord = (rw) => readJson(path.join(rw.home, 'update.json'));
+const installedCore = (rw) => path.join(rw.home, 'core');
+const updateRequest = (rw, version) => `${w.PYTHON} ${path.join(rw.home, 'core', 'tools', 'update.py')} --install ${version}`;
+const ticketRequest = (rw, id) => `${w.PYTHON} ${path.join(rw.home, 'core', 'tools', 'ticket.py')} --send ${id}`;
+const fixRequest = (rw, which) => `${w.PYTHON} ${path.join(rw.home, 'core', 'tools', 'health.py')} --request ${which}`;
+
+// True when the installed core holds exactly the files of the given release's
+// core (or core folder), byte for byte.
+function coreIs(rw, release) {
+  const want = w.treeOf(release.core || release);
+  const got = w.treeOf(installedCore(rw));
+  return JSON.stringify(Object.keys(got).map((k) => [k, got[k].sha256])) === JSON.stringify(Object.keys(want).map((k) => [k, want[k].sha256]));
+}
+
+// What an update must not move: the installed core, the kept releases, the
+// release folder set-up keeps, the agents and the owner's folder, as one
+// snapshot of each.
+function untouched(rw) {
+  const out = {};
+  for (const [name, dir] of [['core', installedCore(rw)], ['release', path.join(rw.home, 'release')],
+    ['releases', path.join(rw.home, 'releases')], ['agents', path.join(rw.world.userHome, 'Library', 'LaunchAgents')],
+    ['owner', rw.owner]]) {
+    out[name] = fs.existsSync(dir) ? w.snapshot(dir) : null;
+  }
+  out.currentRelease = currentRelease(rw);
+  return out;
+}
+
+function untouchedDifferences(before, after) {
+  const diffs = [];
+  for (const k of Object.keys(before)) {
+    if (k === 'currentRelease') {
+      if (JSON.stringify(before[k]) !== JSON.stringify(after[k])) diffs.push('changed: current-release.json');
+    } else if (before[k] === null || after[k] === null) {
+      if (before[k] !== after[k]) diffs.push(`${k}: ${before[k] === null ? 'added' : 'removed'}`);
+    } else diffs.push(...w.snapshotDifferences(before[k], after[k]).map((d) => `${k} ${d}`));
+  }
+  return diffs;
+}
+
+// The files left under the staging folder (a missing folder holds none).
+function stagingFiles(rw) {
+  const dir = path.join(rw.home, 'staging');
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  const walk = (a, r) => {
+    for (const n of fs.readdirSync(a)) {
+      const p = path.join(a, n);
+      const st = fs.lstatSync(p);
+      if (st.isDirectory()) walk(p, `${r}${n}/`);
+      else out.push(`${r}${n}`);
+    }
+  };
+  walk(dir, '');
+  return out;
+}
+
+// The owner's folder as the comparison sees it (the design record's line 13):
+// every entry's relative path, type, permissions (the mode's low twelve bits;
+// access lists and flags are not compared), size, bytes (as a SHA-256) and
+// link target, not its times. The comparison only looks: it never changes a
+// mode and never opens a named pipe. An entry whose contents it may not read
+// (a file it may not open, a folder it may not list) is recorded by its
+// metadata alone and compared by that, before and after; an entry whose
+// metadata it cannot read (lstat: path, type, mode, size, link target) is
+// recorded so, and counts as changed whatever it shows. except names relative
+// paths left out.
+const METADATA_UNREADABLE = 'metadata unreadable';
+function ownerHash(dir, { except = [] } = {}) {
+  const out = {};
+  const walk = (abs, rel) => {
+    let names;
+    try { names = fs.readdirSync(abs).sort(); } catch (e) { return false; }
+    for (const name of names) {
+      const a = path.join(abs, name);
+      const r = rel ? `${rel}/${name}` : name;
+      if (except.includes(r)) continue;
+      let st;
+      try { st = fs.lstatSync(a); } catch (e) { out[r] = METADATA_UNREADABLE; continue; }
+      const mode = (st.mode & 0o7777).toString(8);
+      if (st.isSymbolicLink()) {
+        let target;
+        try { target = fs.readlinkSync(a); } catch (e) { out[r] = METADATA_UNREADABLE; continue; }
+        out[r] = `link ${mode} ${st.size} ${target}`;
+      } else if (st.isDirectory()) {
+        out[r] = `dir ${mode}`;
+        if (walk(a, r) === false) out[r] += ' contents unreadable';
+      } else if (st.isFile()) {
+        let bytes = null;
+        try { bytes = fs.readFileSync(a); } catch (e) { bytes = null; }
+        out[r] = bytes ? `file ${mode} ${st.size} ${w.sha256(bytes)}` : `file ${mode} ${st.size} contents unreadable`;
+      } else if (st.isFIFO()) out[r] = `fifo ${mode}`;
+      else out[r] = `other ${mode} ${st.size}`;
+    }
+    return true;
+  };
+  walk(dir, '');
+  return out;
+}
+
+// The entries that differ; an entry whose metadata could not be read, before
+// or after, always differs.
+function hashDifferences(before, after) {
+  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();
+  return keys.filter((k) => before[k] !== after[k] || before[k] === METADATA_UNREADABLE || after[k] === METADATA_UNREADABLE)
+    .map((k) => `${k}: ${before[k] || '(none)'} -> ${after[k] || '(none)'}`);
+}
+
+const LEDGER = 'state/approvals.jsonl';
+const ledgerRecords = (rw) => readJsonLines(w.ledgerOf(rw.world));
+
+// The wake-ups Squire has sent (their states), from the given count on.
+const wakeUpIds = (rw) => s.wakeUpStates(rw.world).map((x) => x.id);
+// The wake-ups sent since the ids given were read: their texts.
+const newWakeUps = (rw, before) => s.wakeUpStates(rw.world).filter((x) => !before.includes(x.id)).map((x) => x.text || '');
+
+// The session asks for something through the floor: it must be asked (a block
+// with a request id), never refused. Returns the block and the request id.
+function asked(rw, session, command, what) {
+  const r = w.attempt(rw.world, session, w.tools.bash(command), { env: env(rw), coreDir: installedCore(rw) });
+  w.assertBlocked(r, what);
+  const id = w.requestIdIn(r.stderr);
+  assert.ok(id, `${what}: the floor must ask the owner (a block with a request id), never refuse it outright; got ${w.describe(r)}`);
+  return { block: r.stderr, id, result: r };
+}
+
+// The floor's block, asserted whole (the design record's line 8): it ends as
+// the relay probe's bytes ended, with the shown text's last line, one empty
+// line, the relay words and one newline, and has no carriage return anywhere;
+// and each text given (a version, a changelog, a ticket's bytes) stands in it
+// as whole lines, exactly once, with nothing else on those lines. The line
+// naming the request, before them, is the builder's wording: not asserted.
+function assertBlockShape(block, texts, what) {
+  assert.ok(!block.includes('\r'), `${what}: every line of the block ends with a line feed alone; got ${JSON.stringify(block)}`);
+  const tail = `\n\n${FENCE_WORDS}\n`;
+  assert.ok(block.endsWith(tail) && !block.endsWith(`\n${tail}`),
+    `${what}: the block must end with the shown text's last line, one empty line, the relay words and one newline; got ${JSON.stringify(block)}`);
+  const lines = block.slice(0, block.length - tail.length).split('\n');
+  for (const text of texts) {
+    const want = text.replace(/\n$/, '').split('\n');
+    let found = 0;
+    for (let i = 0; i + want.length <= lines.length; i++) if (want.every((l, j) => lines[i + j] === l)) found += 1;
+    assert.equal(found, 1, `${what}: ${JSON.stringify(text)} must stand in the block as whole lines exactly once, with nothing else on its lines; got ${JSON.stringify(block)}`);
+  }
+}
+
+// The owner answers one request.
+function owner(rw, session, words) {
+  return w.ownerSays(rw.world, session, words, { env: env(rw), coreDir: installedCore(rw) });
+}
+
+// The world plays time passing for one ledger record: its "at" moved by
+// seconds (negative: earlier), as round 3's known-fix cases age a yes.
+function moveLedgerTime(rw, test, seconds) {
+  const file = w.ledgerOf(rw.world);
+  const records = readJsonLines(file);
+  const hit = records.filter(test);
+  assert.ok(hit.length >= 1, 'the world moves the time of a ledger record that is there');
+  for (const r of hit) r.at += seconds;
+  fs.writeFileSync(file, records.map((r) => JSON.stringify(r, Object.keys(r).sort())).join('\n') + '\n');
+}
+
+const yesFor = (id) => (r) => r.type === 'answer' && r.request === id && r.answer === 'yes';
+const requestRecord = (id) => (r) => r.type === 'request' && r.id === id;
+
+// The world plays time passing for Squire's own records of when it last did
+// something (update.json's lastCheck, an outbox ticket's attempts): every
+// time field named moved by seconds.
+function moveRecordTimes(file, seconds, fields = ['lastCheck', 'at']) {
+  const data = readJson(file);
+  assert.ok(data, `the world moves the times in ${path.basename(file)}, which must be there`);
+  const visit = (o) => {
+    if (Array.isArray(o)) o.forEach(visit);
+    else if (o && typeof o === 'object') for (const k of Object.keys(o)) {
+      if (fields.includes(k) && typeof o[k] === 'number') o[k] += seconds;
+      else visit(o[k]);
+    }
+  };
+  visit(data);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+}
+
+// ------------------------------------------------------------- tickets
+
+const TICKET_LINE = /^ticket: (t-[0-9a-f]{32}) is ready to send about (.+); to send it, ask: (.+)$/;
+const ticketLines = (out) => out.split('\n').map((l) => TICKET_LINE.exec(l.trim())).filter(Boolean);
+const outboxFile = (rw, id) => path.join(rw.home, 'outbox', `${id}.json`);
+const outboxState = (rw, id) => readJson(path.join(rw.home, 'outbox', `${id}.state.json`));
+const outboxIds = (rw) => { try { return fs.readdirSync(path.join(rw.home, 'outbox')).filter((n) => /^t-[0-9a-f]{32}\.json$/.test(n)).map((n) => n.slice(0, -5)).sort(); } catch (e) { return []; } };
+const setAside = (rw) => { try { return fs.readdirSync(path.join(rw.home, 'outbox', 'set-aside')).sort(); } catch (e) { return []; } };
+const installId = (rw) => { try { return fs.readFileSync(path.join(rw.home, 'install-id'), 'utf8').trim(); } catch (e) { return null; } };
+
+// The allow-list of a ticket's fields, each value's set or pattern (the
+// design record's line 16). Health codes and the codes of lastErrors are a
+// closed set, never a pattern: a name can be written in any pattern a code
+// fits.
+const VERSION = /^\d+\.\d+\.\d+$/;
+const CODES = ['floor', 'agents', 'sign-in', 'runner', 'release', 'update-rollback-failed'];
+const TICKET_FIELDS = {
+  ticketId: (v) => typeof v === 'string' && /^t-[0-9a-f]{32}$/.test(v),
+  installId: (v) => typeof v === 'string' && /^[0-9a-f]{32}$/.test(v),
+  destination: null,
+  squireVersion: (v) => typeof v === 'string' && VERSION.test(v),
+  claudeCodeVersion: (v) => typeof v === 'string' && VERSION.test(v),
+  macOSVersion: (v) => typeof v === 'string' && /^\d+(\.\d+)*$/.test(v),
+  macModelClass: (v) => ['MacBook Air', 'MacBook Pro', 'Mac mini', 'iMac', 'Mac Studio', 'Mac Pro', 'Mac'].includes(v),
+  agentsLoaded: (v) => Array.isArray(v) && v.every((x) => ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup'].includes(x)),
+  healthCodes: (v) => Array.isArray(v) && v.every((x) => CODES.includes(x)),
+  lastErrors: (v) => Array.isArray(v) && v.every((x) => x && typeof x === 'object' && Object.keys(x).sort().join() === 'at,code'
+    && CODES.includes(x.code) && typeof x.at === 'number'),
+  fixesTried: (v) => Array.isArray(v) && v.every((x) => ['runner', 'floor', 'sign-in'].includes(x)),
+  createdAt: (v) => typeof v === 'number' && Number.isFinite(v),
+};
+
+// Every way a planted detail could show: as given, lower-cased, and its
+// letters and digits alone.
+function plantedTraces(extra = []) {
+  const out = new Set();
+  for (const v of [...Object.values(PLANTED), ...extra]) {
+    out.add(v);
+    out.add(v.toLowerCase());
+    out.add(v.replace(/[^A-Za-z0-9@.]/g, ''));
+  }
+  return [...out].filter((x) => x.length >= 4);
+}
+
+// The account names of whoever runs the tests: the real account the product
+// runs under, which a ticket must never carry.
+function accountNames() {
+  const short = require('node:os').userInfo().username;
+  const r = spawnSync('/usr/bin/id', ['-F'], { encoding: 'utf8' });
+  return [short, (r.stdout || '').trim()].filter((x) => x && x.length >= 3);
+}
+
+// True when the account's short or full name shows in text as a word of its
+// own. A closed-set value of the ticket (a health code, a known fix's name, an
+// agent's label) is left out of the search first, so an account that happens
+// to share a name with one (an account named runner, say) is not a false hit.
+function carriesAccountName(text, ticket = null) {
+  let scrubbed = text;
+  if (ticket) {
+    const closed = [...(ticket.healthCodes || []), ...(ticket.fixesTried || []), ...(ticket.agentsLoaded || []),
+      ...((ticket.lastErrors || []).map((e) => e && e.code))].filter((v) => typeof v === 'string');
+    for (const v of closed) scrubbed = scrubbed.split(JSON.stringify(v)).join('""');
+  }
+  return accountNames().some((n) => new RegExp(`(^|[^A-Za-z0-9])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^A-Za-z0-9])`, 'i').test(scrubbed));
+}
+
+// ------------------------------------------------- the session's route to a ticket
+
+// What the session loads: CLAUDE.md in Squire's Claude Code config folder,
+// which Squire writes whole at every lay-down and before every runner start.
+function sessionLoads(rw) {
+  const file = path.join(rw.home, 'claude-config', 'CLAUDE.md');
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+}
+const sentencesOf = (text) => text.split(/\n+|(?<=[.!?])\s+/).map((x) => x.trim()).filter(Boolean);
+
+// A clause that tells the session never to say, tell or claim something is cut
+// out of its sentence, up to the next comma, full stop or semicolon, before the
+// sentence is read for a denial: what it forbids is not what the session is
+// told. Nothing else in the sentence is exempt.
+const NEVER_SAY_CLAUSE = /\b(?:never|do\s+not|don['’]?t)\s+(?:say|tell|claim)\b[^.;,]*/gi;
+const outsideNeverSay = (sentence) => sentence.replace(NEVER_SAY_CLAUSE, ' ');
+// Telling the session that Squire has no health check, or that it cannot run it.
+const SQUIRES = String.raw`(?:Squire['’]?s?\s+)?`;
+const DENIES_CHECK = [
+  new RegExp(String.raw`\bno\s+${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\b(?:do|does|did)(?:\s+not|\s*n['’]?t)\s+have\s+(?:a\s+|any\s+|the\s+)?${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\b(?:is|are|was)(?:\s+not|n['’]?t)\s+(?:a\s+|any\s+)${SQUIRES}health\s+check`, 'i'),
+  new RegExp(String.raw`\b(?:lacks?|lacking|without)\s+(?:a\s+|any\s+)?${SQUIRES}health\s+check`, 'i'),
+  new RegExp(String.raw`\b(?:can\s*not|can['’]?t|could\s+not|couldn['’]?t|unable\s+to|not\s+able\s+to)\s+run` +
+    String.raw`(?:\s*(?:[.,;:!?]|$)|\s+(?:it|this|that|the\s+(?:health\s+)?check|(?:a\s+|any\s+|the\s+)?${SQUIRES}health)\b)`, 'i'),
+  new RegExp(String.raw`\b${SQUIRES}health\s+checks?\s+(?:can\s*not|can['’]?t)\s+be\s+run\b`, 'i'),
+  new RegExp(String.raw`\bhave(?:\s+not|\s*n['’]?t)\s+got\s+(?:a\s+)?${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\bhave\s+no\s+way\s+to\s+run\s+(?:the\s+)?${SQUIRES}health\s+checks?\b`, 'i'),
+  new RegExp(String.raw`\b${SQUIRES}health\s+checks?\s+(?:do|does)(?:\s+not|\s*n['’]?t)\s+exist\b`, 'i'),
+];
+const deniesCheck = (sentence) => DENIES_CHECK.some((re) => re.test(outsideNeverSay(sentence)));
+// For each of the route's properties, what says its opposite.
+const NEGATED = String.raw`(?:never|do\s+not|don['’]?t|must\s+not|mustn['’]?t|should\s+not|shouldn['’]?t)`;
+const ROUTE_OPPOSITES = {
+  run: [
+    new RegExp(String.raw`\b${NEGATED}\s+(?:\w+\s+)?run\s+(?:it|the\s+(?:health\s+)?check|(?:a\s+|the\s+)?${SQUIRES}health\s+check)\b`, 'i'),
+    new RegExp(String.raw`\b(?:it|the\s+(?:health\s+)?check|(?:a\s+|the\s+)?${SQUIRES}health\s+check)\s+is(?:\s+not|n['’]?t)\s+run\b`, 'i'),
+  ],
+  supportTicket: [
+    /\b(?:has|have|there\s+is|there['’]s|there\s+are)\s+no\s+support\s+tickets?\b/i,
+    new RegExp(String.raw`\b${NEGATED}\s+(?:offer|mention|make|build|have)\w*\s+(?:a\s+|any\s+|the\s+)?support\s+tickets?\b`, 'i'),
+  ],
+  fence: [
+    new RegExp(String.raw`\b${NEGATED}\s+(?:show|display|print|put|give)\w*\s+(?:the\s+owner\s+)?(?:it|them|(?:the|a|any)\s+(?:support\s+)?ticket)\b`, 'i'),
+    /\bticket\b[^.;]*\b(?:is|are|be)\s+(?:never|not)\s+(?:\w+\s+)?shown\b/i,
+    /\b(?:without|outside(?:\s+of)?|not\s+in)\s+(?:a\s+|the\s+|any\s+)?(?:code\s+)?(?:fence|code\s+block)\b/i,
+  ],
+  yes: [
+    /\bwithout\b[^.;]*\byes\b/i,
+    /\bsen[dt]\w*\s+(?:it\s+|them\s+|the\s+(?:support\s+)?ticket\s+)?(?:straight\s+away|at\s+once|right\s+away|immediately|now|directly|yourself)\b/i,
+    /\b(?:no|not|never|don['’]?t|doesn['’]?t|needn['’]?t)\s+(?:need|wait|ask|require)\w*\b[^.;]*\byes\b/i,
+    /\bsen[dt]\w*\b[^.;]*\bbefore\b[^.;]*\byes\b/i,
+  ],
+  nothingToSend: [
+    /\bthere\s+(?:is|['’]s)\s+(?:a|one|always\s+a)\s+(?:support\s+)?ticket\s+(?:to\s+send|waiting)\b/i,
+    new RegExp(String.raw`\b${NEGATED}\s+(?:say|tell)\w*\b[^.;,]*\bnothing\s+to\s+send\b`, 'i'),
+  ],
+  noCommand: [
+    /\b(?:show|give|tell|read\s+out|paste|share|display)\w*\s+(?:the\s+owner\s+|them\s+|to\s+the\s+owner\s+)?(?:the\s+|its\s+|each\s+|every\s+|that\s+)?(?:exact\s+|full\s+)?(?:command|file\s+path|path|tool(?:\s+name)?)s?\b/i,
+    /\bname\s+(?:the\s+|its\s+|each\s+)?(?:tool|command|file|path)s?\b/i,
+    new RegExp(String.raw`\b${NEGATED}\s+hide\b`, 'i'),
+  ],
+};
+// What the session may never be told to show a Squire owner about updates.
+const NOT_IN_A_NOTICE = /usr\/bin|update\.py|--install|[Tt]erminal/;
+
+// What the session loads tells it of Squire's health check and the ticket
+// route, as the criterion's properties (never the builder's words), says the
+// opposite of none of them, and still carries the updates line. A denial of
+// the check fails the first property; each opposite fails its own property.
+function assertSessionKnowsRoute(text, what) {
+  const got = `; the session loads ${JSON.stringify(text)}`;
+  const said = sentencesOf(text);
+  const any = (...res) => said.some((x) => res.every((re) => re.test(x)));
+  const none = (property, about) => {
+    const against = said.filter((x) => ROUTE_OPPOSITES[property].some((re) => re.test(x)));
+    assert.deepEqual(against, [], `${what}: nothing the session loads may ${about}${got}`);
+  };
+  assert.ok(text.length > 0, `${what}: the session must load the instructions Squire writes for it (claude-config/CLAUDE.md)${got}`);
+  assert.ok(any(/health check/i), `${what}: what the session loads must name Squire's health check${got}`);
+  assert.deepEqual(said.filter(deniesCheck), [], `${what}: nothing the session loads may tell it Squire has no health check or that it cannot run it${got}`);
+  assert.ok(any(/health/i, /\brun/i, /\bask/i), `${what}: what the session loads must tell it to run the health check when the owner asks about Squire's health${got}`);
+  none('run', 'tell it not to run the health check');
+  assert.ok(any(/support ticket/i), `${what}: what the session loads must name a support ticket as the reason to run it${got}`);
+  none('supportTicket', 'tell it there is no support ticket to offer');
+  assert.ok(any(/ticket/i, /fence|```|code block/i), `${what}: what the session loads must tell it to show the ticket the check offers in a fence${got}`);
+  none('fence', 'tell it not to show the ticket, or to show it outside a fence');
+  assert.ok(any(/\byes\b/i, /\bsen[dt]/i, /\b(only|never|without|until)\b/i), `${what}: what the session loads must say the ticket is sent only on the owner's yes${got}`);
+  none('yes', 'tell it the ticket is sent without the owner\'s yes');
+  assert.ok(any(/nothing to send|no (support )?ticket/i), `${what}: what the session loads must tell it what to say when no ticket is offered${got}`);
+  none('nothingToSend', 'tell it to say there is a ticket to send, or never to say there is nothing to send');
+  assert.ok(any(/\b(never|no|not|don't|without)\b/i, /command/i, /path/i, /tool/i), `${what}: what the session loads must tell it to show the owner no command, file path or tool name${got}`);
+  none('noCommand', 'tell it to show the owner a command, file path or tool name');
+  assert.ok(said.some((x) => /Squire Update/.test(x) && !NOT_IN_A_NOTICE.test(x)), `${what}: the updates line still names Squire Update with no command, path or terminal${got}`);
+}
+
+module.exports = {
+  NAMESPACE,
+  INSTALLED,
+  CLAUDE_CODE,
+  INSTALL_STEPS,
+  FENCE_WORDS,
+  CHANGELOG,
+  PLANTED,
+  LEDGER,
+  TICKET_FIELDS,
+  CODES,
+  makeKeys,
+  sign,
+  makeSystem,
+  makeCore,
+  buildRelease,
+  ARCHIVE_SHAPES,
+  MARKER,
+  buildArchiveRelease,
+  tickWatching,
+  markersOutside,
+  standIns,
+  hostRequests,
+  latestFetches,
+  intakePosts,
+  setLauncherTarget,
+  setVersionAnswer,
+  makeReleaseWorld,
+  makeInstalledApp,
+  makeRound3Core,
+  layRound3Home,
+  runAppAgain,
+  launchSquire,
+  startSquire,
+  stopSquire,
+  askRunnerStart,
+  runnerStarts,
+  runnerOutput,
+  tick,
+  fireTick,
+  startTick,
+  stopInstallAt,
+  killInstallAt,
+  openSquireUpdate,
+  installAtMac,
+  engineDone,
+  updateWindows,
+  openCalls,
+  squireUpdateApp,
+  AGENT_LABELS,
+  agentsLoaded,
+  login,
+  logout,
+  launchdCalls,
+  launchdEvents,
+  stoppedFromInside,
+  health,
+  installRecordFile,
+  currentRelease,
+  keptReleases,
+  staged,
+  stagingFiles,
+  updateRecord,
+  installedCore,
+  updateRequest,
+  ticketRequest,
+  fixRequest,
+  coreIs,
+  untouched,
+  untouchedDifferences,
+  ownerHash,
+  hashDifferences,
+  ledgerRecords,
+  wakeUpIds,
+  newWakeUps,
+  asked,
+  assertBlockShape,
+  owner,
+  moveLedgerTime,
+  yesFor,
+  requestRecord,
+  moveRecordTimes,
+  ticketLines,
+  outboxFile,
+  outboxState,
+  outboxIds,
+  setAside,
+  installId,
+  plantedTraces,
+  accountNames,
+  carriesAccountName,
+  readJson,
+  nowSeconds,
+  env,
+  sessionLoads,
+  sentencesOf,
+  NEVER_SAY_CLAUSE,
+  outsideNeverSay,
+  DENIES_CHECK,
+  deniesCheck,
+  ROUTE_OPPOSITES,
+  assertSessionKnowsRoute,
+};

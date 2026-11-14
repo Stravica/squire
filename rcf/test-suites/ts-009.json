@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:40.865Z",
-  "updatedAt": "2026-11-09T15:16:33.322Z",
+  "updatedAt": "2026-11-10T18:53:30.303Z",
   "purpose": "Sets a name and personality through the real set-up path, then starts afresh and updates, and checks they are unchanged and reach the session that answers.",
   "testLevel": "integration",
   "acIds": [
@@ -52,6 +52,20 @@
       "description": "a name and personality with Unicode, quotes, a colon and an instruction-like sentence reach the owner's squire.json, what the session loads and --name exactly as given, trimmed",
       "status": "pending",
       "testPointer": "tests/acceptance/persona.test.js::a name and personality with Unicode, quotes, a colon and an instruction-like sentence reach the owner's squire.json, what the session loads and --name exactly as given, trimmed"
+    },
+    {
+      "id": "TC-009-after-signed-update-name-personality-unchanged-owner-squire-json",
+      "acId": "AC-601-1",
+      "description": "after a signed update the name and personality are unchanged in the owner's squire.json, present in what the session loads, and carried by the session started after it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::after a signed update the name and personality are unchanged in the owner's squire.json, present in what the session loads, and carried by the session started after it"
+    },
+    {
+      "id": "TC-009-after-update-rolled-back-name-personality-unchanged-owner-squire",
+      "acId": "AC-601-1",
+      "description": "after an update rolled back the name and personality are unchanged in the owner's squire.json, present in what the session loads, and carried by the session started after it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/persona.test.js::after an update rolled back the name and personality are unchanged in the owner's squire.json, present in what the session loads, and carried by the session started after it"
     }
   ],
   "status": "draft"

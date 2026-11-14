@@ -18,7 +18,7 @@
 // there), fresh (under 30 minutes old) and unused; then the check runs again
 // and its next run prints one plain line, "fixed: ...", "still: ..." or
 // "could not try: ...". A fault not on the list is named and nothing is
-// offered. The ticket half is a later round's; no case reads tickets.
+// offered here. The ticket half (round 4) is at the end of this file.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -204,7 +204,7 @@ test("not signed in is named with the way on, opening Squire's installer to sign
   assert.ok(lines.every((l) => !l.includes('--fix') && !l.includes('--request')), 'no command is offered or asked for the sign-in once it has ended: it is the owner\'s to make');
 });
 
-test('a moved settings file and a fault not on the list are named, and nothing is offered for either', { timeout: 120000 }, (t) => {
+test("a moved settings file and a fault not on the list are named, and no fix is offered on either one's line (a ticket offer has a line of its own)", { timeout: 120000 }, (t) => {
   // A regression guard: the health check named both, with no fix, at the
   // round's base; it stays so the known fixes never grow onto the owner's
   // own files or onto faults Squire cannot fix.
@@ -220,4 +220,69 @@ test('a moved settings file and a fault not on the list are named, and nothing i
   assert.ok(overlayLines.length >= 1, `the health check must name the ignored overlays; got ${w.describe(h)}`);
   for (const l of [...movedLines, ...overlayLines]) assert.ok(!l.includes('--fix') && !l.includes('--request'), `nothing may be offered for: ${l}`);
   assert.ok(!/--(fix|request) (?!runner\b|floor\b|sign-in\b)/.test(h.stdout), `no fix beyond the known list may be offered; got ${w.describe(h)}`);
+});
+
+// The ticket half (round 4, the design record ADR-005 line 15): a known fix's
+// result decides whether a support ticket is offered. "fixed" offers none;
+// "still" offers one, on a line of its own, and the result stays printed at
+// every run of the health check, read by the session or by the owner, until
+// the owner answers the ticket's request; "could not try" offers none and
+// asks for the fix again. A yes timed after now is no yes (ADR-005 line 9).
+
+const { ticketLines } = require('../fixtures/updates-world.js');
+
+test('a fix that worked offers no support ticket: after "fixed" the health check offers nothing to send', { timeout: 120000 }, (t) => {
+  // A regression guard: no ticket was offered at the round's base; it stays
+  // so a fixed fault never sends anything. Regression evidence, bound to no
+  // criterion: the "still" case beside it is the rule's bound red half.
+  const world = fixWorld(t);
+  changeFloorFile(world);
+  askedThenYes(world, 'floor', 'the floor fix');
+  tick(world);
+  const after = health(world);
+  assert.ok(resultLines(after, 'fixed').length >= 1, `the check must say the fix worked; got ${w.describe(after)}`);
+  assert.deepEqual(ticketLines(after.stdout), [], `a fix that worked must offer no ticket; got ${w.describe(after)}`);
+});
+
+test('a fix that did not work offers a support ticket on a line of its own, and its "still" result is printed again at the next run, whoever runs the check', { timeout: 120000 }, (t) => {
+  const world = fixWorld(t);
+  askedThenYes(world, 'runner', 'the runner fix');
+  tick(world);
+  const bySession = health(world);
+  assert.ok(resultLines(bySession, 'still').some((l) => /runner/i.test(l)), `the check must say the runner is still not running; got ${w.describe(bySession)}`);
+  const offers = ticketLines(bySession.stdout);
+  assert.equal(offers.length, 1, `a fix that did not work must offer one support ticket, on a line of its own; got ${w.describe(bySession)}`);
+  assert.ok(resultLines(bySession, 'still').every((l) => !l.includes('ticket')), 'the offer never sits on the result\'s own line');
+  const byOwner = health(world);
+  assert.ok(resultLines(byOwner, 'still').some((l) => /runner/i.test(l)), `a read never consumes the result: the next run prints it again; got ${w.describe(byOwner)}`);
+  assert.deepEqual(ticketLines(byOwner.stdout).map((m) => m[1]), [offers[0][1]], 'the next run offers the same ticket');
+});
+
+test('a fix that could not be tried offers no support ticket and asks for the fix again', { timeout: 120000 }, (t) => {
+  // A regression guard for the "could not try" half: no ticket was offered at
+  // the round's base, and the request was named again. Regression evidence,
+  // bound to no criterion: the "yes timed after now" case is the bound red half.
+  const world = fixWorld(t);
+  changeFloorFile(world);
+  askedThenYes(world, 'floor', 'the floor fix');
+  ageTheYes(world, (FRESH_MINUTES + 1) * 60);
+  tick(world);
+  const after = health(world);
+  assert.ok(resultLines(after, 'could not try').length >= 1, `the check must say the fix could not be tried; got ${w.describe(after)}`);
+  assert.deepEqual(ticketLines(after.stdout), [], `a fix that could not be tried offers no ticket; got ${w.describe(after)}`);
+  assert.ok(after.stdout.includes(requestFor(world, 'floor')), `the check must ask for the fix again; got ${w.describe(after)}`);
+});
+
+test("a yes timed after now changes nothing: the check says it could not try, and the session's request is asked again", { timeout: 120000 }, (t) => {
+  const world = fixWorld(t);
+  changeFloorFile(world);
+  askedThenYes(world, 'floor', 'the floor fix');
+  ageTheYes(world, -3600);
+  tick(world);
+  assert.ok(!floorFileIsRelease(world), 'a yes timed an hour after now must never lay core down');
+  const after = health(world);
+  assert.ok(resultLines(after, 'could not try').length >= 1, `the check must say the fix could not be tried; got ${w.describe(after)}`);
+  const again = w.attempt(world, 'session-fix-again', w.tools.bash(requestFor(world, 'floor')));
+  w.assertBlocked(again, 'the fix asked again');
+  assert.ok(w.requestIdIn(again.stderr), `the floor must ask the owner again (a block with a request id); got ${w.describe(again)}`);
 });

@@ -1,0 +1,21 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "4ca125c11e0f0f296f6dd582163e83519b870387",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "result": "FAIL",
+  "suite": {
+    "pass": 340,
+    "fail": 0,
+    "skip": 5,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "MacBook Pro (Mac17,2), Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, /bin/zsh 5.9, /usr/bin/ssh-keygen OpenSSH_10.2p1, node v24.14.0, pnpm 10.32.1; fresh clone served bd9b4fb (reviewed head 4ca125c), pnpm install --frozen-lockfile; suite: env -u SQUIRE_TARGET_HOST -u RCF_TARGET_URL node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js' (345 tests, 340 pass, 0 fail, 5 skipped); SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, four External tests and the Journey test skipped in this run; temporary homes and keychains, fake claude and fake Mac commands, loopback release host and intake only; walk: one real signed update on a standard user of the same Mac under real launchd, Squire laid down onto an existing set-up, a stand-in release key and a loopback release host and intake: 0.1.0 to 0.2.0 from Squire Update finished, agents loaded after 3 of 3; 0.3.0 rolled back by Squire Update yes, held out at the next check yes; Squire Update opened by Squire once after an interrupted install yes; one ticket posted byte for byte no (built, never shown or posted: the session would not run its health check); Claude Code 2.1.322; evidence walk/",
+  "node": "v24.14.0",
+  "reason": "walk B6: the support-ticket route is unreachable on the real platform, buyer-blocking. A health-check fault built a ticket in the outbox; asked in the Squire session to run its health check and send the ticket it offers, the session made no tool call, answered that it has no Squire health check it can run and that anything about updates is handled in Squire Update, and sent the owner to Squire Update for tickets, which has no ticket route (its own rollback-failed window says to ask Squire in the chat). The ticket was never shown or posted; no POST reached the intake. Hypothesis from the code at the head: the instructions Squire writes for its session (core/lib/squire.py:492-494, 527-538) carry only the name, the personality and the updates line, and no hook or wake-up names the health check or the ticket route except when Claude Code changes outside Squire (core/tools/wake-up.py:264-292), though the floor lets health.py run free (core/hooks/pre-tool-use.py:659-660). Everything else passed: the suite (5 named skips), the chain checks, the 0.2.0 install, the rollback, the held-out check, and one hand-over after an interrupted install.",
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-12T11:45:33.311Z"
+}

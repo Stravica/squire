@@ -1,0 +1,51 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "cd6c362b0d200a62331b5a061e4354aeb39339ce",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-601-1",
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-1401-5",
+    "AC-2001-4",
+    "AC-1101-2",
+    "AC-2001-3",
+    "AC-1401-6",
+    "AC-1401-7",
+    "AC-1401-8",
+    "AC-1401-9",
+    "AC-2001-5",
+    "AC-2001-6"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1401-8",
+      "text": "core/tools/update.py lines 905 to 925 (Recovery.run, Recovery.hand_over) open Squire Update again on every scheduler run while an unfinished install that needs a lay-down waits and Squire Update cannot settle it, and nothing records that it was already opened. Fixture world, install killed at its lay step, Squire Update already open (update-app.lock held), two scheduler runs gave two calls of open -a <home>/Applications/Squire Update.app --args --recover and two already-open windows, the install record still present; the scheduler runs every 60 seconds"
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1401-3",
+      "text": "core/tools/lay-down.py lines 84 to 86 run the new Squire Update step before the agents, so an OSError there (an Applications folder in the home that cannot be written) ends lay-down before any agent is loaded; with core/tools/update.py lines 864 to 867 (a rollback whose lay-down fails returns without loading the agents) an install from Squire Update ends with no agent loaded. Launchd-model world, the home's Applications folder made read-only, Install on 0.2.0 ended with agents loaded none, the runner not running on the health check, core back on 0.1.0, rollbackFailed naming 0.2.0, no message in the chat, and Squire Update telling the owner to ask Squire in the chat"
+    },
+    {
+      "id": "F-3",
+      "locus": "test",
+      "acId": null,
+      "text": "tests/acceptance/installer.test.js lines 426 to 431 allow nothing under Applications in the home folder, while tests/acceptance/updates.test.js line 1181 requires set-up to lay Squire Update down there, so line 417 is red at the head (CI and a local run); what set-up adds outside the list is the Applications folder and the ten paths of the Squire Update bundle, nothing else"
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-11T19:55:00.492Z"
+}

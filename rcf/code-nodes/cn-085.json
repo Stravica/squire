@@ -1,0 +1,14 @@
+{
+  "cnId": "CN-085",
+  "path": "core/tools/update.py#WeeklyCheck",
+  "implementsAcIds": [
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-6"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-10T23:17:50.639Z",
+  "updatedAt": "2026-11-10T23:17:50.639Z"
+}
