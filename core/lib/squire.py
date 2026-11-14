@@ -483,7 +483,8 @@ class Persona:
     stored, and the block lay-down and the runner write into CLAUDE.md in
     Squire's config folder, which Claude Code loads as the user's own
     instructions for Squire's session. The owner's squire.json is the one
-    authority for both. The block also carries Squire's one standing line on
+    authority for both whenever it can be read; when it cannot, the block
+    keeps them as last written. The block also carries Squire's one standing line on
     updates (they install only from Squire Update on the owner's Mac) and the
     session's two routes: Squire's health check, which the session runs when
     the owner asks about Squire's health or for a support ticket, and the
@@ -558,13 +559,39 @@ class Persona:
 
     @classmethod
     def write(cls, home, owner_folder):
-        """Writes CLAUDE.md in Squire's config folder from the owner's
-        squire.json, whole, through a file beside it. An owner's file that
-        cannot be read leaves CLAUDE.md as last written."""
+        """Writes CLAUDE.md in Squire's config folder, whole, through a file
+        beside it, so the session always knows its routes. The owner's
+        squire.json is the one authority for the name and personality
+        whenever it can be read. When it cannot (it does not open, does not
+        parse, or is not an object), the name and personality are kept as
+        last written: read back from the block already in CLAUDE.md by its
+        own two sentences, each kept only if it still passes. With nothing to
+        read back, the block goes without them."""
+        folder = os.path.join(home, 'claude-config')
         values = cls.of(owner_folder)
         if values is None:
-            return
-        folder = os.path.join(home, 'claude-config')
+            values = {}
+            name = ('Your name is ', '. You are the owner\'s own Squire, their assistant on this Mac; use your name '
+                    'when you introduce yourself.')
+            personality = 'Your personality, in the owner\'s words: '
+            try:
+                with open(os.path.join(folder, 'CLAUDE.md'), encoding='utf-8') as f:
+                    lines = f.read().split('\n')
+            except (OSError, ValueError):
+                lines = []
+            inside = []
+            if cls.OPEN in lines:
+                rest = lines[lines.index(cls.OPEN) + 1:]
+                inside = rest[:rest.index(cls.CLOSE)] if cls.CLOSE in rest else []
+            for line in inside:
+                if line.startswith(name[0]) and line.endswith(name[1]) and len(line) > len(name[0]) + len(name[1]):
+                    key, value = 'squireName', line[len(name[0]):-len(name[1])]
+                elif line.startswith(personality):
+                    key, value = 'personality', line[len(personality):]
+                else:
+                    continue
+                if key not in values and cls.problem(key, value) is None:
+                    values[key] = value
         os.makedirs(folder, mode=0o700, exist_ok=True)
         fd, tmp = tempfile.mkstemp(prefix='.CLAUDE.md-', dir=folder)
         try:
