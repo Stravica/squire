@@ -1212,7 +1212,10 @@ class SquireUpdate:
                         else 'Squire is up to date. There is nothing to install.')
             return 0
         lines = HealthLines.read(self.config)
-        if lines is None or HealthLines.faults(lines):
+        faults = None if lines is None else HealthLines.faults(lines)
+        if lines is None or faults:
+            self.log('Squire must fix a problem before it can update '
+                     f'({"the health check could not run" if lines is None else ", ".join(faults)})')
             self.window('Squire must fix a problem before it can update. Ask Squire about it in the chat, then open '
                         'Squire Update again.')
             return 0
