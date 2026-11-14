@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-12T20:20:13.704Z",
+  "updatedAt": "2026-11-14T14:10:19.604Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -267,6 +267,13 @@
       "description": "the health check Squire's session loads, run exactly as written in a Squire home whose path holds a space, runs without asking the owner, and the same check unquoted is asked",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::the health check Squire's session loads, run exactly as written in a Squire home whose path holds a space, runs without asking the owner, and the same check unquoted is asked"
+    },
+    {
+      "id": "TC-012-session-loads-routes-squire-json-unreadable",
+      "acId": "AC-2001-7",
+      "description": "with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written"
     }
   ],
   "status": "draft"

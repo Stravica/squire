@@ -548,6 +548,34 @@ test("what Squire's session loads, written at lay-down and again before the runn
   assertSessionKnowsRoute(sessionLoads(rw), 'after the runner starts the session');
 });
 
+const PERSONA = { squireName: 'Pip', personality: 'Calm and brief, with a dry wit; checks before acting.' };
+
+test("with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written", LONG, async (t) => {
+  for (const [what, spoil] of [
+    ['squire.json closed to its user', (file) => fs.chmodSync(file, 0o000)],
+    ['squire.json not parsing', (file) => fs.writeFileSync(file, '{"squireName": "Pip", "personality": \n')],
+  ]) {
+    const rw = R.makeReleaseWorld(t, { persona: PERSONA });
+    const file = path.join(rw.home, 'claude-config', 'CLAUDE.md');
+    const laid = sessionLoads(rw);
+    assert.ok(laid.includes(PERSONA.squireName) && laid.includes(PERSONA.personality),
+      `${what}: lay-down writes the Squire's name and personality into what the session loads; it loads ${JSON.stringify(laid)}`);
+    // What a release from before the routes left: the same block with its
+    // name and personality lines only, the updates and route lines taken out.
+    const earlier = laid.split('\n').filter((l) => l.startsWith('<!--') || l.includes(PERSONA.squireName) || l.includes(PERSONA.personality));
+    fs.writeFileSync(file, earlier.join('\n') + '\n');
+    assert.doesNotMatch(sessionLoads(rw), /health check/i, `${what}: the block an earlier release left names no health check`);
+    // The owner's squire.json can no longer be read; an update's lay-down runs.
+    spoil(path.join(rw.owner, 'squire.json'));
+    const again = w.layDown(rw.world, rw.appCore, { env: R.env(rw) });
+    assert.equal(again.status, 0, `${what}: lay-down lays core down; got ${w.describe(again)}`);
+    const now = sessionLoads(rw);
+    assertSessionKnowsRoute(now, `${what}, after lay-down`);
+    assert.ok(now.includes(PERSONA.squireName), `${what}: the Squire's name as last written is kept; the session loads ${JSON.stringify(now)}`);
+    assert.ok(now.includes(PERSONA.personality), `${what}: the Squire's personality as last written is kept; the session loads ${JSON.stringify(now)}`);
+  }
+});
+
 test("when the owner asks for the support ticket the health check offers, the session's route reaches it: the floor lets the session run the health check without asking, the check offers the outbox ticket on its own line, the session's request to send it is blocked with the ticket's bytes as one line of JSON for the fence, and what the session loads names that route", LONG, async (t) => {
   const rw = await healthyWorld(t);
   plantFault(rw);
