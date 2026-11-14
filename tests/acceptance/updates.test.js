@@ -1171,6 +1171,28 @@ test("under a launchd that ends a stopped agent's process group, a rollback from
   assertAgentsHeld(rw, 'after the rollback');
 });
 
+test("under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all three agents loaded", LONG, async (t) => {
+  const rw = await modelWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  // The folder made read-only, as a full disk or a failed write refuses it:
+  // the install's lay-down fails there, and so does its rollback's. Opened
+  // again before the world is removed.
+  const config = path.join(rw.home, 'claude-config');
+  fs.chmodSync(config, 0o500);
+  t.after(() => { try { fs.chmodSync(config, 0o700); } catch (e) { /* gone */ } });
+  try {
+    const { sent } = await R.installAtMac(rw, release);
+    const state = () => `agents loaded: ${JSON.stringify(R.agentsLoaded(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}; sent ${JSON.stringify(sent)}`;
+    assert.ok(!fs.existsSync(R.installRecordFile(rw)), `the install and its rollback must run to their end; ${state()}`);
+    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500),
+      `after a rollback whose lay-down failed, the agents are loaded again, so Squire is not left down; ${state()}`);
+    assertAgentsHeld(rw, 'after a rollback whose lay-down failed');
+  } finally {
+    fs.chmodSync(config, 0o700);
+  }
+});
+
 test("under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
