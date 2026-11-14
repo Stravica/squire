@@ -178,7 +178,7 @@ const NOT_TO_THE_OWNER_TICKET = new RegExp(`${NOT_TO_THE_OWNER.source}|ticket\\.
 // A reply telling the owner Squire has no health check.
 const DENIES_CHECK = /(don't|do not|doesn't|does not|can't|cannot) (have|run) (a |any )?(Squire'?s? )?health check/i;
 // A reply saying plainly that there is no ticket to send.
-const NOTHING_TO_SEND = /nothing to send|no (support )?ticket|(isn't|is not|aren't|are not) (a |any )?(support )?tickets?\b/i;
+const NOTHING_TO_SEND = /nothing (else )?to send|no (support )?ticket|(isn't|is not|aren't|are not) (a |any )?(support )?tickets?\b/i;
 // A fenced block: a line of three backticks, its body, a line of three backticks.
 const FENCE = /^```[^\n`]*\n([\s\S]*?)\n```[ \t]*$/gm;
 
@@ -241,7 +241,7 @@ if since is not None:
         m = e.get('message') or {}
         text = text_of(m)
         if out['ask'] is None:
-            if from_owner(e, m, text) and re.search(r'ticket|health', text, re.I):
+            if from_owner(e, m, text) and re.search(r'ticket|health|send to support', text, re.I):
                 out['ask'] = text[:300]
             continue
         if from_owner(e, m, text):
