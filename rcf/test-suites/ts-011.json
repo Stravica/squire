@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-11T20:04:58.515Z",
+  "updatedAt": "2026-11-14T14:09:11.757Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -664,6 +664,20 @@
       "description": "under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all three agents loaded, and the health check names Squire Update on one line and exits non-zero",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all three agents loaded, and the health check names Squire Update on one line and exits non-zero"
+    },
+    {
+      "id": "TC-011-set-up-applications-read-only-refused-before-any-change",
+      "acId": "AC-1401-12",
+      "description": "first set-up on a Mac whose Applications folder in the owner's home cannot be written is refused before any change, in plain words naming that folder, and Squire Update is put nowhere else",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::first set-up on a Mac whose Applications folder in the owner's home cannot be written is refused before any change, in plain words naming that folder, and Squire Update is put nowhere else"
+    },
+    {
+      "id": "TC-011-set-up-again-puts-squire-update-back",
+      "acId": "AC-1401-12",
+      "description": "set-up run again after a lay-down that could not put Squire Update in the Applications folder of the owner's home puts it there, from the release installed, once that folder can be written to",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::set-up run again after a lay-down that could not put Squire Update in the Applications folder of the owner's home puts it there, from the release installed, once that folder can be written to"
     }
   ],
   "status": "draft"

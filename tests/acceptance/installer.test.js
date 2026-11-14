@@ -90,6 +90,46 @@ test('a declared plan below Pro, or the plan window closed, stops set-up before 
   }
 });
 
+// Every entry named name under dir, a link never followed.
+function entriesNamed(dir, name) {
+  const found = [];
+  const visit = (abs) => {
+    let st;
+    try { st = fs.lstatSync(abs); } catch (e) { return; }
+    if (path.basename(abs) === name) found.push(abs);
+    if (!st.isDirectory()) return;
+    let names = [];
+    try { names = fs.readdirSync(abs); } catch (e) { return; }
+    for (const n of names) visit(path.join(abs, n));
+  };
+  visit(dir);
+  return found;
+}
+
+test("first set-up on a Mac whose Applications folder in the owner's home cannot be written is refused before any change, in plain words naming that folder, and Squire Update is put nowhere else", { timeout: 120000 }, async (t) => {
+  // Should set-up go on past the check, the owner says Not now at the one
+  // yes, so nothing is installed either way.
+  const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.setUp]: 'button returned:Not now' } } });
+  // The Applications folder of the owner's home, where set-up puts Squire
+  // Update, made read-only. Opened again before the world is removed.
+  const apps = path.join(iw.userHome, 'Applications');
+  fs.mkdirSync(apps, { recursive: true });
+  fs.chmodSync(apps, 0o555);
+  t.after(() => { try { fs.chmodSync(apps, 0o755); } catch (e) { /* gone */ } });
+  const system = '/Applications/Squire Update.app';
+  const systemBefore = fs.existsSync(system);
+  try {
+    const before = w.snapshot(iw.userHome);
+    const run = await I.runApp(iw);
+    assertRefusedBeforeAnyChange(iw, before, run, [/Applications/], 'an Applications folder in the owner\'s home that cannot be written');
+    assert.deepEqual(entriesNamed(iw.root, 'Squire Update.app'), [],
+      'Squire Update is put in no other place: no Squire Update.app anywhere in the world');
+    assert.equal(fs.existsSync(system), systemBefore, 'Squire Update is never put in the Mac\'s own Applications folder instead');
+  } finally {
+    fs.chmodSync(apps, 0o755);
+  }
+});
+
 // ------------------------------------------------------------ the plan read
 
 test("a plan found below Pro at sign-in stops set-up and leaves the home folder as set-up found it, signing Squire's config folder out, with Apple's tools never started", { timeout: 120000 }, async (t) => {

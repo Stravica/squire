@@ -1304,6 +1304,34 @@ test("set-up's lay-down puts Squire Update in the Applications folder of the own
   assertUpdateAppAt(rw, R.INSTALLED, 'after set-up');
 });
 
+test("set-up run again after a lay-down that could not put Squire Update in the Applications folder of the owner's home puts it there, from the release installed, once that folder can be written to", LONG, async (t) => {
+  const rw = await R.makeInstalledApp(t);
+  const apps = path.dirname(R.squireUpdateApp(rw));
+  const naming = (h) => h.stdout.split('\n').map((l) => l.trim()).filter((l) => l.includes('Squire Update'));
+  // A lay-down that cannot put Squire Update there, as an update into a
+  // read-only Applications folder leaves a Mac: Squire Update gone, the
+  // folder read-only, and the product's lay-down run from the release
+  // set-up keeps. Opened again before the world is removed.
+  fs.rmSync(R.squireUpdateApp(rw), { recursive: true, force: true });
+  fs.chmodSync(apps, 0o555);
+  t.after(() => { try { fs.chmodSync(apps, 0o755); } catch (e) { /* gone */ } });
+  try {
+    const release = path.join(rw.home, 'release', 'core');
+    const laid = w.layDown(rw.world, release, { script: path.join(release, 'tools', 'lay-down.py'), env: R.env(rw) });
+    assert.equal(laid.status, 0, `the lay-down goes on without Squire Update; got ${w.describe(laid)}`);
+    const h = R.health(rw);
+    assert.equal(naming(h).length, 1, `the health check names Squire Update, which the lay-down could not put there; got ${w.describe(h)}`);
+  } finally {
+    fs.chmodSync(apps, 0o755);
+  }
+  // The owner opens set-up again, the way back the installer gives, with the
+  // folder writable once more.
+  const run = await R.runAppAgain(rw);
+  assertUpdateAppAt(rw, R.INSTALLED, `after set-up runs again (set-up exit ${run.status}; windows: ${run.dialogs.map((d) => d.title).join(' | ') || '(none)'})`);
+  const after = R.health(rw);
+  assert.deepEqual(naming(after), [], `once set-up has put Squire Update there, the health check no longer names it; got ${w.describe(after)}`);
+});
+
 test("an update lays down the new release's Squire Update", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
