@@ -96,12 +96,16 @@ class Ticket:
         """128 random bits from the system's random source, made at the first
         ticket and kept in install-id in the Squire home, readable by its user
         only: an id found as a file of any other kind or mode is kept, never
-        made again, and written back at 0600."""
+        made again, and written back at 0600. The id is made only when
+        nothing stands at its path. Anything else there that does not read as
+        an id (a folder, a file that cannot be read, a link to nothing, a file
+        holding anything else) is never replaced, written into or changed,
+        and there is no id: None."""
         path = os.path.join(self.home, 'install-id')
         try:
             with open(path, encoding='utf-8') as f:
                 found = f.read().strip()
-        except OSError:
+        except (OSError, ValueError):
             found = None
         if found is not None and re.match(r'^[0-9a-f]{32}$', found):
             try:
@@ -111,6 +115,8 @@ class Ticket:
             if mode != stat.S_IFREG | 0o600:
                 Records.write_bytes(path, (found + '\n').encode('ascii'), durable=True)
             return found
+        if os.path.lexists(path):
+            return None
         made = os.urandom(16).hex()
         Records.write_bytes(path, (made + '\n').encode('ascii'), durable=True)
         return made
@@ -212,7 +218,10 @@ class Outbox:
         {key: (about, fixes tried)}: a ticket built once per occurrence and
         offered on a line of its own, and every ticket waiting to send. When
         core's release.json names an intake that is not plain, no ticket is
-        built and one line names the config, never the address."""
+        built and one line names the config, never the address. When a
+        ticket must be built and the install id cannot be read, no ticket is
+        built and one line names the install id's file in place of the
+        offer; tickets already built are offered as before."""
         index = Records.read(self.index_file)
         index = index if isinstance(index, dict) else {}
         kept = {k: v for k, v in index.items() if k in present or os.path.lexists(self.file(v))}
@@ -222,14 +231,21 @@ class Outbox:
             lines.append('config: Squire\'s config, core/release.json, names a support intake Squire cannot send to, '
                          'so no support ticket was built')
         else:
+            unread = False
             for key, (about, tried) in present.items():
                 if key not in kept:
+                    if unread or Ticket(self.home).install_id() is None:
+                        unread = True
+                        continue
                     kept[key] = self.build(intake, codes, tried)
                 ticket_id = kept[key]
                 state = Records.read(self.state_file(ticket_id))
                 if os.path.lexists(self.file(ticket_id)) and isinstance(state, dict) and not state.get('attempts'):
                     lines.append(f'ticket: {ticket_id} is ready to send about {about}; to send it, ask: '
                                  f'{self.request(ticket_id)}')
+            if unread:
+                lines.insert(0, 'config: Squire\'s install id (the file install-id in the Squire home) cannot be read, '
+                                'so no support ticket was built')
         for ticket_id in self.waiting():
             state = Records.read(self.state_file(ticket_id))
             attempts = state.get('attempts') if isinstance(state, dict) else None
