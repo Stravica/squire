@@ -194,7 +194,7 @@ class SetUp:
             done = step in self.record.done
             if done and step in ('phone', 'firstConversation'):
                 continue
-            if done and step != 'health' and self.holds(step):
+            if done and step != 'health' and self.holds(step) and not (step == 'layDown' and self.update_app_missing()):
                 continue
             try:
                 getattr(self, 'step_' + step[0].lower() + re.sub(r'([A-Z])', lambda m: '_' + m.group(1).lower(), step[1:]))()
@@ -274,6 +274,17 @@ class SetUp:
             if Release.digest(os.path.join(self.home, 'core', rel)) != digest:
                 return False
         return all(self.agent(label) is not None for label in AGENTS)
+
+    def update_app_missing(self):
+        """True when a lay-down could not put Squire Update in the Applications
+        folder of the owner's home (update-app.json in the Squire home says
+        so), or it is not there, and the app is not older than the installed
+        release: set-up run again lays down again, which puts it there. It
+        never decides whether the layDown step holds."""
+        if self.older():
+            return False
+        return os.path.lexists(os.path.join(self.home, 'update-app.json')) \
+            or not os.path.isdir(os.path.join(self.user_home, 'Applications', 'Squire Update.app'))
 
     def backup_holds(self):
         if self.agent('com.stravica.squire.backup') is None:
