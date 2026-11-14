@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-14T14:09:11.757Z",
+  "updatedAt": "2026-11-14T14:10:55.513Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -678,6 +678,13 @@
       "description": "set-up run again after a lay-down that could not put Squire Update in the Applications folder of the owner's home puts it there, from the release installed, once that folder can be written to",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::set-up run again after a lay-down that could not put Squire Update in the Applications folder of the owner's home puts it there, from the release installed, once that folder can be written to"
+    },
+    {
+      "id": "TC-011-fault-held-window-writes-one-log-line",
+      "acId": "AC-1401-12",
+      "description": "Squire Update opened while the health check names a fault writes one line in its log in the Squire home when its window says Squire must fix a problem first",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::Squire Update opened while the health check names a fault writes one line in its log in the Squire home when its window says Squire must fix a problem first"
     }
   ],
   "status": "draft"

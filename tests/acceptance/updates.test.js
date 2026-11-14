@@ -1369,6 +1369,25 @@ test('Squire Update opened while the health check names a fault says Squire must
   assert.ok(R.staged(rw).includes(NEXT), 'the staged release stays staged for later');
 });
 
+test("Squire Update opened while the health check names a fault writes one line in its log in the Squire home when its window says Squire must fix a problem first", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
+  fs.appendFileSync(floorFile, '# one line more\n');
+  assert.notEqual(R.health(rw).status, 0, 'the world plants a fault the health check names');
+  // Squire Update's log: logs/update.log in the Squire home (the words of its lines are the product's).
+  const log = path.join(rw.home, 'logs', 'update.log');
+  const linesOf = () => { try { return fs.readFileSync(log, 'utf8').split('\n').filter((l) => l.trim()); } catch (e) { return []; } };
+  const before = linesOf();
+  const r = await R.installAtMac(rw, release, 'Install');
+  assert.ok(r.windows.some((x) => /fix a problem/i.test(x.text || '')), `Squire Update must say Squire has a problem to fix first; windows: ${JSON.stringify(r.windows.map((x) => x.text))}`);
+  const after = linesOf();
+  assert.deepEqual(after.slice(0, before.length), before, 'the lines already in Squire Update\'s log are kept');
+  assert.equal(after.length - before.length, 1,
+    `when its window says Squire must fix a problem first, Squire Update writes one line in its log (logs/update.log in the Squire home); it wrote ${JSON.stringify(after.slice(before.length))}`);
+});
+
 test("Squire Update opened while the health check names a fault sends the owner to the chat, and the session's route reaches the fault: the floor lets the session run the health check without asking, the check names the fault, and what the session loads names Squire's health check", LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
