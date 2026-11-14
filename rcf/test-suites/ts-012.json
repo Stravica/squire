@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-14T14:10:19.604Z",
+  "updatedAt": "2026-11-14T14:14:33.753Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -274,6 +274,20 @@
       "description": "with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::with the owner's squire.json unreadable (closed to its user, or not parsing), what Squire's session loads, written again at lay-down, names Squire's health check and the ticket route, and keeps the Squire's name and personality as last written"
+    },
+    {
+      "id": "TC-012-install-id-folder-named-check-runs-never-replaced",
+      "acId": "AC-2001-3",
+      "description": "a folder in place of the install id's file is named by the health check in one plain line of its own, the rest of the check runs, the folder is never replaced by a new id, and no ticket carries an install id",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::a folder in place of the install id's file is named by the health check in one plain line of its own, the rest of the check runs, the folder is never replaced by a new id, and no ticket carries an install id"
+    },
+    {
+      "id": "TC-012-install-id-unreadable-named-never-made-again",
+      "acId": "AC-2001-3",
+      "description": "an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id"
     }
   ],
   "status": "draft"

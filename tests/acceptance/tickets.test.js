@@ -497,6 +497,63 @@ test('an install id found readable by others is kept, for its user only, when th
   assert.equal(JSON.parse(second.bytes).installId, id, 'the next ticket carries the same install id');
 });
 
+// Something at the install id's path that cannot be read as the id, with a
+// fault that offers a ticket: the health check names it in one plain line of
+// its own and the rest of the check runs; what stands there is never
+// replaced by a new id, and no ticket carries any id but the home's one.
+async function installIdUnreadable(t, what, plant) {
+  const rw = await healthyWorld(t);
+  const file = path.join(rw.home, 'install-id');
+  const { id, unchanged } = plant(file);
+  plantFault(rw);
+  const h = R.health(rw);
+  const lines = h.stdout.split('\n').map((l) => l.trim()).filter(Boolean);
+  const naming = lines.filter((l) => /install[ -]?id/i.test(l));
+  assert.equal(naming.length, 1, `${what}: the health check must name the install id on one line of its own; got ${w.describe(h)}`);
+  assert.ok(!/^(ignored|ticket):/.test(naming[0]) && !naming[0].includes('overlay/'),
+    `${what}: the install id's line is a line of its own, not a fault's or an offer's; got ${JSON.stringify(naming[0])}`);
+  assert.doesNotMatch(naming[0], /Traceback|Errno|Exception|\b[A-Z][A-Za-z]*Error\b/, `${what}: the install id's line is in plain words; got ${JSON.stringify(naming[0])}`);
+  assert.ok(lines.some((l) => /^ignored: overlay\//.test(l)), `${what}: the rest of the health check runs: the fault is still named; got ${w.describe(h)}`);
+  assert.equal(h.status, 1, `${what}: the health check runs to its end, naming what it found; got ${w.describe(h)}`);
+  unchanged();
+  for (const ticketId of R.outboxIds(rw)) {
+    const body = JSON.parse(fs.readFileSync(R.outboxFile(rw, ticketId), 'utf8'));
+    assert.ok(!('installId' in body) || body.installId === id,
+      `${what}: a ticket never carries a second install id; ${ticketId} carries ${JSON.stringify(body.installId)}, the home's is ${JSON.stringify(id)}`);
+  }
+}
+
+test("a folder in place of the install id's file is named by the health check in one plain line of its own, the rest of the check runs, the folder is never replaced by a new id, and no ticket carries an install id", LONG, (t) => installIdUnreadable(t, 'a folder at the install id\'s path', (file) => {
+  fs.mkdirSync(file);
+  fs.writeFileSync(path.join(file, 'kept.txt'), 'left by a restore\n');
+  const ino = fs.lstatSync(file).ino;
+  return {
+    id: null,
+    unchanged: () => {
+      const st = fs.lstatSync(file);
+      assert.ok(st.isDirectory() && st.ino === ino, 'the folder at the install id\'s path stays where it is: no new id is made in its place');
+      assert.deepEqual(fs.readdirSync(file), ['kept.txt'], 'nothing is written into the folder');
+    },
+  };
+}));
+
+test("an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id", LONG, (t) => installIdUnreadable(t, 'an install id that cannot be read', (file) => {
+  const id = require('node:crypto').randomBytes(16).toString('hex');
+  fs.writeFileSync(file, `${id}\n`, { mode: 0o600 });
+  fs.chmodSync(file, 0o000);
+  t.after(() => { try { fs.chmodSync(file, 0o600); } catch (e) { /* gone */ } });
+  const ino = fs.lstatSync(file).ino;
+  return {
+    id,
+    unchanged: () => {
+      const st = fs.lstatSync(file);
+      assert.ok(st.isFile() && st.ino === ino, 'the install id\'s file stays where it is: the id is never made again');
+      fs.chmodSync(file, 0o600);
+      assert.equal(fs.readFileSync(file, 'utf8').trim(), id, 'the install id\'s file still holds the home\'s one id');
+    },
+  };
+}));
+
 // ------------------------------------------------- a clock read ahead
 
 test('an approved ticket whose last attempt is dated ahead of the clock is retried at the next run as due now, with the same bytes and id, and its record keeps no attempt after now; once the intake answers it is cleared and filed once', LONG, async (t) => {
