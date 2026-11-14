@@ -855,7 +855,11 @@ class Install:
         weekly check's offer (update.json's heldOut) until a newer one is
         published. Once the previous release is laid down and its check has
         run, releases/ keeps it and the release current-release.json names
-        before it, and nothing else: the rolled-back release goes."""
+        before it, and nothing else: the rolled-back release goes. A rollback
+        that cannot re-check or lay down the previous release ends unchecked:
+        the mark names the version installed after that failed step, and the
+        agents are loaded again from the last whole lay-down, so Squire is
+        not left down; a failed lay-down also tells the owner once."""
         try:
             self.releases.note(heldOut=version)
         except OSError:
@@ -863,12 +867,16 @@ class Install:
         key_version = (before or {}).get('previous') if (before or {}).get('current') == previous else None
         files = self.recheck(previous, key_version)
         if files is None or (previous_files is not None and files != previous_files):
-            self.mark_failed(version, previous, on=version)
+            self.mark_failed(version, previous, on=self.releases.installed() or version)
+            self.reload()
             self.remove_record()
             return version
         self.stop()
         if not self.lay(os.path.join(self.releases.kept, previous, 'core')):
-            self.mark_failed(version, previous, on=version)
+            self.mark_failed(version, previous, on=self.releases.installed() or version)
+            self.send(f'Squire rolled {version} back to {previous}, and the check after the rollback failed too; the '
+                      'health check offers a support ticket', 'rollback')
+            self.reload()
             self.remove_record()
             return version
         record = before or {'current': previous, 'previous': None, 'verified': False}
