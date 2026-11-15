@@ -73,6 +73,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: pnpm exec rcf audit coverage REQ-020
 
+      - name: Coverage of REQ-005
+        if: ${{ !cancelled() }}
+        run: pnpm exec rcf audit coverage REQ-005 --strict
+
       - name: Separation of hands
         if: ${{ !cancelled() }}
         run: pnpm exec rcf audit separation --base origin/main
