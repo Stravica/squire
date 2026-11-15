@@ -1,5 +1,16 @@
 """Records Squire's session, run by Claude Code at every SessionStart from
-core's settings. Prints nothing and always exits 0.
+core's settings, and brings the handover note to the conversation after
+/clear. Always exits 0.
+
+The handover: each start of a session opens a new period for its /clear
+prompt and a compaction is counted, per session id, in runtime/handover.json
+in the Squire home. At source clear it prints the newest handover note not
+yet picked up (state/handover/*.md in the owner's folder, newest by
+modification time, never an empty one), whole, after one line saying it is
+the handover from the last conversation, so it reaches the new
+conversation's context, and records it picked up by its path. startup,
+resume and compact print nothing. A note is never deleted. This comes first,
+before and whatever happens to the steps below.
 
 The job: at startup and at clear it writes the job's record in the approvals
 ledger, keeping one the ledger already holds for that id, so the floor knows
@@ -32,6 +43,8 @@ class SessionStart:
     CLEAN = ('startup', 'clear')
     UNPLACED = 'a job the floor did not see start'
     SOCKET_WAIT = 10.0
+    PICKUP = ('Squire note from Squire\'s own code (not a message from anyone): this is the handover note from the last '
+              'conversation, saved at {path}. Pick up the work in progress from it; it follows whole.')
 
     @classmethod
     def handle(cls, raw):
@@ -45,6 +58,10 @@ class SessionStart:
         if not isinstance(session, str) or not session:
             return
         config = Config()
+        try:
+            cls.handover(config, session, source)
+        except Exception:
+            pass
         now = time.time()
         parent = os.getppid()
         if not cls.alive(parent):
@@ -56,6 +73,62 @@ class SessionStart:
                 for kind in ('untrusted', 'private'):
                     ledger.taint(session, kind, cls.UNPLACED, now)
         cls.record(config.home, session, source, parent)
+
+    @classmethod
+    def handover(cls, config, session, source):
+        """The handover's part of a start (the module's docstring)."""
+        from squire import Runtime
+
+        folder = os.path.join(config.owner_folder, 'state', 'handover')
+        shown = []
+
+        def change(data):
+            sessions = data.get('sessions') if isinstance(data.get('sessions'), dict) else {}
+            mine = dict(sessions.get(session)) if isinstance(sessions.get(session), dict) else {}
+            mine['period'] = (mine.get('period') if isinstance(mine.get('period'), int) else 0) + 1
+            if source == 'compact':
+                mine['compactions'] = (mine.get('compactions') if isinstance(mine.get('compactions'), int) else 0) + 1
+            sessions[session] = mine
+            data = {**data, 'sessions': sessions}
+            if source == 'clear':
+                picked = data.get('pickedUp') if isinstance(data.get('pickedUp'), list) else []
+                note = cls.newest(folder, picked)
+                if note:
+                    data['pickedUp'] = picked + [note[0]]
+                    shown.append(note)
+            return data
+
+        Runtime.update(config.home, 'handover.json', change)
+        for path, text in shown:
+            print(cls.PICKUP.format(path=path))
+            print(text.rstrip('\n'))
+
+    @staticmethod
+    def newest(folder, picked):
+        """(path, text) of the newest handover note in folder by modification
+        time that is not empty and not in picked; or None."""
+        try:
+            names = os.listdir(folder)
+        except OSError:
+            return None
+        found = []
+        for name in names:
+            path = os.path.join(folder, name)
+            if not name.endswith('.md') or path in picked:
+                continue
+            try:
+                st = os.stat(path)
+                if not stat.S_ISREG(st.st_mode) or st.st_size == 0:
+                    continue
+                with open(path, encoding='utf-8', errors='replace') as f:
+                    text = f.read()
+            except OSError:
+                continue
+            found.append((st.st_mtime, path, text))
+        if not found:
+            return None
+        _, path, text = max(found)
+        return path, text
 
     @staticmethod
     def alive(parent):
