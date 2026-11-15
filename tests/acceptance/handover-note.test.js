@@ -59,11 +59,11 @@ function context(world, percent) {
 
 // The session saves its handover note as it is asked to: the floor lets the
 // Write through without a yes, and Claude Code writes the file.
-function saveNote(world, session) {
+function saveNote(world, session, text = NOTE) {
   const file = noteFile(world, session);
-  w.assertAllowed(w.attempt(world, session, w.tools.write(file, NOTE)), 'the session saving its handover note, a new file in the owner\'s folder');
+  w.assertAllowed(w.attempt(world, session, w.tools.write(file, text)), 'the session saving its handover note, a new file in the owner\'s folder');
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, NOTE);
+  fs.writeFileSync(file, text);
   return file;
 }
 
@@ -81,6 +81,10 @@ test('at 70% context or after the second compaction Squire asks for the handover
   const ask = w.ownerSays(world, job, 'And the one after that');
   assert.match(ask.stdout, /handover/i, `at 75% context Squire asks the session to save its handover note; got ${w.describe(ask)}`);
   assert.ok(ask.stdout.includes(noteFile(world, job)), `the ask names where the note goes (${noteFile(world, job)}); got ${w.describe(ask)}`);
+  for (const [what, words] of [['the work in progress', /work in progress/i], ['what is done', /\bdone\b/i],
+    ['what is next', /\bnext\b/i], ['where things are', /where things are/i]]) {
+    assert.match(ask.stdout, words, `the ask says the note holds ${what}; got ${w.describe(ask)}`);
+  }
   assert.doesNotMatch(ask.stdout, /\/clear/, `no /clear prompt before the note is saved; got ${w.describe(ask)}`);
   const notYet = w.ownerSays(world, job, 'ok');
   assert.doesNotMatch(notYet.stdout, /\/clear/, `still no /clear prompt while the note is not saved; got ${w.describe(notYet)}`);
@@ -101,6 +105,17 @@ test('at 70% context or after the second compaction Squire asks for the handover
   assert.match(twice.stdout, /handover/i, `after the second compaction Squire asks for the handover note; got ${w.describe(twice)}`);
   assert.ok(twice.stdout.includes(noteFile(other, long)), `the ask names where the note goes; got ${w.describe(twice)}`);
   assert.doesNotMatch(twice.stdout, /\/clear/, `no /clear prompt before the note is saved; got ${w.describe(twice)}`);
+
+  // An empty file at the note's place is not a saved note: no /clear prompt on the next message.
+  const empty = U.usageWorld(t);
+  const blank = 'job-empty-note';
+  started(empty, blank, 'startup');
+  context(empty, 75);
+  w.ownerSays(empty, blank, 'Next supplier on the list, please');
+  fs.mkdirSync(path.dirname(noteFile(empty, blank)), { recursive: true });
+  fs.writeFileSync(noteFile(empty, blank), '');
+  const afterEmpty = w.ownerSays(empty, blank, 'Thanks, that is enough for now');
+  assert.doesNotMatch(afterEmpty.stdout, /\/clear/, `an empty file at the note's place is no saved note: no /clear prompt; got ${w.describe(afterEmpty)}`);
 });
 
 test('after /clear the new conversation picks up the work in progress from the handover note', { timeout: 60000 }, (t) => {
@@ -163,4 +178,33 @@ test('when the owner carries on without /clear, the /clear prompt comes back at 
   const afterCompact = w.ownerSays(world, job, 'How is it going?');
   assert.match(afterCompact.stdout, /\/clear/, `after a further compaction the /clear prompt comes back; got ${w.describe(afterCompact)}`);
   assert.ok(fs.existsSync(noteFile(world, job)), 'the handover note is still there');
+});
+
+const OLDER_NOTE = [
+  '# Handover',
+  'Work in progress: the boiler service quotes, two of four firms asked.',
+  'Done: Calder Heating and Brookside Gas asked for a Tuesday visit.',
+  'Next: ask Northgate and Ferris, then compare in workspace/boiler.md.',
+  '',
+].join('\n');
+
+test('with two handover notes saved, /clear picks up the newest whole and not the older, and a later /clear does not pick the same note up again', { timeout: 60000 }, (t) => {
+  // Heavy: two long conversations in a day, each saving its note, the older first.
+  const world = U.usageWorld(t);
+  started(world, 'job-older', 'startup');
+  context(world, 75);
+  w.ownerSays(world, 'job-older', 'Next firm on the list, please');
+  const older = saveNote(world, 'job-older', OLDER_NOTE);
+  const hourAgo = new Date(Date.now() - 3600 * 1000);
+  fs.utimesSync(older, hourAgo, hourAgo);
+  started(world, 'job-newer', 'startup');
+  w.ownerSays(world, 'job-newer', 'Next supplier on the list, please');
+  saveNote(world, 'job-newer', NOTE);
+  const first = started(world, 'job-after', 'clear');
+  assert.ok(first.stdout.includes(NOTE.trim()),
+    `at the start after /clear the newest handover note reaches the new conversation whole; got ${w.describe(first)}`);
+  assert.ok(!first.stdout.includes(OLDER_NOTE.split('\n')[1]), `the older note is not the one picked up; got ${w.describe(first)}`);
+  const second = started(world, 'job-after-again', 'clear');
+  assert.ok(!second.stdout.includes(NOTE.split('\n')[1]),
+    `a note already picked up is not picked up again at a later /clear; got ${w.describe(second)}`);
 });
