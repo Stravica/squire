@@ -307,6 +307,8 @@ case "$text" in
   *"Squire: your plan"*) answer="button returned:Continue" ;;
   *"Squire: your phone"*) answer="button returned:Later" ;;
   *"Squire: "*) answer="button returned:OK" ;;
+  *"Squire Update"*'"Install"'*|*'"Install"'*"Squire Update"*) answer="button returned:Not now" ;;
+  *"Squire Update"*) answer="button returned:OK" ;;
   *) if [[ -n "$input" ]]; then print -r -- "$input" | exec /usr/bin/osascript "$@"; else exec /usr/bin/osascript "$@"; fi ;;
 esac
 if [[ -n "$input" ]]; then print -r -- "$input" | /usr/bin/osascript "$@" >/dev/null 2>&1 &
@@ -338,6 +340,11 @@ test("setting Squire up from the download on a fresh Mac user opens no Terminal 
   const allowed = ALLOWED.map((b) => b.toLowerCase());
   if (state.browser) allowed.push(String(state.browser).toLowerCase());
   const squireExe = `${state.app}/Contents/MacOS/Squire`;
+  // Squire Update, laid down by set-up, runs as the installed core's
+  // update.py --app (its launcher hands over to it).
+  const updateApp = '~/Applications/Squire Update.app';
+  const isSquireUpdate = (command) => /Squire Update\.app|core\/tools\/update\.py --app/.test(String(command));
+  let realUpdateWindow = false;
   const made = onTarget('/usr/bin/mktemp -d -t squire-no-terminal');
   assert.equal(made.status, 0, 'a temporary folder on the target for the answer source and the watcher');
   const folder = made.stdout.trim();
@@ -369,6 +376,10 @@ test("setting Squire up from the download on a fresh Mac user opens no Terminal 
       const squires = chain.some((p) => String(p.command).includes(squireExe));
       if (squires) {
         if (/^\/usr\/bin\/osascript\b/.test(String(chain[0] && chain[0].command))) realSetUpWindow = true;
+        continue;
+      }
+      if (chain.some((p) => isSquireUpdate(p.command))) {
+        if (/^\/usr\/bin\/osascript\b/.test(String(chain[0] && chain[0].command))) realUpdateWindow = true;
         continue;
       }
       assert.ok(win.bundleId, `a window opened during set-up whose app cannot be told (owner ${win.owner}, pid ${win.pid}) and that is not Squire's: it fails, never passes`);
@@ -405,6 +416,22 @@ test("setting Squire up from the download on a fresh Mac user opens no Terminal 
   await sleep(1000);
   judge();
   assert.ok(realSetUpWindow, 'the test must see at least one real set-up window drawn by the Mac\'s own osascript, or it proves nothing about set-up\'s windows');
+  // Squire Update, opened as the owner opens it, watched the same way: its
+  // windows are its own, and it opens no Terminal window either.
+  const updateOpened = onTarget(`/usr/bin/open -n --env SQUIRE_SYSTEM_ROOT=${q(root)} ~/'Applications/Squire Update.app'`);
+  assert.equal(updateOpened.status, 0, `Squire Update must open on the target from ${updateApp}; got ${updateOpened.stderr.trim()}`);
+  const updateEnd = Date.now() + REPAIR_MINUTES * 60000;
+  await sleep(3000);
+  for (;;) {
+    judge();
+    const running = onTarget(`/usr/bin/pgrep -f ${q('core/tools/update.py --app')}`).status === 0;
+    if (!running) break;
+    assert.ok(Date.now() < updateEnd, `Squire Update must end within ${REPAIR_MINUTES} minutes`);
+    await sleep(3000);
+  }
+  await sleep(1000);
+  judge();
+  assert.ok(realUpdateWindow, 'the test must see at least one real Squire Update window drawn by the Mac\'s own osascript, or it proves nothing about Squire Update\'s windows');
 });
 
 test('the first-run journey on a fresh Mac user: from the download, every set-up step runs in order without Terminal, and the owner gets a first reply from their Squire, named', { skip: SKIP, timeout: (SET_UP_MINUTES + FIRST_REPLY_MINUTES + 10) * 60000 }, async (t) => {

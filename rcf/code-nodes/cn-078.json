@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-078",
+  "path": "core/lib/squire.py#Records",
+  "implementsAcIds": [
+    "AC-1401-8",
+    "AC-2001-4"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-10T23:17:48.605Z",
+  "updatedAt": "2026-11-10T23:17:48.605Z"
+}

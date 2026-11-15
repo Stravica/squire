@@ -1,0 +1,21 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "1c8ee60bfa2397f6b9bd55d69a5a35ba7015841f",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "result": "PASS",
+  "suite": {
+    "pass": 358,
+    "fail": 0,
+    "skip": 7,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2, Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, /bin/zsh 5.9, /usr/bin/ssh-keygen (prints no version line for -V), node v24.14.0, pnpm 10.32.1; rcf-lite 0.42.0 for the verdict, rcf-lite 0.42.3 for the strength record; fresh clone served 5d49ac4 (reviewed head 1c8ee60), pnpm install --frozen-lockfile; suite: env -u SQUIRE_TARGET_HOST -u RCF_TARGET_URL node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js', run twice at this head: the first exited 0 but its TAP file was replaced on disk while it ran, so this verdict reads the second run's TAP (365 tests, 358 pass, 0 fail, 7 skipped); SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, the seven External and Journey tests skipped, AC-1401-11's one and AC-2001-7's two among them; temporary homes and keychains, fake claude and fake Mac commands, loopback release host and intake only; no walk",
+  "node": "v24.14.0",
+  "reason": null,
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-15T11:18:49.706Z"
+}

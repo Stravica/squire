@@ -358,10 +358,26 @@ const FAKE_PLACES = {
   sw_vers: 'usr/bin', sysctl: 'usr/sbin', id: 'usr/bin', 'xcode-select': 'usr/bin', curl: 'usr/bin', osascript: 'usr/bin', open: 'usr/bin',
 };
 
+// A world's launchctl unless the world gives its own (the launchd model's):
+// never a link to the Mac's own, so no world ever reaches this Mac's launchd.
+// It records the call beside the system folders, in launchctl-refused.jsonl,
+// and refuses it (exit 64).
+const REFUSING_LAUNCHCTL = `#!${process.execPath}
+'use strict';
+const fs = require('fs');
+const path = require('path');
+fs.appendFileSync(path.join(__dirname, '..', 'launchctl-refused.jsonl'),
+  JSON.stringify({ argv: process.argv.slice(2), pid: process.pid, at: Date.now() }) + '\\n');
+process.stderr.write('launchctl: this test world has no launchd; nothing was done\\n');
+process.exit(64);
+`;
+
 // Lays the four system folders under root: every entry of the real folder as
 // a link to it, except the files given ({ 'usr/bin/curl': text }), written
-// in its place and made executable. Returns root.
-function makeSystemRoot(root, files = {}) {
+// in its place and made executable, and bin/launchctl, which is never a link
+// (the refusing stand-in above unless a file is given for it). Returns root.
+function makeSystemRoot(root, given = {}) {
+  const files = { 'bin/launchctl': REFUSING_LAUNCHCTL, ...given };
   for (const folder of SYSTEM_FOLDERS) {
     const dir = path.join(root, folder);
     fs.mkdirSync(dir, { recursive: true });

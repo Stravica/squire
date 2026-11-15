@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-095",
+  "path": "core/hooks/user-prompt-submit.py#ReleaseNote",
+  "implementsAcIds": [
+    "AC-1401-2",
+    "AC-1401-11"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-11T17:36:25.308Z",
+  "updatedAt": "2026-11-11T17:36:25.308Z"
+}

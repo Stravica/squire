@@ -1,0 +1,17 @@
+{
+  "cnId": "CN-094",
+  "path": "core/tools/update.py#SquireUpdate",
+  "implementsAcIds": [
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-8",
+    "AC-1401-10",
+    "AC-1401-12"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-11T17:26:52.410Z",
+  "updatedAt": "2026-11-11T17:26:52.410Z"
+}

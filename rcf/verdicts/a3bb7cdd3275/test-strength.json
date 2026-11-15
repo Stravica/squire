@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "head": "a3bb7cdd32758449c19a2232eb247f4c5c361258",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-1401-9",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.version",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.version",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when claude --version fails, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.version",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.values",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.values",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.values",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.record_once",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.record_once",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.record_once",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.changes",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.changes",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#ClaudeCode.changes",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.run",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.run",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when Claude Code changed and Squire's sign-in no longer answers, the one wake-up carries the known fix it offers, signing in again"
+          ]
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.run",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.read",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.read",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.read",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.faults",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.faults",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/update.py#HealthLines.faults",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/wake-up.py#ClaudeCodeWatch.run",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/tools/wake-up.py#ClaudeCodeWatch.run",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/updates.test.js::when the launcher now points at another file, with the same version answer, the scheduler's next run counts it a change: it runs the health check and sends its result in one wake-up, and offers no Claude Code downgrade"
+          ]
+        },
+        {
+          "symbol": "core/tools/wake-up.py#ClaudeCodeWatch.run",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 1,
+    "structuralPassed": 1,
+    "mutants": 24,
+    "killed": 13,
+    "survived": 7,
+    "timeout": 0,
+    "notApplicable": 4,
+    "blocked": 0
+  },
+  "wallMs": 630133,
+  "node": "v24.14.0"
+}

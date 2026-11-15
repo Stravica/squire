@@ -6,6 +6,6 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "packageManager": "pnpm@10.32.1",
   "devDependencies": {
-    "rcf-lite": "0.41.0"
+    "rcf-lite": "0.42.0"
   }
 }

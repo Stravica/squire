@@ -211,6 +211,23 @@ sq_mac_check() {
       said+=("Apple's command line tools are not on this Mac, and Squire could not read this account's groups to see whether it can install them. Ask whoever administers this Mac, or set Squire up from an administrator's account.")
     fi
   fi
+  # Squire Update goes in the Applications folder of the owner's home, and
+  # nowhere else. On a first set-up (set-up.json records no finished
+  # lay-down) that folder, or the home folder where lay-down makes it, must
+  # be one this account can write to and search, judged without writing; a
+  # link is judged where it leads.
+  local apps=$HOME/Applications
+  sq_record_read
+  if (( ! ${SQ_DONE[(Ie)layDown]} )); then
+    if [[ -e $apps || -L $apps ]]; then
+      [[ -d $apps && -w $apps && -x $apps ]] || apps=
+    elif [[ ! -d $HOME || ! -w $HOME || ! -x $HOME ]]; then
+      apps=
+    fi
+    if [[ -z $apps ]]; then
+      said+=("The Applications folder in your home folder cannot be written to, and Squire puts Squire Update, the program that installs Squire's updates, there. Make that folder writable, or ask whoever administers this Mac, then open Squire again.")
+    fi
+  fi
   if (( $#said )); then
     sq_cannot "Squire cannot set up on this Mac yet."$'\n\n'"${(pj:\n\n:)said}"
     return 1
@@ -413,7 +430,7 @@ sq_yes_text() {
   if [[ -n $1 ]]; then
     REPLY+="• Apple's command line tools, from Apple's own installer, which asks for an administrator's password."$'\n'
   fi
-  REPLY+="• Squire itself, in your Library, with a folder of your own at ~/Squire."$'\n'
+  REPLY+="• Squire itself, in your Library, with a folder of your own at ~/Squire, and Squire Update, the program that installs Squire's updates, in the Applications folder in your home folder."$'\n'
   REPLY+="• Three background jobs: Squire's always-on session, its wake-ups, and a nightly backup of ~/Squire."$'\n\n'
   REPLY+="Nothing else is installed."
 }

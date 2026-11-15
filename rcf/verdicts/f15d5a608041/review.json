@@ -1,0 +1,45 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "f15d5a6080411641c0b3df6fd8971d1775143ba7",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-601-1",
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-1401-5",
+    "AC-2001-4",
+    "AC-1101-2",
+    "AC-2001-3",
+    "AC-1401-6",
+    "AC-1401-7",
+    "AC-1401-8",
+    "AC-1401-9",
+    "AC-2001-5",
+    "AC-2001-6"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": "AC-2001-1",
+      "text": "tests/acceptance/tickets.test.js line 120 (assertion at line 126) fails every correct product; it reads the word ticket anywhere on an ignored-overlay fault line, and the overlay planted at the core path tools/ticket.py must be named on exactly such a line (overlay-health.test.js lines 8 to 13 and 50 to 55); the meaning stands (no offer on a fault's own line), the mechanism is the test-author's to correct"
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1401-6",
+      "text": "core/lib/squire.py line 601 accepts a version that is not three whole numbers; its pattern takes any Unicode decimal digit, leading zeros and a final newline, so a signed release whose version carries an Arabic-Indic digit, or ends in a newline, is staged and offered (core/tools/update.py lines 269 and 442), and the floor's install value at core/hooks/pre-tool-use.py line 324 lets the yes through; a signed release whose version carries an Arabic-Indic digit installed on a yes and became the current release; such a version must be refused as an unsigned release is, before anything is staged"
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-11T01:44:51.878Z"
+}

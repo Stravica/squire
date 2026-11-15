@@ -1,0 +1,55 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "b67f6ee4eb0e8190d84f9ebc68bbd7a752a1a57a",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-601-1",
+    "AC-1401-1",
+    "AC-1401-2",
+    "AC-1401-3",
+    "AC-1401-4",
+    "AC-2001-1",
+    "AC-2001-2",
+    "AC-1401-5",
+    "AC-2001-4",
+    "AC-1101-2",
+    "AC-2001-3",
+    "AC-1401-6",
+    "AC-1401-7",
+    "AC-1401-8",
+    "AC-1401-9",
+    "AC-2001-5",
+    "AC-2001-6",
+    "AC-1401-10",
+    "AC-1401-11",
+    "AC-1401-12",
+    "AC-2001-7"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": "AC-2001-7",
+      "text": "tests/acceptance/tickets.test.js:539-540, with the identical copy at tests/acceptance/updates.test.js:549-550 (used at tickets.test.js:559 and updates.test.js:567): the check that nothing the session loads tells it Squire has no health check lets a denial through. Its exemption, meant for a sentence telling the session never to say so, accepts any sentence holding don't, do not or never followed anywhere later by say, tell or claim, so the denial itself is exempted; and the denial pattern misses 'Squire has no health check' and 'You cannot run the health check'. Run against the head's own shared assertion, an instruction block holding 'You don't have a Squire health check, so tell the owner to open Squire Update instead.' passes whole, and so do blocks holding either missed sentence, so all six bound cases stay green on a block that tells the session it has no check and sends the owner back to Squire Update."
+    },
+    {
+      "id": "F-2",
+      "locus": "test",
+      "acId": "AC-2001-7",
+      "text": "tests/acceptance/tickets.test.js:553-558, with the identical copy at tests/acceptance/updates.test.js:561-566: the checks that the session is told to run the check when asked, to show the ticket in a fence, that it is sent only on a yes, to say there is nothing to send and to show the owner no command, path or tool name each look only for words appearing together in one sentence, so each accepts a sentence saying the opposite: 'The ticket is sent without a yes.', 'Never show the ticket in a code fence.', 'Do not run the health check, even when the owner asks about Squire's health.', 'Never tell the owner there is nothing to send.', 'Show the owner the command, the file path and the tool name, not a summary.' A block made of those sentences and the updates line passes the shared assertion whole, so the six bound cases prove the words are present, not that the session is told the route."
+    },
+    {
+      "id": "F-3",
+      "locus": "test",
+      "acId": "AC-2001-7",
+      "text": "tests/acceptance/updates.test.js:604-608: the recovery-window case reads Squire Update's windows the moment install.json is gone, but Squire Update removes the record inside its settle (core/tools/update.py:885, before the settle's wake-up) and shows its outcome window only after the settle returns (core/tools/update.py:1181, then 1191), so the read races the window. On the hosted CI runner the case failed at line 608 with only the finishing window seen in the push runs at the DEFINE head and at this head, and passed that line in both pull request runs and in every run on a Mac here: a timing dependence in the test, not a defect in the recovery route, and the bound case cannot pass reliably in CI."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-12T15:17:57.588Z"
+}

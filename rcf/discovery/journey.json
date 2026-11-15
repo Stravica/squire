@@ -224,6 +224,242 @@
         "lostEmail": "notApplicable:Squire set-up sends no email and no emailed link; every step runs on the Mac itself"
       },
       "stepHighWaterMark": 15
+    },
+    {
+      "id": "JNY-002",
+      "slug": "update-and-rollback",
+      "actor": "A Squire owner whose Squire is running on their own Mac",
+      "goal": "From a newer signed release to Squire running on it, or on the previous version, with the owner's folder unchanged",
+      "source": "rcf/discovery/update-and-rollback.journey",
+      "steps": [
+        {
+          "id": "JNY-002-001",
+          "slug": "weekly-check",
+          "kind": "entry",
+          "screenId": "SCR-005",
+          "label": "The scheduler's weekly check reads latest.json from the release host; a newer release is downloaded into staging, outside core",
+          "next": [
+            "JNY-002-002"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-002",
+          "slug": "verified",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "The check: the signature against the installed key, the manifest's known fields, every listed file with its digest and no unlisted file; the release is staged",
+          "next": [
+            "JNY-002-003"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-003",
+          "slug": "offered",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "One wake-up tells the session; the session asks for the install and the safety floor's block carries the version and the changelog exactly as signed, which the session shows the owner as written",
+          "next": [
+            "JNY-002-004"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-004",
+          "slug": "owner-yes",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "The owner says yes to that request; the yes names that version and is fresh",
+          "next": [
+            "JNY-002-005"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-005",
+          "slug": "installing",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "The scheduler's next run installs from the installed release's own code: the install record written first, the new release kept, the runner stopped, core laid down, the agents reloaded",
+          "next": [
+            "JNY-002-006"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-006",
+          "slug": "checking",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "The check: the runner and one live session back, every floor file at its digest, signed in, every core file against the signed manifest, and no process of the previous release left",
+          "next": [
+            "JNY-002-007"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-007",
+          "slug": "installed",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "Installed: one wake-up tells the owner Squire is updated; the release before the previous one is removed",
+          "next": [
+            "JNY-002-008"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-008",
+          "slug": "refused",
+          "kind": "entry",
+          "screenId": "SCR-005",
+          "label": "A release the check refuses (unsigned, another key, altered, a file missing or unlisted, a field or answer it cannot read): its staging is removed and nothing of core, the kept releases, the agents or the owner's folder changes",
+          "next": [
+            "JNY-002-009"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-009",
+          "slug": "refused-named",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "The refusal is one health line until the next weekly check",
+          "next": [
+            "JNY-002-010"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-010",
+          "slug": "not-now",
+          "kind": "entry",
+          "screenId": "SCR-005",
+          "label": "The owner says no, or does not answer before the request times out: core's digests and the kept releases stay as they are",
+          "next": [
+            "JNY-002-011"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-011",
+          "slug": "mentioned-again",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "The staged release is mentioned again at most once a week",
+          "next": [
+            "JNY-002-012"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-012",
+          "slug": "check-failed",
+          "kind": "entry",
+          "screenId": "SCR-005",
+          "label": "The check after the install fails, or a line of it cannot be read",
+          "next": [
+            "JNY-002-013"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-013",
+          "slug": "rolling-back",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "The install job, still the previous release's code, lays the previous release down again, switches back and reloads, with no one acting",
+          "next": [
+            "JNY-002-014"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-014",
+          "slug": "checking-again",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "The check runs again on the previous release",
+          "next": [
+            "JNY-002-015"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-015",
+          "slug": "rolled-back",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "One wake-up names both versions: Squire rolled the update back",
+          "next": [
+            "JNY-002-016"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-016",
+          "slug": "rollback-check-failed",
+          "kind": "entry",
+          "screenId": "SCR-005",
+          "label": "The check after the rollback fails too",
+          "next": [
+            "JNY-002-017"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-017",
+          "slug": "ticket-offered",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "A health line names both versions and a support ticket is offered",
+          "next": [
+            "JNY-002-018"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-018",
+          "slug": "interrupted",
+          "kind": "entry",
+          "screenId": "SCR-005",
+          "label": "The install stopped part way: a restart, a power cut, a killed process or a log-out; its install record is still there",
+          "next": [
+            "JNY-002-019"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-019",
+          "slug": "recovered",
+          "kind": "step",
+          "screenId": "SCR-005",
+          "label": "At the next runner start or scheduler tick: Squire stays on the new release when its files, the installed core's digests and the manifest all match and the check passes, otherwise it lays the previous release down",
+          "next": [
+            "JNY-002-020"
+          ],
+          "returnsTo": null
+        },
+        {
+          "id": "JNY-002-020",
+          "slug": "told-which",
+          "kind": "exit",
+          "screenId": "SCR-005",
+          "label": "One wake-up says which version Squire is on; the owner's folder is unchanged",
+          "next": [],
+          "returnsTo": null
+        }
+      ],
+      "interruptions": {
+        "lostSignal": "JNY-002-001",
+        "closedTab": "JNY-002-003",
+        "expiredLink": "JNY-002-010",
+        "deadBattery": "JNY-002-018",
+        "switchedDevice": "JNY-002-003",
+        "lostEmail": "notApplicable:Squire sends no email and no emailed link for an update; every word reaches the owner in Squire's own session"
+      },
+      "stepHighWaterMark": 20
     }
   ],
   "review": null
