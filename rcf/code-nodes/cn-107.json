@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-107",
+  "path": "core/lib/squire.py#handover_due",
+  "implementsAcIds": [
+    "AC-501-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-15T19:55:42.928Z",
+  "updatedAt": "2026-11-15T19:55:42.928Z"
+}

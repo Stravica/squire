@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-097",
+  "path": "core/tools/status-line.py#note_limits",
+  "implementsAcIds": [
+    "AC-1301-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-15T19:55:21.156Z",
+  "updatedAt": "2026-11-15T19:55:21.156Z"
+}

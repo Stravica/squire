@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-102",
+  "path": "core/lib/squire.py#usage_of",
+  "implementsAcIds": [
+    "AC-1301-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-15T19:55:31.958Z",
+  "updatedAt": "2026-11-15T19:55:31.958Z"
+}

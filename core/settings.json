@@ -47,6 +47,10 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "/usr/bin/python3 -B \"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire}/core/tools/status-line.py\""
+  },
   "autoCompactWindow": 500000,
   "autoUpdatesChannel": "stable",
   "crossSessionInbound": "accept"

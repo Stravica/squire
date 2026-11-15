@@ -1,6 +1,9 @@
 """What Squire's core entry points share: the one config, canonical paths,
 the approvals ledger in the owner's state folder, the Mac's own commands,
-Squire's Claude sign-in and the Squire's name and personality.
+Squire's Claude sign-in, the Squire's name and personality, Squire's runtime
+records, and the pure rules for the plan's usage (the usage snapshot's shape
+and staleness, the pacing lines, the second yes, the handover trigger and the
+upgrade advice's trigger).
 
 Standard library only; run by /usr/bin/python3.
 """
@@ -8,6 +11,7 @@ Standard library only; run by /usr/bin/python3.
 import calendar
 import fcntl
 import json
+import math
 import os
 import pwd
 import re
@@ -754,3 +758,182 @@ class ClaudeCode:
         elif before.get('file') != now.get('file') or before.get('link') != now.get('link'):
             said.append('the file its launcher points at was put in place again')
         return said
+
+
+class Runtime:
+    """Squire's runtime records: small JSON files in runtime/ in the Squire
+    home, a floor path, so the session can neither write nor forge them. Each
+    is read whole and written whole through Records (mode 0600, the folder
+    0700), under one lock for the folder, so the hooks of several sessions
+    never lose each other's changes. They hold times, counts, windows and
+    paths, never a message's text."""
+
+    FOLDER = 'runtime'
+    LOCK = '.lock'
+
+    @classmethod
+    def path(cls, home, name):
+        return os.path.join(home, cls.FOLDER, name)
+
+    @classmethod
+    def read(cls, home, name):
+        """The record's JSON object; an empty one when it is missing, does
+        not parse or is not an object."""
+        data = Records.read(cls.path(home, name))
+        return data if isinstance(data, dict) else {}
+
+    @classmethod
+    def update(cls, home, name, change):
+        """Under the lock: change(the record) gives the record to write, or
+        None to write nothing. Returns what change gave."""
+        folder = os.path.join(home, cls.FOLDER)
+        os.makedirs(folder, mode=0o700, exist_ok=True)
+        fd = os.open(os.path.join(folder, cls.LOCK), os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            new = change(cls.read(home, name))
+            if new is not None:
+                Records.write(cls.path(home, name), new)
+            return new
+        finally:
+            os.close(fd)
+
+
+# ------------------------------------------------- the plan's usage: the rules
+#
+# The usage snapshot (runtime/usage.json in the Squire home, written by the
+# status line command) holds at (seconds since 1970), model,
+# contextUsedPercent, and fiveHour and sevenDay, each {usedPercent, resetsAt}
+# or null. Every threshold below is strictly above, except the handover's
+# context, which is at or above.
+
+# Window resets within a minute of each other are one window.
+SAME_LIMIT = 60
+
+
+def is_number(value):
+    """A JSON number: an int or a finite float, never a bool."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def percent_words(value):
+    """A percentage as the owner reads it: rounded to the nearest whole one."""
+    return '%d%%' % math.floor(value + 0.5)
+
+
+USAGE_STALE = 3600
+USAGE_AHEAD = 60
+SECOND_YES_ABOVE = 90
+# Each window: its key in the snapshot, its name in plain words and its pacing line.
+WINDOWS = (('fiveHour', 'the five-hour window', 80), ('sevenDay', 'the weekly window', 70))
+# The kinds of big job, and the words that name each to the owner.
+HEAVY_JOBS = {'research': 'deep research', 'app': 'building an app', 'site': 'building a site',
+              'media': 'video and audio work'}
+
+
+def usage_of(data, now):
+    """The usage snapshot as the rules read it, or None when it is unknown:
+    not an object of the fixed shape (at a number; fiveHour and sevenDay each
+    null or exactly {usedPercent from 0 to 100, resetsAt a number}), or its
+    at more than an hour before now, or more than a minute after it. A window
+    that is null, or whose resetsAt is at or before now, is unknown (None)
+    and leaves the other known. contextUsedPercent is kept only as a number."""
+    if not isinstance(data, dict) or not is_number(data.get('at')):
+        return None
+    at = data['at']
+    if now - at > USAGE_STALE or at - now > USAGE_AHEAD:
+        return None
+    context = data.get('contextUsedPercent')
+    usage = {'at': at, 'contextUsedPercent': context if is_number(context) else None}
+    for key, _, _ in WINDOWS:
+        if key not in data:
+            return None
+        window = data[key]
+        if window is None:
+            usage[key] = None
+            continue
+        if not isinstance(window, dict) or set(window) != {'usedPercent', 'resetsAt'} \
+                or not is_number(window['usedPercent']) or not 0 <= window['usedPercent'] <= 100 \
+                or not is_number(window['resetsAt']):
+            return None
+        usage[key] = dict(window) if window['resetsAt'] > now else None
+    return usage
+
+
+def read_usage(home, now):
+    """The usage snapshot in the Squire home, as usage_of reads it; None when
+    it is missing or cannot be read."""
+    try:
+        with open(os.path.join(home, Runtime.FOLDER, 'usage.json'), encoding='utf-8') as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return usage_of(data, now)
+
+
+def paced_windows(usage):
+    """The known windows above their pacing line (the five-hour window above
+    80%, the weekly window above 70%): each (key, name, window), in that
+    order; none when the usage is unknown."""
+    if usage is None:
+        return []
+    return [(key, name, usage[key]) for key, name, line in WINDOWS
+            if usage.get(key) and usage[key]['usedPercent'] > line]
+
+
+def second_yes_needed(usage):
+    """True when a known window is above 90%: a big job then needs a second
+    yes. Unknown usage asks for none."""
+    return usage is not None and any(usage.get(key) and usage[key]['usedPercent'] > SECOND_YES_ABOVE
+                                     for key, _, _ in WINDOWS)
+
+
+def reset_words(resets_at, now):
+    """When a window resets, as the owner reads it: HH:MM, 24-hour, in the
+    Mac's local time, with the weekday when it is not today."""
+    then = time.localtime(resets_at)
+    words = time.strftime('%H:%M', then)
+    if time.strftime('%Y-%m-%d', then) != time.strftime('%Y-%m-%d', time.localtime(now)):
+        words = time.strftime('%A', then) + ' ' + words
+    return words
+
+
+HANDOVER_CONTEXT = 70
+HANDOVER_COMPACTIONS = 2
+DAY = 86400
+ADVICE_QUIET = 30 * DAY
+# The advice's trigger: limits reached in each window over its period.
+ADVICE_TRIGGERS = (('fiveHour', 7 * DAY, 3), ('sevenDay', 30 * DAY, 1))
+
+
+def handover_due(usage, compactions):
+    """True when the conversation is long enough for a handover note: the
+    context at or above 70% in a known snapshot, or a second compaction."""
+    context = usage.get('contextUsedPercent') if usage else None
+    return (context is not None and context >= HANDOVER_CONTEXT) or compactions >= HANDOVER_COMPACTIONS
+
+
+def advice_due(limits, messages, given_at, now):
+    """The upgrade advice's trigger: three five-hour limits reached in the
+    last 7 days, or one weekly limit in the last 30, with more than half of
+    the messages Squire took in over that period the owner's own; never
+    within 30 days of given_at (None when never given). limits are
+    {window, resetsAt, seenAt}, a limit counted once per window and resetsAt
+    (resets within a minute of each other are one); messages are {at, own}."""
+    if is_number(given_at) and now < given_at + ADVICE_QUIET:
+        return False
+    for key, period, needed in ADVICE_TRIGGERS:
+        since = now - period
+        resets = sorted(limit['resetsAt'] for limit in limits
+                        if isinstance(limit, dict) and limit.get('window') == key and is_number(limit.get('resetsAt'))
+                        and is_number(limit.get('seenAt')) and limit['seenAt'] >= since)
+        counted, last = 0, None
+        for resets_at in resets:
+            if last is None or resets_at - last > SAME_LIMIT:
+                counted, last = counted + 1, resets_at
+        if counted < needed:
+            continue
+        took = [m for m in messages if isinstance(m, dict) and is_number(m.get('at')) and m['at'] >= since]
+        if 2 * sum(1 for m in took if m.get('own') is True) > len(took):
+            return True
+    return False
