@@ -1,7 +1,7 @@
 {
   "createdAt": "2026-11-07T17:40:44.985Z",
-  "updatedAt": "2026-11-15T13:31:04.739Z",
-  "summary": "Areas A5, A13 and A15 to A17. The handover note and /clear prompt, pacing, deep research, app building, and captions and local transcription.",
+  "updatedAt": "2026-11-15T17:00:52.587Z",
+  "summary": "Squire knows the owner's Claude plan and how much of it is used, and paces itself; it never spends beyond the plan without the owner's yes; it gives upgrade advice once and leaves the choice to the owner; before a big job it warns the owner and waits for their yes; and a long conversation gets a handover note and a timely /clear prompt, so nothing is lost.",
   "dependsOnFbsIds": [
     "FBS-004"
   ],
