@@ -34,7 +34,7 @@ const U = require('../fixtures/usage-world.js');
 
 const { TITLES } = I;
 
-test("the plan the owner declares at set-up is asked once and kept in the owner's squire.json", { timeout: 180000 }, async (t) => {
+test("the plan the owner declares at set-up is asked once and kept in the owner's squire.json", { timeout: 420000 }, async (t) => {
   // The owner's answer is Max, not the world's default Pro, so the kept value can only be the one declared.
   const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.plan]: 'Max' } } });
   const run = await I.runApp(iw, { killWhen: (x) => I.doneSteps(x).includes('ownerFolder') });
@@ -45,6 +45,22 @@ test("the plan the owner declares at set-up is asked once and kept in the owner'
     `the owner's squire.json must keep the plan the owner declared as claudePlan (the design record's line 1); it holds ${JSON.stringify(config)}`);
   assert.equal(I.dialogsTitled(run, TITLES.plan).length, 1, `the plan must be asked once in set-up; got ${I.describeRun(run)}`);
   assert.equal(config.squireName, 'Juniper', 'the name kept beside it');
+
+  // Set-up run again over it: the plan is not asked again, and the plan kept is the one first declared.
+  const again = await I.runApp(iw, { killWhen: (x) => I.doneSteps(x).includes('layDown') });
+  assert.equal(I.dialogsTitled(again, TITLES.plan).length, 0, `set-up run again must not ask the plan again; got ${I.describeRun(again)}`);
+  const kept = I.ownerConfig(iw);
+  assert.equal(kept && kept.claudePlan, 'Max',
+    `set-up run again must keep the plan first declared as claudePlan, not ask it, drop it or overwrite it; it holds ${JSON.stringify(kept)}`);
+
+  // Another owner declares "I'm not sure": the word chosen is kept exactly as the window gives it.
+  const unsure = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.plan]: "I'm not sure" } } });
+  const unsureRun = await I.runApp(unsure, { killWhen: (x) => I.doneSteps(x).includes('ownerFolder') });
+  assert.ok(I.doneSteps(unsure).includes('ownerFolder'), `set-up with "I'm not sure" must reach the owner's folder; got ${I.describeRun(unsureRun)}`);
+  const unsureConfig = I.ownerConfig(unsure);
+  assert.equal(unsureConfig && unsureConfig.claudePlan, "I'm not sure",
+    `the owner's squire.json must keep the plan declared, "I'm not sure", exactly; it holds ${JSON.stringify(unsureConfig)}`);
+  assert.equal(I.dialogsTitled(unsureRun, TITLES.plan).length, 1, `the plan must be asked once in set-up; got ${I.describeRun(unsureRun)}`);
 });
 
 test("the usage snapshot: the status line command core's settings set writes runtime/usage.json with the model, the context used, both windows and their resets and the time, and nothing else", { timeout: 60000 }, (t) => {
@@ -82,6 +98,13 @@ test("the usage snapshot: the status line command core's settings set writes run
   now = U.readSnapshot(world);
   assert.deepEqual(now.fiveHour, { usedPercent: 64, resetsAt: fiveReset });
   assert.equal(now.sevenDay, null, `the weekly window absent on its own is null; got ${JSON.stringify(now)}`);
+  // A window whose used_percentage is not a number is written null.
+  U.runStatusLine(world, U.statusInput(world, {
+    context: 14, rateLimits: { fiveHour: { used: null, resetsAt: fiveReset }, sevenDay: { used: 41.2, resetsAt: weekReset } },
+  }));
+  now = U.readSnapshot(world);
+  assert.equal(now.fiveHour, null, `a five-hour used_percentage that is null is written as a null window; got ${JSON.stringify(now)}`);
+  assert.deepEqual(now.sevenDay, { usedPercent: 41.2, resetsAt: weekReset }, `the other window stays as read; got ${JSON.stringify(now)}`);
 
   // Input it cannot read changes nothing and still exits 0: the snapshot only ages.
   const bytes = fs.readFileSync(U.snapshotFile(world));
@@ -171,4 +194,19 @@ test("usage that is stale (older than an hour) or missing is unknown: a big job 
   U.writeSnapshot(edge, { fiveHour: { used: 35, resetsAt: fiveReset }, sevenDay: { used: 40, resetsAt: U.now() + 3 * U.DAY }, age: 3600 + 120 });
   const late = w.attempt(edge, 'job-edge', U.heavyJob(edge, 'site'), { env: U.UTC });
   assert.match(late.stderr, /cannot see/i, `a snapshot an hour and two minutes old is unknown; got ${w.describe(late)}`);
+
+  // A snapshot that is not JSON, or not of the fixed shape (a percentage given as a string), is unknown too.
+  const garbled = U.usageWorld(t);
+  fs.mkdirSync(U.runtimeDir(garbled), { recursive: true });
+  fs.writeFileSync(U.snapshotFile(garbled), '{"at": 1, "fiveHour": {"usedPercent": 85');
+  const unreadable = w.attempt(garbled, 'job-garbled', U.heavyJob(garbled, 'site'), { env: U.UTC });
+  w.assertBlocked(unreadable, 'a big job with a snapshot that is not JSON');
+  assert.match(unreadable.stderr, /cannot see/i, `a snapshot that is not JSON is unknown; got ${w.describe(unreadable)}`);
+  assert.doesNotMatch(unreadable.stderr, /can wait/i, `a snapshot that is not JSON defers nothing; got ${w.describe(unreadable)}`);
+  const shaped = U.usageWorld(t);
+  U.writeSnapshot(shaped, { fiveHour: { used: '85', resetsAt: fiveReset }, sevenDay: { used: 40, resetsAt: U.now() + 3 * U.DAY } });
+  const wrong = w.attempt(shaped, 'job-shaped', U.heavyJob(shaped, 'site'), { env: U.UTC });
+  w.assertBlocked(wrong, 'a big job with a percentage written as a string');
+  assert.match(wrong.stderr, /cannot see/i, `a snapshot not of the fixed shape (usedPercent "85", a string) is unknown; got ${w.describe(wrong)}`);
+  assert.doesNotMatch(wrong.stderr, /can wait/i, `a snapshot not of the fixed shape defers nothing; got ${w.describe(wrong)}`);
 });
