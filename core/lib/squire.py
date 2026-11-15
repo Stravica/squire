@@ -493,7 +493,8 @@ class Persona:
     session's two routes: Squire's health check, which the session runs when
     the owner asks about Squire's health or for a support ticket, and the
     ticket route, a ticket the check offers shown in a fence and sent only on
-    the owner's yes."""
+    the owner's yes. It names Squire's one job command too, the only way a
+    big job starts, and tells the session to wait for the owner's yes."""
 
     LIMITS = {'squireName': 40, 'personality': 400}
     OPEN = '<!-- squire persona -->'
@@ -510,6 +511,11 @@ class Persona:
                'session; never send it any other way. When the check offers no ticket, tell the owner plainly that '
                'there is nothing to send, and never say that Squire has no health check or that you cannot run it. '
                'Show the owner no command, file path or tool name, only what the check found, in plain words.')
+    HEAVY = ('A big job (deep research, building an app, building a site, or video and audio work) starts only through '
+             'Squire\'s job command, run as this one command, exactly as written here, its path in quotes, with the kind '
+             'of job at its end (research, app, site or media): `{command} research`. The safety floor warns the owner '
+             'first: tell the owner what the job is and wait for their yes before it starts. Never start a big job any '
+             'other way.')
 
     @classmethod
     def problem(cls, key, value):
@@ -549,6 +555,7 @@ class Persona:
         floor lets the check run without asking only when its path is one
         word."""
         check = os.path.join(home, 'core', 'tools', 'health.py').replace("'", "'\"'\"'")
+        job = os.path.join(home, 'core', 'tools', 'heavy-job.py').replace("'", "'\"'\"'")
         lines = [cls.OPEN]
         if 'squireName' in values:
             lines.append(f'Your name is {values["squireName"]}. You are the owner\'s own Squire, their assistant on '
@@ -558,6 +565,7 @@ class Persona:
         lines.append(cls.UPDATES)
         lines.append(cls.HEALTH.format(command=f"/usr/bin/python3 '{check}'"))
         lines.append(cls.TICKETS)
+        lines.append(cls.HEAVY.format(command=f"/usr/bin/python3 '{job}'"))
         lines.append(cls.CLOSE)
         return '\n'.join(lines) + '\n'
 
