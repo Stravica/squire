@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.198Z",
-  "updatedAt": "2026-11-15T13:41:55.861Z",
+  "updatedAt": "2026-11-15T13:43:01.992Z",
   "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
   "testLevel": "integration",
   "acIds": [
@@ -60,6 +60,20 @@
       "description": "Usage credits and the upgrade page are refused from the session, yes or no",
       "status": "pending",
       "testPointer": "tests/acceptance/no-spend-beyond-plan.test.js::turning on usage credits or opening the upgrade page from the session is refused, and the owner's yes does not lift it"
+    },
+    {
+      "id": "TC-014-upgrade-advice-once-at-the-trigger-never",
+      "acId": "AC-1301-3",
+      "description": "Upgrade advice once at the trigger, never before it, the plan unchanged, quiet after a no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice comes once, when the trigger is met and never before it, changes nothing about the plan, and is not given again after a no"
+    },
+    {
+      "id": "TC-014-background-work-is-not-requested-work",
+      "acId": "AC-1301-3",
+      "description": "Background work is not requested work, and the advice stays quiet for 30 days",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice: limits reached mostly by Squire's own background work give none, and after advice Squire stays quiet for 30 days, then may give it again"
     }
   ],
   "status": "draft"
