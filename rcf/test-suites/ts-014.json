@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.198Z",
-  "updatedAt": "2026-11-15T13:41:06.295Z",
+  "updatedAt": "2026-11-15T13:41:55.861Z",
   "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
   "testLevel": "integration",
   "acIds": [
@@ -46,6 +46,20 @@
       "description": "Stale or missing usage is unknown: every big job asks and nothing is deferred on it",
       "status": "pending",
       "testPointer": "tests/acceptance/usage-and-pacing.test.js::usage that is stale (older than an hour) or missing is unknown: a big job still asks, saying Squire cannot see the plan's usage, and a stale reading defers nothing"
+    },
+    {
+      "id": "TC-014-a-model-that-may-need-usage-credits-is",
+      "acId": "AC-1301-2",
+      "description": "A model that may need usage credits is blocked until the owner's yes, by every route the session has",
+      "status": "pending",
+      "testPointer": "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+    },
+    {
+      "id": "TC-014-usage-credits-and-the-upgrade-page-are",
+      "acId": "AC-1301-2",
+      "description": "Usage credits and the upgrade page are refused from the session, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/no-spend-beyond-plan.test.js::turning on usage credits or opening the upgrade page from the session is refused, and the owner's yes does not lift it"
     }
   ],
   "status": "draft"
