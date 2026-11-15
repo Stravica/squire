@@ -1,0 +1,29 @@
+{
+  "createdAt": "2026-11-15T13:45:09.171Z",
+  "updatedAt": "2026-11-15T13:45:19.487Z",
+  "purpose": "Saves a handover note, carries on without /clear through more messages, a compaction and a restart, checks the note is unchanged and picked up whole after a late /clear, and checks the /clear prompt comes back at a later pause.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-501-2"
+  ],
+  "id": "TS-028",
+  "usId": "US-501",
+  "title": "The handover note survives a late /clear or a restart, and the /clear prompt comes back",
+  "testCases": [
+    {
+      "id": "TC-028-the-handover-note-survives-a-late-clear",
+      "acId": "AC-501-2",
+      "description": "The handover note survives a late /clear and a restart, and the work carries on from it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-note.test.js::a handover note saved before a late /clear, or before the laptop is closed, survives and the work carries on from it with nothing lost"
+    },
+    {
+      "id": "TC-028-the-clear-prompt-comes-back-at-a-later",
+      "acId": "AC-501-2",
+      "description": "The /clear prompt comes back at a later natural pause",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-note.test.js::when the owner carries on without /clear, the /clear prompt comes back at a later natural pause, after a restart or a further compaction"
+    }
+  ],
+  "status": "draft"
+}
