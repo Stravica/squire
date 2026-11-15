@@ -1,0 +1,17 @@
+{
+  "createdAt": "2026-11-15T13:30:47.465Z",
+  "updatedAt": "2026-11-15T13:30:47.465Z",
+  "acIds": [
+    "AC-1302-2",
+    "AC-1701-1",
+    "AC-1701-2"
+  ],
+  "fbsId": "FBS-009",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 9,
+  "executionStatus": "notStarted",
+  "title": "Research, video and voice notes",
+  "summary": "TODO: describe the build session",
+  "dependsOnFbsIds": []
+}
