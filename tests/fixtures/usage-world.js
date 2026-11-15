@@ -108,6 +108,17 @@ function runStatusLine(world, input) {
   return { status: r.status, signal: r.signal, stdout: r.stdout || '', stderr: r.stderr || '', error: r.error ? String(r.error.message || r.error) : '' };
 }
 
+// The status line command as runStatusLine runs it, when core's settings set
+// one; null when they set none. For cases whose own assertions are about what
+// the snapshot leads to (the advice), not about the command being there: that
+// is asserted in its own case.
+function statusLineIfSet(world, input) {
+  const settings = JSON.parse(fs.readFileSync(path.join(w.CORE, 'settings.json'), 'utf8'));
+  const line = settings.statusLine;
+  if (!(line && line.type === 'command' && typeof line.command === 'string' && line.command.length > 0)) return null;
+  return runStatusLine(world, input);
+}
+
 // The command a big job starts through, as the session runs it: its path in
 // the Squire home, single-quoted as the health check's is.
 const heavyJobScript = (world) => path.join(world.home, 'core', 'tools', 'heavy-job.py');
@@ -150,6 +161,7 @@ module.exports = {
   readSnapshot,
   statusInput,
   runStatusLine,
+  statusLineIfSet,
   heavyJobScript,
   heavyJob,
   HEAVY,

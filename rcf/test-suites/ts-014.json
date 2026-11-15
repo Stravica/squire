@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.198Z",
-  "updatedAt": "2026-11-15T13:49:40.383Z",
+  "updatedAt": "2026-11-15T17:13:39.190Z",
   "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
   "testLevel": "integration",
   "acIds": [
@@ -81,6 +81,20 @@
       "description": "Pacing above 90% in either window: a big job starts only on a second yes",
       "status": "pending",
       "testPointer": "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
+    },
+    {
+      "id": "TC-014-one-five-hour-limit-seen-at-100-on",
+      "acId": "AC-1301-3",
+      "description": "One five-hour limit seen at 100% on several messages counts once; three limits, each with its own reset, bring the advice.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice: one five-hour limit seen at 100% on three messages counts once, and two more limits, each with its own reset, bring the advice"
+    },
+    {
+      "id": "TC-014-the-status-line-command-fed-a-window-at",
+      "acId": "AC-1301-3",
+      "description": "The status line command fed a window at 100% exits 0 and writes it into the usage snapshot.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::the status line command core's settings set, fed a window at 100%, exits 0 and writes it into the usage snapshot the advice counts from"
     }
   ],
   "status": "draft"

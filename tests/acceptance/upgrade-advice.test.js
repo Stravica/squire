@@ -39,12 +39,13 @@ function adviceWorld(t) {
   return world;
 }
 
-// The status line command sees the windows at these readings.
+// The status line command sees the windows at these readings. That the
+// command is set, exits 0 and writes what it sees is its own case's, below;
+// here each case fails on its own advice assertion.
 function usageSeen(world, { five, fiveReset, week = 50, weekReset = U.now() + 3 * U.DAY }) {
-  const r = U.runStatusLine(world, U.statusInput(world, {
+  return U.statusLineIfSet(world, U.statusInput(world, {
     rateLimits: { fiveHour: { used: five, resetsAt: fiveReset }, sevenDay: { used: week, resetsAt: weekReset } },
   }));
-  assert.equal(r.status, 0, `the status line command must exit 0; got ${w.describe(r)}`);
 }
 
 // Three five-hour limits in the last week: two days ago, a day ago and now.
@@ -126,4 +127,35 @@ test("upgrade advice: limits reached mostly by Squire's own background work give
   threeFiveHourLimits(past);
   const again = w.ownerSays(past, 'job-past', 'What is next on the list?');
   assert.match(again.stdout, ADVICE, `advice given 31 days ago and the trigger met again: the advice once more; got ${w.describe(again)}`);
+});
+
+test('upgrade advice: one five-hour limit seen at 100% on three messages counts once, and two more limits, each with its own reset, bring the advice', { timeout: 120000 }, (t) => {
+  // Heavy, five-hour: mostly the owner's own requests; the status line sees the same window at 100% on every message.
+  const world = adviceWorld(t);
+  const s = 'job-count';
+  ownerAsks(world, s, 6);
+  const now = U.now();
+  const reset = now + 3600;
+  for (let i = 1; i <= 3; i += 1) {
+    usageSeen(world, { five: 100, fiveReset: reset });
+    const r = w.ownerSays(world, s, `Next letter, number ${i}`);
+    assert.doesNotMatch(r.stdout, ADVICE, `one window at 100% seen ${i} time(s) is one limit, counted once: no advice; got ${w.describe(r)}`);
+  }
+  usageSeen(world, { five: 100, fiveReset: now - U.DAY + 3600 });
+  usageSeen(world, { five: 100, fiveReset: now - 2 * U.DAY + 3600 });
+  const advice = w.ownerSays(world, s, 'What is next on the list?');
+  assert.match(advice.stdout, ADVICE, `three five-hour limits in a week, each with its own reset, mostly requested work: the advice; got ${w.describe(advice)}`);
+});
+
+test("the status line command core's settings set, fed a window at 100%, exits 0 and writes it into the usage snapshot the advice counts from", { timeout: 60000 }, (t) => {
+  const world = adviceWorld(t);
+  const fiveReset = U.now() + 3600;
+  const weekReset = U.now() + 2 * U.DAY;
+  const r = U.statusLineIfSet(world, U.statusInput(world, {
+    rateLimits: { fiveHour: { used: 100, resetsAt: fiveReset }, sevenDay: { used: 100, resetsAt: weekReset } },
+  }));
+  assert.equal(r && r.status, 0, `the status line command core's settings set must run and exit 0 on a window at 100%; got ${r ? w.describe(r) : 'no status line command in core\'s settings'}`);
+  const snap = U.readSnapshot(world);
+  assert.deepEqual(snap && snap.fiveHour, { usedPercent: 100, resetsAt: fiveReset }, `the five-hour window at 100% is written as seen; got ${JSON.stringify(snap)}`);
+  assert.deepEqual(snap && snap.sevenDay, { usedPercent: 100, resetsAt: weekReset }, `the weekly window at 100% is written as seen; got ${JSON.stringify(snap)}`);
 });
