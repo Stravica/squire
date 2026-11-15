@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.198Z",
-  "updatedAt": "2026-11-15T13:43:01.992Z",
+  "updatedAt": "2026-11-15T13:49:40.383Z",
   "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
   "testLevel": "integration",
   "acIds": [
@@ -74,6 +74,13 @@
       "description": "Background work is not requested work, and the advice stays quiet for 30 days",
       "status": "pending",
       "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice: limits reached mostly by Squire's own background work give none, and after advice Squire stays quiet for 30 days, then may give it again"
+    },
+    {
+      "id": "TC-014-pacing-above-90-in-either-window-a-big",
+      "acId": "AC-1301-1",
+      "description": "Pacing above 90% in either window: a big job starts only on a second yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
     }
   ],
   "status": "draft"
