@@ -236,7 +236,20 @@ class SetUp:
                 or os.path.realpath(config['ownerFolder']) != os.path.realpath(self.owner):
             return False
         kept = Persona.of(self.owner) or {}
-        return all(k in kept for k in Persona.LIMITS)
+        if not all(k in kept for k in Persona.LIMITS):
+            return False
+        plan = self.declared()
+        if plan is None:
+            return True
+        owner = self.read_json(os.path.join(self.owner, 'squire.json'))
+        return isinstance(owner, dict) and owner.get('claudePlan') == plan
+
+    def declared(self):
+        """The plan the owner declared at the one yes, in the words chosen
+        (the app records it in set-up.json as declared); None when there is
+        none."""
+        plan = self.record.data.get('declared')
+        return plan if isinstance(plan, str) and plan else None
 
     def app_version(self):
         """The app's version: its core's release.json."""
@@ -361,6 +374,9 @@ class SetUp:
         if problem:
             raise Paused(problem)
         names = {k: self.record.data[k] for k in Persona.LIMITS if Persona.problem(k, self.record.data.get(k)) is None}
+        # The plan the owner declared, kept beside the name as claudePlan in the words chosen; Squire never changes it.
+        if self.declared() is not None:
+            names['claudePlan'] = self.declared()
         try:
             os.makedirs(self.owner, mode=0o700, exist_ok=True)
             owner_file = os.path.join(self.owner, 'squire.json')
