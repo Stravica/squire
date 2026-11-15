@@ -61,10 +61,19 @@ test("a big job of each kind (deep research, building an app, building a site, v
     w.assertBlocked(w.attempt(world, job, U.heavyJob(world, kind), { env: U.UTC }), `${kind} again: a yes covers one start`);
   }
 
-  // What the session loads tells it to start every big job through the command.
+  // What the session loads tells it to start every big job through the command,
+  // inside Squire's own block (the persona marks the design record names), and
+  // to wait for the owner's yes.
   const loaded = fs.readFileSync(path.join(s.configDir(world), 'CLAUDE.md'), 'utf8');
   assert.ok(loaded.includes(U.heavyJobScript(world)),
     `what the session loads must name the big-job command by its path in the Squire home; got ${JSON.stringify(loaded.slice(0, 400))}`);
+  const open = loaded.indexOf('<!-- squire persona -->');
+  const close = loaded.indexOf('<!-- end squire persona -->', open);
+  assert.ok(open >= 0 && close > open, `what the session loads must hold Squire's own block; got ${JSON.stringify(loaded.slice(0, 400))}`);
+  const block = loaded.slice(open, close);
+  assert.ok(block.includes(U.heavyJobScript(world)),
+    `the big-job command's path must sit inside Squire's own block, not elsewhere in what the session loads; got ${JSON.stringify(block.slice(0, 600))}`);
+  assert.match(block, /wait[^.]*\byes\b/i, `Squire's block must tell the session to wait for the owner's yes before a big job; got ${JSON.stringify(block.slice(0, 600))}`);
 
   // Any other way of starting it is refused: the owner's yes does not lift it.
   const script = U.heavyJobScript(world);
@@ -107,4 +116,29 @@ test('above 90% in either usage window a big job starts only on a second yes; be
   w.assertBlocked(first, 'below 90%: a big job with no yes');
   U.sayYesTo(world, 'job-calm', first, { env: U.UTC });
   w.assertAllowed(w.attempt(world, 'job-calm', U.heavyJob(world, 'media'), { env: U.UTC }), 'below 90%: one yes starts the big job');
+
+  // One window unknown leaves the other known: five-hour 92%, the weekly window absent.
+  const half = U.usageWorld(t);
+  U.writeSnapshot(half, { fiveHour: { used: 92, resetsAt: U.onMinute(U.now() + 2 * 3600) }, sevenDay: null });
+  const halfFirst = w.attempt(half, 'job-half', U.heavyJob(half, 'media'), { env: U.UTC });
+  w.assertBlocked(halfFirst, 'five-hour 92%, weekly unknown: a big job with no yes');
+  assert.ok(halfFirst.stderr.includes('92%'), `the known five-hour window is read: the warning names 92%; got ${w.describe(halfFirst)}`);
+  assert.match(halfFirst.stderr, /can wait/i, `the known five-hour window at 92% defers the big job: it can wait; got ${w.describe(halfFirst)}`);
+  U.sayYesTo(half, 'job-half', halfFirst, { env: U.UTC });
+  const halfSecond = w.attempt(half, 'job-half', U.heavyJob(half, 'media'), { env: U.UTC });
+  w.assertBlocked(halfSecond, 'five-hour 92%, weekly unknown: after the first yes the big job still waits');
+  assert.match(halfSecond.stderr, /second yes/i, `the known window above 90% asks for a second yes; got ${w.describe(halfSecond)}`);
+
+  // A window whose reset has passed is unknown: five-hour 92% that reset ten minutes ago, weekly 40%.
+  const reset = U.usageWorld(t);
+  U.writeSnapshot(reset, {
+    fiveHour: { used: 92, resetsAt: U.onMinute(U.now() - 600) },
+    sevenDay: { used: 40, resetsAt: U.onMinute(U.now() + 3 * U.DAY) },
+  });
+  const resetFirst = w.attempt(reset, 'job-reset', U.heavyJob(reset, 'media'), { env: U.UTC });
+  w.assertBlocked(resetFirst, 'a passed five-hour reset: a big job with no yes');
+  assert.doesNotMatch(resetFirst.stderr, /can wait/i, `a five-hour reading whose reset has passed defers nothing; got ${w.describe(resetFirst)}`);
+  U.sayYesTo(reset, 'job-reset', resetFirst, { env: U.UTC });
+  w.assertAllowed(w.attempt(reset, 'job-reset', U.heavyJob(reset, 'media'), { env: U.UTC }),
+    'a five-hour reading whose reset has passed asks no second yes: one yes starts the big job');
 });
