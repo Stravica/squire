@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.477Z",
-  "updatedAt": "2026-11-07T17:40:42.477Z",
+  "updatedAt": "2026-11-15T13:44:06.640Z",
   "purpose": "Starts each heavy job class through the real entry points, with and without a yes and at high usage, and checks no path bypasses the warning and the yes.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,21 @@
   "id": "TS-015",
   "usId": "US-1302",
   "title": "Heavy jobs cannot start without a warning and a yes",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-015-each-kind-of-big-job-is-warned-of-and",
+      "acId": "AC-1302-1",
+      "description": "Each kind of big job is warned of and starts only on a yes for that job; no other way round the gate",
+      "status": "pending",
+      "testPointer": "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+    },
+    {
+      "id": "TC-015-above-90-in-either-window-a-big-job",
+      "acId": "AC-1302-1",
+      "description": "Above 90% in either window a big job needs a second yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
+    }
+  ],
   "status": "draft"
 }
