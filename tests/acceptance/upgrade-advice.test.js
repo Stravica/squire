@@ -97,7 +97,7 @@ test('upgrade advice comes once, when the trigger is met and never before it, ch
   assert.match(onWeek.stdout, ADVICE, `one weekly limit in a month, mostly requested work: the advice; got ${w.describe(onWeek)}`);
 });
 
-test('upgrade advice: limits reached mostly by Squire\'s own background work give none, and after advice Squire stays quiet for 30 days, then may give it again', { timeout: 120000 }, (t) => {
+test("upgrade advice: limits reached mostly by Squire's own background work give none, and after advice Squire stays quiet for 30 days, then may give it again", { timeout: 120000 }, (t) => {
   // Background: one request from the owner, six wake-ups.
   const background = adviceWorld(t);
   ownerAsks(background, 'job-quiet', 1);

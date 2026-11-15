@@ -34,7 +34,7 @@ const U = require('../fixtures/usage-world.js');
 
 const { TITLES } = I;
 
-test('the plan the owner declares at set-up is asked once and kept in the owner\'s squire.json', { timeout: 180000 }, async (t) => {
+test("the plan the owner declares at set-up is asked once and kept in the owner's squire.json", { timeout: 180000 }, async (t) => {
   // The owner's answer is Max, not the world's default Pro, so the kept value can only be the one declared.
   const iw = I.makeInstallerWorld(t, { mac: { answers: { [TITLES.plan]: 'Max' } } });
   const run = await I.runApp(iw, { killWhen: (x) => I.doneSteps(x).includes('ownerFolder') });
@@ -47,7 +47,7 @@ test('the plan the owner declares at set-up is asked once and kept in the owner\
   assert.equal(config.squireName, 'Juniper', 'the name kept beside it');
 });
 
-test('the usage snapshot: the status line command core\'s settings set writes runtime/usage.json with the model, the context used, both windows and their resets and the time, and nothing else', { timeout: 60000 }, (t) => {
+test("the usage snapshot: the status line command core's settings set writes runtime/usage.json with the model, the context used, both windows and their resets and the time, and nothing else", { timeout: 60000 }, (t) => {
   const world = U.usageWorld(t);
   const fiveReset = U.now() + 3 * 3600;
   const weekReset = U.now() + 4 * U.DAY;
@@ -143,7 +143,7 @@ test('pacing: above 70% of the weekly window Squire tells the owner once a day, 
   assert.doesNotMatch(otherJob.stdout, /weekly/i, `once a day means once a day, in any job; got ${w.describe(otherJob)}`);
 });
 
-test('usage that is stale (older than an hour) or missing is unknown: a big job still asks, saying Squire cannot see the plan\'s usage, and a stale reading defers nothing', { timeout: 60000 }, (t) => {
+test("usage that is stale (older than an hour) or missing is unknown: a big job still asks, saying Squire cannot see the plan's usage, and a stale reading defers nothing", { timeout: 60000 }, (t) => {
   const fiveReset = U.onMinute(U.now() + 3600);
   // Fresh and known: no "cannot see".
   const known = U.usageWorld(t);

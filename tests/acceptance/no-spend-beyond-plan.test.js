@@ -28,7 +28,7 @@ const agent = (model) => ['Agent', {
   ...(model === undefined ? {} : { model }),
 }];
 
-test('a model outside the plan\'s set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner\'s yes, its block naming usage credits; the plan\'s own models need none', { timeout: 60000 }, (t) => {
+test("a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none", { timeout: 60000 }, (t) => {
   const world = U.usageWorld(t);
   const s = 'job-models';
 
@@ -59,7 +59,7 @@ test('a model outside the plan\'s set, picked for a subagent, by flag, by settin
   }
 });
 
-test('turning on usage credits or opening the upgrade page from the session is refused, and the owner\'s yes does not lift it', { timeout: 60000 }, (t) => {
+test("turning on usage credits or opening the upgrade page from the session is refused, and the owner's yes does not lift it", { timeout: 60000 }, (t) => {
   const world = U.usageWorld(t);
   const calls = {
     'usage credits as a slash command': ['SlashCommand', { command: '/usage-credits' }],

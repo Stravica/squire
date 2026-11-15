@@ -36,7 +36,7 @@ function calmUsage(world, five = 30, week = 40) {
   });
 }
 
-test('a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner\'s yes for that job, and no other way of starting it gets round the gate', { timeout: 120000 }, (t) => {
+test("a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate", { timeout: 120000 }, (t) => {
   const world = U.usageWorld(t, { core: false });
   const laid = w.layDown(world, w.CORE);
   assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
