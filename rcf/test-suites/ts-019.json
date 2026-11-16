@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T01:06:56.422Z",
+  "updatedAt": "2026-11-16T02:55:55.068Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -44,6 +44,27 @@
       "description": "Another site's page in the owner's browser is refused: a renamed host, a cross-site comment post; no comment kept",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a page from another site open in the owner's browser on the Mac is refused: a request under another host name, and a comment posted from another site, and no comment is kept"
+    },
+    {
+      "id": "TC-019-a-comment-post-without-the-server-s-own",
+      "acId": "AC-901-1",
+      "description": "A comment post without the server's own Origin (none, null, not an origin) is refused, and nothing is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a comment post that does not carry the server's own Origin is refused: none at all, a null Origin, or one that is not an origin, and no comment is kept"
+    },
+    {
+      "id": "TC-019-only-the-pages-folder-is-served-dots",
+      "acId": "AC-901-1",
+      "description": "Only the pages folder is served: dots, encoded dots, a link out, the listing and a hidden file are refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::only the pages folder is served: a climb out by dots or encoded dots, a link out of the folder, the folder's own listing and a hidden file are each refused, and none of the owner's profile is sent"
+    },
+    {
+      "id": "TC-019-a-kept-comment-is-read-as-untrusted",
+      "acId": "AC-901-1",
+      "description": "A kept comment is read as untrusted: after the owner's profile, a send in that job is refused as one job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
     }
   ],
   "status": "draft"
