@@ -83,6 +83,14 @@ def address_allowed(value, port, scheme=''):
     return value.lower() in {f'{scheme}{name}:{port}' for name in NAMES}
 
 
+def bind_address():
+    """The one address the page server binds: the Mac's own loopback
+    address, so nothing elsewhere on a network can open a connection to it.
+    Handler.from_the_mac refuses any connection that still comes from
+    elsewhere."""
+    return HOST
+
+
 def record_path(home):
     return os.path.join(home, RECORD)
 
@@ -352,7 +360,7 @@ class Server(ThreadingHTTPServer):
 
     def __init__(self, port, pages):
         self.pages = pages
-        super().__init__((HOST, port), Handler)
+        super().__init__((bind_address(), port), Handler)
 
 
 def serve(port):
