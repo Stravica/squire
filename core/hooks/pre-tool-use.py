@@ -14,6 +14,9 @@ owner's plan: turning on usage credits or opening the upgrade page is
 refused, yes or no, and a model outside the plan's set waits for the owner's
 yes, its block naming usage credits. A big job starts only through Squire's
 one job command, on the owner's yes, and on a second yes above 90% usage.
+Squire's import and check-in commands run only as their one command, each on
+the owner's yes to that run, and an import leaves its job holding untrusted
+input.
 """
 
 import fnmatch
@@ -491,6 +494,99 @@ class HeavyJob:
         return 0, ''
 
 
+class ImportRequest:
+    """The session's import of the owner's notes, documents or another
+    assistant's memory export through Squire's import command, run as this
+    one command, its path quoted as the health check's is:
+    /usr/bin/python3 '<Squire home>/core/tools/import-memory.py' <source>
+    [<source> ...]. The floor asks the owner before every import, the
+    question naming every source; a yes covers that one run, once. Once it
+    runs, the job holds untrusted input: what an import takes in is words
+    from elsewhere, kept in workspace/inbox/imported in the owner's folder.
+    Spelt any other way, or naming a source in Squire's own files, the import
+    is refused as any program naming Squire's home is (Floor.judge_argv)."""
+
+    SCRIPT = 'import-memory.py'
+    WHAT = ('take these into Squire\'s memory, copied into workspace/inbox/imported in the owner\'s folder and read as '
+            'untrusted from then on: {sources}')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """The sources a Bash call imports through the one command, or None."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) < 3 or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        sources = [str(word) for word in argv[2:]]
+        paths = [floor.path(source, strict=False) for source in sources]
+        if any(p is None or floor.is_floor(p) or floor.is_keychain(p) for p in paths):
+            return None
+        return sources
+
+    @classmethod
+    def settle(cls, floor, ledger, session, sources):
+        now = time.time()
+        item = 'import:' + hashlib.sha256(json.dumps(sources).encode('utf-8')).hexdigest()
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
+            ledger.taint(session, 'untrusted', 'the import of ' + ', '.join(sources), now)
+            return 0, ''
+        mine, pending = HeavyJob.raised(ledger, session, item, now, floor.config.timeout)
+        reason = Floor.ASK.format(id=mine['id'], what=cls.WHAT.format(sources='; '.join(sources)))
+        if len(pending) > 1:
+            reason += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, reason
+
+
+class CheckInRequest:
+    """The session setting, changing or stopping one of the owner's
+    check-ins through Squire's check-in command, run as this one command,
+    its path quoted as the health check's is:
+    /usr/bin/python3 '<Squire home>/core/tools/check-ins.py' set|change|stop|every
+    <its words>. The floor asks the owner before every run, the question
+    naming the times and the words; a yes covers that one run, once. Spelt
+    any other way it is refused as any program naming Squire's home is
+    (Floor.judge_argv)."""
+
+    SCRIPT = 'check-ins.py'
+    VERBS = {
+        'set': (3, 'set a check-in at {0}: {1}'),
+        'change': (3, 'move the check-in at {0} to {1}'),
+        'stop': (2, 'stop the check-in at {0}'),
+        'every': (5, 'set check-ins every {0} minutes from {1} to {2}: {3}'),
+    }
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """The words after the command a Bash call runs it with, or None."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) < 3 or argv[2] not in cls.VERBS \
+                or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        return [str(word) for word in argv[2:]]
+
+    @classmethod
+    def what(cls, words):
+        count, text = cls.VERBS[words[0]]
+        if len(words) == count:
+            return 'change the owner\'s check-ins: ' + text.format(*words[1:])
+        return 'run Squire\'s check-in command with these words: ' + ' '.join(words)
+
+    @classmethod
+    def settle(cls, floor, ledger, session, words):
+        now = time.time()
+        item = 'check-in:' + hashlib.sha256(json.dumps(words).encode('utf-8')).hexdigest()
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
+            return 0, ''
+        mine, pending = HeavyJob.raised(ledger, session, item, now, floor.config.timeout)
+        reason = Floor.ASK.format(id=mine['id'], what=cls.what(words))
+        if len(pending) > 1:
+            reason += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, reason
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -591,6 +687,7 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        self.session = session
         job = HeavyJob.of(self, tool, data)
         if job:
             try:
@@ -598,6 +695,14 @@ class Floor:
                     return HeavyJob.settle(self, ledger, session, job)
             except SquireError as e:
                 return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
+        for request in (ImportRequest, CheckInRequest):
+            asked = request.of(self, tool, data)
+            if asked:
+                try:
+                    with Ledger(self.config.ledger_path) as ledger:
+                        return request.settle(self, ledger, session, asked)
+                except SquireError as e:
+                    return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
@@ -682,6 +787,22 @@ class Floor:
         if held['private']:
             reason += self.HOLDS.format(private='; '.join(held['private']))
         return 2, reason
+
+    @staticmethod
+    def one_command(tool, data):
+        """The words of a Bash call that is one plain simple command run by
+        /usr/bin/python3, every word literal; or None. A Squire command the
+        floor asks for is spelt only this way."""
+        command = data.get('command') if tool == 'Bash' else None
+        if not isinstance(command, str):
+            return None
+        shell = ShellCommand(command)
+        if not shell.plain or len(shell.segments) != 1:
+            return None
+        argv = shell.segments[0]
+        if len(argv) < 2 or argv[0] != PYTHON or not all(getattr(word, 'literal', True) for word in argv):
+            return None
+        return argv
 
     @staticmethod
     def item(tool, data):
@@ -844,9 +965,12 @@ class Floor:
             pieces = [p for t in argv for p in re.split(r'[\s()|<>;&`\'"=]+', t) if p]
             if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
                 return 'never', self.NEVER_UPDATE, []
-            # Squire's job command spelt any way but the one the floor asks
-            # for (HeavyJob): inside a shell's -c, say. Refused, yes or no.
-            if any(self.is_core_tool(p, HeavyJob.SCRIPT) for p in (self.path(t, strict=False) for t in pieces) if p):
+            # Squire's job, import and check-in commands spelt any way but the
+            # one the floor asks for (HeavyJob, ImportRequest, CheckInRequest):
+            # inside a shell's -c, say. Refused, yes or no.
+            asked = (HeavyJob.SCRIPT, ImportRequest.SCRIPT, CheckInRequest.SCRIPT)
+            if any(self.is_core_tool(p, name) for p in (self.path(t, strict=False) for t in pieces) if p
+                   for name in asked):
                 return 'never', self.NEVER_FLOOR, []
             if argv[0] == 'cd' and any(self.is_floor(p) for p in paths):
                 return 'never', self.NEVER_CD, []
