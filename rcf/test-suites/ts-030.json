@@ -1,0 +1,43 @@
+{
+  "createdAt": "2026-11-16T01:01:16.021Z",
+  "updatedAt": "2026-11-16T01:01:18.271Z",
+  "purpose": "Runs Squire's check-in command as the session would when the owner asks, checks wakeUps in the owner's squire.json after a set, a change, a stop and a rhythm (typical and heavy), checks the wake-up router's scheduler run reads a check-in set this way, and checks a time or rhythm the router could not read is never written.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-702-1"
+  ],
+  "id": "TS-030",
+  "usId": "US-702",
+  "title": "Check-ins set, changed and stopped by asking",
+  "testCases": [
+    {
+      "id": "TC-030-a-check-in-asked-for-is-set-in-wakeups",
+      "acId": "AC-702-1",
+      "description": "A check-in asked for is set in wakeUps as the router reads it, and the scheduler's run reads it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/check-ins-by-asking.test.js::a check-in the owner asks for is set in their squire.json in the form the check-ins are read from, nothing else in it changes, and the scheduler's run reads it"
+    },
+    {
+      "id": "TC-030-a-check-in-asked-to-move-is-changed-one",
+      "acId": "AC-702-1",
+      "description": "A check-in asked to move is changed, one asked to stop is removed, the rest unchanged",
+      "status": "pending",
+      "testPointer": "tests/acceptance/check-ins-by-asking.test.js::a check-in the owner asks to move is changed, and one they ask to stop is removed, and the rest stay as they were"
+    },
+    {
+      "id": "TC-030-a-rhythm-more-often-than-hourly-is-set",
+      "acId": "AC-702-1",
+      "description": "A rhythm more often than hourly is set as asked, with one sentence that it uses the plan faster",
+      "status": "pending",
+      "testPointer": "tests/acceptance/check-ins-by-asking.test.js::a rhythm more often than hourly is set as asked, with one plain sentence that frequent check-ins use the plan faster; hourly or slower carries no such sentence"
+    },
+    {
+      "id": "TC-030-a-check-in-the-router-could-not-read-is",
+      "acId": "AC-702-1",
+      "description": "A check-in the router could not read is never written; Squire says why",
+      "status": "pending",
+      "testPointer": "tests/acceptance/check-ins-by-asking.test.js::a time the check-ins cannot be read at, no words, a rhythm of no minutes, or a change or stop of a check-in that is not there is never written: Squire says why and the settings are unchanged"
+    }
+  ],
+  "status": "draft"
+}
