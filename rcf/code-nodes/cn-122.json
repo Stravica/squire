@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-122",
+  "path": "core/tools/import-memory.py#kept_name",
+  "implementsAcIds": [
+    "AC-602-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T04:26:56.779Z",
+  "updatedAt": "2026-11-16T04:26:56.779Z"
+}
