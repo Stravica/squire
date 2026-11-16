@@ -33,6 +33,7 @@ import json
 import os
 import plistlib
 import pwd
+import re
 import stat
 import subprocess
 import sys
@@ -54,7 +55,9 @@ class KnownFixes:
     FRESH = 1800
     LAY_DOWN_WITHIN = 300
     LAUNCHCTL_WITHIN = 30
-    AGENTS = ('com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup')
+    AGENTS = ('com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup',
+              'com.stravica.squire.pages', 'com.stravica.squire.voice-notes')
+    AGENT_PLIST = re.compile(r'^(com\.stravica\.squire\.[a-z0-9-]+)\.plist\Z')
 
     def __init__(self, config):
         from squire import ClaudeSignIn
@@ -213,7 +216,10 @@ class KnownFixes:
         return f'{"still" if self.present(fault) else "fixed"}: {fault}: {what}'
 
     def reload(self):
-        """Squire's agents loaded again, only in the account's own home."""
+        """Squire's agents loaded again, only in the account's own home: every
+        one of Squire's agents whose plist is in Library/LaunchAgents, the
+        five lay-down writes and any other of Squire's there, not a fixed
+        few."""
         from squire import System
 
         if not System.own_home():
@@ -221,7 +227,11 @@ class KnownFixes:
         folder = os.path.join(os.path.expanduser('~'), 'Library', 'LaunchAgents')
         domain = f'gui/{os.getuid()}'
         launchctl = System.command('/bin/launchctl')
-        for label in self.AGENTS:
+        try:
+            present = {m.group(1) for m in map(self.AGENT_PLIST.match, os.listdir(folder)) if m}
+        except OSError:
+            present = set()
+        for label in list(self.AGENTS) + sorted(present - set(self.AGENTS)):
             plist = os.path.join(folder, label + '.plist')
             try:
                 loaded = subprocess.run([launchctl, 'print', f'{domain}/{label}'], cwd='/', env=System.env(),

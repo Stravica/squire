@@ -42,7 +42,7 @@ TITLES = {
     'ready': 'Squire: ready',
 }
 AGENTS = ('com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup',
-          'com.stravica.squire.pages')
+          'com.stravica.squire.pages', 'com.stravica.squire.voice-notes')
 
 
 class Paused(Exception):
@@ -142,6 +142,7 @@ class SetUp:
     SESSION_WITHIN = 120
     ADDRESS = 'https://claude.ai/code'
     DEFAULT_BACKUP = os.path.join('Library', 'Mobile Documents', 'com~apple~CloudDocs', 'Squire Backup')
+    VOICE_NOTES = 'Voice notes'
     ASKED_AWAY = ('Desktop', 'Documents', 'Downloads', os.path.join('Library', 'Mobile Documents'))
     SET_UP_FAULTS = ('runner:', 'floor:', 'sign-in:', 'no session:', 'fixed:', 'still:', 'could not try:')
 
@@ -380,6 +381,8 @@ class SetUp:
             names['claudePlan'] = self.declared()
         try:
             os.makedirs(self.owner, mode=0o700, exist_ok=True)
+            # The folder the owner puts recordings in; the voice-notes job watches it.
+            os.makedirs(os.path.join(self.owner, self.VOICE_NOTES), mode=0o700, exist_ok=True)
             owner_file = os.path.join(self.owner, 'squire.json')
             owner = self.read_json(owner_file) if os.path.lexists(owner_file) else {}
             if not isinstance(owner, dict):
@@ -440,8 +443,22 @@ class SetUp:
                 else None
             Records.write(os.path.join(self.home, 'current-release.json'),
                           {'current': app, 'previous': previous, 'verified': False})
+        self.speech_helper()
 
-    def lay_down(self):
+    def speech_helper(self):
+        """Squire's speech helper built from the core just laid down, into the
+        Squire home's state, so the first voice note needs no build. Never a
+        pause: a Mac that cannot build it (below macOS 26, or without the
+        command line tools) is told so when a recording is first turned into
+        text, and nothing is sent anywhere."""
+        from speech import SpeechHelper
+
+        try:
+            built, why = SpeechHelper.find(self.home)
+        except OSError as e:
+            built, why = None, e.strerror or type(e).__name__
+        if not built:
+            self.log(f'speech helper not built: {why}')
         script = os.path.join(self.release, 'tools', 'lay-down.py')
         try:
             r = subprocess.run([self.python, '-B', script, self.release], cwd='/', env=System.env(self.home),

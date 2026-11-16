@@ -22,8 +22,9 @@ hooks in core-digests.json in the Squire home, lays Squire Update down in
 Applications under the home folder it is given (from core's update-app/,
 signed ad hoc; when it cannot, that is a log line and update-app.json in the
 Squire home, which the health check names, and the rest goes on), and writes
-the session runner's, the wake-up scheduler's, the nightly backup's and the
-page server's launchd agents into Library/LaunchAgents there. It
+the session runner's, the wake-up scheduler's, the nightly backup's, the
+page server's and the voice-notes job's launchd agents into
+Library/LaunchAgents there. It
 loads them only when that folder is the account's own home folder, as the
 account database names it, through the Mac's launchctl.
 """
@@ -50,6 +51,8 @@ class LayDown:
     WAKE_UPS = 'com.stravica.squire.wake-ups'
     BACKUP = 'com.stravica.squire.backup'
     PAGES = 'com.stravica.squire.pages'
+    VOICE_NOTES = 'com.stravica.squire.voice-notes'
+    WATCHED = 'Voice notes'
     UPDATE_APP = 'Squire Update.app'
     HOME_MARK = '__SQUIRE_HOME__'
     WITHIN = 60
@@ -86,7 +89,7 @@ class LayDown:
             Persona.write(home, config.owner_folder)
             if not core_only:
                 LayDown.update_app_or_fault(home)
-                LayDown.agents(home)
+                LayDown.agents(home, config.owner_folder)
         except (OSError, SquireError) as e:
             sys.stderr.write(f'lay-down laid core down, then failed: {e}. Lay core down again.\n')
             return 1
@@ -226,14 +229,19 @@ class LayDown:
             LayDown.log(home, f'Squire Update was laid down without its ad hoc signature ({failed})')
 
     @staticmethod
-    def agents(home):
-        """The runner's, the wake-up scheduler's, the nightly backup's and the
-        page server's launchd agents, loaded only for the account's own home
-        folder, through the Mac's launchctl. The page server is started at
-        load and kept running, on a port the system gives it each start (it
-        writes the address to state/page-server.json in the Squire home). Run
-        only from outside every agent (set-up, and Squire Update's install):
-        it stops each agent before it loads it."""
+    def agents(home, owner):
+        """The runner's, the wake-up scheduler's, the nightly backup's, the
+        page server's and the voice-notes job's launchd agents, loaded only
+        for the account's own home folder, through the Mac's launchctl. The
+        page server is started at load and kept running, on a port the system
+        gives it each start (it writes the address to state/page-server.json
+        in the Squire home). The voice-notes job is started by launchd when
+        the owner's Voice notes folder changes (WatchPaths), runs the
+        installed transcription with --watch, and is never kept alive; it
+        has the Mac's PATH and language. The owner's folder is not touched
+        here: set-up makes the Voice notes folder. Run only from outside
+        every agent (set-up, and Squire Update's install): it stops each
+        agent before it loads it."""
         from squire import SquireError, System
 
         user_home = os.path.expanduser('~')
@@ -241,6 +249,8 @@ class LayDown:
         os.makedirs(folder, exist_ok=True)
         tools = os.path.join(home, 'core', 'tools')
         env = {'SQUIRE_HOME': home}
+        voice_env = {'SQUIRE_HOME': home, 'PATH': '/usr/bin:/bin:/usr/sbin:/sbin',
+                     'LANG': os.environ.get('LANG') or System.LANG}
         agents = {
             LayDown.RUNNER: {'Label': LayDown.RUNNER, 'EnvironmentVariables': env,
                              'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'runner.py')],
@@ -255,6 +265,11 @@ class LayDown:
                             'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'page-server.py'),
                                                  '--port', '0'],
                             'RunAtLoad': True, 'KeepAlive': True},
+            LayDown.VOICE_NOTES: {'Label': LayDown.VOICE_NOTES, 'EnvironmentVariables': voice_env,
+                                  'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'transcribe.py'),
+                                                       '--watch'],
+                                  'WatchPaths': [os.path.join(owner, LayDown.WATCHED)],
+                                  'KeepAlive': False},
         }
         for label, agent in agents.items():
             LayDown.write(os.path.join(folder, label + '.plist'), plistlib.dumps(agent), 0o644)
