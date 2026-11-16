@@ -1,0 +1,42 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "d972e40653f1deb9f827b14829fd73d369c53393",
+  "fbsIds": [
+    "FBS-010",
+    "FBS-005"
+  ],
+  "touchedAcIds": [
+    "AC-901-1",
+    "AC-602-1",
+    "AC-702-1",
+    "AC-601-3",
+    "AC-501-1",
+    "AC-1301-2",
+    "AC-1302-1"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": "AC-901-1",
+      "text": "The case at tests/acceptance/pages-on-the-mac.test.js line 381 (from another address on the network a page, the home dashboard and the comment panel's post are all refused) stays green with the page server's refusal of other addresses removed. Binding core/tools/page-server.py on every interface (Server.__init__, line 355) and dropping the peer-address check in Handler.from_the_mac (lines 260 and 261) leaves it passing, because its requests from the Mac's network address (lines 402 and 405) carry that address as their Host, which the Host check refuses on its own. With that change a request from the Mac's network address carrying the server's own Host (127.0.0.1 and its port) and Origin is served the page with status 200 and its comment is kept, so a page server reachable from another machine on the network passes the case. A red test would send a page request, a dashboard request and a comment post from a non-loopback address of the Mac, each carrying the server's own Host and Origin, and assert that each is refused (no connection, or a status of 400 or more with none of the page) and that no comment is kept. Hosted CI at this head is green on both runs (410 tests, 402 pass, 0 fail, 8 skipped)."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-901-1",
+      "text": "The Code Node rcf/code-nodes/cn-117.json, added in this build, names core/tools/page-server.py#Server (line 349), a class whose only method is __init__. The pinned strength tool expands a class to its methods other than __init__, so its own Python reader finds no mutable symbol there, and the loopback bind that class holds is outside every mutant. It closes when the node names a symbol the tool can mutate, or is removed; no test is needed for it."
+    },
+    {
+      "id": "F-3",
+      "locus": "build",
+      "acId": "AC-702-1",
+      "text": "The Code Node rcf/code-nodes/cn-125.json, added in this build, names core/tools/check-ins.py#Refused (line 50), an exception class with no methods, so the pinned strength tool's own Python reader finds no mutable symbol there. It closes when the node names a symbol the tool can mutate, or is removed; no test is needed for it."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-16T05:43:55.422Z"
+}

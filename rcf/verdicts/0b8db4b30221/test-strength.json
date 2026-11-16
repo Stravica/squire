@@ -1,0 +1,1468 @@
+{
+  "version": 1,
+  "head": "0b8db4b3022174a25761110dfaeb9ff641617fa0",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-901-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-602-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-702-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-601-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "bound tests that all skipped: tests/e2e/first-conversation.test.js::on a signed release, the guided first conversation keeps a profile, a house style and a learning log in the owner's folder, can pause and pick up later, and teaches when asked"
+    },
+    {
+      "acId": "AC-501-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1301-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a named subagent whose own agent file names a model outside the plan's set is asked, as is one whose file cannot be read, one no file names and one whose file changed after the session started; a yes covers that one call"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a named subagent whose own agent file names a model outside the plan's set is asked, as is one whose file cannot be read, one no file names and one whose file changed after the session started; a yes covers that one call"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1302-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#second_yes_needed",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#second_yes_needed",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#second_yes_needed",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.usage",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.usage",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.usage",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.raised",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.raised",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.raised",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#HeavyJob.settle",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/heavy-job.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/tools/heavy-job.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/heavy-job-gate.test.js::a big job of each kind (deep research, building an app, building a site, video and audio work) is warned of and starts only on the owner's yes for that job, and no other way of starting it gets round the gate"
+          ]
+        },
+        {
+          "symbol": "core/tools/heavy-job.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 7,
+    "structuralPassed": 2,
+    "mutants": 198,
+    "killed": 90,
+    "survived": 49,
+    "timeout": 0,
+    "notApplicable": 59,
+    "blocked": 5
+  },
+  "wallMs": 614630,
+  "node": "v24.14.0"
+}

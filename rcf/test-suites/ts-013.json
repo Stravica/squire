@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.931Z",
-  "updatedAt": "2026-11-15T13:45:18.908Z",
+  "updatedAt": "2026-11-16T02:57:00.969Z",
   "purpose": "Drives a session past the context threshold with seeded work, checks the handover is written before the prompt, and checks the seeded work is recovered after /clear.",
   "testLevel": "integration",
   "acIds": [
@@ -23,6 +23,27 @@
       "description": "After /clear the work in progress is picked up from the handover note",
       "status": "pending",
       "testPointer": "tests/acceptance/handover-note.test.js::after /clear the new conversation picks up the work in progress from the handover note"
+    },
+    {
+      "id": "TC-013-one-conversation-s-context-never-brings",
+      "acId": "AC-501-1",
+      "description": "One conversation's context never brings the handover ask into another; the plan's windows stay the account's",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-per-session.test.js::one conversation's context reading never brings the handover ask into another running beside it, while the plan's windows are the account's in every conversation"
+    },
+    {
+      "id": "TC-013-after-the-newest-note-is-picked-up-a",
+      "acId": "AC-501-1",
+      "description": "After the newest note is picked up, a later /clear never brings an older note as the last conversation's",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-per-session.test.js::after the newest handover note is picked up, a later /clear never brings an older note as the handover from the last conversation"
+    },
+    {
+      "id": "TC-013-with-no-usage-windows-in-the-status-line",
+      "acId": "AC-501-1",
+      "description": "With no usage windows in the status line, a conversation at 76% context is asked for its handover note",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-per-session.test.js::a conversation whose status line carries no usage windows still gets the handover ask on its next message once its own context reaches 76%"
     }
   ],
   "status": "draft"

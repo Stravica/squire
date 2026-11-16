@@ -1,0 +1,30 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "0b8db4b3022174a25761110dfaeb9ff641617fa0",
+  "fbsIds": [
+    "FBS-010",
+    "FBS-005"
+  ],
+  "touchedAcIds": [
+    "AC-901-1",
+    "AC-602-1",
+    "AC-702-1",
+    "AC-601-3",
+    "AC-501-1",
+    "AC-1301-2",
+    "AC-1302-1"
+  ],
+  "code": "MERGE",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": null,
+      "text": "Not a blocking item; this is the only place the verdict holds words. Hosted CI at this head had not finished when the verdict was recorded (the push run's test suite step still running, the pull request run started shortly before). This MERGE rests on the reviewer's own unmutated run of every bound case of the seven criteria and of the cases the agent change reaches (44 pass, the one external case skipped) and on the revert probes; read CI at this head before the test stage."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-16T06:40:05.472Z"
+}

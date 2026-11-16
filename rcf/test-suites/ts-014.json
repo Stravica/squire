@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.198Z",
-  "updatedAt": "2026-11-15T17:13:39.190Z",
+  "updatedAt": "2026-11-16T07:59:13.580Z",
   "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
   "testLevel": "integration",
   "acIds": [
@@ -95,6 +95,27 @@
       "description": "The status line command fed a window at 100% exits 0 and writes it into the usage snapshot.",
       "status": "pending",
       "testPointer": "tests/acceptance/upgrade-advice.test.js::the status line command core's settings set, fed a window at 100%, exits 0 and writes it into the usage snapshot the advice counts from"
+    },
+    {
+      "id": "TC-014-a-named-subagent-on-a-model-outside-the",
+      "acId": "AC-1301-2",
+      "description": "A named subagent on a model outside the plan by its own file, an unreadable or unknown one, or a file changed mid-session is asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/named-subagents.test.js::a named subagent whose own agent file names a model outside the plan's set is asked, as is one whose file cannot be read, one no file names and one whose file changed after the session started; a yes covers that one call"
+    },
+    {
+      "id": "TC-014-a-named-subagent-on-a-plan-model-inherit",
+      "acId": "AC-1301-2",
+      "description": "A named subagent on a plan model, inherit or no model, and a built-in one, are free through the same floor",
+      "status": "pending",
+      "testPointer": "tests/acceptance/named-subagents.test.js::a named subagent whose own agent file names a model in the plan's set, inherit or no model, and a built-in subagent, go through the same floor and are free"
+    },
+    {
+      "id": "TC-014-through-the-floor-as-the-laid-settings",
+      "acId": "AC-1301-2",
+      "description": "Through the floor as the laid settings run it, a model outside the plan is asked naming usage credits, goes ahead on the yes, and the same yes does not cover a second call",
+      "status": "pending",
+      "testPointer": "tests/acceptance/no-spend-beyond-plan.test.js::through the safety floor as Squire's session runs it (the settings lay-down writes in Squire's config folder), a model outside the plan's set is asked naming usage credits, goes ahead on the owner's yes, and the same yes does not cover a second call"
     }
   ],
   "status": "draft"

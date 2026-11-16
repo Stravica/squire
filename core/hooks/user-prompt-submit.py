@@ -101,8 +101,9 @@ class UsageNotes:
     - the upgrade advice, once its trigger is met (squire.advice_due), then
       quiet for 30 days from when it was given, whatever the answer; it is
       recorded in runtime/advice.json before it is printed;
-    - the handover ask, when the context is at or above 70% or after the
-      session's second compaction, on each message until the note is saved
+    - the handover ask, when this conversation's own context is at or above
+      70% or after the session's second compaction, on each message until
+      the note is saved
       at state/handover/<session id>.md in the owner's folder; it names what
       the note holds and never mentions /clear;
     - the /clear prompt, once that note is saved and not empty, once per
@@ -203,8 +204,10 @@ class UsageNotes:
 
     @classmethod
     def handover(cls, config, session, usage):
-        """The handover ask or the /clear prompt due for this session, or None."""
-        from squire import Runtime, handover_due
+        """The handover ask or the /clear prompt due for this session, or None.
+        The ask reads this conversation's own context reading only
+        (squire.context_of); the usage windows stay the account's."""
+        from squire import Runtime, context_of, handover_due
 
         if not cls.SESSION.match(session):
             return None
@@ -221,7 +224,8 @@ class UsageNotes:
             sessions = state.get('sessions') if isinstance(state.get('sessions'), dict) else {}
             mine = sessions.get(session) if isinstance(sessions.get(session), dict) else {}
             compactions = mine.get('compactions') if isinstance(mine.get('compactions'), int) else 0
-            return cls.ASK.format(path=note) if handover_due(usage, compactions) else None
+            context = context_of(config.home, session, usage, time.time())
+            return cls.ASK.format(path=note) if handover_due(context, compactions) else None
 
         def change(data):
             sessions = data.get('sessions') if isinstance(data.get('sessions'), dict) else {}
@@ -235,12 +239,31 @@ class UsageNotes:
         return cls.CLEAR.format(path=note) if Runtime.update(config.home, 'handover.json', change) else None
 
 
+class FirstConversationMark:
+    """The guided first conversation's record (squire.FirstConversation),
+    marked at each of the owner's own messages, never a "Squire wake-up:"
+    message (Squire's own background work). It prints nothing."""
+
+    @classmethod
+    def handle(cls, raw):
+        sys.path.insert(0, os.path.join(CORE, 'lib'))
+        from squire import Config, FirstConversation
+
+        event = json.loads(raw.decode('utf-8'))
+        if not isinstance(event, dict) or event.get('hook_event_name') != 'UserPromptSubmit':
+            return
+        prompt = event.get('prompt')
+        if not isinstance(prompt, str) or prompt.lstrip().startswith(UsageNotes.WAKE_UP):
+            return
+        FirstConversation.seen(Config().owner_folder, time.time())
+
+
 if __name__ == '__main__':
     try:
         raw = sys.stdin.buffer.read()
     except Exception:
         raw = b''
-    for handler in (OwnerAnswer, ReleaseNote, UsageNotes):
+    for handler in (OwnerAnswer, ReleaseNote, UsageNotes, FirstConversationMark):
         try:
             handler.handle(raw)
         except Exception:

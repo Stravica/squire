@@ -10,8 +10,11 @@ model (model.id), contextUsedPercent (context_window.used_percentage, or
 null), and fiveHour and sevenDay, each {usedPercent, resetsAt} from
 rate_limits.five_hour and rate_limits.seven_day, or null when that window is
 absent or its used_percentage or resets_at is not a number. Nothing else: no
-prompt, path, session id, token or cost. A window seen at 100% is recorded
-in runtime/limits.json, once per window and reset, for the upgrade advice.
+prompt, path, session id, token or cost. Besides, the conversation's own
+context reading is kept in runtime/context.json, keyed by the session id the
+input carries, whether or not rate_limits is there: a session id only as the
+key of a conversation's own reading. A window seen at 100% is recorded in
+runtime/limits.json, once per window and reset, for the upgrade advice.
 
 It prints at most one plain line for the status display, and always exits
 0; input it cannot read as JSON changes nothing, so the snapshot only ages.
@@ -20,6 +23,7 @@ The Squire home is SQUIRE_HOME, or the default one when that is unset.
 
 import json
 import os
+import re
 import sys
 import time
 
@@ -30,6 +34,7 @@ sys.path.insert(0, os.path.join(CORE, 'lib'))
 FIELDS = (('fiveHour', 'five_hour', '5-hour'), ('sevenDay', 'seven_day', 'weekly'))
 LIMIT_AT = 100
 KEEP = 30 * 86400
+SESSION = re.compile(r'^[A-Za-z0-9-]+\Z')
 
 
 def snapshot_of(data, now):
@@ -80,6 +85,28 @@ def note_limits(home, snapshot, now):
     Runtime.update(home, 'limits.json', change)
 
 
+def note_context(home, data, snapshot, now):
+    """Keeps this conversation's own context reading in runtime/context.json,
+    keyed by the session id the status line input carries, whether or not
+    rate_limits is there: {sessions: {<id>: {contextUsedPercent, at}}}.
+    Readings older than 30 days are dropped; input with no session id it can
+    key changes nothing."""
+    from squire import Runtime, is_number
+
+    session = data.get('session_id')
+    if not isinstance(session, str) or not SESSION.match(session):
+        return
+
+    def change(record):
+        sessions = record.get('sessions') if isinstance(record.get('sessions'), dict) else {}
+        kept = {key: value for key, value in sessions.items()
+                if isinstance(value, dict) and is_number(value.get('at')) and now - value['at'] < KEEP}
+        kept[session] = {'contextUsedPercent': snapshot['contextUsedPercent'], 'at': int(now)}
+        return {'sessions': kept}
+
+    Runtime.update(home, 'context.json', change)
+
+
 def main():
     from squire import Config, Records, Runtime, percent_words
 
@@ -93,6 +120,7 @@ def main():
         return
     home = Config.default_home()
     Records.write(Runtime.path(home, 'usage.json'), snapshot)
+    note_context(home, data, snapshot, now)
     note_limits(home, snapshot, now)
     shown = [f'{name} {percent_words(snapshot[key]["usedPercent"])}' for key, _, name in FIELDS if snapshot[key]]
     if shown:

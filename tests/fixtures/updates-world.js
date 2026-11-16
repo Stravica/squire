@@ -817,7 +817,9 @@ function startModel(rw) {
     agents: path.join(rw.world.userHome, 'Library', 'LaunchAgents'), intervals: false });
 }
 
-const AGENT_LABELS = ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup'];
+// Squire's agents, by label: the one list every check of the agents loaded
+// compares with (the page server's beside the others, ADR-003 line 2).
+const AGENT_LABELS = ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup', 'com.stravica.squire.pages'];
 
 // Squire's agents the world's launchd model holds loaded, by label (a world
 // without the model has none).
@@ -859,14 +861,14 @@ function launchSquire(rw, runnerEnv = null) {
 // The same, waiting for a live session and a health check with nothing to say.
 // Under the launchd model, Squire starts as set-up's lay-down starts it: core
 // laid down by the product's lay-down with the world's system folders, which
-// loads the three agents it writes through the world's launchd.
+// loads the agents it writes (AGENT_LABELS) through the world's launchd.
 async function startSquire(rw) {
   if (rw.model) {
     startModel(rw);
     const laid = w.layDown(rw.world, rw.appCore, { env: env(rw) });
     assert.equal(laid.status, 0, `lay-down must lay core down; got ${w.describe(laid)}`);
-    const loaded = await s.waitFor(() => agentsLoaded(rw).length === 3, 10000, 250);
-    assert.ok(loaded, `under the launchd model, lay-down must load Squire's three agents through the Mac's launchctl in the account's own home; ` +
+    const loaded = await s.waitFor(() => agentsLoaded(rw).length === AGENT_LABELS.length, 10000, 250);
+    assert.ok(loaded, `under the launchd model, lay-down must load all of Squire's agents (${AGENT_LABELS.join(', ')}) through the Mac's launchctl in the account's own home; ` +
       `loaded: ${JSON.stringify(agentsLoaded(rw))}; launchctl calls: ${JSON.stringify(launchdCalls(rw))}`);
   } else launchSquire(rw);
   const session = await s.waitFor(() => s.sessionRecords(rw.world).find((r) => !w.processGone(r.pid)), 30000);
@@ -1294,7 +1296,7 @@ const TICKET_FIELDS = {
   claudeCodeVersion: (v) => typeof v === 'string' && VERSION.test(v),
   macOSVersion: (v) => typeof v === 'string' && /^\d+(\.\d+)*$/.test(v),
   macModelClass: (v) => ['MacBook Air', 'MacBook Pro', 'Mac mini', 'iMac', 'Mac Studio', 'Mac Pro', 'Mac'].includes(v),
-  agentsLoaded: (v) => Array.isArray(v) && v.every((x) => ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup'].includes(x)),
+  agentsLoaded: (v) => Array.isArray(v) && v.every((x) => AGENT_LABELS.includes(x)),
   healthCodes: (v) => Array.isArray(v) && v.every((x) => CODES.includes(x)),
   lastErrors: (v) => Array.isArray(v) && v.every((x) => x && typeof x === 'object' && Object.keys(x).sort().join() === 'at,code'
     && CODES.includes(x.code) && typeof x.at === 'number'),

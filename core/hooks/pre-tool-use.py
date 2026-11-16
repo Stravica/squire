@@ -14,6 +14,9 @@ owner's plan: turning on usage credits or opening the upgrade page is
 refused, yes or no, and a model outside the plan's set waits for the owner's
 yes, its block naming usage credits. A big job starts only through Squire's
 one job command, on the owner's yes, and on a second yes above 90% usage.
+Squire's import and check-in commands run only as their one command, each on
+the owner's yes to that run, and an import leaves its job holding untrusted
+input.
 """
 
 import fnmatch
@@ -491,6 +494,123 @@ class HeavyJob:
         return 0, ''
 
 
+class ImportRequest:
+    """The session's import of the owner's notes, documents or another
+    assistant's memory export through Squire's import command, run as this
+    one command, its path quoted as the health check's is:
+    /usr/bin/python3 '<Squire home>/core/tools/import-memory.py' <source>
+    [<source> ...]. The floor asks the owner before every import, the
+    question naming every source; a yes covers that one run, once. Once it
+    runs, the job holds untrusted input: what an import takes in is words
+    from elsewhere, kept in workspace/inbox/imported in the owner's folder.
+    Spelt any other way, or naming a source in Squire's own files, the import
+    is refused as any program naming Squire's home is (Floor.judge_argv)."""
+
+    SCRIPT = 'import-memory.py'
+    WHAT = ('take these into Squire\'s memory, copied into workspace/inbox/imported in the owner\'s folder and read as '
+            'untrusted from then on: {sources}')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """The sources a Bash call imports through the one command, or None."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) < 3 or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        sources = [str(word) for word in argv[2:]]
+        paths = [floor.path(source, strict=False) for source in sources]
+        if any(p is None or floor.is_floor(p) or floor.is_keychain(p) for p in paths):
+            return None
+        return sources
+
+    @classmethod
+    def settle(cls, floor, ledger, session, sources):
+        now = time.time()
+        item = 'import:' + hashlib.sha256(json.dumps(sources).encode('utf-8')).hexdigest()
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
+            ledger.taint(session, 'untrusted', 'the import of ' + ', '.join(sources), now)
+            return 0, ''
+        mine, pending = HeavyJob.raised(ledger, session, item, now, floor.config.timeout)
+        reason = Floor.ASK.format(id=mine['id'], what=cls.WHAT.format(sources='; '.join(sources)))
+        if len(pending) > 1:
+            reason += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, reason
+
+
+class CheckInRequest:
+    """The session setting, changing or stopping one of the owner's
+    check-ins through Squire's check-in command, run as this one command,
+    its path quoted as the health check's is:
+    /usr/bin/python3 '<Squire home>/core/tools/check-ins.py' set|change|stop|every
+    <its words>. The floor asks the owner before every run, the question
+    naming the times and the words; a yes covers that one run, once. Spelt
+    any other way it is refused as any program naming Squire's home is
+    (Floor.judge_argv)."""
+
+    SCRIPT = 'check-ins.py'
+    VERBS = {
+        'set': (3, 'set a check-in at {0}: {1}'),
+        'change': (3, 'move the check-in at {0} to {1}'),
+        'stop': (2, 'stop the check-in at {0}'),
+        'every': (5, 'set check-ins every {0} minutes from {1} to {2}: {3}'),
+    }
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """The words after the command a Bash call runs it with, or None."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) < 3 or argv[2] not in cls.VERBS \
+                or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        return [str(word) for word in argv[2:]]
+
+    @classmethod
+    def what(cls, words):
+        count, text = cls.VERBS[words[0]]
+        if len(words) == count:
+            return 'change the owner\'s check-ins: ' + text.format(*words[1:])
+        return 'run Squire\'s check-in command with these words: ' + ' '.join(words)
+
+    @classmethod
+    def settle(cls, floor, ledger, session, words):
+        now = time.time()
+        item = 'check-in:' + hashlib.sha256(json.dumps(words).encode('utf-8')).hexdigest()
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
+            return 0, ''
+        mine, pending = HeavyJob.raised(ledger, session, item, now, floor.config.timeout)
+        reason = Floor.ASK.format(id=mine['id'], what=cls.what(words))
+        if len(pending) > 1:
+            reason += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, reason
+
+
+class PageLink:
+    """The session asking Squire's page server where the dashboard is, the
+    one command Squire's instructions name for a link:
+    /usr/bin/python3 '<Squire home>/core/tools/page-server.py' --where. It
+    only reads where the page server already runs, so it is free, but only
+    as that whole Bash command: the system python, the installed core's
+    page-server.py by its full path, and --where alone. Inside a list, a
+    pipeline, a subshell or a wrapper, with another interpreter, another
+    argument or none, or by a relative path, the page server's script stays
+    refused, yes or no, as any program naming Squire's home is
+    (Floor.judge_argv): a session never starts a page server itself."""
+
+    SCRIPT = 'page-server.py'
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """True when a Bash call is exactly the link command, as its whole
+        command."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) != 3 or argv[2] != '--where' or not os.path.isabs(argv[1]):
+            return False
+        return floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT)
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -504,6 +624,9 @@ class Floor:
     AGENT_TOOLS = ('Agent', 'Task')
     PLAN_MODELS = ('opus', 'sonnet', 'haiku')
     AGENT_FREE_MODELS = PLAN_MODELS + ('inherit',)
+    # Claude Code's own subagents, which run on the session's model; a file
+    # of the same name is read as a file.
+    BUILT_IN_AGENTS = ('general-purpose', 'Explore', 'Plan', 'statusline-setup', 'output-style-setup')
     MODEL_VARIABLES = re.compile(r'^(ANTHROPIC_MODEL|ANTHROPIC_DEFAULT_(OPUS|SONNET|HAIKU)_MODEL|CLAUDE_CODE_SUBAGENT_MODEL)'
                                  r'=(.*)\Z', re.S)
     CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
@@ -572,6 +695,7 @@ class Floor:
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
         self.inbox = os.path.join(self.owner, 'workspace', 'inbox')
         self.walk_left = self.WALK
+        self.session = None
 
     @classmethod
     def handle(cls, raw):
@@ -591,6 +715,7 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        self.session = session
         job = HeavyJob.of(self, tool, data)
         if job:
             try:
@@ -598,6 +723,16 @@ class Floor:
                     return HeavyJob.settle(self, ledger, session, job)
             except SquireError as e:
                 return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
+        for request in (ImportRequest, CheckInRequest):
+            asked = request.of(self, tool, data)
+            if asked:
+                try:
+                    with Ledger(self.config.ledger_path) as ledger:
+                        return request.settle(self, ledger, session, asked)
+                except SquireError as e:
+                    return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
+        if PageLink.of(self, tool, data):
+            return 0, ''
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
@@ -684,6 +819,22 @@ class Floor:
         return 2, reason
 
     @staticmethod
+    def one_command(tool, data):
+        """The words of a Bash call that is one plain simple command run by
+        /usr/bin/python3, every word literal; or None. A Squire command the
+        floor asks for is spelt only this way."""
+        command = data.get('command') if tool == 'Bash' else None
+        if not isinstance(command, str):
+            return None
+        shell = ShellCommand(command)
+        if not shell.plain or len(shell.segments) != 1:
+            return None
+        argv = shell.segments[0]
+        if len(argv) < 2 or argv[0] != PYTHON or not all(getattr(word, 'literal', True) for word in argv):
+            return None
+        return argv
+
+    @staticmethod
     def item(tool, data):
         """One call is one item: the same tool and input, whatever the order
         of its keys; a Bash description is not part of it."""
@@ -737,7 +888,11 @@ class Floor:
             return 'free', '', []
         what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
         if tool in self.AGENT_TOOLS:
-            if 'model' not in data or (isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS):
+            if 'model' in data:
+                if isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS:
+                    return 'free', '', []
+                return 'ask', self.CREDITS.format(what=what), []
+            if self.named_agent_free(data.get('subagent_type')):
                 return 'free', '', []
             return 'ask', self.CREDITS.format(what=what), []
         if tool == 'SlashCommand' and isinstance(data.get('command'), str) and self.SPENDING.search(data['command']):
@@ -746,6 +901,71 @@ class Floor:
             return 'ask', what, []
         # A tool the floor does not know: it cannot tell what the tool reads.
         return 'ask', what, [('untrusted', tool), ('private', tool)]
+
+    def named_agent_free(self, name):
+        """True when a subagent called with no model runs on a model in the
+        plan's set (or the session's own) for certain: no subagent named; or
+        the agent file that names it, in the owner's folder's .claude/agents
+        or the config folder's agents, names a model in the set, inherit or
+        none, and has not changed since the floor saw this job start; or, with
+        no file naming it and every file there readable, a built-in subagent.
+        A file the floor cannot read, a name no file gives, a file changed
+        since the job started, or a job the floor did not see start is not
+        certain, so it is asked."""
+        if name is None:
+            return True
+        if not isinstance(name, str) or not name:
+            return False
+        found, unreadable = None, False
+        for folder in (os.path.join(self.owner, '.claude', 'agents'), os.path.join(self.config.home, 'claude-config', 'agents')):
+            try:
+                names = sorted(n for n in os.listdir(folder) if n.endswith('.md'))
+            except FileNotFoundError:
+                continue
+            except OSError:
+                unreadable = True
+                continue
+            for file_name in names:
+                path = os.path.join(folder, file_name)
+                try:
+                    with open(path, encoding='utf-8') as f:
+                        text = f.read(65536)
+                    changed = os.stat(path).st_mtime
+                except (OSError, ValueError):
+                    unreadable = True
+                    continue
+                fields = self.frontmatter(text)
+                if fields.get('name') == name and found is None:
+                    found = (fields.get('model'), changed)
+        if found is None:
+            return name in self.BUILT_IN_AGENTS and not unreadable
+        model, changed = found
+        if model is not None and model not in self.AGENT_FREE_MODELS:
+            return False
+        ledger = Ledger.read_shared(self.config.ledger_path)
+        session = getattr(self, 'session', None)
+        jobs = [r for r in (ledger.records if ledger else []) if r.get('type') == 'job' and r.get('session') == session]
+        started = jobs[0].get('at') if jobs else None
+        return isinstance(started, (int, float)) and not isinstance(started, bool) and changed < started
+
+    @staticmethod
+    def frontmatter(text):
+        """The key: value lines between an agent file's first two --- lines,
+        each value with its quotes taken off; none when it has no frontmatter."""
+        lines = text.split('\n')
+        if not lines or lines[0].strip() != '---':
+            return {}
+        fields = {}
+        for line in lines[1:]:
+            if line.strip() == '---':
+                return fields
+            key, sep, value = line.partition(':')
+            if sep and key.strip() and key.strip() not in fields:
+                value = value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
+                    value = value[1:-1]
+                fields[key.strip()] = value
+        return {}
 
     def judge_bash(self, command):
         """A command the list resolves is free and marked by its paths; a
@@ -844,9 +1064,13 @@ class Floor:
             pieces = [p for t in argv for p in re.split(r'[\s()|<>;&`\'"=]+', t) if p]
             if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
                 return 'never', self.NEVER_UPDATE, []
-            # Squire's job command spelt any way but the one the floor asks
-            # for (HeavyJob): inside a shell's -c, say. Refused, yes or no.
-            if any(self.is_core_tool(p, HeavyJob.SCRIPT) for p in (self.path(t, strict=False) for t in pieces) if p):
+            # Squire's job, import and check-in commands spelt any way but the
+            # one the floor asks for (HeavyJob, ImportRequest, CheckInRequest),
+            # and the page server's script any way but the link command
+            # (PageLink): inside a shell's -c, say. Refused, yes or no.
+            asked = (HeavyJob.SCRIPT, ImportRequest.SCRIPT, CheckInRequest.SCRIPT, PageLink.SCRIPT)
+            if any(self.is_core_tool(p, name) for p in (self.path(t, strict=False) for t in pieces) if p
+                   for name in asked):
                 return 'never', self.NEVER_FLOOR, []
             if argv[0] == 'cd' and any(self.is_floor(p) for p in paths):
                 return 'never', self.NEVER_CD, []

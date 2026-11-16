@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-133",
+  "path": "core/lib/squire.py#FirstConversation",
+  "implementsAcIds": [
+    "AC-601-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T04:36:36.529Z",
+  "updatedAt": "2026-11-16T04:36:36.529Z"
+}

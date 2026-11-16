@@ -1,0 +1,42 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "027b73c8945adabd61d527259266f67128c5d821",
+  "fbsIds": [
+    "FBS-010",
+    "FBS-005"
+  ],
+  "touchedAcIds": [
+    "AC-901-1",
+    "AC-602-1",
+    "AC-702-1",
+    "AC-601-3",
+    "AC-501-1",
+    "AC-1301-2",
+    "AC-1302-1"
+  ],
+  "code": "MERGE",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": null,
+      "text": "Hosted CI on this head had not finished when this verdict was recorded (push and pull request runs in progress). The verdict rests on the reviewer runs at this head, namely the 38 bound cases of the seven criteria (37 pass, 1 skipped as External), revert probes of the free route, the refused-word entry, the settings lay-down call and the persona guard, each red where expected, and the chain checks."
+    },
+    {
+      "id": "F-2",
+      "locus": "test",
+      "acId": null,
+      "text": "Residual, the same class as the job and check-in routes. A spelling of the page server script the floor cannot resolve to its real path (through a variable such as $SQUIRE_HOME, a long s the volume folds to s, a name split inside python -c, or a copy under another name) is asked like any program, not refused, and after the owner says yes it runs. A page server started that way rewrites state/page-server.json. The job and check-in scripts are asked the same way in the same spellings. Comparing by Paths.fold in Floor.is_core_tool would close the long s instance; the variable and copy instances are the general asked-program residual."
+    },
+    {
+      "id": "F-3",
+      "locus": "test",
+      "acId": null,
+      "text": "CN-006 lists the whole Floor class under twenty criteria, so the strength tool will report the two Floor.consult mutants as survivors under AC-1301-2 and AC-1302-1. Consult is reached only by the model verdict of judge_bash, which neither criterion produces, and its behaviour is killed under AC-1901-6 and AC-1901-8. The refused-word entry for the page server script sits in Floor.judge_argv under CN-006, which does not carry AC-901-1, and its removal is red on the shell form of the link case after a yes. Both are for the later split of CN-006."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-16T08:38:41.629Z"
+}

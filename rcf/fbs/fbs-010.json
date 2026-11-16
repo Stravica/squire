@@ -1,15 +1,73 @@
 {
   "createdAt": "2026-11-15T13:30:57.113Z",
-  "updatedAt": "2026-11-15T17:01:36.175Z",
+  "updatedAt": "2026-11-16T11:04:06.163Z",
   "acIds": [
-    "AC-901-1"
+    "AC-901-1",
+    "AC-602-1",
+    "AC-702-1",
+    "AC-601-3"
   ],
   "fbsId": "FBS-010",
   "prdId": "PRD-001",
   "bsId": "BS-001",
   "buildOrder": 9,
-  "executionStatus": "notStarted",
+  "executionStatus": "complete",
   "title": "Pages, the dashboard and getting to know you",
   "summary": "The pages Squire makes, the home dashboard and the voice-note pages are all served by one page server on the owner's Mac, and can be seen on that Mac only: another machine cannot connect.",
-  "dependsOnFbsIds": []
+  "dependsOnFbsIds": [],
+  "designStage": {
+    "journeys": [
+      {
+        "id": "see-a-page",
+        "actor": "Squire owner",
+        "goal": "See a page Squire made, on the owner's own Mac",
+        "steps": [
+          "Squire says a page is ready and gives its link, reading the page server's address from state/page-server.json at that moment",
+          "The owner opens the link in their browser on the Mac",
+          "The page server serves the page from workspace/pages in the owner's folder, byte for byte as Squire made it"
+        ]
+      },
+      {
+        "id": "open-the-dashboard",
+        "actor": "Squire owner",
+        "goal": "Open the home dashboard on the owner's own Mac",
+        "steps": [
+          "The owner asks Squire for the dashboard, and Squire gives its link from state/page-server.json, or says the pages are not up",
+          "The owner opens the link in their browser on the Mac",
+          "The page server serves the home dashboard at /, an HTML page of its own"
+        ]
+      },
+      {
+        "id": "comment-on-a-page",
+        "actor": "Squire owner",
+        "goal": "Leave a comment on a page for Squire to read",
+        "steps": [
+          "The owner opens a page Squire made, on the Mac",
+          "The owner picks the words the comment is about and writes the comment in the comment panel",
+          "The panel posts it to the page server from the server's own page, with the server's own Origin",
+          "The page server keeps the comment in the owner's folder, where Squire reads it as untrusted words, never as the owner's own"
+        ]
+      }
+    ],
+    "authoredAt": "2026-11-16T02:58:26.460Z",
+    "authoredBy": "operator",
+    "navModel": {
+      "shape": "operator-declared-other",
+      "routes": [
+        {
+          "path": "/",
+          "label": "Home dashboard",
+          "authRequired": false
+        },
+        {
+          "path": "/pages/*",
+          "label": "A page Squire made",
+          "authRequired": false
+        }
+      ],
+      "signedInAsAffordance": false,
+      "notes": "No shared navigation bar and no sign-in: the pages are seen on the owner's Mac only, over the loopback. The home dashboard at / links to the pages; each page under /pages/ is a document served as Squire made it, with the comment panel the server's own; the panel posts to /api/review, which is not a page."
+    }
+  },
+  "uiBearing": true
 }

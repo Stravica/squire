@@ -148,6 +148,34 @@ function wakeUp(world, session, text = 'Good morning', opts = {}) {
   return r;
 }
 
+// The safety floor as Squire's session runs it: the PreToolUse command hooks
+// of the settings lay-down writes in Squire's config folder
+// (claude-config/settings.json in the Squire home), each one whose matcher
+// takes the tool run as Claude Code runs a command hook (through /bin/sh -c,
+// the event on stdin, the owner's folder as its working folder). Returns the
+// settings file, the hooks found and run(session, call): the floor's answer
+// to the call, the first hook that does not let it through (exit 2 blocks
+// it), else the last; with no hook that takes the call, a status of null.
+function laidFloor(world, env = {}) {
+  const settingsFile = path.join(world.home, 'claude-config', 'settings.json');
+  let settings = null;
+  try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) { settings = null; }
+  const groups = ((settings && settings.hooks) || {}).PreToolUse || [];
+  const takes = (group, tool) => !group.matcher || group.matcher === '*' || new RegExp(`^(?:${group.matcher})$`).test(tool);
+  const hooks = groups.flatMap((g) => (g.hooks || []).filter((h) => h.type === 'command').map((h) => ({ group: g, command: h.command })));
+  const run = (session, call) => {
+    const results = hooks.filter((h) => takes(h.group, call[0])).map((h) => {
+      const r = spawnSync('/bin/sh', ['-c', h.command], {
+        input: JSON.stringify(w.preToolUseEvent(world, session, call)), cwd: world.owner, encoding: 'utf8', env: w.productEnv(world, env), timeout: 30000,
+      });
+      return { status: r.status, signal: r.signal, stdout: r.stdout || '', stderr: r.stderr || '', error: r.error ? String(r.error.message || r.error) : '' };
+    });
+    if (!results.length) return { status: null, signal: null, stdout: '', stderr: '', error: `no PreToolUse command hook in ${settingsFile} takes ${call[0]}` };
+    return results.find((r) => r.status !== 0) || results[results.length - 1];
+  };
+  return { settingsFile, settings, hooks, run };
+}
+
 module.exports = {
   now,
   DAY,
@@ -167,4 +195,5 @@ module.exports = {
   HEAVY,
   sayYesTo,
   wakeUp,
+  laidFloor,
 };

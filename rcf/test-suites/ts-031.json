@@ -1,0 +1,22 @@
+{
+  "createdAt": "2026-11-16T01:01:39.191Z",
+  "updatedAt": "2026-11-16T01:01:39.750Z",
+  "purpose": "Waits for a by-hand walk of the guided first conversation on a signed release (begun, paused, picked up, finished, then a teach-me request) and reads the owner's folder and the session's transcript on the target, read-only. Takes the target host as a parameter (SQUIRE_TARGET_HOST, an SSH destination, or RCF_TARGET_URL); without one it skips with the line 'external: needs a target host' and never passes.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-601-3"
+  ],
+  "id": "TS-031",
+  "usId": "US-601",
+  "title": "The guided first conversation on a target Mac",
+  "testCases": [
+    {
+      "id": "TC-031-on-a-signed-release-the-first",
+      "acId": "AC-601-3",
+      "description": "On a signed release the first conversation keeps profile, house style and learning log, pauses and picks up, and teaches when asked",
+      "status": "pending",
+      "testPointer": "tests/e2e/first-conversation.test.js::on a signed release, the guided first conversation keeps a profile, a house style and a learning log in the owner's folder, can pause and pick up later, and teaches when asked"
+    }
+  ],
+  "status": "draft"
+}

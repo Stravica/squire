@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-121",
+  "path": "core/hooks/pre-tool-use.py#CheckInRequest",
+  "implementsAcIds": [
+    "AC-702-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T04:26:40.626Z",
+  "updatedAt": "2026-11-16T04:26:40.626Z"
+}

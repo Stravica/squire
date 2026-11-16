@@ -1,0 +1,84 @@
+/* Squire's default style for the pages it makes, the home dashboard and the
+   comment panel, served by the page server at /squire/style.css. A page in
+   the owner's own house style may use its own instead. Body text is #1d1d1f
+   on #ffffff (light) and #ececec on #17181a (dark); every text colour here is
+   at least 4.5 to 1 against the background it sits on. */
+
+:root {
+  --squire-bg: #ffffff;
+  --squire-ink: #1d1d1f;
+  --squire-muted: #4a4f57;
+  --squire-surface: #f4f5f7;
+  --squire-border: #8a8f98;
+  --squire-accent: #1f4fa3;
+  --squire-on-accent: #ffffff;
+  --squire-focus: #1f4fa3;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --squire-bg: #17181a;
+    --squire-ink: #ececec;
+    --squire-muted: #b4b8bf;
+    --squire-surface: #222428;
+    --squire-border: #6f747c;
+    --squire-accent: #8fb4ff;
+    --squire-on-accent: #10131a;
+    --squire-focus: #8fb4ff;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--squire-bg);
+  color: var(--squire-ink);
+  font: 1.0625rem/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+a { color: var(--squire-accent); }
+a:focus-visible, button:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--squire-focus);
+  outline-offset: 2px;
+}
+
+.squire-page { max-width: 44rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+.squire-lead { color: var(--squire-muted); }
+.squire-pages { list-style: none; padding: 0; }
+.squire-pages li { padding: 0.75rem 0; border-bottom: 1px solid var(--squire-border); }
+.squire-pages a { font-weight: 600; }
+.squire-when { display: block; color: var(--squire-muted); font-size: 0.9375rem; }
+
+/* The link that takes a keyboard straight to the comment panel: the first
+   stop of the Tab key, shown when it has the focus. */
+.squire-skip {
+  position: absolute; left: 0.75rem; top: -4rem;
+  padding: 0.5rem 0.9rem; border-radius: 6px;
+  background: var(--squire-accent); color: var(--squire-on-accent);
+}
+.squire-skip:focus { top: 0.75rem; }
+
+/* The comment panel: ordinary form controls, in the order they are used. */
+.squire-panel {
+  max-width: 44rem; margin: 3rem auto 2rem; padding: 1.25rem;
+  background: var(--squire-surface); color: var(--squire-ink);
+  border: 1px solid var(--squire-border); border-radius: 8px;
+}
+.squire-panel h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
+.squire-panel label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
+.squire-panel textarea {
+  box-sizing: border-box; width: 100%; padding: 0.5rem;
+  font: inherit; color: var(--squire-ink); background: var(--squire-bg);
+  border: 1px solid var(--squire-border); border-radius: 6px;
+}
+.squire-panel button {
+  margin: 0.75rem 0.5rem 0 0; padding: 0.45rem 0.9rem;
+  font: inherit; font-weight: 600; cursor: pointer;
+  color: var(--squire-on-accent); background: var(--squire-accent);
+  border: 1px solid var(--squire-accent); border-radius: 6px;
+}
+.squire-panel button.squire-quiet { color: var(--squire-accent); background: transparent; }
+.squire-panel ol { padding-left: 1.25rem; }
+.squire-panel li { margin: 0.75rem 0; }
+.squire-panel blockquote { margin: 0 0 0.25rem; color: var(--squire-muted); font-style: italic; }
+.squire-status { min-height: 1.5em; color: var(--squire-ink); }

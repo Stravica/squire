@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-07T17:40:43.541Z",
+  "updatedAt": "2026-11-16T07:59:08.414Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,105 @@
   "id": "TS-019",
   "usId": "US-901",
   "title": "Pages answer on the Mac only",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-019-a-page-squire-made-is-served-to-a",
+      "acId": "AC-901-1",
+      "description": "A page Squire made is served to a request from the Mac itself, byte for byte",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+    },
+    {
+      "id": "TC-019-the-home-dashboard-is-served-from-the",
+      "acId": "AC-901-1",
+      "description": "The home dashboard is served from the Mac by the same page server",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the home dashboard is served from the Mac by the same page server"
+    },
+    {
+      "id": "TC-019-the-comment-panel-s-post-from-the-mac-is",
+      "acId": "AC-901-1",
+      "description": "The comment panel's post from the Mac is taken and kept in the owner's folder",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+    },
+    {
+      "id": "TC-019-from-another-address-a-page-the",
+      "acId": "AC-901-1",
+      "description": "From another address a page, the dashboard and the comment post are refused, and no comment is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::from another address on the network a page, the home dashboard and the comment panel's post are all refused, and no comment is kept"
+    },
+    {
+      "id": "TC-019-another-site-s-page-in-the-owner-s",
+      "acId": "AC-901-1",
+      "description": "Another site's page in the owner's browser is refused: a renamed host, a cross-site comment post; no comment kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a page from another site open in the owner's browser on the Mac is refused: a request under another host name, and a comment posted from another site, and no comment is kept"
+    },
+    {
+      "id": "TC-019-a-comment-post-without-the-server-s-own",
+      "acId": "AC-901-1",
+      "description": "A comment post without the server's own Origin (none, null, not an origin) is refused, and nothing is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a comment post that does not carry the server's own Origin is refused: none at all, a null Origin, or one that is not an origin, and no comment is kept"
+    },
+    {
+      "id": "TC-019-only-the-pages-folder-is-served-dots",
+      "acId": "AC-901-1",
+      "description": "Only the pages folder is served: dots, encoded dots, a link out, the listing and a hidden file are refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::only the pages folder is served: a climb out by dots or encoded dots, a link out of the folder, the folder's own listing and a hidden file are each refused, and none of the owner's profile is sent"
+    },
+    {
+      "id": "TC-019-a-kept-comment-is-read-as-untrusted",
+      "acId": "AC-901-1",
+      "description": "A kept comment is read as untrusted: after the owner's profile, a send in that job is refused as one job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+    },
+    {
+      "id": "TC-019-the-link-comes-from-state-page-server",
+      "acId": "AC-901-1",
+      "description": "The link comes from state/page-server.json at that moment: after a restart on another port, --where prints the new address on one line, never the old",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the link Squire gives the owner comes from state/page-server.json at that moment: after the page server starts again on another port, page-server.py --where prints the new address on one line, never the old one"
+    },
+    {
+      "id": "TC-019-with-no-address-file-or-one-naming-a",
+      "acId": "AC-901-1",
+      "description": "With no address file, or one naming a process that is not running, --where says the pages are not up, exits non-zero and prints no address",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::with no state/page-server.json, or one naming a page server that is not running, page-server.py --where says the pages are not up, exits non-zero and prints no address"
+    },
+    {
+      "id": "TC-019-lay-down-writes-the-page-server-s-agent",
+      "acId": "AC-901-1",
+      "description": "Lay-down writes the page server's agent (the installed page server, --port 0, at load, kept alive) beside the other agents, which stay as they were; no real launchd load",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+    },
+    {
+      "id": "TC-019-from-another-address-on-the-network-a",
+      "acId": "AC-901-1",
+      "description": "From another address on the network, a page, the dashboard and a comment post carrying the page server's own Host and Origin are refused, and no comment is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::from another address on the network, a page, the home dashboard and the comment panel's post that carry the page server's own Host and Origin are all refused, and no comment is kept"
+    },
+    {
+      "id": "TC-019-the-session-s-link-command-spelt-as",
+      "acId": "AC-901-1",
+      "description": "The session's link command, spelt as Squire's instructions name it, is free through the safety floor; page-server.py run from the session any other way is refused, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+    },
+    {
+      "id": "TC-019-every-command-squire-s-instructions-tell",
+      "acId": "AC-901-1",
+      "description": "Every command Squire's instructions tell the session to run, read from what lay-down writes, is free or asked by the safety floor exactly as written, never refused outright",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright"
+    }
+  ],
   "status": "draft"
 }

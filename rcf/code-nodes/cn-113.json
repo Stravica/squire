@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-113",
+  "path": "core/tools/page-server.py#record_path",
+  "implementsAcIds": [
+    "AC-901-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T04:26:09.701Z",
+  "updatedAt": "2026-11-16T04:26:09.701Z"
+}
