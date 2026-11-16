@@ -363,7 +363,7 @@ test("a comment post that does not carry the server's own Origin is refused: non
   assert.deepEqual(w.filesHolding([world.owner, world.home], words), [], "a comment post without the server's own Origin must never be kept");
 });
 
-test('only the pages folder is served: a climb out by dots or encoded dots, a link out of the folder, the folder\'s own listing and a hidden file are each refused, and none of the owner\'s profile is sent', { timeout: 60000 }, async (t) => {
+test("only the pages folder is served: a climb out by dots or encoded dots, a link out of the folder, the folder's own listing and a hidden file are each refused, and none of the owner's profile is sent", { timeout: 60000 }, async (t) => {
   const world = U.usageWorld(t);
   const pages = path.join(world.owner, 'workspace', 'pages');
   const hidden = `hidden-${token()}`;
