@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-134",
+  "path": "core/hooks/user-prompt-submit.py#FirstConversationMark",
+  "implementsAcIds": [
+    "AC-601-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T04:36:36.805Z",
+  "updatedAt": "2026-11-16T04:36:36.805Z"
+}

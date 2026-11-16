@@ -807,6 +807,63 @@ class Runtime:
             os.close(fd)
 
 
+class FirstConversation:
+    """The guided first conversation's record: state/first-conversation.json
+    in the owner's folder, written by Squire's hooks, never by the session,
+    holding times only (seconds since 1970), never what the owner said.
+
+    startedAt: the first start of a session in an owner's folder that holds
+    no profile yet (operator/profile.md). lastSeenAt: each of the owner's own
+    messages while it runs. pausedAt and resumedAt: when a later session
+    picks it up after it stopped part-way (the owner's last message before
+    the stop, and that later start). finishedAt: the owner's first message
+    once the profile, the house style (reference/house-style.md) and the
+    learning log (operator/learning-log.md) are all there and not empty.
+    Nothing is written once finishedAt is, nor for an owner Squire already
+    knows."""
+
+    PATH = os.path.join('state', 'first-conversation.json')
+    KEPT = (os.path.join('operator', 'profile.md'), os.path.join('reference', 'house-style.md'),
+            os.path.join('operator', 'learning-log.md'))
+
+    @classmethod
+    def started(cls, owner_folder, session, now):
+        """At a session's start."""
+        path = os.path.join(owner_folder, cls.PATH)
+        record = Records.read(path)
+        if record is None and not os.path.lexists(path):
+            if not os.path.lexists(os.path.join(owner_folder, cls.KEPT[0])):
+                Records.write(path, {'startedAt': now, 'session': session})
+            return
+        if not isinstance(record, dict) or 'finishedAt' in record or record.get('session') == session:
+            return
+        if 'resumedAt' not in record:
+            record['pausedAt'] = record['lastSeenAt'] if is_number(record.get('lastSeenAt')) else record.get('startedAt')
+            record['resumedAt'] = now
+        record['session'] = session
+        Records.write(path, record)
+
+    @classmethod
+    def seen(cls, owner_folder, now):
+        """At each of the owner's own messages."""
+        path = os.path.join(owner_folder, cls.PATH)
+        record = Records.read(path)
+        if not isinstance(record, dict) or 'finishedAt' in record:
+            return
+
+        def kept(rel):
+            try:
+                return os.path.getsize(os.path.join(owner_folder, rel)) > 0
+            except OSError:
+                return False
+
+        if all(kept(rel) for rel in cls.KEPT):
+            record['finishedAt'] = now
+        else:
+            record['lastSeenAt'] = now
+        Records.write(path, record)
+
+
 # ------------------------------------------------- the plan's usage: the rules
 #
 # The usage snapshot (runtime/usage.json in the Squire home, written by the

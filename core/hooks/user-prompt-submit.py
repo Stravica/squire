@@ -239,12 +239,31 @@ class UsageNotes:
         return cls.CLEAR.format(path=note) if Runtime.update(config.home, 'handover.json', change) else None
 
 
+class FirstConversationMark:
+    """The guided first conversation's record (squire.FirstConversation),
+    marked at each of the owner's own messages, never a "Squire wake-up:"
+    message (Squire's own background work). It prints nothing."""
+
+    @classmethod
+    def handle(cls, raw):
+        sys.path.insert(0, os.path.join(CORE, 'lib'))
+        from squire import Config, FirstConversation
+
+        event = json.loads(raw.decode('utf-8'))
+        if not isinstance(event, dict) or event.get('hook_event_name') != 'UserPromptSubmit':
+            return
+        prompt = event.get('prompt')
+        if not isinstance(prompt, str) or prompt.lstrip().startswith(UsageNotes.WAKE_UP):
+            return
+        FirstConversation.seen(Config().owner_folder, time.time())
+
+
 if __name__ == '__main__':
     try:
         raw = sys.stdin.buffer.read()
     except Exception:
         raw = b''
-    for handler in (OwnerAnswer, ReleaseNote, UsageNotes):
+    for handler in (OwnerAnswer, ReleaseNote, UsageNotes, FirstConversationMark):
         try:
             handler.handle(raw)
         except Exception:

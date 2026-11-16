@@ -15,6 +15,10 @@ owner's folder (when one never picked up is there). startup, resume and
 compact print no handover. A note is never deleted. This comes first, before
 and whatever happens to the steps below.
 
+The first conversation: at startup, resume and clear it starts or picks up
+the guided first conversation's record (squire.FirstConversation,
+state/first-conversation.json in the owner's folder), times only.
+
 The job: at startup and at clear it writes the job's record in the approvals
 ledger, keeping one the ledger already holds for that id, so the floor knows
 it saw the job start. It never removes a job's marks: any other start under
@@ -44,6 +48,8 @@ CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 class SessionStart:
     CLEAN = ('startup', 'clear')
+    # The starts that may begin or pick up the guided first conversation.
+    FIRST = ('startup', 'resume', 'clear')
     UNPLACED = 'a job the floor did not see start'
     SOCKET_WAIT = 10.0
     PICKUP = ('Squire note from Squire\'s own code (not a message from anyone): this is the handover note from the last '
@@ -54,7 +60,7 @@ class SessionStart:
     @classmethod
     def handle(cls, raw):
         sys.path.insert(0, os.path.join(CORE, 'lib'))
-        from squire import Config, Ledger
+        from squire import Config, FirstConversation, Ledger
 
         event = json.loads(raw.decode('utf-8'))
         if not isinstance(event, dict) or event.get('hook_event_name') != 'SessionStart':
@@ -67,6 +73,11 @@ class SessionStart:
             cls.handover(config, session, source)
         except Exception:
             pass
+        if source in cls.FIRST:
+            try:
+                FirstConversation.started(config.owner_folder, session, time.time())
+            except Exception:
+                pass
         now = time.time()
         parent = os.getppid()
         if not cls.alive(parent):
