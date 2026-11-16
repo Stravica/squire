@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:21.829Z",
-  "updatedAt": "2026-11-07T17:40:22.097Z",
+  "updatedAt": "2026-11-16T17:22:33.318Z",
   "asA": "Squire owner",
   "iWant": "the pages Squire makes for me visible on my Mac only",
   "soThat": "nobody else on my network or the internet can see them",
@@ -18,7 +18,16 @@
       "testable": true,
       "given": "Squire's page server running",
       "when": "A page is requested from the Mac itself and from another machine",
-      "then": "The request from the Mac succeeds; another machine cannot connect.",
+      "then": "A request from the Mac with the link's current secret succeeds; another machine cannot connect; a request without it, or with an earlier one, is refused, the comment post included.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-901-2",
+      "description": "Every page Squire serves is shown in Squire's default theme, in light and in dark, or in the Squire owner's own theme when they have put one in their Squire folder.",
+      "testable": true,
+      "given": "Squire's page server running, with or without a theme file of the Squire owner's own in their Squire folder",
+      "when": "A page Squire made, a Markdown page or the home dashboard is opened on the Mac",
+      "then": "every page Squire serves, the dashboard included, is shown in Squire's default theme, in light and in dark; a Markdown page is shown formatted, never as raw marks; when the owner has put a theme file of their own in their Squire folder, pages use it in place of the default.",
       "verification": "testOnly"
     }
   ]
