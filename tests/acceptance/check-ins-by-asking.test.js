@@ -34,6 +34,18 @@
 //            frequent check-ins use the plan faster (the sentence's wording
 //            is a draft the stage-keeper rules).
 // Every case runs with TZ=UTC, so the Mac's local time is UTC.
+//
+// The session sets a check-in only on the owner's yes, through the safety
+// floor (core/hooks/pre-tool-use.py, the event on stdin, the owner's answer
+// through core/hooks/user-prompt-submit.py), as the design record for the
+// Rule of Two's marks has it (ADR-002 line 12): the check-in command spelt
+// /usr/bin/python3 '<Squire home>/core/tools/check-ins.py' ... is asked, its
+// question naming the time and the words, and a yes covers that one run;
+// spelt any other way it is refused, yes or no; and an Edit of the owner's
+// squire.json, where the check-ins are read, is asked. Today the floor
+// refuses every program naming Squire's home. The class is open (any way to
+// set a check-in); the answer for a way the floor cannot read as the one
+// command is to refuse it, and for a change to the file to ask.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -154,4 +166,40 @@ test('a time the check-ins cannot be read at, no words, a rhythm of no minutes, 
     assert.ok((r.stdout + r.stderr).trim().length > 0, `${what}: Squire says why; got ${w.describe(r)}`);
     assert.deepEqual(fs.readFileSync(ownerFile(world)), bytes, `${what}: the owner's squire.json must be unchanged`);
   }
+});
+
+test("the session sets a check-in only on the owner's yes: the check-in command is asked first, naming the time and the words; spelt any other way it is refused, yes or no; and an Edit of the owner's squire.json is asked", { timeout: 60000 }, (t) => {
+  const world = checkInWorld(t);
+  const command = `/usr/bin/python3 '${script(world)}' set 07:30 'Morning brief'`;
+  const job = 'job-check-in';
+  const first = w.attempt(world, job, w.tools.bash(command), { env: U.UTC });
+  w.assertBlocked(first, 'the session setting a check-in with no yes');
+  const id = w.requestIdIn(first.stderr);
+  assert.ok(id, `the check-in command spelt as the floor asks is asked (a request the owner answers), not refused; got ${w.describe(first)}`);
+  assert.ok(first.stderr.includes('07:30') && first.stderr.includes('Morning brief'),
+    `the question names the check-in's time and words; got ${w.describe(first)}`);
+  w.ownerSays(world, job, `yes ${id}`, { env: U.UTC });
+  w.assertAllowed(w.attempt(world, job, w.tools.bash(command), { env: U.UTC }), 'the check-in once the owner said yes to it');
+  w.assertBlocked(w.attempt(world, job, w.tools.bash(command), { env: U.UTC }), 'the same check-in again: a yes covers one run');
+
+  // Any other way of running it is refused: the owner's yes does not lift it.
+  const tools = path.dirname(script(world));
+  const around = {
+    'inside a shell': `/bin/zsh -c "/usr/bin/python3 '${script(world)}' set 07:30 'Morning brief'"`,
+    'chained after another command': `echo setting && /usr/bin/python3 '${script(world)}' set 07:30 'Morning brief'`,
+    'from inside core': `cd '${tools}' && /usr/bin/python3 check-ins.py set 07:30 'Morning brief'`,
+  };
+  for (const [how, spelt] of Object.entries(around)) {
+    const other = `job-check-in-${how.replace(/\s+/g, '-')}`;
+    const r = w.attempt(world, other, w.tools.bash(spelt), { env: U.UTC });
+    w.assertBlocked(r, `a check-in set ${how}, with no yes`);
+    U.sayYesTo(world, other, r, { env: U.UTC });
+    w.assertBlocked(w.attempt(world, other, w.tools.bash(spelt), { env: U.UTC }), `a check-in set ${how}: refused, even after a yes`);
+  }
+
+  // Changing the file the check-ins are read from is asked.
+  const edit = w.tools.edit(ownerFile(world), '08:00 morning brief', '06:00 morning brief');
+  const asked = w.attempt(world, 'job-edit', edit, { env: U.UTC });
+  w.assertBlocked(asked, 'an Edit of the owner\'s squire.json with no yes');
+  assert.ok(w.requestIdIn(asked.stderr), `an Edit of the owner's squire.json is asked (a request the owner answers); got ${w.describe(asked)}`);
 });

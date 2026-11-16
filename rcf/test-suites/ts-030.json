@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-16T01:01:16.021Z",
-  "updatedAt": "2026-11-16T01:01:18.271Z",
+  "updatedAt": "2026-11-16T02:56:43.110Z",
   "purpose": "Runs Squire's check-in command as the session would when the owner asks, checks wakeUps in the owner's squire.json after a set, a change, a stop and a rhythm (typical and heavy), checks the wake-up router's scheduler run reads a check-in set this way, and checks a time or rhythm the router could not read is never written.",
   "testLevel": "integration",
   "acIds": [
@@ -37,6 +37,13 @@
       "description": "A check-in the router could not read is never written; Squire says why",
       "status": "pending",
       "testPointer": "tests/acceptance/check-ins-by-asking.test.js::a time the check-ins cannot be read at, no words, a rhythm of no minutes, or a change or stop of a check-in that is not there is never written: Squire says why and the settings are unchanged"
+    },
+    {
+      "id": "TC-030-a-check-in-from-the-session-is-asked",
+      "acId": "AC-702-1",
+      "description": "A check-in from the session is asked naming its time and words; any other spelling is refused; a squire.json Edit is asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/check-ins-by-asking.test.js::the session sets a check-in only on the owner's yes: the check-in command is asked first, naming the time and the words; spelt any other way it is refused, yes or no; and an Edit of the owner's squire.json is asked"
     }
   ],
   "status": "draft"
