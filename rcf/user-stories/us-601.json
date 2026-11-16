@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:14.098Z",
-  "updatedAt": "2026-11-09T15:01:51.924Z",
+  "updatedAt": "2026-11-16T00:44:13.106Z",
   "asA": "Squire owner",
   "iWant": "to name my Squire and give it a personality in a guided first conversation, and have it keep them",
   "soThat": "my Squire feels like mine and stays that way after fresh starts and updates",
@@ -29,6 +29,15 @@
       "when": "Set-up's naming step reads the answer",
       "then": "Set-up asks for that value again, saying why, and never stores it; a value it accepts is stored as given, trimmed.",
       "verification": "testOnly"
+    },
+    {
+      "id": "AC-601-3",
+      "description": "Squire's guided first conversation gets to know the Squire owner: it keeps a profile, a house style and a learning log in the Squire owner's folder, can pause and pick up later, and teaches when asked.",
+      "testable": true,
+      "given": "A new Squire owner starting a signed release of Squire for the first time",
+      "when": "The Squire owner walks the guided first conversation, pauses it and picks it up later, and asks Squire to teach them how something works",
+      "then": "The conversation picks up where it paused; a profile, a house style and a learning log are kept in the Squire owner's folder; and Squire teaches what was asked in plain words.",
+      "verification": "external"
     }
   ]
 }

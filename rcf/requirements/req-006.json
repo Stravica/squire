@@ -1,7 +1,7 @@
 {
   "createdAt": "2026-11-07T17:39:53.975Z",
-  "updatedAt": "2026-11-07T17:39:53.979Z",
-  "description": "Squire gets to know the Squire owner through a guided first conversation and keeps a profile, a house style and a learning log. The Squire owner names their Squire and gives it a personality, which it keeps. Plain words, short answers and a teach-me mode are reviewed behaviour, not criteria.",
+  "updatedAt": "2026-11-16T00:44:37.174Z",
+  "description": "Squire gets to know the Squire owner through a guided first conversation and keeps a profile, a house style and a learning log. The Squire owner names their Squire and gives it a personality, which it keeps. Teaching when asked is part of the guided first conversation's criterion; plain words and short answers are reviewed behaviour, not criteria.",
   "category": "functional",
   "domain": "persona",
   "priority": "must",

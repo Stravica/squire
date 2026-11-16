@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-16T00:43:50.188Z",
+  "updatedAt": "2026-11-16T00:44:09.837Z",
+  "asA": "Squire owner",
+  "iWant": "to set, change or stop my check-ins by asking Squire",
+  "soThat": "I pick my check-in rhythm in plain words, without editing a settings file",
+  "description": "A check-in the Squire owner asks for is written where Squire's check-ins are read, and changed or stopped the same way. Delivery stays the wake-up story's.",
+  "usId": "US-702",
+  "prdId": "PRD-001",
+  "reqId": "REQ-007",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "The Squire owner sets their check-ins by asking",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-702-1",
+      "description": "The Squire owner sets, changes or stops a check-in by asking Squire, and Squire writes it where its check-ins are read.",
+      "testable": true,
+      "given": "A Squire owner talking with Squire",
+      "when": "The Squire owner asks for a check-in at a time, asks to change it, or asks to stop it",
+      "then": "The check-in is set, changed or removed as asked, in the Squire owner's settings where Squire's check-ins are read; a rhythm more often than hourly is set as asked, with one plain sentence that frequent check-ins use the plan faster.",
+      "verification": "testOnly"
+    }
+  ]
+}

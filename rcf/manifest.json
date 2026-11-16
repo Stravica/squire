@@ -626,6 +626,60 @@
       "reason": "The handover note for long conversations is written and read by Claude Code hooks and local files inside the owner's Squire folder on their Mac. It exposes no HTTP endpoint, login page, cookie, token or rate-limited service.",
       "operatorAckAt": "2026-11-15T19:30:32.909Z",
       "reqId": "REQ-005"
+    },
+    {
+      "id": "boo-2026-11-16-001",
+      "createdAt": "2026-11-16T00:45:01.311Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "REQ-009's pages are served by a page server on the owner's Mac and reached from that Mac only, with no login, account, cookie or session, so there is no signed-in state to show.",
+      "operatorAckAt": "2026-11-16T00:45:01.311Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-002",
+      "createdAt": "2026-11-16T00:45:07.003Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "REQ-009's pages are single pages Squire makes for one owner and serves on that owner's Mac only; they are not sections of a web product, so there is no shared navigation to keep consistent across them.",
+      "operatorAckAt": "2026-11-16T00:45:07.003Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-003",
+      "createdAt": "2026-11-16T00:45:09.580Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-009's pages are local pages Squire writes for one owner, styled by that owner's house style and read on their own Mac; a theme toggle is a web product's chrome, not a promise these pages make on money, access, privacy or integrity.",
+      "operatorAckAt": "2026-11-16T00:45:09.580Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-004",
+      "createdAt": "2026-11-16T00:45:12.508Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "REQ-009 promises one boundary, a page (and the comment panel's post) served to the owner's Mac and refused from any other machine, bound in AC-901-1; there is no sign-up, login or checkout journey of a web product to walk end to end.",
+      "operatorAckAt": "2026-11-16T00:45:12.508Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-005",
+      "createdAt": "2026-11-16T00:45:15.255Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "REQ-009's pages are written by Squire per request for one owner and read on that owner's Mac; their colours follow the owner's house style and are reviewed behaviour, so a contrast floor would bind generated content, not the page server REQ-009 promises.",
+      "operatorAckAt": "2026-11-16T00:45:15.255Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-006",
+      "createdAt": "2026-11-16T00:45:17.939Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "REQ-009's pages carry no control set of a web product: the comment panel is one note box and one button on a page Squire writes for one owner; keyboard focus there is house-style review, not a promise on money, access, privacy or integrity.",
+      "operatorAckAt": "2026-11-16T00:45:17.939Z",
+      "reqId": "REQ-009"
     }
   ]
 }

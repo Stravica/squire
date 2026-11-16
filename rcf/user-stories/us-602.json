@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-16T00:43:42.912Z",
+  "updatedAt": "2026-11-16T00:43:58.208Z",
+  "asA": "Squire owner",
+  "iWant": "to give Squire my notes, documents or another assistant's memory export",
+  "soThat": "Squire remembers my preferences, projects and useful context for the next conversation, and none of it leaves my Mac",
+  "description": "Squire takes the Squire owner's notes, documents or another assistant's memory export into the Squire owner's folder on the Mac, keeps them there and reads them as untrusted; nothing is sent off the Mac.",
+  "usId": "US-602",
+  "prdId": "PRD-001",
+  "reqId": "REQ-006",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Squire takes in the Squire owner's notes and another assistant's memory, on the Mac",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-602-1",
+      "description": "Notes, documents or another assistant's memory export the Squire owner gives Squire are kept in the Squire owner's folder on the Mac, nothing is sent off the Mac, and what was taken in is read as untrusted.",
+      "testable": true,
+      "given": "A Squire owner with a notes folder, documents or another assistant's memory export on the Mac",
+      "when": "The Squire owner asks Squire to take them into its memory, and a later job reads what was taken in",
+      "then": "A copy is kept in the Squire owner's folder on the Mac, nothing is sent off the Mac, and the job that reads it is marked untrusted.",
+      "verification": "testOnly"
+    }
+  ]
+}
