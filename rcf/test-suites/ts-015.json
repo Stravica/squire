@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.477Z",
-  "updatedAt": "2026-11-16T01:02:00.611Z",
+  "updatedAt": "2026-11-16T07:59:18.391Z",
   "purpose": "Starts each heavy job class through the real entry points, with and without a yes and at high usage, and checks no path bypasses the warning and the yes.",
   "testLevel": "integration",
   "acIds": [
@@ -30,6 +30,13 @@
       "description": "A small job below the big-job thresholds is free through the same floor, calm and busy",
       "status": "pending",
       "testPointer": "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
+    },
+    {
+      "id": "TC-015-through-the-floor-as-the-laid-settings",
+      "acId": "AC-1302-1",
+      "description": "Through the floor as the laid settings run it, a big job is warned of, starts on the owner's yes, and the same yes does not start it a second time",
+      "status": "pending",
+      "testPointer": "tests/acceptance/heavy-job-gate.test.js::through the safety floor as Squire's session runs it (the settings lay-down writes in Squire's config folder), a big job is warned of, starts on the owner's yes for it, and the same yes does not start it a second time"
     }
   ],
   "status": "draft"

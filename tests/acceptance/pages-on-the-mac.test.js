@@ -31,7 +31,20 @@
 //       dashboard link use it): prints on one line the address
 //       state/page-server.json holds at that moment and exits 0; with no such
 //       file, or one naming a process that is not running, it says the pages
-//       are not up, exits non-zero and prints no address.
+//       are not up, exits non-zero and prints no address. Run from the
+//       session exactly as Squire's instructions name it
+//       (/usr/bin/python3 '<Squire home>/core/tools/page-server.py' --where),
+//       the safety floor (core/hooks/pre-tool-use.py, the event on stdin)
+//       lets it through free, as it does the health check: it prints an
+//       address and changes nothing. page-server.py run from the session any
+//       other way (another argument, --port, no argument, inside a shell,
+//       another interpreter, from inside core) is refused, yes or no: a
+//       session never starts a page server itself.
+//   every command Squire's instructions tell the session to run (the code
+//       spans of the persona block lay-down writes into CLAUDE.md in Squire's
+//       config folder) is free or asked by the safety floor exactly as
+//       written, never refused outright; a <placeholder> in one is filled
+//       with a real file before it is fed.
 //   the page server's launchd agent, com.stravica.squire.pages
 //       written by lay-down (core/tools/lay-down.py, as set-up runs it)
 //       under Library/LaunchAgents beside the runner's, the wake-ups' and the
@@ -329,6 +342,70 @@ test('with no state/page-server.json, or one naming a page server that is not ru
   assert.ok(w.processGone(server.pid) && fs.existsSync(recordFile(world)),
     `the test world: state/page-server.json must still name the page server ended by SIGKILL (process ${server.pid}); got ${shownRecord(world)}`);
   notUp(where(world), `with state/page-server.json naming process ${server.pid}, which is not running`, server);
+});
+
+test("the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no", { timeout: 120000 }, (t) => {
+  const world = U.usageWorld(t);
+  const script = serverScript(world);
+  const link = `/usr/bin/python3 '${script}' --where`;
+  w.assertAllowed(w.attempt(world, 'job-link', w.tools.bash(link)), `the link command as Squire's instructions name it (${link}), with no yes`);
+
+  // Any other way of running the page server from the session is refused, and
+  // the owner's yes does not lift it: a session never starts a page server.
+  const tools = path.dirname(script);
+  const others = {
+    'with --port, starting a page server': `/usr/bin/python3 '${script}' --port 0`,
+    'with no argument': `/usr/bin/python3 '${script}'`,
+    'with another argument after --where': `/usr/bin/python3 '${script}' --where --port 0`,
+    'with another argument in place of --where': `/usr/bin/python3 '${script}' --help`,
+    'inside a shell': `/bin/zsh -c "/usr/bin/python3 '${script}' --where"`,
+    'chained after another command': `echo link && /usr/bin/python3 '${script}' --where`,
+    'by another interpreter': `/usr/bin/env python3 '${script}' --where`,
+    'by a python3 found on the PATH': `python3 '${script}' --where`,
+    'from inside core': `cd '${tools}' && /usr/bin/python3 page-server.py --where`,
+  };
+  for (const [how, spelt] of Object.entries(others)) {
+    const job = `job-link-${how.replace(/[^a-z0-9]+/gi, '-')}`;
+    const first = w.attempt(world, job, w.tools.bash(spelt));
+    w.assertBlocked(first, `page-server.py run ${how}, with no yes`);
+    U.sayYesTo(world, job, first);
+    w.assertBlocked(w.attempt(world, job, w.tools.bash(spelt)), `page-server.py run ${how}: refused, even after a yes`);
+  }
+});
+
+// The commands Squire's instructions tell the session to run: every code span
+// of the persona block, as lay-down wrote it into CLAUDE.md in Squire's config
+// folder. A <placeholder> in a span is filled with the real file given.
+function personaCommands(world, file) {
+  const loaded = fs.readFileSync(path.join(world.home, 'claude-config', 'CLAUDE.md'), 'utf8');
+  const open = loaded.indexOf('<!-- squire persona -->');
+  const close = loaded.indexOf('<!-- end squire persona -->');
+  const block = open >= 0 && close > open ? loaded.slice(open, close) : '';
+  return [...block.matchAll(/`([^`\n]+)`/g)].map((m) => m[1].replace(/<[^<>]+>/g, file));
+}
+
+test("every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright", { timeout: 120000 }, (t) => {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  const installed = path.join(world.home, 'core');
+  const notes = path.join(world.root, 'given', 'garden-notes.md');
+  fs.mkdirSync(path.dirname(notes), { recursive: true });
+  fs.writeFileSync(notes, '# Garden\nThe shed goes by the fence.\n');
+  const commands = personaCommands(world, notes);
+
+  // Each command in a job of its own, with no yes: free (exit 0), asked (a
+  // request the owner answers) or refused outright.
+  const seen = commands.map((command, n) => {
+    const r = w.attempt(world, `job-persona-${n + 1}`, w.tools.bash(command), { coreDir: installed, env: U.UTC });
+    const verdict = r.status === 0 ? 'free' : (r.status === 2 && w.requestIdIn(r.stderr) ? 'asked' : 'refused');
+    t.diagnostic(`${verdict}: ${command}${verdict === 'refused' ? ` (${w.describe(r)})` : ''}`);
+    return { command, verdict, r };
+  });
+  const refused = seen.filter((x) => x.verdict === 'refused');
+  assert.deepEqual(refused.map((x) => x.command), [],
+    `every command Squire's instructions name must be free or asked by the floor exactly as written; refused outright: ${refused.map((x) => `${x.command} (${w.describe(x.r)})`).join(' | ')}`);
+  assert.ok(commands.length > 0, `what the session loads must name the commands it runs, in code spans inside Squire's block; found none in ${path.join(world.home, 'claude-config', 'CLAUDE.md')}; lay-down: ${w.describe(laid)}`);
 });
 
 test("lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain", { timeout: 60000 }, (t) => {

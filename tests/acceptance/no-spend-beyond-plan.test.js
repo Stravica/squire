@@ -92,6 +92,32 @@ test("a model outside the plan's set, picked for a subagent, by flag, by setting
   assert.match(again.stderr, /usage credits/i, `asked again, the block still names usage credits; got ${w.describe(again)}`);
 });
 
+test("through the safety floor as Squire's session runs it (the settings lay-down writes in Squire's config folder), a model outside the plan's set is asked naming usage credits, goes ahead on the owner's yes, and the same yes does not cover a second call", { timeout: 60000 }, (t) => {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  const floor = U.laidFloor(world);
+  assert.ok(floor.hooks.length > 0,
+    `the settings lay-down writes for Squire's session (${floor.settingsFile}) must run the safety floor before every tool call; got ${floor.settings ? JSON.stringify(floor.settings.hooks || null) : 'no settings file'}`);
+
+  for (const [what, call] of [
+    ['a subagent on a model outside the plan\'s set', agent('fable')],
+    ['a claude command line on a model outside the plan\'s set', w.tools.bash('claude -p --model fable "Summarise the notes"')],
+  ]) {
+    const job = `job-laid-${call[0].toLowerCase()}`;
+    const first = floor.run(job, call);
+    w.assertBlocked(first, `${what}, with no yes`);
+    assert.match(first.stderr, /usage credits/i, `${what}: the block must say the model may need usage credits; got ${w.describe(first)}`);
+    U.sayYesTo(world, job, first);
+    w.assertAllowed(floor.run(job, call), `${what}, once the owner said yes to it`);
+    const second = floor.run(job, call);
+    w.assertBlocked(second, `${what}: the yes covered one call, so a second is asked again`);
+    assert.match(second.stderr, /usage credits/i, `${what}: asked again, the block still names usage credits; got ${w.describe(second)}`);
+  }
+  // The plan's own models need no yes through the same floor.
+  w.assertAllowed(floor.run('job-laid-plan', agent('sonnet')), 'a subagent on a model in the plan\'s set');
+});
+
 test("turning on usage credits or opening the upgrade page from the session is refused, and the owner's yes does not lift it", { timeout: 60000 }, (t) => {
   const world = U.usageWorld(t);
   const calls = {

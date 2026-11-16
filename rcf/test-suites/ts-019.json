@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T05:50:52.996Z",
+  "updatedAt": "2026-11-16T07:59:08.414Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -93,6 +93,20 @@
       "description": "From another address on the network, a page, the dashboard and a comment post carrying the page server's own Host and Origin are refused, and no comment is kept",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::from another address on the network, a page, the home dashboard and the comment panel's post that carry the page server's own Host and Origin are all refused, and no comment is kept"
+    },
+    {
+      "id": "TC-019-the-session-s-link-command-spelt-as",
+      "acId": "AC-901-1",
+      "description": "The session's link command, spelt as Squire's instructions name it, is free through the safety floor; page-server.py run from the session any other way is refused, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+    },
+    {
+      "id": "TC-019-every-command-squire-s-instructions-tell",
+      "acId": "AC-901-1",
+      "description": "Every command Squire's instructions tell the session to run, read from what lay-down writes, is free or asked by the safety floor exactly as written, never refused outright",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright"
     }
   ],
   "status": "draft"

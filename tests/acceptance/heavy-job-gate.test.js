@@ -91,6 +91,27 @@ test("a big job of each kind (deep research, building an app, building a site, v
   }
 });
 
+test("through the safety floor as Squire's session runs it (the settings lay-down writes in Squire's config folder), a big job is warned of, starts on the owner's yes for it, and the same yes does not start it a second time", { timeout: 60000 }, (t) => {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  calmUsage(world);
+  const floor = U.laidFloor(world, U.UTC);
+  assert.ok(floor.hooks.length > 0,
+    `the settings lay-down writes for Squire's session (${floor.settingsFile}) must run the safety floor before every tool call; got ${floor.settings ? JSON.stringify(floor.settings.hooks || null) : 'no settings file'}`);
+
+  const job = 'job-laid-research';
+  const call = U.heavyJob(world, 'research');
+  const first = floor.run(job, call);
+  w.assertBlocked(first, 'a big job (deep research), with no yes');
+  assert.match(first.stderr, /big job/i, `the floor warns the owner first that this is a big job; got ${w.describe(first)}`);
+  const id = w.requestIdIn(first.stderr);
+  assert.ok(id, `the warning names the request the owner answers; got ${w.describe(first)}`);
+  w.ownerSays(world, job, `yes ${id}`, { env: U.UTC });
+  w.assertAllowed(floor.run(job, call), 'the big job once the owner said yes to it');
+  w.assertBlocked(floor.run(job, call), 'the same big job again: the yes covered one start');
+});
+
 test('above 90% in either usage window a big job starts only on a second yes; below it one yes starts it', { timeout: 60000 }, (t) => {
   const heavy = { 'the five-hour window at 92%': [92, 50], 'the weekly window at 91%': [20, 91] };
   for (const [what, [five, week]] of Object.entries(heavy)) {
