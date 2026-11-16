@@ -1,13 +1,13 @@
-/* Squire's comment panel, served by the page server at /squire/panel.js and
-   loaded by a page Squire makes with
-     <link rel="stylesheet" href="/squire/style.css">
-     <script src="/squire/panel.js" defer></script>
+/* Squire's comment panel, served by the page server under the link at
+   squire/panel.js and loaded by a page Squire makes in workspace/pages with
+     <link rel="stylesheet" href="../squire/style.css">
+     <script src="../squire/panel.js" defer></script>
    It adds a panel at the end of the page: the words commented on (filled from
    the words selected on the page, or typed), the comment, a list of the
    comments added, and a button that saves them for Squire. Every control is an
    ordinary form element in the order it is used, and the first stop of the Tab
-   key is a link straight to the panel. Saving posts JSON to /api/review on the
-   server the page came from; nothing goes anywhere else. */
+   key is a link straight to the panel. Saving posts JSON to api/review under
+   the link the page came from; nothing goes anywhere else. */
 (function () {
   "use strict";
 
@@ -90,10 +90,14 @@
 
   save.addEventListener("click", function () {
     if (!comments.length) { say("There is nothing to save yet."); return; }
-    fetch("/api/review", {
+    // The page's address is the link (its secret) then pages/<file>: the post
+    // goes under the same link, and names the page by its pages/ path.
+    var at = location.pathname.indexOf("/pages/");
+    var link = at > 0 ? location.pathname.slice(0, at) : "";
+    fetch(link + "/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document: location.pathname, comments: comments })
+      body: JSON.stringify({ document: at >= 0 ? location.pathname.slice(at) : location.pathname, comments: comments })
     }).then(function (r) {
       if (!r.ok) throw new Error("refused");
       comments = [];
