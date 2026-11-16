@@ -914,11 +914,32 @@ ADVICE_QUIET = 30 * DAY
 ADVICE_TRIGGERS = (('fiveHour', 7 * DAY, 3), ('sevenDay', 30 * DAY, 1))
 
 
-def handover_due(usage, compactions):
-    """True when the conversation is long enough for a handover note: the
-    context at or above 70% in a known snapshot, or a second compaction."""
-    context = usage.get('contextUsedPercent') if usage else None
-    return (context is not None and context >= HANDOVER_CONTEXT) or compactions >= HANDOVER_COMPACTIONS
+def context_of(home, session, usage, now):
+    """A conversation's own context reading, as a percentage, or None. The
+    status line command keeps each conversation's reading by its session id
+    in runtime/context.json in the Squire home; a reading more than an hour
+    old (or more than a minute ahead) is unknown. A conversation with no
+    reading of its own has none while another conversation's reading is
+    kept, so one conversation never brings the handover ask into another;
+    only when no conversation's reading is kept at all (a status line input
+    that gave no session id) is the usage snapshot's own reading the
+    conversation's."""
+    data = Runtime.read(home, 'context.json')
+    sessions = data.get('sessions') if isinstance(data.get('sessions'), dict) else {}
+    mine = sessions.get(session)
+    if isinstance(mine, dict):
+        at, value = mine.get('at'), mine.get('contextUsedPercent')
+        fresh = is_number(at) and now - at <= USAGE_STALE and at - now <= USAGE_AHEAD
+        return value if fresh and is_number(value) else None
+    if sessions:
+        return None
+    return usage.get('contextUsedPercent') if usage else None
+
+
+def handover_due(context, compactions):
+    """True when the conversation is long enough for a handover note: its own
+    context reading (context_of) at or above 70%, or a second compaction."""
+    return (is_number(context) and context >= HANDOVER_CONTEXT) or compactions >= HANDOVER_COMPACTIONS
 
 
 def advice_due(limits, messages, given_at, now):
