@@ -587,6 +587,30 @@ class CheckInRequest:
         return 2, reason
 
 
+class PageLink:
+    """The session asking Squire's page server where the dashboard is, the
+    one command Squire's instructions name for a link:
+    /usr/bin/python3 '<Squire home>/core/tools/page-server.py' --where. It
+    only reads where the page server already runs, so it is free, but only
+    as that whole Bash command: the system python, the installed core's
+    page-server.py by its full path, and --where alone. Inside a list, a
+    pipeline, a subshell or a wrapper, with another interpreter, another
+    argument or none, or by a relative path, the page server's script stays
+    refused, yes or no, as any program naming Squire's home is
+    (Floor.judge_argv): a session never starts a page server itself."""
+
+    SCRIPT = 'page-server.py'
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """True when a Bash call is exactly the link command, as its whole
+        command."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) != 3 or argv[2] != '--where' or not os.path.isabs(argv[1]):
+            return False
+        return floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT)
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -707,6 +731,8 @@ class Floor:
                         return request.settle(self, ledger, session, asked)
                 except SquireError as e:
                     return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
+        if PageLink.of(self, tool, data):
+            return 0, ''
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
@@ -1039,9 +1065,10 @@ class Floor:
             if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
                 return 'never', self.NEVER_UPDATE, []
             # Squire's job, import and check-in commands spelt any way but the
-            # one the floor asks for (HeavyJob, ImportRequest, CheckInRequest):
-            # inside a shell's -c, say. Refused, yes or no.
-            asked = (HeavyJob.SCRIPT, ImportRequest.SCRIPT, CheckInRequest.SCRIPT)
+            # one the floor asks for (HeavyJob, ImportRequest, CheckInRequest),
+            # and the page server's script any way but the link command
+            # (PageLink): inside a shell's -c, say. Refused, yes or no.
+            asked = (HeavyJob.SCRIPT, ImportRequest.SCRIPT, CheckInRequest.SCRIPT, PageLink.SCRIPT)
             if any(self.is_core_tool(p, name) for p in (self.path(t, strict=False) for t in pieces) if p
                    for name in asked):
                 return 'never', self.NEVER_FLOOR, []
