@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.743Z",
-  "updatedAt": "2026-11-07T17:40:42.743Z",
+  "updatedAt": "2026-11-16T17:42:04.753Z",
   "purpose": "Runs the real video and audio tools on a captioned video, an uncaptioned video and a local file, and checks no media download is attempted.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,35 @@
   "id": "TS-016",
   "usId": "US-1701",
   "title": "Captions and own files work; missing captions never trigger a download",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-016-a-video-s-captions-are-read-from-its-own",
+      "acId": "AC-1701-1",
+      "description": "a video's captions are read from its own page and kept in the owner's folder, no video or audio asked for, nothing sent beyond the Mac",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+    },
+    {
+      "id": "TC-016-with-no-captions-or-a-refusal-nothing-is",
+      "acId": "AC-1701-1",
+      "description": "with no captions or a refusal, nothing is downloaded, no further request follows the refusal, and Squire offers Show transcript or the owner's own file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::for a video with no captions, and for a video YouTube refuses, Squire downloads no video or audio, makes no further request after the refusal, says it cannot and offers the two honest routes: the transcript from YouTube's own Show transcript, or the owner's own file"
+    },
+    {
+      "id": "TC-016-the-owner-s-own-recording-is-transcribed",
+      "acId": "AC-1701-1",
+      "description": "the owner's own recording is transcribed on the Mac by the one local engine and kept as a note, nothing sent",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+    },
+    {
+      "id": "TC-016-the-captions-reader-and-the",
+      "acId": "AC-1701-1",
+      "description": "the captions reader and the transcription the session loads are free or asked by the laid floor in both modes; a video job is asked as a big job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are free or asked by the safety floor as the session runs it, never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+    }
+  ],
   "status": "draft"
 }
