@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-146",
+  "path": "core/tools/captions.py#main",
+  "implementsAcIds": [
+    "AC-1701-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T23:22:52.612Z",
+  "updatedAt": "2026-11-16T23:22:52.612Z"
+}
