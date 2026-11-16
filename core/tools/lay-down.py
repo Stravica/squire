@@ -22,8 +22,8 @@ hooks in core-digests.json in the Squire home, lays Squire Update down in
 Applications under the home folder it is given (from core's update-app/,
 signed ad hoc; when it cannot, that is a log line and update-app.json in the
 Squire home, which the health check names, and the rest goes on), and writes
-the session runner's, the wake-up scheduler's and the nightly backup's
-launchd agents into Library/LaunchAgents there. It
+the session runner's, the wake-up scheduler's, the nightly backup's and the
+page server's launchd agents into Library/LaunchAgents there. It
 loads them only when that folder is the account's own home folder, as the
 account database names it, through the Mac's launchctl.
 """
@@ -49,6 +49,7 @@ class LayDown:
     RUNNER = 'com.stravica.squire.runner'
     WAKE_UPS = 'com.stravica.squire.wake-ups'
     BACKUP = 'com.stravica.squire.backup'
+    PAGES = 'com.stravica.squire.pages'
     UPDATE_APP = 'Squire Update.app'
     HOME_MARK = '__SQUIRE_HOME__'
     WITHIN = 60
@@ -226,10 +227,13 @@ class LayDown:
 
     @staticmethod
     def agents(home):
-        """The runner's, the wake-up scheduler's and the nightly backup's
-        launchd agents, loaded only for the account's own home folder, through
-        the Mac's launchctl. Run only from outside every agent (set-up, and
-        Squire Update's install): it stops each agent before it loads it."""
+        """The runner's, the wake-up scheduler's, the nightly backup's and the
+        page server's launchd agents, loaded only for the account's own home
+        folder, through the Mac's launchctl. The page server is started at
+        load and kept running, on a port the system gives it each start (it
+        writes the address to state/page-server.json in the Squire home). Run
+        only from outside every agent (set-up, and Squire Update's install):
+        it stops each agent before it loads it."""
         from squire import SquireError, System
 
         user_home = os.path.expanduser('~')
@@ -247,6 +251,10 @@ class LayDown:
             LayDown.BACKUP: {'Label': LayDown.BACKUP, 'EnvironmentVariables': env,
                              'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'backup.py')],
                              'StartCalendarInterval': {'Hour': 2, 'Minute': 30}},
+            LayDown.PAGES: {'Label': LayDown.PAGES, 'EnvironmentVariables': env,
+                            'ProgramArguments': [LayDown.PYTHON, '-B', os.path.join(tools, 'page-server.py'),
+                                                 '--port', '0'],
+                            'RunAtLoad': True, 'KeepAlive': True},
         }
         for label, agent in agents.items():
             LayDown.write(os.path.join(folder, label + '.plist'), plistlib.dumps(agent), 0o644)

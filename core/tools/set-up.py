@@ -41,7 +41,8 @@ TITLES = {
     'paused': 'Squire: set-up paused',
     'ready': 'Squire: ready',
 }
-AGENTS = ('com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup')
+AGENTS = ('com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup',
+          'com.stravica.squire.pages')
 
 
 class Paused(Exception):
