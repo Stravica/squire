@@ -1,0 +1,22 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "0b8db4b3022174a25761110dfaeb9ff641617fa0",
+  "fbsIds": [
+    "FBS-010",
+    "FBS-005"
+  ],
+  "result": "FAIL",
+  "suite": {
+    "pass": 403,
+    "fail": 0,
+    "skip": 8,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2, Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, /bin/zsh 5.9, /usr/bin/ssh-keygen (prints no version line for -V), node v24.14.0, pnpm 10.32.1; rcf-lite 0.42.0 for the verdict, rcf-lite 0.42.3 for the strength record; fresh clone served 994b491 (reviewed head 0b8db4b), pnpm install --frozen-lockfile; suite: env -u SQUIRE_TARGET_HOST -u RCF_TARGET_URL node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js', run once (411 tests, 403 pass, 0 fail, 8 skipped, 2353 s); SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, the eight External and Journey tests skipped; temporary homes and keychains, fake claude and fake Mac commands, loopback release host and intake only; on a standard user of the same Mac with the reviewed head's core laid down in a test home under real launchd: page server agent loaded yes, restarted by launchd yes, --where not up after bootout yes; headless Chrome 157.0.8103.51: 10 screens, a comment saved by keyboard yes, body contrast at least 4.5 to 1 light and dark yes, another origin and the non-loopback address refused yes; one interactive Claude Code session (2.1.322, haiku, 6 turns): check-in set on a yes yes, the change, the stop and the import not reached in the session (the model asked in prose first) and each shown asked and run only on a yes through the laid hooks with no model turn, dashboard link equal to the address file no: the safety floor refused the link command",
+  "node": "v24.14.0",
+  "reason": "buyer-blocking: in a real interactive session the safety floor refuses the one dashboard-link command the session's own instructions name (core/tools/page-server.py --where, refused yes or no by Floor.judge_argv), so Squire can give the owner no link to their pages; the bound link case runs --where outside the floor only",
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-16T07:39:58.593Z"
+}
