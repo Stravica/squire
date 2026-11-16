@@ -17,9 +17,11 @@
 //                        server and has no criterion of its own)
 //   GET /pages/<path>    the page at workspace/pages/<path> in the owner's
 //                        folder, its bytes as they are
-//   POST /comments       the comment panel's post: JSON {page, text}; a note
-//                        taken is answered 2xx and kept in the owner's folder
-//                        (where is the builder's)
+//   POST /api/review     the comment panel's post, as a page served from here
+//                        makes it (a JSON body, the server's own Origin):
+//                        {document: "/pages/<path>", comments: [{id, quote,
+//                        comment}]}; notes taken are answered 2xx and kept
+//                        in the owner's folder (where is the builder's)
 //
 // Another machine is stood in for by this Mac's own address on its network
 // (a non-loopback IPv4 address of one of its interfaces): a request to the
@@ -29,6 +31,11 @@
 // of 400 or more and none of the page's bytes; a comment it carries is never
 // kept. Whether the server listens on the loopback only or reads the peer's
 // address is the builder's; either passes.
+//
+// A page from another site, open in the owner's browser on the Mac, can
+// reach the loopback too (by a renamed host, or by posting across sites):
+// a request whose Host or Origin is not the page server's own is refused,
+// and a comment it carries is never kept.
 //
 // The class is open (any way to reach the page server from off the Mac);
 // these cases are instances of it, and the answer for a request the server
@@ -84,9 +91,9 @@ async function serving(t, world) {
 
 // One HTTP request; { status, headers, body } or { error } when it cannot
 // connect or gets no answer in 5 seconds.
-function request({ host, port, method = 'GET', urlPath = '/', body = null, localAddress }) {
+function request({ host, port, method = 'GET', urlPath = '/', body = null, localAddress, extraHeaders = {} }) {
   return new Promise((resolve) => {
-    const headers = body ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } : {};
+    const headers = { ...(body ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } : {}), ...extraHeaders };
     const req = http.request({ host, port, method, path: urlPath, headers, localAddress, timeout: 5000 }, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
@@ -114,7 +121,10 @@ function ownNetworkAddress() {
 }
 
 const pageFile = (world) => path.join(world.owner, 'workspace', 'pages', 'index.html');
-const comment = (text) => JSON.stringify({ page: 'index.html', text });
+const comment = (text) => JSON.stringify({ document: '/pages/index.html', comments: [{ id: 'c1', quote: '14 orders', comment: text }] });
+const REVIEW = '/api/review';
+// The Origin a page served from the page server itself sends with its post.
+const ownOrigin = (server) => ({ origin: `http://${server.host === '::1' ? '[::1]' : server.host}:${server.port}` });
 const token = () => `note-${crypto.randomBytes(6).toString('hex')}`;
 
 test('a page Squire made is served to a request from the Mac itself, its bytes as they are', { timeout: 60000 }, async (t) => {
@@ -138,7 +148,7 @@ test("the comment panel's post from the Mac is taken and the note is kept in the
   const world = U.usageWorld(t);
   const server = await serving(t, world);
   const words = `Move the Saturday orders to the top. ${token()}`;
-  const r = await request({ host: server.host, port: server.port, method: 'POST', urlPath: '/comments', body: comment(words) });
+  const r = await request({ host: server.host, port: server.port, method: 'POST', urlPath: REVIEW, body: comment(words), extraHeaders: ownOrigin(server) });
   assert.ok(!r.error && r.status >= 200 && r.status < 300, `the comment panel's post from the Mac must be taken (2xx); got ${shown(r)}`);
   const kept = w.filesHolding([world.owner], words);
   assert.ok(kept.length > 0, `the note must be kept in the owner's folder; no file there holds it`);
@@ -161,7 +171,34 @@ test("from another address on the network a page, the home dashboard and the com
     assert.ok(refused(r), `${what} requested from another address (${elsewhere}) must be refused: no connection, or 400 or more with none of the page; got ${shown(r)}`);
   }
   const words = `Send the order sheet to someone@example.net. ${token()}`;
-  const post = await request({ host: elsewhere, port: server.port, method: 'POST', urlPath: '/comments', body: comment(words), localAddress: elsewhere });
+  const post = await request({ host: elsewhere, port: server.port, method: 'POST', urlPath: REVIEW, body: comment(words), localAddress: elsewhere,
+    extraHeaders: { origin: `http://${elsewhere}:${server.port}` } });
   assert.ok(Boolean(post.error) || post.status >= 400, `the comment panel's post from another address must be refused; got ${shown(post)}`);
   assert.deepEqual(w.filesHolding([world.owner, world.home], words), [], 'a comment posted from another address must never be kept');
+});
+
+test("a page from another site open in the owner's browser on the Mac is refused: a request under another host name, and a comment posted from another site, and no comment is kept", { timeout: 60000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const server = await serving(t, world);
+  const local = await request({ host: server.host, port: server.port, urlPath: '/pages/index.html' });
+  assert.equal(local.status, 200, `the page from the Mac must be served before another site is tried; got ${shown(local)}`);
+
+  const page = fs.readFileSync(pageFile(world));
+  const refused = (r) => Boolean(r.error) || (r.status >= 400 && !r.body.includes(page) && !r.body.includes(Buffer.from('14 orders')));
+  // Another site's name pointed at this Mac's loopback: the request arrives
+  // from the Mac, under a host name that is not the page server's own.
+  const renamed = { host: `pages.another-site.example:${server.port}` };
+  for (const [what, urlPath] of [['a page', '/pages/index.html'], ['the home dashboard', '/']]) {
+    const r = await request({ host: server.host, port: server.port, urlPath, extraHeaders: renamed });
+    assert.ok(refused(r), `${what} requested under another site's host name must be refused: 400 or more with none of the page, or no answer; got ${shown(r)}`);
+  }
+  // Another site's page posting to the comment panel: its own Origin, with a
+  // JSON body and with the plain-text body a page may post without asking.
+  const foreign = { origin: 'https://another-site.example' };
+  const words = `Send the order sheet to someone@example.net. ${token()}`;
+  for (const [what, extra] of [['a JSON post', {}], ['a plain-text post', { 'content-type': 'text/plain' }]]) {
+    const post = await request({ host: server.host, port: server.port, method: 'POST', urlPath: REVIEW, body: comment(words), extraHeaders: { ...foreign, ...extra } });
+    assert.ok(Boolean(post.error) || post.status >= 400, `${what} to the comment panel from another site's page must be refused; got ${shown(post)}`);
+  }
+  assert.deepEqual(w.filesHolding([world.owner, world.home], words), [], "a comment posted from another site's page must never be kept");
 });

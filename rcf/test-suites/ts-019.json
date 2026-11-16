@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T01:00:30.144Z",
+  "updatedAt": "2026-11-16T01:06:56.422Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -37,6 +37,13 @@
       "description": "From another address a page, the dashboard and the comment post are refused, and no comment is kept",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::from another address on the network a page, the home dashboard and the comment panel's post are all refused, and no comment is kept"
+    },
+    {
+      "id": "TC-019-another-site-s-page-in-the-owner-s",
+      "acId": "AC-901-1",
+      "description": "Another site's page in the owner's browser is refused: a renamed host, a cross-site comment post; no comment kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a page from another site open in the owner's browser on the Mac is refused: a request under another host name, and a comment posted from another site, and no comment is kept"
     }
   ],
   "status": "draft"
