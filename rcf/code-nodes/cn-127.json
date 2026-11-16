@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-127",
+  "path": "core/tools/check-ins.py#CheckIns",
+  "implementsAcIds": [
+    "AC-702-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-16T04:27:10.718Z",
+  "updatedAt": "2026-11-16T04:27:10.718Z"
+}
