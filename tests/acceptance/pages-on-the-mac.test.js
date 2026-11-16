@@ -61,8 +61,13 @@
 // loopback, as one from another machine on the network would. It is
 // refused when it cannot connect, or when the server answers with a status
 // of 400 or more and none of the page's bytes; a comment it carries is never
-// kept. Whether the server listens on the loopback only or reads the peer's
-// address is the builder's; either passes.
+// kept. Two cases send such requests. The first names the other address as
+// Host and Origin, so a server that checks only Host and Origin refuses it
+// too. The second carries the page server's own Host and Origin, so only a
+// server that refuses the request for where it comes from passes it, whether
+// it listens on the loopback only or reads the peer's address (the builder's
+// choice; either passes). Between them: a request from off the Mac is refused
+// whatever Host and Origin it carries.
 //
 // A page from another site, open in the owner's browser on the Mac, can
 // reach the loopback too (by a renamed host, or by posting across sites):
@@ -407,6 +412,42 @@ test("from another address on the network a page, the home dashboard and the com
     assert.ok(Boolean(post.error) || post.status >= 400, `the comment panel's post from another address (${elsewhere}) must be refused; got ${shown(post)}`);
   }
   assert.deepEqual(w.filesHolding([world.owner, world.home], words), [], 'a comment posted from another address must never be kept');
+});
+
+test("from another address on the network, a page, the home dashboard and the comment panel's post that carry the page server's own Host and Origin are all refused, and no comment is kept", { timeout: 60000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const server = await serving(t, world);
+  // The page server's own Host and Origin, as a page it served would send
+  // them: only where the request comes from can tell it apart.
+  const own = { host: `${inUrl(server.host)}:${server.port}`, ...ownOrigin(server) };
+
+  // Every address of this Mac's own on its networks, IPv4 and IPv6, is tried;
+  // a family with none is named here, not failed.
+  const addresses = ownNetworkAddresses();
+  for (const [family, list] of Object.entries(addresses)) {
+    t.diagnostic(list.length ? `${family} addresses tried: ${list.join(', ')}` : `this Mac has no non-loopback, non-link-local ${family} address; none tried`);
+  }
+  const every = [...addresses.IPv4, ...addresses.IPv6];
+  assert.ok(every.length > 0, 'this Mac needs an address on a network (a non-loopback, non-link-local IPv4 or IPv6 address) to stand in for another machine; it has none');
+  const page = fs.readFileSync(pageFile(world));
+  const refused = (r) => Boolean(r.error) || (r.status >= 400 && !r.body.includes(page) && !r.body.includes(Buffer.from('14 orders')));
+  const words = `Send the order sheet to someone@example.net. ${token()}`;
+  for (const elsewhere of every) {
+    for (const [what, urlPath] of [['a page', '/pages/index.html'], ['the home dashboard', '/']]) {
+      const r = await request({ host: elsewhere, port: server.port, urlPath, localAddress: elsewhere, extraHeaders: own });
+      assert.ok(refused(r), `${what} requested from another address (${elsewhere}) with the page server's own Host (${own.host}) must be refused: no connection, or 400 or more with none of the page; got ${shown(r)}`);
+    }
+    const post = await request({ host: elsewhere, port: server.port, method: 'POST', urlPath: REVIEW, body: comment(words), localAddress: elsewhere, extraHeaders: own });
+    assert.ok(Boolean(post.error) || post.status >= 400, `the comment panel's post from another address (${elsewhere}) with the page server's own Host and Origin (${own.origin}) must be refused; got ${shown(post)}`);
+  }
+  assert.deepEqual(w.filesHolding([world.owner, world.home], words), [], 'a comment posted from another address must never be kept, under the comments folder or anywhere else in the owner\'s folder or the Squire home');
+
+  // The control, after the refusals: the same page from the Mac itself, with
+  // the same Host, is served, so each refusal above was the server's answer
+  // to where the request came from, not a server that was down or a Host it
+  // does not know.
+  const local = await request({ host: server.host, port: server.port, urlPath: '/pages/index.html', extraHeaders: own });
+  assert.equal(local.status, 200, `the page from the Mac itself with the same Host must be served; got ${shown(local)}`);
 });
 
 test("a page from another site open in the owner's browser on the Mac is refused: a request under another host name, and a comment posted from another site, and no comment is kept", { timeout: 60000 }, async (t) => {

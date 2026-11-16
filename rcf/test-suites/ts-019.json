@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T03:59:40.276Z",
+  "updatedAt": "2026-11-16T05:50:52.996Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -86,6 +86,13 @@
       "description": "Lay-down writes the page server's agent (the installed page server, --port 0, at load, kept alive) beside the other agents, which stay as they were; no real launchd load",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+    },
+    {
+      "id": "TC-019-from-another-address-on-the-network-a",
+      "acId": "AC-901-1",
+      "description": "From another address on the network, a page, the dashboard and a comment post carrying the page server's own Host and Origin are refused, and no comment is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::from another address on the network, a page, the home dashboard and the comment panel's post that carry the page server's own Host and Origin are all refused, and no comment is kept"
     }
   ],
   "status": "draft"
