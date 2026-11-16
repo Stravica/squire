@@ -18,6 +18,10 @@
 // may say older notes stay in the owner's folder (the rule and its wording
 // are drafts the stage-keeper rules).
 //
+// A login whose status line carries no usage windows (no rate_limits) still
+// has its conversation's context reading, kept per conversation whether or
+// not the windows are there (ADR-006 line 2), so its handover ask still comes.
+//
 // Usage model for the trigger (assumptions, none measured; as the handover
 // note's own cases):
 //   typical  an everyday conversation, context 20%: no handover asked.
@@ -114,4 +118,17 @@ test('after the newest handover note is picked up, a later /clear never brings a
     assert.ok(later.stdout.trim().split('\n').filter(Boolean).length <= 1, `/clear number ${n}: at most one line, saying older notes stay in the owner's folder; got ${w.describe(later)}`);
   }
   assert.ok(fs.existsSync(older), 'the older note is never deleted');
+});
+
+test("a conversation whose status line carries no usage windows still gets the handover ask on its next message once its own context reaches 76%", { timeout: 60000 }, (t) => {
+  // A login whose status line input has no rate_limits (before the first
+  // answer of a session, or a plan that carries none): the context reading
+  // is still the conversation's own, so nothing is lost at /clear.
+  const world = U.usageWorld(t);
+  started(world, 'job-long', 'startup');
+  const r = U.runStatusLine(world, U.statusInput(world, { sessionId: 'job-long', context: 76, rateLimits: null }));
+  assert.equal(r.status, 0, `the status line command must run and exit 0 with no usage windows in its input; got ${w.describe(r)}`);
+  const next = w.ownerSays(world, 'job-long', 'Carry on with the supplier list');
+  assert.match(next.stdout, /handover/i,
+    `a conversation at 76% context with no usage windows in its status line is asked for its handover note on its next message; got ${w.describe(next)}`);
 });
