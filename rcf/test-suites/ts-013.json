@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.931Z",
-  "updatedAt": "2026-11-07T17:40:41.931Z",
+  "updatedAt": "2026-11-15T13:45:18.908Z",
   "purpose": "Drives a session past the context threshold with seeded work, checks the handover is written before the prompt, and checks the seeded work is recovered after /clear.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,21 @@
   "id": "TS-013",
   "usId": "US-501",
   "title": "Handover saved before the /clear prompt; work recovered after /clear",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-013-the-handover-note-is-asked-for-at-70",
+      "acId": "AC-501-1",
+      "description": "The handover note is asked for at 70% context or the second compaction, and saved before the /clear prompt",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-note.test.js::at 70% context or after the second compaction Squire asks for the handover note to be saved, and asks the owner for /clear only once it is saved"
+    },
+    {
+      "id": "TC-013-after-clear-the-work-in-progress-is",
+      "acId": "AC-501-1",
+      "description": "After /clear the work in progress is picked up from the handover note",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-note.test.js::after /clear the new conversation picks up the work in progress from the handover note"
+    }
+  ],
   "status": "draft"
 }

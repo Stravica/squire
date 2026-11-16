@@ -1,0 +1,15 @@
+{
+  "createdAt": "2026-11-15T13:30:57.113Z",
+  "updatedAt": "2026-11-15T17:01:36.175Z",
+  "acIds": [
+    "AC-901-1"
+  ],
+  "fbsId": "FBS-010",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 9,
+  "executionStatus": "notStarted",
+  "title": "Pages, the dashboard and getting to know you",
+  "summary": "The pages Squire makes, the home dashboard and the voice-note pages are all served by one page server on the owner's Mac, and can be seen on that Mac only: another machine cannot connect.",
+  "dependsOnFbsIds": []
+}

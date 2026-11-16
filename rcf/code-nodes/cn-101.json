@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-101",
+  "path": "core/lib/squire.py#percent_words",
+  "implementsAcIds": [
+    "AC-1301-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-15T19:55:29.823Z",
+  "updatedAt": "2026-11-15T19:55:29.823Z"
+}

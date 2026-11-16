@@ -590,6 +590,42 @@
       "reason": "REQ-020 is Squire's support tickets, previewed to the owner in words inside Squire's own session and posted outbound by Squire's scheduler to an intake at claude.ai/code or in the Claude app, pages that are Claude's own and that Squire neither serves nor styles; Squire has no login page, cookie or token of its own and renders no web page of its own in this round (the changelog and preview as pages are a later round's), so the web UI baseline (webUi.themeToggle) does not apply to this requirement",
       "operatorAckAt": "2026-11-10T18:10:19.904Z",
       "reqId": "REQ-020"
+    },
+    {
+      "id": "boo-2026-11-15-001",
+      "createdAt": "2026-11-15T19:30:32.093Z",
+      "baselineKey": "httpApi.authBoundary",
+      "scope": "req",
+      "reason": "The handover note for long conversations is written and read by Claude Code hooks and local files inside the owner's Squire folder on their Mac. It exposes no HTTP endpoint, login page, cookie, token or rate-limited service.",
+      "operatorAckAt": "2026-11-15T19:30:32.093Z",
+      "reqId": "REQ-005"
+    },
+    {
+      "id": "boo-2026-11-15-002",
+      "createdAt": "2026-11-15T19:30:32.366Z",
+      "baselineKey": "httpApi.contentType",
+      "scope": "req",
+      "reason": "The handover note for long conversations is written and read by Claude Code hooks and local files inside the owner's Squire folder on their Mac. It exposes no HTTP endpoint, login page, cookie, token or rate-limited service.",
+      "operatorAckAt": "2026-11-15T19:30:32.366Z",
+      "reqId": "REQ-005"
+    },
+    {
+      "id": "boo-2026-11-15-003",
+      "createdAt": "2026-11-15T19:30:32.641Z",
+      "baselineKey": "httpApi.errorEnvelope",
+      "scope": "req",
+      "reason": "The handover note for long conversations is written and read by Claude Code hooks and local files inside the owner's Squire folder on their Mac. It exposes no HTTP endpoint, login page, cookie, token or rate-limited service.",
+      "operatorAckAt": "2026-11-15T19:30:32.641Z",
+      "reqId": "REQ-005"
+    },
+    {
+      "id": "boo-2026-11-15-004",
+      "createdAt": "2026-11-15T19:30:32.909Z",
+      "baselineKey": "httpApi.rateLimitDisclosure",
+      "scope": "req",
+      "reason": "The handover note for long conversations is written and read by Claude Code hooks and local files inside the owner's Squire folder on their Mac. It exposes no HTTP endpoint, login page, cookie, token or rate-limited service.",
+      "operatorAckAt": "2026-11-15T19:30:32.909Z",
+      "reqId": "REQ-005"
     }
   ]
 }

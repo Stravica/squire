@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.198Z",
-  "updatedAt": "2026-11-07T17:40:42.198Z",
+  "updatedAt": "2026-11-15T17:13:39.190Z",
   "purpose": "Feeds usage readings (fresh, high, stale, missing) through the real usage path, checks deferral with the reset time, checks both credit paths are blocked, and checks the upgrade advice fires on the trigger only and stays quiet for a month after a no.",
   "testLevel": "integration",
   "acIds": [
@@ -11,6 +11,91 @@
   "id": "TS-014",
   "usId": "US-1301",
   "title": "Plan recorded, pacing, no spend beyond the plan, upgrade advice once",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-014-set-up-asks-the-plan-once-and-keeps-the",
+      "acId": "AC-1301-1",
+      "description": "Set-up asks the plan once and keeps the declared plan in the owner's squire.json",
+      "status": "pending",
+      "testPointer": "tests/acceptance/usage-and-pacing.test.js::the plan the owner declares at set-up is asked once and kept in the owner's squire.json"
+    },
+    {
+      "id": "TC-014-the-status-line-command-writes-the-usage",
+      "acId": "AC-1301-1",
+      "description": "The status line command writes the usage snapshot, both windows and their resets, and nothing private",
+      "status": "pending",
+      "testPointer": "tests/acceptance/usage-and-pacing.test.js::the usage snapshot: the status line command core's settings set writes runtime/usage.json with the model, the context used, both windows and their resets and the time, and nothing else"
+    },
+    {
+      "id": "TC-014-above-the-pacing-thresholds-a-big-job-is",
+      "acId": "AC-1301-1",
+      "description": "Above the pacing thresholds a big job is deferred with the reset time; below them it is not",
+      "status": "pending",
+      "testPointer": "tests/acceptance/usage-and-pacing.test.js::pacing: above 80% of the five-hour window or 70% of the weekly window a big job that can wait is deferred, its warning saying when the allowance resets; below both nothing is deferred"
+    },
+    {
+      "id": "TC-014-above-70-of-the-weekly-window-squire",
+      "acId": "AC-1301-1",
+      "description": "Above 70% of the weekly window Squire says so once a day",
+      "status": "pending",
+      "testPointer": "tests/acceptance/usage-and-pacing.test.js::pacing: above 70% of the weekly window Squire tells the owner once a day, on their message, and not below it"
+    },
+    {
+      "id": "TC-014-stale-or-missing-usage-is-unknown-every",
+      "acId": "AC-1301-1",
+      "description": "Stale or missing usage is unknown: every big job asks and nothing is deferred on it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/usage-and-pacing.test.js::usage that is stale (older than an hour) or missing is unknown: a big job still asks, saying Squire cannot see the plan's usage, and a stale reading defers nothing"
+    },
+    {
+      "id": "TC-014-a-model-that-may-need-usage-credits-is",
+      "acId": "AC-1301-2",
+      "description": "A model that may need usage credits is blocked until the owner's yes, by every route the session has",
+      "status": "pending",
+      "testPointer": "tests/acceptance/no-spend-beyond-plan.test.js::a model outside the plan's set, picked for a subagent, by flag, by settings or by environment, is blocked until the owner's yes, its block naming usage credits; the plan's own models need none"
+    },
+    {
+      "id": "TC-014-usage-credits-and-the-upgrade-page-are",
+      "acId": "AC-1301-2",
+      "description": "Usage credits and the upgrade page are refused from the session, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/no-spend-beyond-plan.test.js::turning on usage credits or opening the upgrade page from the session is refused, and the owner's yes does not lift it"
+    },
+    {
+      "id": "TC-014-upgrade-advice-once-at-the-trigger-never",
+      "acId": "AC-1301-3",
+      "description": "Upgrade advice once at the trigger, never before it, the plan unchanged, quiet after a no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice comes once, when the trigger is met and never before it, changes nothing about the plan, and is not given again after a no"
+    },
+    {
+      "id": "TC-014-background-work-is-not-requested-work",
+      "acId": "AC-1301-3",
+      "description": "Background work is not requested work, and the advice stays quiet for 30 days",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice: limits reached mostly by Squire's own background work give none, and after advice Squire stays quiet for 30 days, then may give it again"
+    },
+    {
+      "id": "TC-014-pacing-above-90-in-either-window-a-big",
+      "acId": "AC-1301-1",
+      "description": "Pacing above 90% in either window: a big job starts only on a second yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
+    },
+    {
+      "id": "TC-014-one-five-hour-limit-seen-at-100-on",
+      "acId": "AC-1301-3",
+      "description": "One five-hour limit seen at 100% on several messages counts once; three limits, each with its own reset, bring the advice.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::upgrade advice: one five-hour limit seen at 100% on three messages counts once, and two more limits, each with its own reset, bring the advice"
+    },
+    {
+      "id": "TC-014-the-status-line-command-fed-a-window-at",
+      "acId": "AC-1301-3",
+      "description": "The status line command fed a window at 100% exits 0 and writes it into the usage snapshot.",
+      "status": "pending",
+      "testPointer": "tests/acceptance/upgrade-advice.test.js::the status line command core's settings set, fed a window at 100%, exits 0 and writes it into the usage snapshot the advice counts from"
+    }
+  ],
   "status": "draft"
 }

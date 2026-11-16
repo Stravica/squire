@@ -9,7 +9,11 @@ reaches; a plain read the floor cannot resolve may be put to a small model,
 and otherwise waits for the owner's yes. Squire's own files, its config, the
 approvals ledger, Claude Code's settings in the owner's folder and the
 Keychain are never the session's to change or read, yes or no. Anything
-the floor cannot read or trust blocks the call.
+the floor cannot read or trust blocks the call. Nothing spends beyond the
+owner's plan: turning on usage credits or opening the upgrade page is
+refused, yes or no, and a model outside the plan's set waits for the owner's
+yes, its block naming usage credits. A big job starts only through Squire's
+one job command, on the owner's yes, and on a second yes above 90% usage.
 """
 
 import fnmatch
@@ -33,7 +37,8 @@ PYTHON = '/usr/bin/python3'
 
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
-    from squire import Config, Ledger, Paths, SquireError
+    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, SquireError, paced_windows, percent_words,
+                        read_usage, reset_words, second_yes_needed)
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
     sys.exit(2)
@@ -388,13 +393,121 @@ class ShownRequest:
         return 2, f'{head}\n{text}\n\n{cls.RELAY}'
 
 
+class HeavyJob:
+    """The start of a big job through Squire's one job command,
+    /usr/bin/python3 '<Squire home>/core/tools/heavy-job.py'
+    research|app|site|media, its path quoted as the health check's is. The
+    floor asks the owner before every start, whatever the usage: the block's
+    first line names the request and the big job, then the usage (each known
+    window and when it resets; above the pacing lines, that the job can wait
+    until then; or, when the usage is unknown, that Squire cannot see it),
+    then the ask words. Its item is heavy:<class>; a yes covers that one
+    start, once, and never another class. Above 90% in either known window,
+    once the first yes is given, a second request (heavy:<class>:second)
+    asks for a second yes, and the start runs only once both are given.
+    Spelt any other way, the start is refused as any program naming Squire's
+    home is (Floor.judge_argv)."""
+
+    SCRIPT = 'heavy-job.py'
+    ASK = 'Request {id}: this is a big job: {what}.'
+    SECOND = ('Request {id}: usage is above 90% ({over}), so this big job needs a second yes from the owner before it '
+              'starts: {what}.')
+    WAIT = 'Ask the owner and wait for their answer; a yes covers this one start, once.'
+    UNKNOWN = 'Squire cannot see the plan\'s usage right now, so it cannot say how much of the plan this job will leave.'
+    DEFER = ('This big job can wait: {over}. It can wait until then; it starts now only on the owner\'s yes.')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """The class of big job a Bash call starts through the one command,
+        or None."""
+        command = data.get('command') if tool == 'Bash' else None
+        if not isinstance(command, str):
+            return None
+        shell = ShellCommand(command)
+        if not shell.plain or len(shell.segments) != 1:
+            return None
+        argv = shell.segments[0]
+        if len(argv) < 3 or argv[0] != PYTHON or argv[-1] not in HEAVY_JOBS \
+                or not all(getattr(word, 'literal', True) for word in argv):
+            return None
+        script = floor.path(' '.join(argv[1:-1]), strict=False)
+        return str(argv[-1]) if floor.is_core_tool(script, cls.SCRIPT) else None
+
+    @classmethod
+    def usage(cls, usage, now):
+        """The block's words on the plan's usage."""
+        if usage is None:
+            return cls.UNKNOWN
+        shown = [f'{name} is at {percent_words(usage[key]["usedPercent"])} and resets {reset_words(usage[key]["resetsAt"], now)}'
+                 for key, name, _ in WINDOWS if usage.get(key)]
+        words = 'Usage of the plan now: ' + ('; '.join(shown) if shown else 'no window can be read right now') + '.'
+        paced = paced_windows(usage)
+        if paced:
+            over = '; '.join(f'{name} is at {percent_words(window["usedPercent"])}, above {percent_words(line)}, and '
+                             f'resets {reset_words(window["resetsAt"], now)}'
+                             for key, name, window in paced for k, _, line in WINDOWS if k == key)
+            words += '\n' + cls.DEFER.format(over=over)
+        return words
+
+    @staticmethod
+    def raised(ledger, session, item, now, timeout):
+        """This job's open request for item, raised when there is none; and
+        every open request in the job."""
+        pending = ledger.open_requests(session, now, timeout)
+        mine = next((r for r in pending if r.get('item') == item), None)
+        if mine is None:
+            mine = ledger.request(session, item, now)
+            pending.append(mine)
+        return mine, pending
+
+    @classmethod
+    def settle(cls, floor, ledger, session, kind):
+        now, timeout = time.time(), floor.config.timeout
+        what, item = HEAVY_JOBS[kind], f'heavy:{kind}'
+        usage = read_usage(floor.config.home, now)
+        first = ledger.approval(session, item, now, timeout)
+        second = None
+        if first is None:
+            mine, pending = cls.raised(ledger, session, item, now, timeout)
+            head = cls.ASK.format(id=mine['id'], what=what)
+        elif second_yes_needed(usage):
+            second = ledger.approval(session, item + ':second', now, timeout)
+            if second is None:
+                mine, pending = cls.raised(ledger, session, item + ':second', now, timeout)
+                over = ', '.join(f'{name} at {percent_words(usage[key]["usedPercent"])}' for key, name, _ in WINDOWS
+                                 if usage.get(key) and usage[key]['usedPercent'] > 90)
+                head = cls.SECOND.format(id=mine['id'], over=over, what=what)
+        if first is None or (second is None and second_yes_needed(usage)):
+            if len(pending) > 1:
+                head += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+            return 2, f'{head}\n{cls.usage(usage, now)}\n{cls.WAIT}'
+        held = ledger.taints(session)
+        if held['untrusted'] and held['private']:
+            return 2, Floor.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']),
+                                         what=f'start a big job: {what}')
+        for request in (first, second):
+            if request:
+                ledger.append({'type': 'use', 'request': request['id'], 'at': now})
+        return 0, ''
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
 
     FREE_COMMANDS = {'ls', 'cat', 'head', 'tail', 'wc', 'grep', 'stat', 'file', 'pwd', 'date', 'find', 'echo', 'printf'}
     FIND_ACTIONS = {'-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls'}
-    FREE_TOOLS = {'mcp__claude_ai_Gmail__create_draft', 'Agent'}
+    FREE_TOOLS = {'mcp__claude_ai_Gmail__create_draft'}
+    # A subagent is free on the session's own model (none named, or inherit)
+    # or one in the plan's set, exactly as written; any other model may need
+    # usage credits, so it is asked.
+    AGENT_TOOLS = ('Agent', 'Task')
+    PLAN_MODELS = ('opus', 'sonnet', 'haiku')
+    AGENT_FREE_MODELS = PLAN_MODELS + ('inherit',)
+    MODEL_VARIABLES = re.compile(r'^(ANTHROPIC_MODEL|ANTHROPIC_DEFAULT_(OPUS|SONNET|HAIKU)_MODEL|CLAUDE_CODE_SUBAGENT_MODEL)'
+                                 r'=(.*)\Z', re.S)
+    CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
+    SPENDING = re.compile(r'(?:^|[\s\'"`(=;&|])/(?:upgrade|usage-credits)', re.IGNORECASE)
     SEND_TOOLS = {'mcp__claude_ai_Gmail__send_message'}
     PRIVATE = ('operator', 'state', 'reference', os.path.join('workspace', 'files'))
 
@@ -433,6 +546,11 @@ class Floor:
     UPDATE_APP = 'Squire Update.app'
     NEVER_KEYCHAIN = ('The session may never read the Keychain, yes or no: a secret reaches a tool only through '
                       'Squire\'s secret helper, and is never shown.')
+    NEVER_SPEND = ('Squire\'s safety floor: the session never turns on usage credits or opens the upgrade page, yes or '
+                   'no. That is money beyond the plan, and the owner\'s own to do: if they want it, they type '
+                   '/usage-credits or /upgrade in Claude themselves. Nothing ran.')
+    CREDITS = ('{what}\nThis picks a model outside the plan\'s set (opus, sonnet and haiku), or one Squire cannot read, '
+               'and that model may need usage credits, beyond what the plan includes.')
     ASK = ('Request {id}: this needs the owner\'s yes first: {what}\n'
            'Ask the owner and wait for their answer; a yes covers this one action, once.')
     OPEN = (' Open requests in this job: {ids}. With more than one open, the owner answers one by naming it, '
@@ -473,6 +591,13 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        job = HeavyJob.of(self, tool, data)
+        if job:
+            try:
+                with Ledger(self.config.ledger_path) as ledger:
+                    return HeavyJob.settle(self, ledger, session, job)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
@@ -611,6 +736,12 @@ class Floor:
         if tool in self.FREE_TOOLS:
             return 'free', '', []
         what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
+        if tool in self.AGENT_TOOLS:
+            if 'model' not in data or (isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS):
+                return 'free', '', []
+            return 'ask', self.CREDITS.format(what=what), []
+        if tool == 'SlashCommand' and isinstance(data.get('command'), str) and self.SPENDING.search(data['command']):
+            return 'never', self.NEVER_SPEND, []
         if tool in self.SEND_TOOLS:
             return 'ask', what, []
         # A tool the floor does not know: it cannot tell what the tool reads.
@@ -622,7 +753,12 @@ class Floor:
         ('model'); a listed command that is not the Mac's own is asked and,
         once it runs, the job holds untrusted input and private things; any
         other program is asked and, once it runs, the job holds private
-        things. Literal paths keep their marks throughout."""
+        things. Literal paths keep their marks throughout. A claude command
+        line whose words hold /usage-credits or /upgrade is refused, yes or
+        no; one that picks a model outside the plan's set, or one the floor
+        cannot read, is asked naming usage credits."""
+        if self.CLAUDE.search(command) and self.SPENDING.search(command):
+            return 'never', self.NEVER_SPEND, []
         shell = ShellCommand(command)
         verdicts = [self.judge_argv(argv, shell.plain) for argv in shell.segments]
         never = next((v for v in verdicts if v[0] == 'never'), None)
@@ -634,10 +770,45 @@ class Floor:
             return 'free', '', taints
         if Paths.fold(os.path.basename(self.config.ledger_path)) in Paths.fold(command):
             return 'never', self.NEVER_FLOOR.format(what=command), []
-        if shell.plain and kinds <= {'free', 'model'}:
+        credits = self.picks_credits(shell)
+        if shell.plain and kinds <= {'free', 'model'} and not credits:
             return 'model', command, taints
         run = [('untrusted', command), ('private', command)] if 'read' in kinds else [('private', command)]
-        return 'ask', command, taints + run
+        return 'ask', self.CREDITS.format(what=command) if credits else command, taints + run
+
+    def picks_credits(self, shell):
+        """True when the command holds a claude command line (a word naming
+        claude, by itself or by its full path) and picks a model outside the
+        plan's set, or one the floor cannot read: by --model, by a --settings
+        value (a model, or a model variable in its env, outside the set; or
+        a value that is not readable JSON, such as a file), or by a model
+        variable set anywhere in the command."""
+        words = [word for argv in shell.segments for word in argv]
+        if not any(Paths.fold(os.path.basename(word)) == 'claude' for word in words):
+            return False
+        plan = lambda value: isinstance(value, str) and value in self.PLAN_MODELS  # noqa: E731
+        for i, word in enumerate(words):
+            given = words[i + 1] if i + 1 < len(words) else None
+            literal = getattr(given, 'literal', True)
+            if word == '--model' and not (literal and plan(str(given) if given is not None else None)):
+                return True
+            if word.startswith('--model=') and not (getattr(word, 'literal', True) and plan(word[len('--model='):])):
+                return True
+            if word == '--settings' or word.startswith('--settings='):
+                value = given if word == '--settings' else Word(word[len('--settings='):], getattr(word, 'literal', True))
+                try:
+                    settings = json.loads(value) if value is not None and getattr(value, 'literal', True) else None
+                except ValueError:
+                    settings = None
+                env = settings.get('env', {}) if isinstance(settings, dict) else None
+                if not isinstance(settings, dict) or ('model' in settings and not plan(settings['model'])) \
+                        or not isinstance(env, dict) \
+                        or any(self.MODEL_VARIABLES.match(f'{k}=') and not plan(v) for k, v in env.items()):
+                    return True
+            found = self.MODEL_VARIABLES.match(word)
+            if found and not (getattr(word, 'literal', True) and plan(found.group(3))):
+                return True
+        return False
 
     def judge_argv(self, argv, plain=True):
         """One simple command, as its words: ('free' | 'model' | 'read' |
@@ -673,6 +844,10 @@ class Floor:
             pieces = [p for t in argv for p in re.split(r'[\s()|<>;&`\'"=]+', t) if p]
             if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
                 return 'never', self.NEVER_UPDATE, []
+            # Squire's job command spelt any way but the one the floor asks
+            # for (HeavyJob): inside a shell's -c, say. Refused, yes or no.
+            if any(self.is_core_tool(p, HeavyJob.SCRIPT) for p in (self.path(t, strict=False) for t in pieces) if p):
+                return 'never', self.NEVER_FLOOR, []
             if argv[0] == 'cd' and any(self.is_floor(p) for p in paths):
                 return 'never', self.NEVER_CD, []
         if (not free or not plain) and any(self.is_floor(p) for p in paths):
