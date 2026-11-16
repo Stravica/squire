@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.743Z",
-  "updatedAt": "2026-11-16T20:37:54.264Z",
+  "updatedAt": "2026-11-16T23:14:11.275Z",
   "purpose": "Runs the real video and audio tools on a captioned video, an uncaptioned video and a local file, and checks no media download is attempted.",
   "testLevel": "integration",
   "acIds": [
@@ -58,6 +58,13 @@
       "description": "kept captions, a transcript, a voice note's transcript and kept research are read untrusted: after the owner's profile, a read of one leaves a send refused as one job",
       "status": "pending",
       "testPointer": "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+    },
+    {
+      "id": "TC-016-the-youtube-stand-in-answers-a-run-in-flight",
+      "acId": "AC-1701-1",
+      "description": "a guard: the YouTube stand-in answers while a run holds the test process; a client of the test's own gets the captions, the page with no captions and the 429, the stand-in's record shows each with its answer, and the network recorder counts its connection",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::the YouTube stand-in answers while a run holds the test process: a small client of the test's own, run through the same run call as the captions reader, is given the captions, the page with no captions and the refusal (429), the stand-in's record shows each request with its answer as soon as the run returns, and the network recorder counts the connection the client made to it"
     }
   ],
   "status": "draft"

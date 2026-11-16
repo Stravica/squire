@@ -66,6 +66,11 @@
 // instances, and the answer for any answer the reader cannot use is to stop
 // and say so. No case reaches the network beyond this Mac's loopback, a real
 // speech engine, real YouTube or a model.
+//
+// The last case is a guard, kept green at its head with no production code
+// run: a small client of the test's own, run through the same run call as the
+// captions reader, proves the YouTube stand-in answers, and the network
+// recorder counts, while a run holds the test process.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -122,7 +127,7 @@ test("for a video with no captions, and for a video YouTube refuses, Squire down
   const yt = await M.youtubeStandIn(t);
   const net = await M.networkRecorder(t);
   const before = M.digestOf(world.owner);
-  for (const [what, id] of [['a video with no captions', M.VIDEOS.uncaptioned], ['a video YouTube refuses', M.VIDEOS.refused]]) {
+  for (const [what, id, answer] of [['a video with no captions', M.VIDEOS.uncaptioned, 200], ['a video YouTube refuses', M.VIDEOS.refused, 429]]) {
     const from = yt.requests.length;
     const r = run(world, captionsScript(world), [yt.link(id)], { ...yt.env, ...net.env });
     assert.notEqual(r.status, 0, `${what}: the captions reader must stop with a non-zero exit; got ${w.describe(r)}`);
@@ -131,6 +136,8 @@ test("for a video with no captions, and for a video YouTube refuses, Squire down
     assert.match(said(r), ROUTES, `${what}: Squire must offer the transcript from YouTube's own "Show transcript"; got ${w.describe(r)}`);
     assert.match(said(r), OWN_FILE, `${what}: Squire must offer the owner's own file; got ${w.describe(r)}`);
     const asked = yt.requests.slice(from);
+    // By the stand-in's own record: the reader was served YouTube's answer and stopped on it, never on a time-out.
+    assert.ok(asked.some((q) => new URL(q.url, yt.origin).searchParams.get('v') === id && q.status === answer), `${what}: the stand-in must have served the reader YouTube's answer (${answer === 429 ? 'the refusal, 429' : "the video's page, with no captions"}), so that the reader stopped on it and not on a time-out; got ${JSON.stringify(asked.map((q) => ({ url: q.url, status: q.status })))}`);
     const paths = asked.map((q) => new URL(q.url, yt.origin).pathname);
     assert.ok(paths.every((p) => p === '/watch'), `${what}: only the video's page may be asked for; got ${JSON.stringify(asked.map((q) => q.url))}`);
     const refusedAt = asked.findIndex((q) => new URL(q.url, yt.origin).searchParams.get('v') === M.VIDEOS.refused);
@@ -317,4 +324,51 @@ test("a file of the owner's that cannot be read stops the job with a plain reaso
   assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], 'no file in the owner\'s folder may change, the one that cannot be read included');
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `nothing may be downloaded or sent: the job reached the network ${net.seen.length} time(s)`);
+});
+
+// A guard (see the header): no production code runs, so it is green at its
+// head. The client is the test's own, a few lines of the stock Python.
+const STAND_IN_CLIENT = String.raw`import json, os, re, socket, sys, urllib.error, urllib.parse, urllib.request
+origin = os.environ['SQUIRE_YOUTUBE_ORIGIN']
+def get(url):
+    try:
+        with urllib.request.urlopen(url, timeout=10) as r:
+            return r.status, r.read().decode('utf-8')
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode('utf-8', 'replace')
+got = {}
+for name, video in json.loads(sys.argv[1]).items():
+    status, page = get(origin + '/watch?v=' + video)
+    m = re.search(r'ytInitialPlayerResponse = (\{.*\});</script>', page)
+    tracks = json.loads(m.group(1)).get('captions', {}).get('playerCaptionsTracklistRenderer', {}).get('captionTracks', []) if m else []
+    got[name] = {'page': status, 'tracks': len(tracks)}
+    if tracks:
+        got[name]['captions'], xml = get(tracks[0]['baseUrl'])
+        got[name]['text'] = ' '.join(re.findall(r'<text[^>]*>([^<]*)</text>', xml))
+proxy = urllib.parse.urlsplit(os.environ['HTTPS_PROXY'])
+socket.create_connection((proxy.hostname, proxy.port), timeout=5).close()
+print(json.dumps(got))
+`;
+
+test("the YouTube stand-in answers while a run holds the test process: a small client of the test's own, run through the same run call as the captions reader, is given the captions, the page with no captions and the refusal (429), the stand-in's record shows each request with its answer as soon as the run returns, and the network recorder counts the connection the client made to it", { timeout: 120000 }, async (t) => {
+  const world = U.usageWorld(t, { core: false });
+  const yt = await M.youtubeStandIn(t);
+  const net = await M.networkRecorder(t);
+  const client = path.join(world.root, 'guard-client', 'ask-the-stand-in.py');
+  fs.mkdirSync(path.dirname(client), { recursive: true });
+  fs.writeFileSync(client, STAND_IN_CLIENT);
+  const r = run(world, client, [JSON.stringify(M.VIDEOS)], { ...yt.env, ...net.env });
+  assert.equal(r.status, 0, `the test's own client must be answered by the stand-in and exit 0; got ${w.describe(r)}`);
+  const got = JSON.parse(r.stdout);
+  assert.deepEqual(got.captioned, { page: 200, tracks: 1, captions: 200, text: yt.captionWords }, `the captioned video's page lists its caption track, and the track gives its captions; got ${r.stdout}`);
+  assert.deepEqual(got.uncaptioned, { page: 200, tracks: 0 }, `the uncaptioned video's page lists no caption track; got ${r.stdout}`);
+  assert.deepEqual(got.refused, { page: 429, tracks: 0 }, `the refused video's page is answered 429; got ${r.stdout}`);
+  assert.deepEqual(yt.requests.map((q) => [q.method, q.url, q.status]), [
+    ['GET', `/watch?v=${M.VIDEOS.captioned}`, 200],
+    ['GET', `/api/timedtext?v=${M.VIDEOS.captioned}&lang=en`, 200],
+    ['GET', `/watch?v=${M.VIDEOS.uncaptioned}`, 200],
+    ['GET', `/watch?v=${M.VIDEOS.refused}`, 429],
+  ], 'the stand-in\'s record, read as soon as the run returns, shows each request as it was asked with the answer it was given');
+  await w.sleep(200);
+  assert.equal(net.seen.length, 1, `the network recorder must count the one connection the client made to it while the run held the test process; got ${net.seen.length}`);
 });

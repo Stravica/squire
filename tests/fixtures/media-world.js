@@ -29,19 +29,29 @@
 //                       as timedtext XML. One video has captions, one has
 //                       none, and one is refused (429, the page a refusal
 //                       shows). Every other path is 404. It records every
-//                       request: method, path and query, and headers.
+//                       request: method, path and query, headers, and the
+//                       status it was answered with. It runs as its own
+//                       process (tools/youtube-stand-in.js), so it answers
+//                       while a test waits on a product process synchronously
+//                       (the base world's runPython), and a case reads its
+//                       record, once the run returns, from the file it writes.
 //   the network         every proxy variable a client honours points at a
 //                       recorder on this Mac's loopback, with the loopback
 //                       itself left out (NO_PROXY), so a request for any host
 //                       but this Mac reaches the recorder, which counts it.
+//                       It is in the test process: while a run holds that
+//                       process, the Mac itself takes each connection and
+//                       keeps it until the recorder accepts it, so a case
+//                       counts every one once the run returns and the case
+//                       waits a moment (w.sleep).
 //
 // The fixture recording is a generated tone, never anyone's voice.
 
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
-const http = require('node:http');
 const net = require('node:net');
+const os = require('node:os');
 const path = require('node:path');
 const w = require('./squire-world.js');
 
@@ -110,50 +120,36 @@ async function networkRecorder(t) {
 // YouTube's video ids are eleven letters, digits, - and _.
 const VIDEOS = { captioned: 'Capti0nsOk1', uncaptioned: 'N0Captions1', refused: 'Refused0001' };
 
-function playerResponse(origin, id, withCaptions) {
-  const response = { videoDetails: { videoId: id, title: 'Sourdough in ten minutes' }, playabilityStatus: { status: 'OK' } };
-  if (withCaptions) {
-    response.captions = { playerCaptionsTracklistRenderer: { captionTracks: [
-      { baseUrl: `${origin}/api/timedtext?v=${id}&lang=en`, languageCode: 'en', name: { simpleText: 'English' } },
-    ] } };
-  }
-  return response;
-}
-
-// The YouTube stand-in on loopback. Resolves { origin, requests, link(id),
-// captionWords, env } once it listens.
+// The YouTube stand-in on loopback, started as its own process and stopped
+// after the test. Resolves { origin, requests, link(id), captionWords, env,
+// pid } once it listens; requests is read from the stand-in's record each
+// time it is read, so it holds every request answered before the read.
 async function youtubeStandIn(t) {
-  const requests = [];
   const captionWords = `Fold the dough every thirty minutes. ${mark('caption')}`;
-  let origin = '';
-  const server = http.createServer((req, res) => {
-    requests.push({ method: req.method, url: req.url, headers: req.headers });
-    const u = new URL(req.url, origin);
-    const id = u.searchParams.get('v');
-    const send = (status, type, body) => { res.writeHead(status, { 'content-type': type }); res.end(body); };
-    if (req.method === 'GET' && u.pathname === '/watch' && id === VIDEOS.refused) {
-      return send(429, 'text/html; charset=utf-8', '<!doctype html><title>YouTube</title><p>Sign in to confirm you’re not a bot.</p>');
-    }
-    if (req.method === 'GET' && u.pathname === '/watch' && (id === VIDEOS.captioned || id === VIDEOS.uncaptioned)) {
-      const player = JSON.stringify(playerResponse(origin, id, id === VIDEOS.captioned));
-      return send(200, 'text/html; charset=utf-8', `<!doctype html><html><head><title>Sourdough in ten minutes - YouTube</title></head><body>` +
-        `<script>var ytInitialPlayerResponse = ${player};</script></body></html>`);
-    }
-    if (req.method === 'GET' && u.pathname === '/api/timedtext' && id === VIDEOS.captioned) {
-      return send(200, 'text/xml; charset=utf-8', '<?xml version="1.0" encoding="utf-8" ?><transcript>' +
-        `<text start="0" dur="2.5">${captionWords.split('. ')[0]}.</text><text start="2.5" dur="2">${captionWords.split('. ')[1]}</text></transcript>`);
-    }
-    return send(404, 'text/plain', 'not here');
+  const state = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'squire-youtube-')));
+  fs.writeFileSync(path.join(state, 'config.json'), JSON.stringify({ videos: VIDEOS, captionWords, parent: process.pid }));
+  const child = spawn(process.execPath, [path.join(__dirname, 'tools', 'youtube-stand-in.js'), state], { cwd: state, stdio: 'ignore' });
+  const gone = new Promise((resolve) => { child.on('exit', resolve); child.on('error', resolve); });
+  t.after(async () => {
+    try { process.kill(child.pid, 'SIGKILL'); } catch (e) { /* gone */ }
+    await gone;
+    fs.rmSync(state, { recursive: true, force: true });
   });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  origin = `http://127.0.0.1:${server.address().port}`;
-  t.after(() => server.close());
+  const portFile = path.join(state, 'port');
+  const end = Date.now() + 10000;
+  while (!fs.existsSync(portFile) && Date.now() < end) await w.sleep(20);
+  if (!fs.existsSync(portFile)) throw new Error('the YouTube stand-in must start');
+  const origin = `http://127.0.0.1:${Number(fs.readFileSync(portFile, 'utf8'))}`;
+  const record = path.join(state, 'requests.jsonl');
   return {
     origin,
-    requests,
+    get requests() {
+      return fs.existsSync(record) ? fs.readFileSync(record, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
+    },
     captionWords,
     link: (id) => `https://www.youtube.com/watch?v=${id}`,
     env: { SQUIRE_YOUTUBE_ORIGIN: origin },
+    pid: child.pid,
   };
 }
 
