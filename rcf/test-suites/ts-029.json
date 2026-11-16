@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-16T01:00:51.861Z",
-  "updatedAt": "2026-11-16T01:00:53.070Z",
+  "updatedAt": "2026-11-16T02:56:23.588Z",
   "purpose": "Runs Squire's import on a memory export and a notes folder in a test world with every proxy pointed at a loopback recorder and a stand-in claude, checks the copies are kept in the owner's folder and nothing left the Mac, then reads the copies through the real safety floor and checks the job is held untrusted.",
   "testLevel": "integration",
   "acIds": [
@@ -23,6 +23,20 @@
       "description": "What was taken in is read as untrusted: after the owner's profile, a send is refused as one job",
       "status": "pending",
       "testPointer": "tests/acceptance/memory-import.test.js::what was taken in is read as untrusted: a job that has read the owner's profile and then reads an imported copy is refused a send as one job"
+    },
+    {
+      "id": "TC-029-files-claude-code-or-squire-load-by-name",
+      "acId": "AC-602-1",
+      "description": "Files Claude Code or Squire load by name are kept by content, never under that name, a .claude folder or the handover notes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/memory-import.test.js::files in an export that Claude Code or Squire would load by name are kept by their content, never under that name: no CLAUDE.md, CLAUDE.local.md, .mcp.json or settings.json, nothing in a .claude folder and nothing among the handover notes"
+    },
+    {
+      "id": "TC-029-the-session-s-import-is-asked-naming-its",
+      "acId": "AC-602-1",
+      "description": "The session's import is asked naming its sources, then holds the job untrusted; any other spelling is refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/memory-import.test.js::the session's import is asked first, naming every source, and once it runs the job holds untrusted input: a send after the owner's profile is read is refused as one job; spelt any other way the import is refused, yes or no"
     }
   ],
   "status": "draft"
