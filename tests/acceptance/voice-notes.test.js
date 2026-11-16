@@ -37,13 +37,29 @@
 //   core/tools/transcribe.py '<file>'
 //                         the same engine for a recording the owner gives
 //                         Squire (the command video-and-audio.test.js names),
-//                         free or asked by the floor as the session loads it,
-//                         never refused, in the default mode and in auto mode.
+//                         asked by the floor as the session loads it, its
+//                         question naming video and audio work, never free
+//                         and never refused, in the default mode and in auto
+//                         mode (the design record's media tools line).
 //   The engine is reached only through the seam the media world describes
 //   (SQUIRE_SPEECH_ENGINE and its stand-in). Where the Mac cannot recognise
 //   speech on the Mac itself (the engine exits 69), the recording is never
 //   sent anywhere and no other engine or server is tried: Squire says why,
 //   plainly, and keeps no note.
+//   The seam is honoured only as an absolute path to an executable file: a
+//   relative one, or one naming a file that cannot be run, is never run and
+//   the recording goes nowhere (core/tools/transcribe.py).
+//   The watched folder is the owner's input only: the job makes no note from
+//   a link in the folder to a recording outside it, or from a recording in a
+//   folder inside it (core/tools/transcribe.py --watch); and the safety floor
+//   (core/hooks/pre-tool-use.py) asks, never lets through free, a session
+//   Write of a new file there and a copy, move or link into it from the
+//   shell, in the default mode and in auto mode.
+//   The floor also asks before any session command that sets a SQUIRE_
+//   variable (inline before a command, by export, by launchctl setenv) and
+//   before a Write of ~/.zshenv or of a LaunchAgents plist naming one, so
+//   nothing the session has read can point the owner's recordings at
+//   another program (core/hooks/pre-tool-use.py).
 //
 // Usage model (assumptions, none measured): typical, one recording of a few
 // minutes a day, dropped alone; heavy, a batch saved from Voice Memos at once
@@ -157,7 +173,7 @@ test("a recording put in the voice-notes folder is picked up by the voice-notes 
   assert.equal(net.seen.length, 0, `no audio or its text may leave the Mac: the job reached the network ${net.seen.length} time(s)`);
 });
 
-test("a recording the owner gives Squire is transcribed the same way on request: the transcription, exactly as the session loads it, is free or asked by the safety floor as the session runs it, never refused, in the default mode and in auto mode, and run on the owner's yes it keeps a note in the owner's folder", { timeout: 180000 }, async (t) => {
+test("a recording the owner gives Squire is transcribed the same way on request: the transcription, exactly as the session loads it, is asked by the safety floor as the session runs it, its question naming video and audio work, never free and never refused, in the default mode and in auto mode, and run on the owner's yes it keeps a note in the owner's folder", { timeout: 180000 }, async (t) => {
   const world = U.usageWorld(t, { core: false });
   const laid = w.layDown(world, w.CORE);
   assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
@@ -177,12 +193,11 @@ test("a recording the owner gives Squire is transcribed the same way on request:
     let r = floor.run(job, w.tools.bash(command), mode);
     const verdict = r.status === 0 ? 'free' : (r.status === 2 && w.requestIdIn(r.stderr) ? 'asked' : 'refused');
     t.diagnostic(`${mode}: ${verdict}: ${command}`);
-    assert.notEqual(verdict, 'refused', `the transcription of a recording the owner gives, in ${mode} mode, must be free or asked, never refused; got ${w.describe(r)}`);
-    if (verdict === 'asked') {
-      U.sayYesTo(world, job, r, { env: U.UTC });
-      r = floor.run(job, w.tools.bash(command), mode);
-      w.assertAllowed(r, `the transcription, in ${mode} mode, once the owner said yes`);
-    }
+    assert.equal(verdict, 'asked', `the transcription of a recording the owner gives, in ${mode} mode, must be asked, never free and never refused; got ${w.describe(r)}`);
+    assert.match(r.stderr, U.HEAVY.media, `the question for the transcription, in ${mode} mode, must name video and audio work; got ${w.describe(r)}`);
+    U.sayYesTo(world, job, r, { env: U.UTC });
+    r = floor.run(job, w.tools.bash(command), mode);
+    w.assertAllowed(r, `the transcription, in ${mode} mode, once the owner said yes`);
   }
   const ran = w.runPython(world, transcribeScript(world), [given], { env: { ...engine.env, ...net.env }, timeout: 60000 });
   assert.equal(ran.status, 0, `the transcription must run and exit 0; got ${w.describe(ran)}`);
@@ -214,4 +229,116 @@ test("where the Mac cannot recognise speech on the Mac itself, the recording is 
   assert.ok(fs.readFileSync(dropped).equals(bytes), 'the recording in the voice-notes folder must stay as it was');
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `no audio or its text may leave the Mac, and no server may be tried: reached the network ${net.seen.length} time(s)`);
+});
+
+// ------------------------------------------- the folder is the owner's input
+
+// The floor's answer to a call, in the words the floor tests use.
+const verdictOf = (r) => (r.status === 0 ? 'free' : (r.status === 2 && w.requestIdIn(r.stderr) ? 'asked' : 'refused'));
+
+// A world with core laid down as set-up lays it, and the safety floor as the
+// session runs it (the PreToolUse hooks of the settings lay-down writes).
+function laidFloorWorld(t) {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  const floor = U.laidFloor(world, U.UTC);
+  assert.ok(floor.hooks.length > 0, `the settings lay-down writes must run the safety floor before every tool call; got ${floor.settings ? JSON.stringify(floor.settings.hooks || null) : 'no settings file'}`);
+  return { world, floor };
+}
+
+test("the voice-notes folder is the owner's input only: the voice-notes job, as launchd runs it, makes no note from a link in the folder to a recording outside it, or from a recording in a folder inside it, and runs the engine on neither, while a recording put in the folder itself is transcribed", { timeout: 180000 }, async (t) => {
+  const { world } = laidWorld(t);
+  const agent = voiceAgent(world);
+  assert.ok(agent, `lay-down must write the voice-notes job (${LABEL}); found ${s.launchAgents(world).map((a) => a.plist.Label).join(', ') || 'none'}`);
+  const engine = engineBySize(world);
+  const net = await M.networkRecorder(t);
+  const own = M.fixtureRecording(path.join(watched(world), 'New Recording.wav'), { seconds: 1 });
+  const outside = M.fixtureRecording(path.join(world.userHome, 'Documents', 'Call with the bank.wav'), { seconds: 2 });
+  fs.symlinkSync(outside, path.join(watched(world), 'Call with the bank.wav'));
+  const inner = M.fixtureRecording(path.join(watched(world), 'Older', 'New Recording 2.wav'), { seconds: 3 });
+  const size = { own: fs.statSync(own).size, outside: fs.statSync(outside).size, inner: fs.statSync(inner).size };
+  const r = runAgent(world, agent, { ...engine.env, ...net.env });
+  assert.equal(r.status, 0, `the voice-notes job must run and exit 0; got ${w.describe(r)}`);
+  const notesOf = (n) => w.filesHolding([world.owner], `${engine.words} size-${n}`).filter((x) => !x.startsWith(watched(world)));
+  assert.equal(notesOf(size.own).length, 1, `a recording put in the folder itself must become one note (the job ran); got ${JSON.stringify(notesOf(size.own))}; engine calls ${JSON.stringify(engine.calls())}`);
+  assert.deepEqual(notesOf(size.outside), [], 'a link in the voice-notes folder to a recording outside it must make no note');
+  assert.deepEqual(notesOf(size.inner), [], 'a recording in a folder inside the voice-notes folder must make no note');
+  assert.deepEqual(engine.calls().map((c) => c.size), [size.own], `the engine runs on the folder's own recording only, never through the link or on the inner folder's recording; got ${JSON.stringify(engine.calls())}`);
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `no audio or its text may leave the Mac: the job reached the network ${net.seen.length} time(s)`);
+});
+
+test("a session Write of a new file in the owner's voice-notes folder, and a copy, a move or a link into it from the shell, are each asked by the safety floor as the session runs it, never free, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const { world, floor } = laidFloorWorld(t);
+  const folder = watched(world);
+  fs.mkdirSync(folder, { recursive: true });
+  const from = M.fixtureRecording(path.join(world.owner, 'workspace', 'files', 'attachment.wav'), { seconds: 1 });
+  const calls = [
+    ['a Write of a new file', w.tools.write(path.join(folder, 'New Recording.wav'), 'RIFF....WAVEfmt ')],
+    ['a copy', w.tools.bash(`cp '${from}' '${folder}/'`)],
+    ['a move', w.tools.bash(`mv '${from}' '${path.join(folder, 'Moved.wav')}'`)],
+    ['a link', w.tools.bash(`ln -s '${from}' '${path.join(folder, 'Linked.wav')}'`)],
+  ];
+  for (const mode of MODES) {
+    for (const [what, call] of calls) {
+      const r = floor.run(`job-voice-folder-${mode}-${what.replace(/\W+/g, '-')}`, call, mode);
+      t.diagnostic(`${mode}: ${verdictOf(r)}: ${what}`);
+      assert.equal(verdictOf(r), 'asked', `${what} into the owner's voice-notes folder, in ${mode} mode, must be asked (a block with a request id), never free; got ${w.describe(r)}`);
+    }
+  }
+});
+
+test("a session command that sets a SQUIRE_ variable (inline before a command, by export, or for every program by launchctl setenv), and a Write of ~/.zshenv or of a LaunchAgents plist that names one, are each asked by the safety floor as the session runs it, never free, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  // A guard at the base head: the floor already asks for each of these (a
+  // command it cannot read as one it knows, and a Write outside the owner's
+  // folder); the two test seams must never make any of them free.
+  const { world, floor } = laidFloorWorld(t);
+  const helper = path.join(world.userHome, 'Downloads', 'helper');
+  const plist = '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict><key>Label</key><string>com.example.helper</string>' +
+    `<key>EnvironmentVariables</key><dict><key>SQUIRE_SPEECH_ENGINE</key><string>${helper}</string></dict></dict></plist>\n`;
+  const calls = [
+    ['a SQUIRE_ variable set inline before a command', w.tools.bash(`SQUIRE_SPEECH_ENGINE='${helper}' ls '${watched(world)}'`)],
+    ['a SQUIRE_ variable exported', w.tools.bash('export SQUIRE_YOUTUBE_ORIGIN=https://captions.example.net')],
+    ['a SQUIRE_ variable set for every program by launchctl setenv', w.tools.bash(`launchctl setenv SQUIRE_SPEECH_ENGINE '${helper}'`)],
+    ['a Write of ~/.zshenv that sets one', w.tools.write(path.join(world.userHome, '.zshenv'), `export SQUIRE_SPEECH_ENGINE='${helper}'\n`)],
+    ['a Write of a LaunchAgents plist that names one', w.tools.write(path.join(world.userHome, 'Library', 'LaunchAgents', 'com.example.helper.plist'), plist)],
+  ];
+  for (const mode of MODES) {
+    for (const [what, call] of calls) {
+      const r = floor.run(`job-squire-variable-${mode}-${what.replace(/\W+/g, '-')}`, call, mode);
+      t.diagnostic(`${mode}: ${verdictOf(r)}: ${what}`);
+      assert.equal(verdictOf(r), 'asked', `${what}, in ${mode} mode, must be asked (a block with a request id), never free; got ${w.describe(r)}`);
+    }
+  }
+});
+
+test("a speech engine seam that is not an absolute path, or that names a file that cannot be run, is never run: the recording goes nowhere and no note is kept, while an absolute path to an executable file is the engine", { timeout: 180000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const engine = engineBySize(world);
+  const net = await M.networkRecorder(t);
+  const control = M.fixtureRecording(path.join(world.userHome, 'Downloads', 'Voice memo.wav'), { seconds: 1 });
+  const ran = w.runPython(world, transcribeScript(world), [control], { env: { ...engine.env, ...net.env }, timeout: 60000 });
+  assert.equal(ran.status, 0, `with the seam an absolute path to an executable file, the transcription must run it and exit 0; got ${w.describe(ran)}`);
+  assert.ok(w.filesHolding([world.owner], `${engine.words} size-${fs.statSync(control).size}`).length > 0, `the control recording's text must be kept as a note; got ${w.describe(ran)}`);
+  const before = engine.calls().length;
+
+  const closed = path.join(path.dirname(engine.env.SQUIRE_SPEECH_ENGINE), 'engine-closed');
+  fs.copyFileSync(engine.env.SQUIRE_SPEECH_ENGINE, closed);
+  fs.chmodSync(closed, 0o644);
+  const seams = [
+    ['a path relative to the working folder', path.relative(world.root, engine.env.SQUIRE_SPEECH_ENGINE), 2],
+    ['a file that cannot be run', closed, 3],
+  ];
+  for (const [what, seam, seconds] of seams) {
+    const given = M.fixtureRecording(path.join(world.userHome, 'Downloads', `Voice memo ${seconds}.wav`), { seconds });
+    const ownerBefore = M.digestOf(world.owner);
+    const r = w.runPython(world, transcribeScript(world), [given], { cwd: world.root, env: { SQUIRE_SPEECH_ENGINE: seam, ...net.env }, timeout: 60000 });
+    t.diagnostic(`${what}: ${w.describe(r)}`);
+    assert.doesNotMatch(r.stderr, /Traceback/, `${what}: the transcription must stop with Squire's own words, never a crash; got ${w.describe(r)}`);
+    assert.equal(engine.calls().length, before, `${what}: the program the seam names must never be run; got ${JSON.stringify(engine.calls())}`);
+    assert.deepEqual(M.changedIn(ownerBefore, M.digestOf(world.owner)), [], `${what}: no note may be kept and nothing in the owner's folder may change`);
+  }
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `no audio or its text may leave the Mac: reached the network ${net.seen.length} time(s)`);
 });
