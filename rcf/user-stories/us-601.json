@@ -1,10 +1,10 @@
 {
   "createdAt": "2026-11-07T17:40:14.098Z",
-  "updatedAt": "2026-11-16T00:44:13.106Z",
+  "updatedAt": "2026-11-16T02:50:26.897Z",
   "asA": "Squire owner",
   "iWant": "to name my Squire and give it a personality in a guided first conversation, and have it keep them",
   "soThat": "my Squire feels like mine and stays that way after fresh starts and updates",
-  "description": "The guided first conversation covers what Squire can do, how approval works, the Squire owner's privacy words, house style, fresh starts and where pages appear; it can pause and resume. Plain words, short answers and a teach-me mode are reviewed behaviour (a person reads the help text and a sample of answers against the house style), not a criterion.",
+  "description": "The guided first conversation covers what Squire can do, how approval works, the Squire owner's privacy words, house style, fresh starts and where pages appear; it can pause and resume. Teaching when asked is part of the guided first conversation's criterion; plain words and short answers are reviewed behaviour, not criteria.",
   "usId": "US-601",
   "prdId": "PRD-001",
   "reqId": "REQ-006",
