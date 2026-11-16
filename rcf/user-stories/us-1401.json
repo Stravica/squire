@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:15.412Z",
-  "updatedAt": "2026-11-11T17:00:10.603Z",
+  "updatedAt": "2026-11-16T20:28:28.234Z",
   "asA": "Squire owner",
   "iWant": "Squire updates that come only from Stravica, tell me what is new and wait for my yes, and undo themselves if they break something",
   "soThat": "an update can never hurt my Squire or touch my things",
@@ -36,7 +36,7 @@
       "testable": true,
       "given": "An update that fails Squire's health check once installed",
       "when": "The Squire owner installs it with Squire Update",
-      "then": "The previous version is running again with no one acting, all three of Squire's agents loaded; Squire Update and a message in the chat both tell the Squire owner it rolled the update back; the rolled-back release is not offered again until a newer one is published.",
+      "then": "The previous version is running again with no one acting, every one of Squire's agents loaded; Squire Update and a message in the chat both tell the Squire owner it rolled the update back; the rolled-back release is not offered again until a newer one is published.",
       "verification": "testOnly"
     },
     {
@@ -81,7 +81,7 @@
       "testable": true,
       "given": "An install stopped at any of its named steps by a killed process, a restart of the Mac or a log-out; or a download that fails, never ends or is cut short",
       "when": "Squire's runner next starts, its scheduler next runs, or Squire Update is next opened",
-      "then": "Squire stays on the new release only when its files, the installed core and the signed manifest all match and the check passes, and is otherwise on the previous release, laid down again only by Squire Update, which Squire opens by itself when a lay-down is needed; either way one message tells the Squire owner which, all three agents are loaded, the unfinished install's record is gone, the Squire owner's folder is unchanged, and a download never reaches the installed core.",
+      "then": "Squire stays on the new release only when its files, the installed core and the signed manifest all match and the check passes, and is otherwise on the previous release, laid down again only by Squire Update, which Squire opens by itself when a lay-down is needed; either way one message tells the Squire owner which, every one of Squire's agents is loaded, the unfinished install's record is gone, the Squire owner's folder is unchanged, and a download never reaches the installed core.",
       "verification": "testOnly"
     },
     {
@@ -99,7 +99,7 @@
       "testable": true,
       "given": "A Mac whose launchd ends every process in a Squire agent's process group when that agent is stopped or its main process exits",
       "when": "Squire Update installs a signed release, rolls one back, or finishes an interrupted install; Squire's runner or scheduler settles an interrupted install; and the scheduler runs a known fix that lays core down",
-      "then": "Each runs to its end and leaves all three of Squire's agents loaded; nothing that stops a Squire agent runs in a Squire agent's process group, and no Squire program stops the agent it runs in.",
+      "then": "Each runs to its end and leaves every one of Squire's agents loaded; nothing that stops a Squire agent runs in a Squire agent's process group, and no Squire program stops the agent it runs in.",
       "verification": "testOnly"
     },
     {

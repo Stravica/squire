@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-15T13:30:47.465Z",
-  "updatedAt": "2026-11-16T17:22:39.987Z",
+  "updatedAt": "2026-11-16T20:28:34.820Z",
   "acIds": [
     "AC-1302-2",
     "AC-1701-1",
@@ -14,5 +14,6 @@
   "executionStatus": "notStarted",
   "title": "Research, video and voice notes",
   "summary": "A big job the owner said yes to ends with a result the owner can see, or keeps its work when it fails, and shipping an app still needs its own yes. Video and audio work uses YouTube captions and the owner's own files, transcribed on the Mac: Squire never downloads a YouTube video or its audio, and a missing or unreadable file stops the job with an explanation, with nothing downloaded and nothing changed.",
-  "dependsOnFbsIds": []
+  "dependsOnFbsIds": [],
+  "uiBearing": false
 }
