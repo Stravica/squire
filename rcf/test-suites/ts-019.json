@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T17:43:31.475Z",
+  "updatedAt": "2026-11-16T20:45:44.160Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -125,9 +125,9 @@
     {
       "id": "TC-019-with-no-secret-kept-in-the-owner-s-state",
       "acId": "AC-901-1",
-      "description": "with no secret kept in the owner's state nothing is served, not even to the link, and no comment is kept",
+      "description": "the secret is kept only in the Squire home's state/, mode 0600, nowhere in the owner's folder; each start writes a new one; with none kept nothing is served and no comment is kept",
       "status": "pending",
-      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::with no secret kept in the owner's state nothing is served, not even to the link: a page, the dashboard and the comment post are refused and no comment is kept"
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the link's secret is kept only in the Squire home's state/, in a file of mode 0600, and nowhere in the owner's folder or anywhere else; each start writes a new one; with none kept nothing is served, not even to the link: a page, the dashboard and the comment post are refused and no comment is kept"
     },
     {
       "id": "TC-019-the-session-s-link-command-is-free",
@@ -170,6 +170,27 @@
       "description": "a look-alike spelling of the page server's script the Mac opens as the same file is refused as the page server's, in both modes",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a look-alike spelling of the page server's script that the Mac opens as the same file (a long s for its s) is the page server's script: started from the session it is refused, yes or no, with words that name the page server, never asked as an unknown command, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-019-every-answer-carries-no-referrer",
+      "acId": "AC-901-1",
+      "description": "every answer the page server writes carries Referrer-Policy: no-referrer: a page, the dashboard, a refusal, the comment post and Squire's own files",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::every answer the page server writes carries Referrer-Policy: no-referrer, since the link's secret rides in its address: a page, the dashboard, a refusal, the comment post and Squire's own files under /squire/"
+    },
+    {
+      "id": "TC-019-no-script-runs-but-the-panel-script",
+      "acId": "AC-901-1",
+      "description": "a .js file in the pages folder is refused with none of its bytes; every HTML answer's policy lets no script run but the panel script; an SVG with a script is served so it cannot run, or refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::no script runs on a page but the page server's own panel script: a .js file in the pages folder is refused with none of its bytes, every HTML answer's Content-Security-Policy lets no other script run, inline or from any address, while the panel script a made page links still may, and an SVG there that carries a script is served so the script cannot run, or refused"
+    },
+    {
+      "id": "TC-019-links-followed-as-a-browser-follows-them",
+      "acId": "AC-901-1",
+      "description": "the dashboard's links and a made page's stylesheet and panel links, resolved against their page's address as a browser resolves them, reach what they name",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the links the dashboard and a page Squire made give, followed as a browser follows them (each resolved against that page's own address, nothing added), reach what they name: every page the dashboard lists, and the made page's stylesheet and panel script"
     }
   ],
   "status": "draft"

@@ -6,8 +6,9 @@
 // their Squire folder, pages use it in place of the default (AC-901-2).
 // Through the real entry point: the page server, started as Squire runs it,
 // asked by real requests on this Mac's loopback through the link the owner is
-// given (page-server.py --where), as a browser asks: the link's own path and
-// query carried, any cookie it sets sent back.
+// given (page-server.py --where), as a browser asks: a route is the link's own
+// path (the address, the secret, /) then the route, and a page's stylesheet
+// link is resolved against the page's own address, nothing added.
 //
 // Squire's default theme is the one the product's own site wears (the design
 // step's values, for BUILD):
@@ -64,11 +65,11 @@ function startServer(t, world) {
   });
 }
 
-function get(url, cookies = []) {
+function get(url) {
   return new Promise((resolve) => {
     const u = new URL(url);
     const req = http.request({ host: u.hostname.replace(/^\[|\]$/g, ''), port: u.port, path: `${u.pathname}${u.search}`, method: 'GET',
-      headers: cookies.length ? { cookie: cookies.join('; ') } : {}, timeout: 5000 }, (res) => {
+      headers: {}, timeout: 5000 }, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
@@ -79,12 +80,11 @@ function get(url, cookies = []) {
   });
 }
 
-// A route under the link: the link's own path ahead of it, its query after.
+// A route under the link, in the link's one form: the link's own path (the
+// address, the secret, /), then the route, as one path; no query, no cookie.
 function under(link, route) {
   const l = new URL(link);
-  const u = new URL(`${l.pathname.replace(/\/$/, '')}${route}`, l.origin);
-  if (!u.search && l.search) u.search = l.search;
-  return u.toString();
+  return new URL(`${l.pathname.replace(/\/$/, '')}${route}`, l.origin).toString();
 }
 
 // The page server running in a world, its link opened as a browser opens it.
@@ -95,8 +95,7 @@ async function serving(t, world) {
   assert.equal(where.status, 0, `the link command must give the link; got ${w.describe(where)}`);
   const link = where.stdout.trim();
   const opened = await get(link);
-  const cookies = [].concat(opened.headers['set-cookie'] || []).map((c) => c.split(';')[0]);
-  return { link, cookies, opened, fetch: (route) => get(under(link, route), cookies), fetchUrl: (url) => get(url, cookies) };
+  return { link, opened, fetch: (route) => get(under(link, route)), fetchUrl: (url) => get(url) };
 }
 
 // ------------------------------------------------------- reading a theme
@@ -194,18 +193,15 @@ function luminance(h) {
 }
 const contrast = (a, b) => { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
-// The stylesheets a served page links, fetched as the browser fetches them.
+// The stylesheets a served page links, fetched as the browser fetches them:
+// each href resolved against the page's own address, nothing added.
 async function stylesheetsOf(server, page, pageUrl) {
   const hrefs = [...page.body.matchAll(/<link\b[^>]*>/gi)].map((m) => m[0])
     .filter((tag) => /rel\s*=\s*["']?stylesheet/i.test(tag))
     .map((tag) => (/href\s*=\s*["']([^"']+)["']/i.exec(tag) || [])[1]).filter(Boolean);
   const sheets = [];
   for (const href of hrefs) {
-    const u = new URL(href, pageUrl);
-    const l = new URL(server.link);
-    if (u.origin === l.origin && !u.search && l.search) u.search = l.search;
-    if (u.origin === l.origin && l.pathname.length > 1 && !u.pathname.startsWith(l.pathname.replace(/\/$/, ''))) u.pathname = `${l.pathname.replace(/\/$/, '')}${u.pathname}`;
-    sheets.push({ href, res: await server.fetchUrl(u.toString()) });
+    sheets.push({ href, res: await server.fetchUrl(new URL(href, pageUrl).toString()) });
   }
   return sheets;
 }

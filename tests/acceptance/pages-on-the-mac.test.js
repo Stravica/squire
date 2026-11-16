@@ -87,23 +87,38 @@
 // a request whose Host or Origin is not the page server's own is refused,
 // and a comment it carries is never kept.
 //
-// The link's secret. The link page-server.py --where prints is the address
-// with a secret of the server's own on it, rewritten at every start and kept
-// in the owner's state (the Squire home's state/ or the owner's state/, the
-// builder's choice), so --where reads it at that moment: at least 16 letters,
-// digits, - or _ together in the link's path or query. How the secret rides
-// is the builder's (a path of its own, a query word, a cookie the link sets);
-// the cases use the link as a browser does: a request carries the link's own
-// path ahead of the route and the link's query after it, and any cookie the
-// link set. A page, the dashboard and the comment post are served only with
-// the current secret; without it, with a wrong one, or with one from before
-// the server last started, each is refused (400 or more, none of the page,
-// nothing kept), and the refusal says in one line to ask Squire for the link.
-// With no secret in the owner's state, nothing is served (fail closed). The
-// pages are the owner's only: an old saved link stops working at every start.
-// Every request from the Mac in the cases below carries the link, so a
-// refusal they expect is the server's answer to where the request comes from,
-// its Host or its Origin, never to a missing secret.
+// The link's secret. The link page-server.py --where prints has one form:
+// the address, then a secret of the server's own, then / (for example
+// http://127.0.0.1:<port>/<secret>/), and a route follows it as one path
+// (<link>pages/<file>); no query word and no cookie carry the secret. The
+// secret is 22 or more letters, digits, - or _ (about 128 bits of the URL-safe
+// alphabet), written again at every start and kept only in the Squire home's
+// state/, in a file of mode 0600, never in the owner's folder (backed up and
+// synced), so --where reads it at that moment. The cases use the link as a
+// browser does: a request's path is the link's own path, then the route. A
+// page, the dashboard and the comment post are served only with the current
+// secret; without it, with a wrong one, or with one from before the server
+// last started, each is refused (400 or more, none of the page, nothing
+// kept), and the refusal says in one line to ask Squire for the link. With no
+// secret kept, nothing is served (fail closed). The pages are the owner's
+// only: an old saved link stops working at every start. Every request from
+// the Mac in the cases below carries the link, so a refusal they expect is
+// the server's answer to where the request comes from, its Host or its
+// Origin, never to a missing secret.
+//
+// Because the secret rides in the address, every response the page server
+// writes (a page, the dashboard, a refusal, the comment post, Squire's own
+// files under /squire/) carries Referrer-Policy: no-referrer. A link the
+// dashboard or a page Squire made gives, followed as a browser follows it
+// (resolved against that page's own address, nothing added by the case),
+// reaches what it names (core/tools/page-server.py: the dashboard's links,
+// and the stylesheet and panel tags the persona tells the session to put in a
+// page). No script runs on a page but the server's own panel script: a .js
+// file in workspace/pages is refused, every HTML response's
+// Content-Security-Policy lets no other script run, and an SVG there that
+// carries a script is served so that the script cannot run, or refused
+// (core/tools/page-server.py: what it serves from the pages folder, and its
+// policy). A default of Squire's.
 //
 // The session's link command is free through the floor as the session runs
 // it (the settings lay-down writes, in the default mode and in auto mode).
@@ -169,9 +184,7 @@ async function serving(t, world) {
   return server;
 }
 
-// The link the owner is given (page-server.py --where, read at that moment),
-// opened from the Mac as a browser opens it: any cookie it sets is kept on
-// the server's record for the requests that follow.
+// The link the owner is given (page-server.py --where, read at that moment).
 async function openLink(world, server) {
   for (let waited = 0; waited <= 2000; waited += 100) {
     const r = where(world);
@@ -182,29 +195,26 @@ async function openLink(world, server) {
     await w.sleep(100);
   }
   server.link = server.link || printedAddress(server);
-  server.cookies = [];
-  const opened = await request({ host: server.host, port: server.port, urlPath: linkPath(server.link, '/') });
-  server.cookies = [].concat((opened.headers && opened.headers['set-cookie']) || []).map((c) => c.split(';')[0]);
   return server.link;
 }
 
-// A route as the link carries it: the link's own path ahead of it and the
-// link's query after it.
+// A route under the link, in the link's one form: the link's own path (the
+// secret and its /), then the route, as one path; no query word, no cookie.
 function linkPath(link, route) {
-  const u = new URL(link);
-  const prefix = u.pathname.replace(/\/$/, '');
-  return `${prefix}${route}${u.search && !route.includes('?') ? u.search : ''}`;
+  const prefix = new URL(link).pathname.replace(/\/$/, '');
+  return `${prefix}${route}`;
 }
+
+// The same route as a whole address under the link.
+const linkUrl = (server, route) => `${new URL(server.link).origin}${linkPath(server.link, route)}`;
 
 // One HTTP request; { status, headers, body } or { error } when it cannot
 // connect or gets no answer in 5 seconds. With via (a server whose link was
-// opened), the request carries that link and its cookies, as the owner's
-// browser sends them.
+// opened), the request's path is that link's path, then urlPath.
 function request({ host, port, method = 'GET', urlPath = '/', body = null, localAddress, extraHeaders = {}, via = null }) {
   return new Promise((resolve) => {
     const sent = via ? linkPath(via.link, urlPath) : urlPath;
-    const jar = via && via.cookies.length ? { cookie: via.cookies.join('; ') } : {};
-    const headers = { ...(body ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } : {}), ...jar, ...extraHeaders };
+    const headers = { ...(body ? { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } : {}), ...extraHeaders };
     const req = http.request({ host, port, method, path: sent, headers, localAddress, timeout: 5000 }, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
@@ -732,13 +742,16 @@ test("a comment the panel keeps is read as untrusted: a job that has read the ow
 
 // ------------------------------------------------- the link's secret
 
-// The secret a link carries: the longest run of 16 or more letters, digits,
-// - and _ in its path or query; null when it carries none.
+// The secret a link carries, in the link's one form: the address, then 22 or
+// more letters, digits, - or _ as the whole path, then /, with no query and
+// nothing after; null when the link is not in that form.
+const SECRET_FORM = /^\/([A-Za-z0-9_-]{22,})\/$/;
 function secretIn(link) {
   let u;
   try { u = new URL(link); } catch (e) { return null; }
-  const runs = `${u.pathname}${u.search}`.match(/[A-Za-z0-9_-]{16,}/g) || [];
-  return runs.sort((a, b) => b.length - a.length)[0] || null;
+  if (u.search || u.hash) return null;
+  const m = SECRET_FORM.exec(u.pathname);
+  return m ? m[1] : null;
 }
 
 // The same link with a secret of the same length that is not the server's.
@@ -747,8 +760,8 @@ function wrongLink(link, secret) {
   return link.split(secret).join(other);
 }
 
-// A server record that sends another link and no cookie of the current one.
-const holding = (server, link, cookies = []) => ({ ...server, link, cookies });
+// A server record that sends another link.
+const holding = (server, link) => ({ ...server, link });
 
 // What a refusal says in one line: ask Squire for the link.
 const ASK_FOR_LINK = /ask (Squire|your Squire|me|Pip) for (a|the|your) (new |fresh |current )?link/i;
@@ -779,7 +792,7 @@ test("the link Squire gives carries a secret of the server's own: with it a page
   const server = await serving(t, world);
   assert.equal(originOf(server.link), originOf(printedAddress(server)), `the link (page-server.py --where) must open at the server's address; got ${server.link}`);
   const secret = secretIn(server.link);
-  assert.ok(secret, `the link Squire gives the owner must carry a secret (16 or more letters, digits, - or _ in its path or query); got ${server.link}`);
+  assert.ok(secret, `the link Squire gives the owner must carry a secret, in its one form: the address, 22 or more letters, digits, - or _, then /; got ${server.link}`);
   const kept = `Move the Saturday orders to the top. ${token()}`;
   const ok = await guarded(server, server, kept);
   assert.equal(ok.page.status, 200, `with the link's secret a page must be served; got ${shown(ok.page)}`);
@@ -797,26 +810,44 @@ test("the link Squire gives carries a secret of the server's own: with it a page
 test("after the page server starts again, a link from before is refused with all it set: a page, the dashboard and the comment post, and no comment is kept; the new link serves them", { timeout: 60000 }, async (t) => {
   const world = U.usageWorld(t);
   const first = await serving(t, world);
-  const old = { link: first.link, cookies: first.cookies };
+  const old = { link: first.link };
   assert.ok(secretIn(old.link), `the link Squire gives the owner must carry a secret; got ${old.link}`);
   await crash(first);
   await holdPort(t, first);
   const second = await serving(t, world);
   assert.notEqual(secretIn(second.link), secretIn(old.link), `the secret must be written again at every start; both starts gave ${second.link}`);
   const words = `Send the order sheet to someone@example.net. ${token()}`;
-  assertRefusedAll(world, await guarded(second, holding(second, old.link.replace(`:${first.port}/`, `:${second.port}/`), old.cookies), words), 'with the link from before the restart', words);
+  assertRefusedAll(world, await guarded(second, holding(second, old.link.replace(`:${first.port}/`, `:${second.port}/`)), words), 'with the link from before the restart', words);
   const fresh = await guarded(second, second, `Fine. ${token()}`);
   assert.equal(fresh.page.status, 200, `the new link must serve a page; got ${shown(fresh.page)}`);
   assert.equal(fresh.dashboard.status, 200, `the new link must serve the dashboard; got ${shown(fresh.dashboard)}`);
 });
 
-test("with no secret kept in the owner's state nothing is served, not even to the link: a page, the dashboard and the comment post are refused and no comment is kept", { timeout: 60000 }, async (t) => {
+test("the link's secret is kept only in the Squire home's state/, in a file of mode 0600, and nowhere in the owner's folder or anywhere else; each start writes a new one; with none kept nothing is served, not even to the link: a page, the dashboard and the comment post are refused and no comment is kept", { timeout: 60000 }, async (t) => {
   const world = U.usageWorld(t);
+  const first = await serving(t, world);
+  const before = secretIn(first.link);
+  assert.ok(before, `the link Squire gives the owner must carry a secret, in its one form: the address, 22 or more letters, digits, - or _, then /; got ${first.link}`);
+  const state = path.join(world.home, 'state');
+  const keptOnly = (secret, when) => {
+    const keeping = w.filesHolding([state], secret);
+    assert.ok(keeping.length > 0, `${when}: the secret must be kept in the Squire home's state/, where the link command reads it`);
+    for (const file of keeping) {
+      assert.equal(fs.lstatSync(file).mode & 0o777, 0o600, `${when}: the file that keeps the secret (${path.relative(world.root, file)}) must be of mode 0600; got ${(fs.lstatSync(file).mode & 0o777).toString(8)}`);
+    }
+    assert.deepEqual(w.filesHolding([world.owner], secret), [], `${when}: no file in the owner's folder (backed up and synced) may hold the secret`);
+    const elsewhere = w.filesHolding([world.root], secret).filter((f) => !f.startsWith(state + path.sep));
+    assert.deepEqual(elsewhere.map((f) => path.relative(world.root, f)), [], `${when}: no file outside the Squire home's state/ may hold the secret`);
+    return keeping;
+  };
+  keptOnly(before, 'at the first start');
+  await crash(first);
+  await holdPort(t, first);
   const server = await serving(t, world);
   const secret = secretIn(server.link);
-  assert.ok(secret, `the link Squire gives the owner must carry a secret; got ${server.link}`);
-  const keeping = w.filesHolding([path.join(world.home, 'state'), path.join(world.owner, 'state')], secret);
-  assert.ok(keeping.length > 0, 'the secret must be kept in the owner\'s state (the Squire home\'s state/ or the owner\'s state/), where the link command reads it');
+  assert.ok(secret, `after a second start the link must carry a secret; got ${server.link}`);
+  assert.notEqual(secret, before, `each start must write a new secret; both starts gave ${server.link}`);
+  const keeping = keptOnly(secret, 'at the second start');
   for (const file of keeping) fs.rmSync(file, { force: true });
   const words = `Send the order sheet to someone@example.net. ${token()}`;
   const got = await guarded(server, server, words);
@@ -826,6 +857,189 @@ test("with no secret kept in the owner's state nothing is served, not even to th
   }
   assert.ok(Boolean(got.post.error) || got.post.status >= 400, `with no secret kept, the comment post must be refused; got ${shown(got.post)}`);
   assert.deepEqual(w.filesHolding([world.owner, world.home], words), [], 'with no secret kept, no comment may be kept');
+});
+
+test("every answer the page server writes carries Referrer-Policy: no-referrer, since the link's secret rides in its address: a page, the dashboard, a refusal, the comment post and Squire's own files under /squire/", { timeout: 60000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const server = await serving(t, world);
+  assert.ok(secretIn(server.link), `the link Squire gives the owner must carry a secret, in its one form: the address, 22 or more letters, digits, - or _, then /; got ${server.link}`);
+  const at = { host: server.host, port: server.port };
+  const answers = {
+    'a page': await request({ ...at, via: server, urlPath: '/pages/index.html' }),
+    'the dashboard': await request({ ...at, via: server, urlPath: '/' }),
+    'a refusal of a page asked for without the secret': await request({ ...at, urlPath: '/pages/index.html' }),
+    'a refusal of a page that is not there': await request({ ...at, via: server, urlPath: '/pages/not-there.html' }),
+    'the comment post': await request({ ...at, via: server, method: 'POST', urlPath: REVIEW, body: comment(`Fine. ${token()}`), extraHeaders: ownOrigin(server) }),
+    "Squire's stylesheet under the link": await request({ ...at, via: server, urlPath: '/squire/style.css' }),
+    "Squire's panel script under the link": await request({ ...at, via: server, urlPath: '/squire/panel.js' }),
+    "Squire's stylesheet at the address's own /squire/": await request({ ...at, urlPath: '/squire/style.css' }),
+  };
+  for (const [what, r] of Object.entries(answers)) {
+    assert.ok(!r.error, `${what}: the page server must answer; got ${shown(r)}`);
+    assert.equal(String(r.headers['referrer-policy'] || '').trim().toLowerCase(), 'no-referrer', `${what} (status ${r.status}) must carry Referrer-Policy: no-referrer; got ${JSON.stringify(r.headers['referrer-policy'] || null)}`);
+  }
+});
+
+// ------------------------------------------------- what runs on a page
+
+// A world with core laid down as set-up lays it, a page made as Squire's
+// instructions tell the session to make one (their stylesheet and panel tags,
+// read from what lay-down writes for the session), and the server running.
+const MADE_PAGE = 'flour-order.html';
+async function madeWorld(t) {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  const loaded = fs.readFileSync(path.join(world.home, 'claude-config', 'CLAUDE.md'), 'utf8');
+  const open = loaded.indexOf('<!-- squire persona -->');
+  const close = loaded.indexOf('<!-- end squire persona -->');
+  const persona = open >= 0 && close > open ? loaded.slice(open, close) : '';
+  const style = (/<link\b[^>]*rel=["']?stylesheet[^>]*>/i.exec(persona) || [])[0];
+  const panel = (/<script\b[^>]*\bsrc=["'][^"']+["'][^>]*>\s*<\/script>/i.exec(persona) || [])[0];
+  assert.ok(style && panel, `what the session loads must tell it the stylesheet and panel tags to put in a page; found ${JSON.stringify({ style, panel })}`);
+  fs.writeFileSync(path.join(world.owner, 'workspace', 'pages', MADE_PAGE), `<!doctype html><html><head><meta charset="utf-8"><title>Flour order</title>${style}${panel}</head>` +
+    '<body><main class="squire-page"><h1>Flour order</h1><p>25 kg on Thursday.</p></main></body></html>\n');
+  const server = await serving(t, world);
+  const attr = (tag, name) => (new RegExp(`\\b${name}\\s*=\\s*["']([^"']+)["']`, 'i').exec(tag) || [])[1];
+  return { world, server, styleHref: attr(style, 'href'), panelSrc: attr(panel, 'src') };
+}
+
+// A request for a whole address on this server, its path sent as it is, as
+// a browser sends it once it has resolved a link.
+const fetchUrl = (server, url) => {
+  const u = new URL(url);
+  return request({ host: server.host, port: server.port, urlPath: `${u.pathname}${u.search}` });
+};
+
+// The script sources of each policy in a Content-Security-Policy header (the
+// script-src-elem, script-src or default-src a policy names; null when it
+// names none), the sources kept as written so a path keeps its case.
+function scriptSources(r) {
+  const header = r.headers && r.headers['content-security-policy'];
+  const text = Array.isArray(header) ? header.join(',') : String(header || '');
+  return text.split(',').map((policy) => {
+    const directives = new Map();
+    for (const part of policy.split(';')) {
+      const [name, ...sources] = part.trim().split(/\s+/);
+      if (name && !directives.has(name.toLowerCase())) directives.set(name.toLowerCase(), sources);
+    }
+    return directives;
+  }).filter((d) => d.size > 0).map((d) => d.get('script-src-elem') || d.get('script-src') || d.get('default-src') || null);
+}
+
+// Whether one source expression lets a script at url run on a page of origin
+// self (CSP level 3 matching: keywords, schemes, hosts with port and path).
+function sourceAllows(source, url, self) {
+  const u = new URL(url);
+  const src = source.trim();
+  const lower = src.toLowerCase();
+  if (lower === '*') return /^(https?|wss?|ftp):$/.test(u.protocol) || u.protocol === new URL(self).protocol;
+  if (lower === "'self'") return u.origin === self;
+  if (/^[a-z][a-z0-9+.-]*:$/.test(lower)) return u.protocol === lower;
+  if (src.startsWith("'")) return false;
+  const m = /^(?:([a-z][a-z0-9+.-]*):\/\/)?(\*\.)?(\[[^\]]+\]|[^/:]+)(?::(\d+|\*))?(\/.*)?$/i.exec(src);
+  if (!m) return false;
+  const [, scheme, wild, host, port, p] = m;
+  if (scheme ? `${scheme.toLowerCase()}:` !== u.protocol : !/^https?:$/.test(u.protocol)) return false;
+  const uh = u.hostname.toLowerCase();
+  const h = host.toLowerCase();
+  if (h !== '*' && (wild ? !uh.endsWith(`.${h}`) : uh !== h)) return false;
+  const uPort = u.port || (u.protocol === 'https:' ? '443' : '80');
+  if (port !== '*' && (port || (u.protocol === 'https:' ? '443' : '80')) !== uPort) return false;
+  if (!p) return true;
+  const dp = decodeURIComponent(p);
+  const up = decodeURIComponent(u.pathname);
+  return dp.endsWith('/') ? up.startsWith(dp) : up === dp;
+}
+
+// A script at url runs only if every policy lets it (a policy that names no
+// script sources lets every script).
+const scriptRuns = (r, url, self) => scriptSources(r).every((sources) => sources === null || sources.some((s) => sourceAllows(s, url, self)));
+
+// An inline script runs only if every policy lets inline script run.
+const inlineRuns = (r) => scriptSources(r).every((sources) => sources === null ||
+  (sources.some((s) => s.toLowerCase() === "'unsafe-inline'") && !sources.some((s) => /^'(nonce-|sha(256|384|512)-|strict-dynamic')/i.test(s))));
+
+test("no script runs on a page but the page server's own panel script: a .js file in the pages folder is refused with none of its bytes, every HTML answer's Content-Security-Policy lets no other script run, inline or from any address, while the panel script a made page links still may, and an SVG there that carries a script is served so the script cannot run, or refused", { timeout: 90000 }, async (t) => {
+  const { world, server, panelSrc } = await madeWorld(t);
+  const pages = path.join(world.owner, 'workspace', 'pages');
+  const evil = `window.squireStolen = document.cookie; // ${token()}\n`;
+  fs.writeFileSync(path.join(pages, 'evil.js'), evil);
+  const js = await request({ host: server.host, port: server.port, via: server, urlPath: '/pages/evil.js' });
+  assert.ok(!js.error && js.status >= 400, `a .js file in the pages folder must be refused (400 or more); got ${shown(js)}`);
+  assert.ok(!js.body.includes(Buffer.from(evil.trim())), `none of the .js file's bytes may be sent; got ${shown(js)}`);
+
+  const self = new URL(server.link).origin;
+  const madeUrl = linkUrl(server, `/pages/${MADE_PAGE}`);
+  const panelUrl = new URL(panelSrc, madeUrl).toString();
+  const forbidden = [linkUrl(server, '/pages/evil.js'), `${self}/pages/evil.js`, linkUrl(server, '/pages/index.html'), 'https://cdn.example.net/evil.js', 'http://127.0.0.2/evil.js'];
+  const at = { host: server.host, port: server.port };
+  const html = {
+    'a page Squire made': await request({ ...at, via: server, urlPath: `/pages/${MADE_PAGE}` }),
+    'a page in the pages folder': await request({ ...at, via: server, urlPath: '/pages/index.html' }),
+    'the dashboard': await request({ ...at, via: server, urlPath: '/' }),
+    'a refusal without the secret': await request({ ...at, urlPath: '/pages/index.html' }),
+    'a refusal of a page that is not there': await request({ ...at, via: server, urlPath: '/pages/not-there.html' }),
+  };
+  for (const what of ['a page Squire made', 'a page in the pages folder', 'the dashboard']) {
+    assert.ok(isHtml(html[what]), `${what} must be served as HTML; got ${shown(html[what])}`);
+  }
+  for (const [what, r] of Object.entries(html)) {
+    if (!isHtml(r)) continue;
+    assert.ok(scriptSources(r).length > 0, `${what} must carry a Content-Security-Policy; got ${JSON.stringify(r.headers['content-security-policy'] || null)}`);
+    assert.ok(!inlineRuns(r), `${what}: its policy must let no inline script run; got ${JSON.stringify(r.headers['content-security-policy'])}`);
+    for (const url of forbidden) {
+      assert.ok(!scriptRuns(r, url, self), `${what}: its policy must not let a script at ${url} run (only the panel script may); got ${JSON.stringify(r.headers['content-security-policy'])}`);
+    }
+  }
+  assert.ok(scriptRuns(html['a page Squire made'], panelUrl, self), `a page Squire made must still run the panel script it links (${panelUrl}); got ${JSON.stringify(html['a page Squire made'].headers['content-security-policy'])}`);
+
+  const svgMark = token();
+  fs.writeFileSync(path.join(pages, 'badge.svg'), `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><script>window.squireStolen = '${svgMark}';</script>` +
+    '<script href="evil.js"/><circle cx="5" cy="5" r="4"/></svg>\n');
+  const svgUrl = linkUrl(server, '/pages/badge.svg');
+  const svg = await request({ ...at, via: server, urlPath: '/pages/badge.svg' });
+  assert.ok(!svg.error, `an SVG in the pages folder must be answered; got ${shown(svg)}`);
+  if (svg.status < 400) {
+    const sandboxed = String(svg.headers['content-security-policy'] || '').split(',').some((policy) => policy.split(';').some((part) => {
+      const [name, ...flags] = part.trim().toLowerCase().split(/\s+/);
+      return name === 'sandbox' && !flags.includes('allow-scripts');
+    }));
+    const runs = inlineRuns(svg) || scriptRuns(svg, new URL('evil.js', svgUrl).toString(), self);
+    assert.ok(sandboxed || !runs, `an SVG that carries a script must be served so that no script can run in it (a policy that lets none run, or a sandbox without scripts), or refused; got status ${svg.status}, ${JSON.stringify(svg.headers['content-security-policy'] || null)}`);
+  } else {
+    assert.ok(!svg.body.includes(Buffer.from(svgMark)), `a refused SVG must send none of its bytes; got ${shown(svg)}`);
+  }
+});
+
+test("the links the dashboard and a page Squire made give, followed as a browser follows them (each resolved against that page's own address, nothing added), reach what they name: every page the dashboard lists, and the made page's stylesheet and panel script", { timeout: 90000 }, async (t) => {
+  const { world, server, styleHref, panelSrc } = await madeWorld(t);
+  assert.ok(secretIn(server.link), `the link Squire gives the owner must carry a secret, in its one form: the address, 22 or more letters, digits, - or _, then /; got ${server.link}`);
+  const pages = path.join(world.owner, 'workspace', 'pages');
+  const dashboardUrl = linkUrl(server, '/');
+  const dashboard = await fetchUrl(server, dashboardUrl);
+  assert.equal(dashboard.status, 200, `the dashboard must be served at the link; got ${shown(dashboard)}`);
+  const hrefs = [...dashboard.body.toString('utf8').matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1].replace(/&amp;/g, '&'));
+  const reached = new Set();
+  for (const href of hrefs) {
+    const url = new URL(href, dashboardUrl).toString();
+    const r = await fetchUrl(server, url);
+    assert.equal(r.status, 200, `the dashboard's link ${href}, resolved against the dashboard's address (${url}), must serve its page; got ${shown(r)}`);
+    for (const name of [MADE_PAGE, 'index.html']) if (r.body.equals(fs.readFileSync(path.join(pages, name)))) reached.add(name);
+  }
+  assert.deepEqual([...reached].sort(), [MADE_PAGE, 'index.html'].sort(), `the dashboard's links must reach every page it lists, as Squire made them; its links were ${JSON.stringify(hrefs)}`);
+
+  const madeUrl = linkUrl(server, `/pages/${MADE_PAGE}`);
+  const made = await fetchUrl(server, madeUrl);
+  assert.equal(made.status, 200, `a page Squire made must be served at the link; got ${shown(made)}`);
+  const styleUrl = new URL(styleHref, madeUrl).toString();
+  const style = await fetchUrl(server, styleUrl);
+  assert.equal(style.status, 200, `the made page's stylesheet (${styleHref}), resolved against the page's address (${styleUrl}), must be served; got ${shown(style)}`);
+  assert.match(String(style.headers['content-type'] || ''), /text\/css/i, `the stylesheet must be served as CSS; got ${style.headers['content-type']}`);
+  const panelUrl = new URL(panelSrc, madeUrl).toString();
+  const panel = await fetchUrl(server, panelUrl);
+  assert.equal(panel.status, 200, `the made page's panel script (${panelSrc}), resolved against the page's address (${panelUrl}), must be served; got ${shown(panel)}`);
+  assert.deepEqual(panel.body, fs.readFileSync(path.join(world.home, 'core', 'pages', 'panel.js')), 'the panel script reached is Squire\'s own, as core holds it');
 });
 
 // ------------------------------------------------- the floor and the persona
