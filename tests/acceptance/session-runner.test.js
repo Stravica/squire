@@ -520,18 +520,19 @@ test('the SessionStart hook given a messaging socket path where no socket is and
   assert.deepEqual(s.sessionRecords(world), [], `with no socket there may be no session record; found ${JSON.stringify(s.sessionRecords(world))}`);
 });
 
-test('lay-down writes the four launchd agents that run the installed runner, wake-up router, backup and page server from the Squire home, the runner kept alive and started at load, and loads none of them into the domain of whoever runs the tests', { timeout: 60000 }, (t) => {
+test('lay-down writes the five launchd agents that run the installed runner, wake-up router, backup, page server and voice-notes transcription from the Squire home, the runner kept alive and started at load, and loads none of them into the domain of whoever runs the tests', { timeout: 60000 }, (t) => {
   const world = w.makeWorld();
   t.after(() => w.cleanUp(world));
   const release = path.join(world.root, 'release');
   w.copyTree(w.CORE, release);
   const installed = s.layDownCore(world, release);
   const agents = s.launchAgents(world);
-  // Four: ADR-004 line 16 has the same lay-down write the nightly backup's agent, com.stravica.squire.backup,
-  // and ADR-003 line 2 the page server's, com.stravica.squire.pages.
-  assert.equal(agents.length, 4, `lay-down must write four launchd agents under ~/Library/LaunchAgents; found ${agents.map((a) => path.basename(a.file)).join(', ') || 'none'}`);
+  // Five: ADR-004 line 16 has the same lay-down write the nightly backup's agent, com.stravica.squire.backup,
+  // ADR-003 line 2 the page server's, com.stravica.squire.pages, and the voice notes picked up from the owner's
+  // folder without the owner telling Squire need a fifth that launchd starts when that folder changes.
+  assert.equal(agents.length, 5, `lay-down must write five launchd agents under ~/Library/LaunchAgents; found ${agents.map((a) => path.basename(a.file)).join(', ') || 'none'}`);
   const labels = agents.map((a) => a.plist.Label);
-  assert.equal(new Set(labels).size, 4, `each agent must have its own label; got ${labels}`);
+  assert.equal(new Set(labels).size, 5, `each agent must have its own label; got ${labels}`);
   for (const a of agents) {
     assert.equal(path.basename(a.file), `${a.plist.Label}.plist`, `an agent's file must be named for its label; got ${path.basename(a.file)}`);
     assert.equal(a.plist.EnvironmentVariables && a.plist.EnvironmentVariables.SQUIRE_HOME, world.home, `${a.plist.Label} must name the Squire home (SQUIRE_HOME)`);

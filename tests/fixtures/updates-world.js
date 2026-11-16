@@ -818,8 +818,11 @@ function startModel(rw) {
 }
 
 // Squire's agents, by label: the one list every check of the agents loaded
-// compares with (the page server's beside the others, ADR-003 line 2).
-const AGENT_LABELS = ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup', 'com.stravica.squire.pages'];
+// compares with (the page server's beside the others, ADR-003 line 2, and the
+// voice-notes job's, which launchd starts when the owner's voice-notes folder
+// changes).
+const AGENT_LABELS = ['com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup', 'com.stravica.squire.pages',
+  'com.stravica.squire.voice-notes'];
 
 // Squire's agents the world's launchd model holds loaded, by label (a world
 // without the model has none).
