@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.743Z",
-  "updatedAt": "2026-11-16T17:42:04.753Z",
+  "updatedAt": "2026-11-16T20:37:54.264Z",
   "purpose": "Runs the real video and audio tools on a captioned video, an uncaptioned video and a local file, and checks no media download is attempted.",
   "testLevel": "integration",
   "acIds": [
@@ -34,9 +34,30 @@
     {
       "id": "TC-016-the-captions-reader-and-the",
       "acId": "AC-1701-1",
-      "description": "the captions reader and the transcription the session loads are free or asked by the laid floor in both modes; a video job is asked as a big job",
+      "description": "the captions reader and the transcription the session loads are asked by the laid floor in both modes, naming video and audio work, never free or refused; a video job is asked as a big job",
       "status": "pending",
-      "testPointer": "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are free or asked by the safety floor as the session runs it, never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+      "testPointer": "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+    },
+    {
+      "id": "TC-016-a-playlist-or-channel-link-is-refused",
+      "acId": "AC-1701-1",
+      "description": "a playlist link and a channel link are each refused with a reason naming one video per request; nothing asked of YouTube, the owner's folder unchanged, nothing sent",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::a playlist link and a channel link are each refused with a reason naming one video per request: nothing is asked of YouTube, nothing in the owner's folder changes and nothing is sent beyond this Mac"
+    },
+    {
+      "id": "TC-016-a-captions-origin-off-the-loopback-is-never-asked",
+      "acId": "AC-1701-1",
+      "description": "with the YouTube seam naming a host that is not this Mac's loopback, nothing is asked of it or the network and nothing is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::a captions origin that is not this Mac's loopback is never asked: with the YouTube seam naming another host, no request reaches it or the network and nothing is kept, while the loopback stand-in it names is read"
+    },
+    {
+      "id": "TC-016-kept-captions-and-transcripts-are-read-untrusted",
+      "acId": "AC-1701-1",
+      "description": "kept captions, a transcript, a voice note's transcript and kept research are read untrusted: after the owner's profile, a read of one leaves a send refused as one job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
     }
   ],
   "status": "draft"
