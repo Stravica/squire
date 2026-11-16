@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.477Z",
-  "updatedAt": "2026-11-15T13:44:06.640Z",
+  "updatedAt": "2026-11-16T01:02:00.611Z",
   "purpose": "Starts each heavy job class through the real entry points, with and without a yes and at high usage, and checks no path bypasses the warning and the yes.",
   "testLevel": "integration",
   "acIds": [
@@ -23,6 +23,13 @@
       "description": "Above 90% in either window a big job needs a second yes",
       "status": "pending",
       "testPointer": "tests/acceptance/heavy-job-gate.test.js::above 90% in either usage window a big job starts only on a second yes; below it one yes starts it"
+    },
+    {
+      "id": "TC-015-a-small-job-below-the-big-job-thresholds",
+      "acId": "AC-1302-1",
+      "description": "A small job below the big-job thresholds is free through the same floor, calm and busy",
+      "status": "pending",
+      "testPointer": "tests/acceptance/named-subagents.test.js::a small job below the big-job thresholds goes through the same floor and is free, with the plan calm and with both windows above every threshold"
     }
   ],
   "status": "draft"
