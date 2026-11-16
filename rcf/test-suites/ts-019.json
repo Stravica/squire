@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T07:59:08.414Z",
+  "updatedAt": "2026-11-16T17:43:31.475Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -107,6 +107,69 @@
       "description": "Every command Squire's instructions tell the session to run, read from what lay-down writes, is free or asked by the safety floor exactly as written, never refused outright",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright"
+    },
+    {
+      "id": "TC-019-the-link-carries-a-secret-with-it-a-page",
+      "acId": "AC-901-1",
+      "description": "the link carries a secret: with it a page, the dashboard and the comment post are served from the Mac; without it or with a wrong one each is refused, saying to ask Squire for the link",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the link Squire gives carries a secret of the server's own: with it a page, the dashboard and the comment post are served from the Mac; without it, or with a wrong one, each is refused, the refusal saying in one line to ask Squire for the link, and no comment is kept"
+    },
+    {
+      "id": "TC-019-after-the-page-server-starts-again-a",
+      "acId": "AC-901-1",
+      "description": "after the page server starts again, a link from before is refused with all it set, and the new link serves",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::after the page server starts again, a link from before is refused with all it set: a page, the dashboard and the comment post, and no comment is kept; the new link serves them"
+    },
+    {
+      "id": "TC-019-with-no-secret-kept-in-the-owner-s-state",
+      "acId": "AC-901-1",
+      "description": "with no secret kept in the owner's state nothing is served, not even to the link, and no comment is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::with no secret kept in the owner's state nothing is served, not even to the link: a page, the dashboard and the comment post are refused and no comment is kept"
+    },
+    {
+      "id": "TC-019-the-session-s-link-command-is-free",
+      "acId": "AC-901-1",
+      "description": "the session's link command is free through the floor the lay-down settings run, in the default mode and in auto mode; a start from the session is refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the session's link command goes through the safety floor free as the session runs it (the settings lay-down writes), with no yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-019-a-request-the-page-server-cannot-read-is",
+      "acId": "AC-901-1",
+      "description": "a request the page server cannot read is refused with 400 or more and the same framing and script headers as every answer",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a request from the Mac the page server cannot read (a method it does not know) is refused with an answer of 400 or more that carries the same framing and script headers as every other answer"
+    },
+    {
+      "id": "TC-019-the-comment-panel-s-script-is-served-to",
+      "acId": "AC-901-1",
+      "description": "the comment panel's script is served to the Mac from Squire's own files",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the comment panel's script, as a page made by Squire links it, is served to the Mac from Squire's own files"
+    },
+    {
+      "id": "TC-019-what-the-session-loads-tells-it-to-run",
+      "acId": "AC-901-1",
+      "description": "what the session loads tells it to run the link command again before it tells the owner the pages are not up",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::what the session loads tells it to run the link command again, at that moment, before it tells the owner the pages are not up, never from what an earlier run said"
+    },
+    {
+      "id": "TC-019-a-refused-use-of-the-page-server-s",
+      "acId": "AC-901-1",
+      "description": "a refused use of the page server's script is refused, yes or no, in words that name the page server, in both modes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a refused use of the page server's script from the session (a help read) is refused, yes or no, with words that name the page server, never the words for a change to Squire's core, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-019-a-look-alike-spelling-of-the-page-server",
+      "acId": "AC-901-1",
+      "description": "a look-alike spelling of the page server's script the Mac opens as the same file is refused as the page server's, in both modes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a look-alike spelling of the page server's script that the Mac opens as the same file (a long s for its s) is the page server's script: started from the session it is refused, yes or no, with words that name the page server, never asked as an unknown command, in the default mode and in auto mode"
     }
   ],
   "status": "draft"
