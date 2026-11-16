@@ -1,0 +1,29 @@
+{
+  "createdAt": "2026-11-16T17:42:30.812Z",
+  "updatedAt": "2026-11-16T17:42:31.989Z",
+  "purpose": "Lays core down and reads what the session loads for a deep research job; drives the job's start, notes and result page through the laid floor in the default and auto modes on the owner's yes; serves the result page under the link from the page server on the loopback; and checks what the session is told to do when the network fails or a step times out, and that resuming is a new start the floor asks for again.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1302-2"
+  ],
+  "id": "TS-034",
+  "usId": "US-1302",
+  "title": "Approved deep research ends with a page the owner can see, and a failure keeps the work so far",
+  "testCases": [
+    {
+      "id": "TC-034-approved-deep-research-ends-with-its",
+      "acId": "AC-1302-2",
+      "description": "approved deep research ends with its result as a page in workspace/pages, served under the link and listed on the dashboard, its work kept in workspace/research",
+      "status": "pending",
+      "testPointer": "tests/acceptance/research-jobs.test.js::approved deep research ends with its result as a page the owner can see: what the session loads says to keep the work in workspace/research and end with a page and its link, the floor lets the job do both on the owner's yes, and the page server serves the page under the link and lists it on the dashboard"
+    },
+    {
+      "id": "TC-034-on-a-network-failure-or-a-time-out-the",
+      "acId": "AC-1302-2",
+      "description": "on a network failure or a time-out the owner is told plainly with the work so far kept, and resuming from it is a new start the floor asks for",
+      "status": "pending",
+      "testPointer": "tests/acceptance/research-jobs.test.js::when the network fails or a step times out, what the session loads says to tell the owner plainly what happened, that the work so far is kept, and to pick up from workspace/research to resume; the kept work stays, and a resumed job is a new start the floor asks the owner for again"
+    }
+  ],
+  "status": "draft"
+}
