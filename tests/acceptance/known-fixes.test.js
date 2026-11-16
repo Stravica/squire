@@ -2,7 +2,10 @@
 
 // Self-fix first: the health check's known fixes (the design record's line
 // 17), each checked by the health check itself. The runner not running:
-// reload Squire's agents. A floor file changed: lay core down again from the
+// reload Squire's agents, every one whose plist lay-down wrote (the page
+// server's and the voice-notes job's beside the first three; core/tools/
+// health.py's reload, checked under the world's launchd model, never this
+// Mac's). A floor file changed: lay core down again from the
 // Squire home's release folder, which set-up records in set-up.json. Not
 // signed in: open Squire's installer to sign in again, a fix the owner makes.
 // A moved settings file: named only.
@@ -22,11 +25,13 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
 const s = require('../fixtures/session-world.js');
 const I = require('../fixtures/installer-world.js');
+const R = require('../fixtures/updates-world.js');
 
 const FRESH_MINUTES = 30;
 
@@ -121,6 +126,40 @@ test("the runner not running is named and its fix asked for; after the owner's y
   const after = health(world);
   assert.ok(resultLines(after, 'still').some((l) => /runner/i.test(l)), `the check must say plainly that the runner is still not running ("still: ..."); got ${w.describe(after)}`);
   assert.ok(faultLines(after, /runner/i).some((l) => /not running/i.test(l)), 'the check still names it');
+});
+
+// Under the world's launchd model (never this Mac's launchd: the world's own
+// stand-in launchctl and the model behind it), the runner fix reloads every
+// one of Squire's agents whose plist lay-down wrote, not a fixed few: with the
+// runner's, the page server's and the voice-notes job's agents booted out,
+// the fix run by the scheduler on the owner's yes leaves every agent whose
+// plist is in the account's Library/LaunchAgents loaded.
+test("the runner fix, run by the scheduler on the owner's yes under the world's launchd model, leaves every one of Squire's agents whose plist is present loaded: with the runner's, the page server's and the voice-notes job's agents unloaded, each is loaded again", { timeout: 600000 }, async (t) => {
+  const rw = R.makeReleaseWorld(t, { launchd: 'model' });
+  const agentsDir = path.join(rw.world.userHome, 'Library', 'LaunchAgents');
+  const present = () => fs.readdirSync(agentsDir).filter((n) => /^com\.stravica\.squire\..+\.plist$/.test(n)).map((n) => n.slice(0, -'.plist'.length)).sort();
+  const loaded = () => R.agentsLoaded(rw).slice().sort();
+  R.login(rw);
+  assert.ok(await s.waitFor(() => present().length > 0 && loaded().join() === present().join(), 30000, 250),
+    `at login the model must load every Squire agent whose plist is present; present ${JSON.stringify(present())}, loaded ${JSON.stringify(loaded())}`);
+  // The world's own stand-in launchctl, never this Mac's.
+  const launchctl = path.join(rw.system, 'bin', 'launchctl');
+  for (const label of ['com.stravica.squire.pages', 'com.stravica.squire.voice-notes', 'com.stravica.squire.runner']) {
+    if (!present().includes(label)) continue;
+    const r = spawnSync(launchctl, ['bootout', `gui/${process.getuid()}/${label}`], { encoding: 'utf8', env: w.productEnv(rw.world, R.env(rw)), timeout: 60000 });
+    assert.equal(r.status, 0, `the world's launchd must boot out ${label}; got exit ${r.status}; ${r.stderr}`);
+  }
+  assert.ok(await s.waitFor(() => !loaded().includes('com.stravica.squire.runner') && !loaded().includes('com.stravica.squire.pages'), 30000, 250),
+    `the runner's and the page server's agents must be unloaded; loaded ${JSON.stringify(loaded())}`);
+  let h = null;
+  assert.ok(await s.waitFor(() => { h = R.health(rw); return faultLines(h, /runner/i).some((l) => /not running/i.test(l)); }, 30000, 500),
+    `with the runner's agent unloaded the health check must name the runner not running; got ${h ? w.describe(h) : 'no run'}`);
+  const session = 'session-fix-runner-model';
+  const a = R.asked(rw, session, R.fixRequest(rw, 'runner'), 'the runner fix');
+  R.owner(rw, session, `yes ${a.id}`);
+  R.tick(rw);
+  await s.waitFor(() => loaded().join() === present().join(), 30000, 500);
+  assert.deepEqual(loaded(), present(), `the runner fix must leave every Squire agent whose plist is present loaded, the page server's and the voice-notes job's included; present ${JSON.stringify(present())}, launchctl calls ${JSON.stringify(R.launchdCalls(rw).map((c) => c.argv))}`);
 });
 
 test('a yes for one fault does not fix another: after the yes to reload the agents, a changed floor file stays changed and named', { timeout: 120000 }, (t) => {
