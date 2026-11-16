@@ -1,0 +1,29 @@
+{
+  "createdAt": "2026-11-16T01:00:51.861Z",
+  "updatedAt": "2026-11-16T01:00:53.070Z",
+  "purpose": "Runs Squire's import on a memory export and a notes folder in a test world with every proxy pointed at a loopback recorder and a stand-in claude, checks the copies are kept in the owner's folder and nothing left the Mac, then reads the copies through the real safety floor and checks the job is held untrusted.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-602-1"
+  ],
+  "id": "TS-029",
+  "usId": "US-602",
+  "title": "Memory taken in stays on the Mac and is read as untrusted",
+  "testCases": [
+    {
+      "id": "TC-029-a-memory-export-and-a-notes-folder-are",
+      "acId": "AC-602-1",
+      "description": "A memory export and a notes folder are kept in the owner's folder on the Mac, sources untouched, nothing sent off the Mac",
+      "status": "pending",
+      "testPointer": "tests/acceptance/memory-import.test.js::a memory export and a folder of notes are taken into the owner's folder and kept on the Mac, the sources left as they were, and nothing is sent off the Mac"
+    },
+    {
+      "id": "TC-029-what-was-taken-in-is-read-as-untrusted",
+      "acId": "AC-602-1",
+      "description": "What was taken in is read as untrusted: after the owner's profile, a send is refused as one job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/memory-import.test.js::what was taken in is read as untrusted: a job that has read the owner's profile and then reads an imported copy is refused a send as one job"
+    }
+  ],
+  "status": "draft"
+}
