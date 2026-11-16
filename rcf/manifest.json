@@ -671,6 +671,15 @@
       "reason": "REQ-009's pages follow the Mac's own light or dark setting through Squire's default theme, or the owner's own theme file; a theme toggle is a web product's chrome, not a promise these pages make on money, access, privacy or integrity.",
       "operatorAckAt": "2026-11-16T20:28:44.949Z",
       "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-008",
+      "createdAt": "2026-11-16T20:32:16.013Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "Not adopted as a criterion in this batch. Squire's pages theme shipped before a contrast test was declared, so the baseline's authored-before-the-palette attestation cannot be truthfully made. Body text and links in Squire's default theme are held at 4.5 to 1 in both modes by a bound case under AC-901-2. A check of every text-on-background pair, large text and controls included, is a candidate for the theme's next amend round.",
+      "operatorAckAt": "2026-11-16T20:32:16.013Z",
+      "reqId": "REQ-009"
     }
   ]
 }
