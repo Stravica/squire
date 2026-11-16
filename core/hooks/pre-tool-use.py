@@ -587,6 +587,72 @@ class CheckInRequest:
         return 2, reason
 
 
+class MediaRequest:
+    """The session's video and audio work through Squire's two media tools,
+    each run as its one command, its path quoted as the health check's is,
+    with one link or file after it: the captions reader,
+    /usr/bin/python3 '<Squire home>/core/tools/captions.py' <YouTube link>,
+    and the transcription,
+    /usr/bin/python3 '<Squire home>/core/tools/transcribe.py' <file>. The
+    floor asks the owner at every run, the question naming video and audio
+    work: never free and never refused; a yes covers that one run, once. Once
+    it runs, the job holds untrusted input (captions and transcripts are
+    words from elsewhere), and a transcript of a file in the owner's private
+    places holds those too. The captions reader asks YouTube for a video, so
+    a job holding untrusted input and private things runs it only as a job
+    of its own. The transcription's --watch is the voice-notes job's own,
+    run outside the session: from the session it is refused, as is either
+    tool spelt any other way (Floor.judge_argv)."""
+
+    SCRIPTS = {
+        'captions.py': 'read the captions of one YouTube video, kept in workspace/captions in the owner\'s folder: {arg}',
+        'transcribe.py': 'turn a recording or video file into text on this Mac, kept as a note in workspace/transcripts '
+                         'in the owner\'s folder: {arg}',
+    }
+    WHAT = 'video and audio work: {action}'
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """(the tool's name, its one argument) when a Bash call runs one of the
+        two tools as its one command, or None."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or len(argv) != 3 or str(argv[2]).startswith('-') or not str(argv[2]).strip():
+            return None
+        script = floor.path(argv[1], strict=False)
+        for name in cls.SCRIPTS:
+            if floor.is_core_tool(script, name):
+                return name, str(argv[2])
+        return None
+
+    @classmethod
+    def settle(cls, floor, ledger, session, asked):
+        name, arg = asked
+        now = time.time()
+        what = cls.WHAT.format(action=cls.SCRIPTS[name].format(arg=arg))
+        item = 'media:' + hashlib.sha256(json.dumps([name, arg]).encode('utf-8')).hexdigest()
+        held = ledger.taints(session)
+        if name == 'captions.py' and held['untrusted'] and held['private']:
+            return 2, Floor.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']),
+                                         what=what)
+        approved = ledger.approval(session, item, now, floor.config.timeout)
+        if approved:
+            ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
+            source = ('the captions of ' if name == 'captions.py' else 'the transcript of ') + arg
+            taints = [('untrusted', source)]
+            if name == 'transcribe.py':
+                given = floor.path(arg, strict=False)
+                taints += [(kind, source) for kind, _ in (floor.taints_of(given, source) if given else [])
+                           if kind == 'private']
+            for kind, text in taints:
+                ledger.taint(session, kind, text, now)
+            return 0, ''
+        mine, pending = HeavyJob.raised(ledger, session, item, now, floor.config.timeout)
+        reason = Floor.ASK.format(id=mine['id'], what=what)
+        if len(pending) > 1:
+            reason += Floor.OPEN.format(ids=', '.join(r['id'] for r in pending))
+        return 2, reason
+
+
 class PageLink:
     """The session asking Squire's page server where the dashboard is, the
     one command Squire's instructions name for a link:
@@ -661,6 +727,17 @@ class Floor:
 
     NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
                    'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
+    NEVER_PAGES = ('Squire\'s safety floor: the session never runs Squire\'s page server itself, yes or no; it only asks '
+                   'the page server for the link, with the one link command Squire\'s instructions name, exactly as '
+                   'written there. Nothing ran: {what}')
+    NEVER_MEDIA = ('Squire\'s safety floor: Squire\'s captions reader and its transcription run from the session only as '
+                   'the one command Squire\'s instructions name for each, with one link or file after it, yes or no; '
+                   'watching the Voice notes folder is the voice-notes job\'s own. Nothing ran: {what}')
+    VOICE_NOTES = 'Voice notes'
+    # Places in the owner's folder whose words came from elsewhere: kept
+    # captions, every transcript (a voice note's included) and kept research.
+    OUTSIDE = (os.path.join('workspace', 'captions'), os.path.join('workspace', 'transcripts'),
+               os.path.join('workspace', 'research'))
     NEVER_UPDATE = ('Squire\'s safety floor: the session may never run Squire\'s update tool, yes or no. Squire\'s updates '
                     'install only from Squire Update on the owner\'s Mac; when a release is waiting, tell the owner to '
                     'open Squire Update there. Nothing ran.')
@@ -694,6 +771,8 @@ class Floor:
         self.keychain = Paths.canonical(config.keychain, cwd) if config.keychain else None
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
         self.inbox = os.path.join(self.owner, 'workspace', 'inbox')
+        self.outside = [os.path.join(self.owner, p) for p in self.OUTSIDE]
+        self.voice_notes = os.path.join(self.owner, self.VOICE_NOTES)
         self.walk_left = self.WALK
         self.session = None
 
@@ -723,7 +802,7 @@ class Floor:
                     return HeavyJob.settle(self, ledger, session, job)
             except SquireError as e:
                 return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
-        for request in (ImportRequest, CheckInRequest):
+        for request in (ImportRequest, CheckInRequest, MediaRequest):
             asked = request.of(self, tool, data)
             if asked:
                 try:
@@ -874,6 +953,10 @@ class Floor:
                 return 'never', self.NEVER_KEYCHAIN, []
             if self.is_floor(path):
                 return 'never', self.NEVER_FLOOR.format(what=f'{tool} {given}'), []
+            if Paths.within(path, self.voice_notes):
+                # The Voice notes folder is the owner's input only: what lands
+                # there is turned into text with no one asked.
+                return 'ask', f'{tool} {given} (into the owner\'s Voice notes folder, which only the owner fills)', []
             if tool == 'Write' and Paths.within(path, self.owner) and not os.path.lexists(path):
                 return 'free', '', []
             return 'ask', f'{tool} {given}', []
@@ -1068,9 +1151,15 @@ class Floor:
             # one the floor asks for (HeavyJob, ImportRequest, CheckInRequest),
             # and the page server's script any way but the link command
             # (PageLink): inside a shell's -c, say. Refused, yes or no.
-            asked = (HeavyJob.SCRIPT, ImportRequest.SCRIPT, CheckInRequest.SCRIPT, PageLink.SCRIPT)
-            if any(self.is_core_tool(p, name) for p in (self.path(t, strict=False) for t in pieces) if p
-                   for name in asked):
+            asked = (HeavyJob.SCRIPT, ImportRequest.SCRIPT, CheckInRequest.SCRIPT, PageLink.SCRIPT) + \
+                tuple(MediaRequest.SCRIPTS)
+            named = [name for p in (self.path(t, strict=False) for t in pieces) if p
+                     for name in asked if self.is_core_tool(p, name)]
+            if named:
+                if PageLink.SCRIPT in named:
+                    return 'never', self.NEVER_PAGES, []
+                if any(name in MediaRequest.SCRIPTS for name in named):
+                    return 'never', self.NEVER_MEDIA, []
                 return 'never', self.NEVER_FLOOR, []
             if argv[0] == 'cd' and any(self.is_floor(p) for p in paths):
                 return 'never', self.NEVER_CD, []
@@ -1207,7 +1296,11 @@ class Floor:
         return False
 
     def is_core_tool(self, path, name):
-        return bool(path) and any(path.lower() == os.path.join(core, 'tools', name).lower() for core in self.cores)
+        """True when path is the core tool of that name, compared as the Mac's
+        volume compares names, so a look-alike spelling the Mac opens as the
+        same file is that tool (a long s for an s, say)."""
+        return bool(path) and any(Paths.fold(path) == Paths.fold(os.path.join(core, 'tools', name))
+                                  for core in self.cores)
 
     def is_floor(self, path):
         return any(Paths.within(path, floor) for floor in self.floor_paths) or self.is_settings(path)
@@ -1239,7 +1332,8 @@ class Floor:
         near = Paths.overlap if holding else Paths.within
         if any(near(path, private) for private in self.private):
             found.append(('private', source))
-        downloaded = near(path, self.inbox) or self.quarantined(path, recursive)
+        downloaded = near(path, self.inbox) or any(near(path, place) for place in self.outside) \
+            or self.quarantined(path, recursive)
         if downloaded is None:
             found.append(('unresolved', source))
         elif downloaded:
