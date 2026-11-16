@@ -104,7 +104,7 @@ test("a memory export and a folder of notes are taken into the owner's folder an
   assert.deepEqual(fake.calls(), [], 'nothing may be sent to a model by the import');
 });
 
-test('what was taken in is read as untrusted: a job that has read the owner\'s profile and then reads an imported copy is refused a send as one job', { timeout: 180000 }, async (t) => {
+test("what was taken in is read as untrusted: a job that has read the owner's profile and then reads an imported copy is refused a send as one job", { timeout: 180000 }, async (t) => {
   const world = U.usageWorld(t);
   const { exportFile, notes, marks } = sources(world);
   const r = importInto(world, [exportFile, notes]);
