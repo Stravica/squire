@@ -26,6 +26,18 @@
 //       written at every start with the address it serves on (the address
 //       on its first line), its process id and its start time; the design
 //       record for the launchd agents (ADR-003 line 2) names it.
+//   core/tools/page-server.py --where
+//       the way Squire gets a link for the owner (the persona and the
+//       dashboard link use it): prints on one line the address
+//       state/page-server.json holds at that moment and exits 0; with no such
+//       file, or one naming a process that is not running, it says the pages
+//       are not up, exits non-zero and prints no address.
+//   the page server's launchd agent, com.stravica.squire.pages
+//       written by lay-down (core/tools/lay-down.py, as set-up runs it)
+//       under Library/LaunchAgents beside the runner's, the wake-ups' and the
+//       backup's, which stay as they are: the installed page server with
+//       --port 0, started at load and kept alive (ADR-003 line 2). A test
+//       world's lay-down loads nothing into a real launchd domain.
 //
 // Only the pages folder is served under /pages/: a path that climbs out of
 // it (by dots, encoded or not, or through a link inside it), the folder's
@@ -68,9 +80,11 @@ const { spawn } = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const http = require('node:http');
+const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
+const s = require('../fixtures/session-world.js');
 const U = require('../fixtures/usage-world.js');
 
 const serverScript = (world) => path.join(world.home, 'core', 'tools', 'page-server.py');
@@ -89,7 +103,7 @@ function startServer(t, world) {
   child.stdout.setEncoding('utf8');
   child.stderr.setEncoding('utf8');
   return new Promise((resolve) => {
-    const done = (extra) => { clearTimeout(timer); resolve({ ...out, ...extra }); };
+    const done = (extra) => { clearTimeout(timer); resolve({ ...out, pid: child.pid, ...extra }); };
     const timer = setTimeout(() => done({ timedOut: true }), START_MS);
     child.stdout.on('data', (d) => {
       out.stdout += d;
@@ -227,6 +241,122 @@ test('a page Squire made is served to a request from the Mac itself, its bytes a
   try { record = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { record = null; }
   assert.ok(record && keepsAddress(record, printed, server),
     `the address on the server's first line (${printed}) must be the address in state/page-server.json in the Squire home; got ${fs.existsSync(file) ? JSON.stringify(fs.readFileSync(file, 'utf8').slice(0, 400)) : 'no such file'}`);
+});
+
+// The link: page-server.py --where, run as Squire runs it, reading
+// state/page-server.json at that moment.
+const recordFile = (world) => path.join(world.home, 'state', 'page-server.json');
+const shownRecord = (world) => (fs.existsSync(recordFile(world)) ? JSON.stringify(fs.readFileSync(recordFile(world), 'utf8').slice(0, 400)) : 'no such file');
+const where = (world) => w.runPython(world, serverScript(world), ['--where'], { cwd: world.home, timeout: 15000 });
+const printedAddress = (server) => ADDRESS.exec(server.stdout.split('\n')[0])[0];
+const bare = (address) => address.trim().replace(/\/$/, '');
+
+// Waits up to 2 s for state/page-server.json to keep this server's address.
+async function recorded(world, server) {
+  for (let waited = 0; waited <= 2000; waited += 100) {
+    try {
+      if (keepsAddress(JSON.parse(fs.readFileSync(recordFile(world), 'utf8')), printedAddress(server), server)) return true;
+    } catch (e) { /* not written yet */ }
+    await w.sleep(100);
+  }
+  return false;
+}
+
+// Ends a page server as a crash would (SIGKILL to its group, so it cannot
+// tidy its file) and waits until its process is gone.
+async function crash(server) {
+  try { process.kill(-server.pid, 'SIGKILL'); } catch (e) { /* gone */ }
+  for (let waited = 0; !w.processGone(server.pid) && waited < 5000; waited += 50) await w.sleep(50);
+}
+
+// Holds an ended server's port on its loopback address for the rest of the
+// case, so the system gives the next start another port.
+function holdPort(t, server) {
+  return new Promise((resolve) => {
+    const holder = net.createServer();
+    holder.once('error', () => resolve(false));
+    holder.listen({ host: server.host === 'localhost' ? '127.0.0.1' : server.host, port: server.port, exclusive: true }, () => {
+      t.after(() => holder.close());
+      resolve(true);
+    });
+  });
+}
+
+test('the link Squire gives the owner comes from state/page-server.json at that moment: after the page server starts again on another port, page-server.py --where prints the new address on one line, never the old one', { timeout: 60000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const first = await serving(t, world);
+  const firstAddress = printedAddress(first);
+  assert.ok(await recorded(world, first), `state/page-server.json must keep the first start's address (${firstAddress}); got ${shownRecord(world)}`);
+  const before = where(world);
+  assert.equal(before.status, 0, `with the page server running, page-server.py --where must print its address and exit 0; got ${w.describe(before)}`);
+  assert.equal(bare(before.stdout), bare(firstAddress), `page-server.py --where must print the address state/page-server.json holds (${firstAddress}); got ${JSON.stringify(before.stdout)}`);
+
+  // The server ends and starts again, as launchd keeps it running, on a port
+  // the system gives it.
+  await crash(first);
+  await holdPort(t, first);
+  const second = await serving(t, world);
+  const secondAddress = printedAddress(second);
+  assert.notEqual(bare(secondAddress), bare(firstAddress), `the test world: the second start must be given another port than the first's (${firstAddress})`);
+  assert.ok(await recorded(world, second), `state/page-server.json must keep the second start's address (${secondAddress}), replacing the first's; got ${shownRecord(world)}`);
+  const r = where(world);
+  const lines = r.stdout.split('\n').filter((l) => l.trim() !== '');
+  assert.equal(r.status, 0, `with the page server running again, page-server.py --where must print its address and exit 0; got ${w.describe(r)}`);
+  assert.equal(lines.length, 1, `page-server.py --where prints one line; got ${JSON.stringify(r.stdout)}`);
+  assert.equal(bare(lines[0]), bare(secondAddress), `page-server.py --where must print the address state/page-server.json holds now (${secondAddress}), never the first start's (${firstAddress}); got ${JSON.stringify(lines[0])}`);
+});
+
+test('with no state/page-server.json, or one naming a page server that is not running, page-server.py --where says the pages are not up, exits non-zero and prints no address', { timeout: 60000 }, async (t) => {
+  const world = U.usageWorld(t);
+  fs.rmSync(recordFile(world), { force: true });
+  const notUp = (r, what, ended = null) => {
+    const said = `${r.stdout}\n${r.stderr}`;
+    assert.match(said, /pages are not up/i, `${what}: page-server.py --where must say the pages are not up; got ${w.describe(r)}`);
+    assert.notEqual(r.status, 0, `${what}: page-server.py --where must exit non-zero; got ${w.describe(r)}`);
+    assert.doesNotMatch(said, /https?:\/\//i, `${what}: page-server.py --where must print no address; got ${w.describe(r)}`);
+    if (ended) assert.ok(!said.includes(`:${ended.port}`), `${what}: page-server.py --where must never print the ended server's address (${printedAddress(ended)}); got ${w.describe(r)}`);
+  };
+  notUp(where(world), 'with no state/page-server.json');
+
+  const server = await serving(t, world);
+  assert.ok(await recorded(world, server), `state/page-server.json must keep the server's address (${printedAddress(server)}); got ${shownRecord(world)}`);
+  await crash(server);
+  assert.ok(w.processGone(server.pid) && fs.existsSync(recordFile(world)),
+    `the test world: state/page-server.json must still name the page server ended by SIGKILL (process ${server.pid}); got ${shownRecord(world)}`);
+  notUp(where(world), `with state/page-server.json naming process ${server.pid}, which is not running`, server);
+});
+
+test("lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain", { timeout: 60000 }, (t) => {
+  const world = w.makeWorld();
+  t.after(() => w.cleanUp(world));
+  const release = path.join(world.root, 'release');
+  w.copyTree(w.CORE, release);
+  const installed = s.layDownCore(world, release);
+  const tools = path.join(installed, 'tools');
+  const agents = s.launchAgents(world);
+  const agent = agents.find((a) => a.plist.Label === 'com.stravica.squire.pages');
+  assert.ok(agent, `lay-down must write com.stravica.squire.pages.plist under the home's Library/LaunchAgents; found ${agents.map((a) => a.plist.Label).join(', ') || 'none'}`);
+  assert.deepEqual(agent.plist.ProgramArguments, [w.PYTHON, '-B', path.join(tools, 'page-server.py'), '--port', '0'],
+    'the agent runs the installed page server with /usr/bin/python3, on a port the system gives it');
+  assert.equal(agent.plist.RunAtLoad, true, 'the page server starts at load (RunAtLoad)');
+  assert.equal(agent.plist.KeepAlive, true, 'the page server is kept running (KeepAlive)');
+  assert.equal((agent.plist.EnvironmentVariables || {}).SQUIRE_HOME, world.home, 'the agent names the Squire home');
+
+  // The agents already there stay as they were, each in full.
+  const env = { SQUIRE_HOME: world.home };
+  const before = {
+    'com.stravica.squire.runner': { Label: 'com.stravica.squire.runner', EnvironmentVariables: env,
+      ProgramArguments: [w.PYTHON, '-B', path.join(tools, 'runner.py')], RunAtLoad: true, KeepAlive: true },
+    'com.stravica.squire.wake-ups': { Label: 'com.stravica.squire.wake-ups', EnvironmentVariables: env,
+      ProgramArguments: [w.PYTHON, '-B', path.join(tools, 'wake-up.py'), '--due'], StartInterval: 60 },
+    'com.stravica.squire.backup': { Label: 'com.stravica.squire.backup', EnvironmentVariables: env,
+      ProgramArguments: [w.PYTHON, '-B', path.join(tools, 'backup.py')], StartCalendarInterval: { Hour: 2, Minute: 30 } },
+  };
+  for (const [label, plist] of Object.entries(before)) {
+    const found = agents.find((a) => a.plist.Label === label);
+    assert.deepEqual(found && found.plist, plist, `${label} must stay as it was beside the page server's agent`);
+  }
+  assert.ok(!s.launchdHas('com.stravica.squire.pages'), 'a world\'s lay-down must load nothing into the launchd domain of whoever runs the tests');
 });
 
 test('the home dashboard is served from the Mac by the same page server', { timeout: 60000 }, async (t) => {

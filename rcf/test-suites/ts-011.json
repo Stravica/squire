@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-14T14:13:24.163Z",
+  "updatedAt": "2026-11-16T03:59:42.220Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -556,9 +556,9 @@
     {
       "id": "TC-011-under-a-launchd-that-ends-a-stopped",
       "acId": "AC-1401-10",
-      "description": "under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all three agents loaded",
+      "description": "under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all of Squire's agents loaded",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all three agents loaded"
+      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all of Squire's agents loaded"
     },
     {
       "id": "TC-011-set-up-s-lay-down-puts-squire-update-in",
@@ -633,23 +633,23 @@
     {
       "id": "TC-011-launchd-model-rollback-from-squire-update-three-agents-loaded",
       "acId": "AC-1401-10",
-      "description": "under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all three agents loaded",
+      "description": "under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all of Squire's agents loaded",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all three agents loaded"
+      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all of Squire's agents loaded"
     },
     {
       "id": "TC-011-launchd-model-install-killed-at-lay-settled-by-squire-update-after-login",
       "acId": "AC-1401-10",
-      "description": "under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded",
+      "description": "under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all of Squire's agents loaded",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded"
+      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all of Squire's agents loaded"
     },
     {
       "id": "TC-011-launchd-model-floor-fix-from-scheduler-three-agents-loaded",
       "acId": "AC-1401-10",
-      "description": "under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded",
+      "description": "under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all of Squire's agents loaded",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded"
+      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all of Squire's agents loaded"
     },
     {
       "id": "TC-011-launchd-model-recovery-opens-squire-update-once-per-waiting-install",
@@ -661,9 +661,9 @@
     {
       "id": "TC-011-launchd-model-install-applications-read-only-three-agents-loaded",
       "acId": "AC-1401-10",
-      "description": "under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all three agents loaded, and the health check names Squire Update on one line and exits non-zero",
+      "description": "under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all of Squire's agents loaded, and the health check names Squire Update on one line and exits non-zero",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all three agents loaded, and the health check names Squire Update on one line and exits non-zero"
+      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all of Squire's agents loaded, and the health check names Squire Update on one line and exits non-zero"
     },
     {
       "id": "TC-011-set-up-applications-read-only-refused-before-any-change",
@@ -689,9 +689,9 @@
     {
       "id": "TC-011-launchd-model-rollback-lay-down-fails-three-agents-loaded",
       "acId": "AC-1401-10",
-      "description": "under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all three agents loaded",
+      "description": "under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all of Squire's agents loaded",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all three agents loaded"
+      "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all of Squire's agents loaded"
     }
   ],
   "status": "draft"

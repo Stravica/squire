@@ -1145,33 +1145,33 @@ async function modelWorld(t, opts = {}) {
 }
 
 function assertAgentsHeld(rw, what) {
-  assert.deepEqual(R.agentsLoaded(rw), R.AGENT_LABELS, `${what}: all three of Squire's agents must be loaded; loaded: ${JSON.stringify(R.agentsLoaded(rw))}`);
+  assert.deepEqual(R.agentsLoaded(rw), R.AGENT_LABELS, `${what}: all of Squire's agents (${R.AGENT_LABELS.join(', ')}) must be loaded; loaded: ${JSON.stringify(R.agentsLoaded(rw))}`);
   assert.deepEqual(R.stoppedFromInside(rw), [], `${what}: no Squire program may stop the agent it runs in; launchctl calls: ${JSON.stringify(R.launchdCalls(rw))}`);
 }
 
-test("under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all three agents loaded", LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, an install from Squire Update runs to its end on 0.2.0 and leaves all of Squire's agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
   const { sent } = await R.installAtMac(rw, release);
   assert.equal(updated(sent, NEXT).length, 1, `the install must run to its end and say so; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, release), 'the installed core must be the release\'s, file for file');
-  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500), 'the agents are loaded again');
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 30000, 500), 'the agents are loaded again');
   assertAgentsHeld(rw, 'after the install');
 });
 
-test("under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all three agents loaded", LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, a rollback from Squire Update runs to its end on 0.1.0 and leaves all of Squire's agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
   stage(rw, bad);
   const { sent } = await R.installAtMac(rw, bad);
   assert.equal(rolledBack(sent, NEXT, R.INSTALLED).length, 1, `the rollback must run to its end and say so; sent ${JSON.stringify(sent)}`);
   assert.ok(R.coreIs(rw, rw.appCore), 'the previous release\'s core must be laid down again, file for file');
-  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500), 'the agents are loaded again');
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 30000, 500), 'the agents are loaded again');
   assertAgentsHeld(rw, 'after the rollback');
 });
 
-test("under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all three agents loaded", LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all of Squire's agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1185,7 +1185,7 @@ test("under a launchd that ends a stopped agent's process group, a rollback from
     const { sent } = await R.installAtMac(rw, release);
     const state = () => `agents loaded: ${JSON.stringify(R.agentsLoaded(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}; sent ${JSON.stringify(sent)}`;
     assert.ok(!fs.existsSync(R.installRecordFile(rw)), `the install and its rollback must run to their end; ${state()}`);
-    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500),
+    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 30000, 500),
       `after a rollback whose lay-down failed, the agents are loaded again, so Squire is not left down; ${state()}`);
     assertAgentsHeld(rw, 'after a rollback whose lay-down failed');
   } finally {
@@ -1193,7 +1193,7 @@ test("under a launchd that ends a stopped agent's process group, a rollback from
   }
 });
 
-test("under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all three agents loaded", LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, an install killed while laying core down is settled after the next login by Squire Update, which Squire opens by itself, and leaves Squire on one whole version with all of Squire's agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1211,7 +1211,7 @@ test("under a launchd that ends a stopped agent's process group, an install kill
   assert.equal(which.length, 1, `exactly one message says which version Squire is on; sent ${JSON.stringify(which)}`);
   const on = ON.exec(which[0])[1];
   assert.ok(R.coreIs(rw, on === NEXT ? release : rw.appCore), `the installed core must be the whole of ${on}, file for file`);
-  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 60000, 500), 'the agents are loaded again');
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 60000, 500), 'the agents are loaded again');
   assertAgentsHeld(rw, 'after the recovery');
 });
 
@@ -1250,7 +1250,7 @@ test("under a launchd that ends a stopped agent's process group, while an instal
   assert.equal(opened.length, 1, `across two runs of the scheduler with the same install waiting, Squire opens Squire Update once; open was called ${JSON.stringify(opened)}`);
 });
 
-test("under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all three agents loaded, and the health check names Squire Update on one line and exits non-zero", LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, an install from Squire Update into a home whose Applications folder cannot be written runs to its end on 0.2.0, leaves all of Squire's agents loaded, and the health check names Squire Update on one line and exits non-zero", LONG, async (t) => {
   const rw = await modelWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   stage(rw, release);
@@ -1268,7 +1268,7 @@ test("under a launchd that ends a stopped agent's process group, an install from
       `agents loaded: ${JSON.stringify(R.agentsLoaded(rw))}; update.json: ${JSON.stringify(R.updateRecord(rw))}; sent ${JSON.stringify(sent)}`;
     assert.ok(!fs.existsSync(R.installRecordFile(rw)), `the install must run to its end; ${state()}`);
     assert.ok(R.coreIs(rw, release), `the installed core must be the release's, file for file; ${state()}`);
-    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === 3, 30000, 500), `the agents are loaded again; ${state()}`);
+    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 30000, 500), `the agents are loaded again; ${state()}`);
     assertAgentsHeld(rw, 'after the install');
     // The one fault: Squire Update, the installer program, was not laid down
     // (the words of the line are the product's).
@@ -1282,7 +1282,7 @@ test("under a launchd that ends a stopped agent's process group, an install from
   }
 });
 
-test("under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all three agents loaded", LONG, async (t) => {
+test("under a launchd that ends a stopped agent's process group, the known floor fix run by the scheduler lays core down again and leaves all of Squire's agents loaded", LONG, async (t) => {
   const rw = await modelWorld(t);
   const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
   fs.appendFileSync(floorFile, '# one line more\n');

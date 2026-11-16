@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-16T02:55:55.068Z",
+  "updatedAt": "2026-11-16T03:59:40.276Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -65,6 +65,27 @@
       "description": "A kept comment is read as untrusted: after the owner's profile, a send in that job is refused as one job",
       "status": "pending",
       "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+    },
+    {
+      "id": "TC-019-the-link-comes-from-state-page-server",
+      "acId": "AC-901-1",
+      "description": "The link comes from state/page-server.json at that moment: after a restart on another port, --where prints the new address on one line, never the old",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the link Squire gives the owner comes from state/page-server.json at that moment: after the page server starts again on another port, page-server.py --where prints the new address on one line, never the old one"
+    },
+    {
+      "id": "TC-019-with-no-address-file-or-one-naming-a",
+      "acId": "AC-901-1",
+      "description": "With no address file, or one naming a process that is not running, --where says the pages are not up, exits non-zero and prints no address",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::with no state/page-server.json, or one naming a page server that is not running, page-server.py --where says the pages are not up, exits non-zero and prints no address"
+    },
+    {
+      "id": "TC-019-lay-down-writes-the-page-server-s-agent",
+      "acId": "AC-901-1",
+      "description": "Lay-down writes the page server's agent (the installed page server, --port 0, at load, kept alive) beside the other agents, which stay as they were; no real launchd load",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
     }
   ],
   "status": "draft"
