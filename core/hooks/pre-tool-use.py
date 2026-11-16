@@ -600,6 +600,9 @@ class Floor:
     AGENT_TOOLS = ('Agent', 'Task')
     PLAN_MODELS = ('opus', 'sonnet', 'haiku')
     AGENT_FREE_MODELS = PLAN_MODELS + ('inherit',)
+    # Claude Code's own subagents, which run on the session's model; a file
+    # of the same name is read as a file.
+    BUILT_IN_AGENTS = ('general-purpose', 'Explore', 'Plan', 'statusline-setup', 'output-style-setup')
     MODEL_VARIABLES = re.compile(r'^(ANTHROPIC_MODEL|ANTHROPIC_DEFAULT_(OPUS|SONNET|HAIKU)_MODEL|CLAUDE_CODE_SUBAGENT_MODEL)'
                                  r'=(.*)\Z', re.S)
     CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
@@ -668,6 +671,7 @@ class Floor:
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
         self.inbox = os.path.join(self.owner, 'workspace', 'inbox')
         self.walk_left = self.WALK
+        self.session = None
 
     @classmethod
     def handle(cls, raw):
@@ -858,7 +862,11 @@ class Floor:
             return 'free', '', []
         what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
         if tool in self.AGENT_TOOLS:
-            if 'model' not in data or (isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS):
+            if 'model' in data:
+                if isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS:
+                    return 'free', '', []
+                return 'ask', self.CREDITS.format(what=what), []
+            if self.named_agent_free(data.get('subagent_type')):
                 return 'free', '', []
             return 'ask', self.CREDITS.format(what=what), []
         if tool == 'SlashCommand' and isinstance(data.get('command'), str) and self.SPENDING.search(data['command']):
@@ -867,6 +875,71 @@ class Floor:
             return 'ask', what, []
         # A tool the floor does not know: it cannot tell what the tool reads.
         return 'ask', what, [('untrusted', tool), ('private', tool)]
+
+    def named_agent_free(self, name):
+        """True when a subagent called with no model runs on a model in the
+        plan's set (or the session's own) for certain: no subagent named; or
+        the agent file that names it, in the owner's folder's .claude/agents
+        or the config folder's agents, names a model in the set, inherit or
+        none, and has not changed since the floor saw this job start; or, with
+        no file naming it and every file there readable, a built-in subagent.
+        A file the floor cannot read, a name no file gives, a file changed
+        since the job started, or a job the floor did not see start is not
+        certain, so it is asked."""
+        if name is None:
+            return True
+        if not isinstance(name, str) or not name:
+            return False
+        found, unreadable = None, False
+        for folder in (os.path.join(self.owner, '.claude', 'agents'), os.path.join(self.config.home, 'claude-config', 'agents')):
+            try:
+                names = sorted(n for n in os.listdir(folder) if n.endswith('.md'))
+            except FileNotFoundError:
+                continue
+            except OSError:
+                unreadable = True
+                continue
+            for file_name in names:
+                path = os.path.join(folder, file_name)
+                try:
+                    with open(path, encoding='utf-8') as f:
+                        text = f.read(65536)
+                    changed = os.stat(path).st_mtime
+                except (OSError, ValueError):
+                    unreadable = True
+                    continue
+                fields = self.frontmatter(text)
+                if fields.get('name') == name and found is None:
+                    found = (fields.get('model'), changed)
+        if found is None:
+            return name in self.BUILT_IN_AGENTS and not unreadable
+        model, changed = found
+        if model is not None and model not in self.AGENT_FREE_MODELS:
+            return False
+        ledger = Ledger.read_shared(self.config.ledger_path)
+        session = getattr(self, 'session', None)
+        jobs = [r for r in (ledger.records if ledger else []) if r.get('type') == 'job' and r.get('session') == session]
+        started = jobs[0].get('at') if jobs else None
+        return isinstance(started, (int, float)) and not isinstance(started, bool) and changed < started
+
+    @staticmethod
+    def frontmatter(text):
+        """The key: value lines between an agent file's first two --- lines,
+        each value with its quotes taken off; none when it has no frontmatter."""
+        lines = text.split('\n')
+        if not lines or lines[0].strip() != '---':
+            return {}
+        fields = {}
+        for line in lines[1:]:
+            if line.strip() == '---':
+                return fields
+            key, sep, value = line.partition(':')
+            if sep and key.strip() and key.strip() not in fields:
+                value = value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
+                    value = value[1:-1]
+                fields[key.strip()] = value
+        return {}
 
     def judge_bash(self, command):
         """A command the list resolves is free and marked by its paths; a
