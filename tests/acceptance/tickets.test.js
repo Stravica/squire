@@ -22,6 +22,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
 const R = require('../fixtures/updates-world.js');
+const U = require('../fixtures/usage-world.js');
 
 const SESSION = 'session-ticket';
 const LONG = { timeout: 300000 };
@@ -673,4 +674,26 @@ test("the health check Squire's session loads, run exactly as written in a Squir
   const unquoted = command.replace(/'/g, '');
   const asked = w.attempt(rw.world, SESSION, w.tools.bash(unquoted), as);
   assert.notEqual(w.requestIdIn(`${asked.stderr}\n${asked.stdout}`), null, `the same check with its quotes removed splits at the space, so the floor asks the owner; got ${w.describe(asked)}`);
+});
+
+// Every command a run of the health check prints for the session: from
+// /usr/bin/python3 to the end of its line, a last full stop set aside.
+const printedCommands = (out) => out.split('\n').map((l) => l.indexOf(w.PYTHON) >= 0 ? l.slice(l.indexOf(w.PYTHON)).trim().replace(/\.$/, '') : null).filter(Boolean);
+
+test("in a world where the health check offers a support ticket, every command the check prints for the session goes through the safety floor as the session runs it (the settings lay-down writes) free or asked, never refused, in the default mode and in auto mode", LONG, async (t) => {
+  const rw = await healthyWorld(t);
+  plantFault(rw);
+  const ticket = offered(rw);
+  const floor = U.laidFloor(rw.world, R.env(rw));
+  assert.ok(floor.hooks.length > 0, `the settings lay-down writes for Squire's session (${floor.settingsFile}) must run the safety floor before every tool call; got ${floor.settings ? JSON.stringify(floor.settings.hooks || null) : 'no settings file'}`);
+  const commands = [...new Set([healthCheck(rw), ...printedCommands(ticket.h.stdout)])];
+  assert.ok(commands.includes(ticket.request), `the request the check offers must be among the commands it prints; got ${JSON.stringify(commands)}`);
+  for (const mode of ['default', 'auto']) {
+    for (const command of commands) {
+      const r = floor.run(`${SESSION}-${mode}`, w.tools.bash(command), mode);
+      const verdict = r.status === 0 ? 'free' : (r.status === 2 && w.requestIdIn(r.stderr) ? 'asked' : 'refused');
+      t.diagnostic(`${mode}: ${verdict}: ${command}`);
+      assert.notEqual(verdict, 'refused', `a command the health check prints for the session, in ${mode} mode, must be free or asked by the floor as the session runs it, never refused: ${command}; got ${w.describe(r)}`);
+    }
+  }
 });
