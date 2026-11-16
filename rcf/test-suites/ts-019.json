@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.541Z",
-  "updatedAt": "2026-11-07T17:40:43.541Z",
+  "updatedAt": "2026-11-16T01:00:30.144Z",
   "purpose": "Starts the real page server and requests a page over loopback and from another address, and checks the second cannot connect.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,35 @@
   "id": "TS-019",
   "usId": "US-901",
   "title": "Pages answer on the Mac only",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-019-a-page-squire-made-is-served-to-a",
+      "acId": "AC-901-1",
+      "description": "A page Squire made is served to a request from the Mac itself, byte for byte",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+    },
+    {
+      "id": "TC-019-the-home-dashboard-is-served-from-the",
+      "acId": "AC-901-1",
+      "description": "The home dashboard is served from the Mac by the same page server",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the home dashboard is served from the Mac by the same page server"
+    },
+    {
+      "id": "TC-019-the-comment-panel-s-post-from-the-mac-is",
+      "acId": "AC-901-1",
+      "description": "The comment panel's post from the Mac is taken and kept in the owner's folder",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+    },
+    {
+      "id": "TC-019-from-another-address-a-page-the",
+      "acId": "AC-901-1",
+      "description": "From another address a page, the dashboard and the comment post are refused, and no comment is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-on-the-mac.test.js::from another address on the network a page, the home dashboard and the comment panel's post are all refused, and no comment is kept"
+    }
+  ],
   "status": "draft"
 }
