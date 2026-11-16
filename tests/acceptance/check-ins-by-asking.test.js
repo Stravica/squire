@@ -203,3 +203,18 @@ test("the session sets a check-in only on the owner's yes: the check-in command 
   w.assertBlocked(asked, 'an Edit of the owner\'s squire.json with no yes');
   assert.ok(w.requestIdIn(asked.stderr), `an Edit of the owner's squire.json is asked (a request the owner answers); got ${w.describe(asked)}`);
 });
+
+test("a look-alike spelling of the check-in command that the Mac opens as the same file (a long s for its last s) is the check-in command: it is asked as a check-in, naming the time and the words, never as an unknown command, in the default mode and in auto mode", { timeout: 60000 }, (t) => {
+  const world = checkInWorld(t);
+  const lookAlike = path.join(path.dirname(script(world)), 'check-inſ.py');
+  const command = `/usr/bin/python3 '${lookAlike}' set 07:30 'Morning brief'`;
+  for (const mode of ['default', 'auto']) {
+    const job = `job-check-in-look-alike-${mode}`;
+    const first = w.attempt(world, job, w.tools.bash(command), { env: U.UTC, permissionMode: mode });
+    w.assertBlocked(first, `the look-alike check-in command, in ${mode} mode, with no yes`);
+    assert.ok(w.requestIdIn(first.stderr), `the look-alike check-in command, in ${mode} mode, is asked (a request the owner answers); got ${w.describe(first)}`);
+    assert.match(first.stderr, /change the owner's check-ins: set a check-in at 07:30/i,
+      `the look-alike, in ${mode} mode, is asked as the check-in it is, naming the time and the words, never as an unknown command; got ${w.describe(first)}`);
+    assert.ok(first.stderr.includes('Morning brief'), `the question names the check-in's words, in ${mode} mode; got ${w.describe(first)}`);
+  }
+});
