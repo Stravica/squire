@@ -1,0 +1,52 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "aee56d78afeeab809feb3d96147d2a6c62ed4ba4",
+  "fbsIds": [
+    "FBS-009",
+    "FBS-010",
+    "FBS-004",
+    "FBS-002",
+    "FBS-001",
+    "FBS-003"
+  ],
+  "touchedAcIds": [
+    "AC-1302-2",
+    "AC-1701-1",
+    "AC-1701-2",
+    "AC-1702-1",
+    "AC-901-1",
+    "AC-702-1",
+    "AC-901-2",
+    "AC-2001-7",
+    "AC-1401-10",
+    "AC-1401-8",
+    "AC-1101-2",
+    "AC-401-3",
+    "AC-1901-5"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1701-2",
+      "text": "The Code Node CN-156 names core/tools/transcribe.py#Stop (line 64), an exception class whose only method is its constructor. rcf-lite 0.42.0 mutates a class through its methods other than __init__, so this node has no mutable symbol and the strength proof cannot judge it, for this criterion and for AC-1702-1, which the node also names. Closed by removing the node through the tool; both criteria keep their nodes on Engine, readable, one and main."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1702-1",
+      "text": "The Code Node CN-064 (installer/Squire.app/Contents/MacOS/Squire#sq_yes_text, line 427) gained AC-1702-1 in this build. Its file has no extension, which rcf-lite 0.42.0 reads as an unsupported file type, so the strength proof of the voice-note criterion becomes blocked instead of judged. The one change to that function (line 434, the one-yes words naming the voice notes job) serves the install criterion AC-1901-5, which the node already names. Closed by removing AC-1702-1 from CN-064 through the tool."
+    },
+    {
+      "id": "F-3",
+      "locus": "test",
+      "acId": "AC-1701-1",
+      "text": "tests/acceptance/video-and-audio.test.js line 223 (a captions origin that is not the loopback of this Mac is never asked) still passes when core/tools/captions.py origin_of (lines 106 to 115) honours any origin: each origin the case names ends in .invalid and never resolves, and the reader connects directly with no proxy, so neither the YouTube stand-in nor the network recorder can see the attempt. A red test names an origin off the loopback that does answer on this Mac (the stand-in reached through the network address of this Mac, as the off-Mac pages case does) and asserts that the stand-in records no request and nothing is kept. Hosted CI at aee56d7: runs 43986954792 (push) and 43986964414 (pull request) were in progress when this verdict was recorded."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-17T00:59:07.041Z"
+}
