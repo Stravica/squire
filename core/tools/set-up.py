@@ -459,6 +459,8 @@ class SetUp:
             built, why = None, e.strerror or type(e).__name__
         if not built:
             self.log(f'speech helper not built: {why}')
+
+    def lay_down(self):
         script = os.path.join(self.release, 'tools', 'lay-down.py')
         try:
             r = subprocess.run([self.python, '-B', script, self.release], cwd='/', env=System.env(self.home),
