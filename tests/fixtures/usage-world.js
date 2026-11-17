@@ -156,6 +156,8 @@ function wakeUp(world, session, text = 'Good morning', opts = {}) {
 // settings file, the hooks found and run(session, call): the floor's answer
 // to the call, the first hook that does not let it through (exit 2 blocks
 // it), else the last; with no hook that takes the call, a status of null.
+// run's third argument is the event's permission mode ('default' unless
+// given; auto mode is 'auto').
 function laidFloor(world, env = {}) {
   const settingsFile = path.join(world.home, 'claude-config', 'settings.json');
   let settings = null;
@@ -163,10 +165,10 @@ function laidFloor(world, env = {}) {
   const groups = ((settings && settings.hooks) || {}).PreToolUse || [];
   const takes = (group, tool) => !group.matcher || group.matcher === '*' || new RegExp(`^(?:${group.matcher})$`).test(tool);
   const hooks = groups.flatMap((g) => (g.hooks || []).filter((h) => h.type === 'command').map((h) => ({ group: g, command: h.command })));
-  const run = (session, call) => {
+  const run = (session, call, permissionMode = 'default') => {
     const results = hooks.filter((h) => takes(h.group, call[0])).map((h) => {
       const r = spawnSync('/bin/sh', ['-c', h.command], {
-        input: JSON.stringify(w.preToolUseEvent(world, session, call)), cwd: world.owner, encoding: 'utf8', env: w.productEnv(world, env), timeout: 30000,
+        input: JSON.stringify(w.preToolUseEvent(world, session, call, { permissionMode })), cwd: world.owner, encoding: 'utf8', env: w.productEnv(world, env), timeout: 30000,
       });
       return { status: r.status, signal: r.signal, stdout: r.stdout || '', stderr: r.stderr || '', error: r.error ? String(r.error.message || r.error) : '' };
     });

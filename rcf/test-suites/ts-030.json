@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-16T01:01:16.021Z",
-  "updatedAt": "2026-11-16T02:56:43.110Z",
+  "updatedAt": "2026-11-16T17:44:14.417Z",
   "purpose": "Runs Squire's check-in command as the session would when the owner asks, checks wakeUps in the owner's squire.json after a set, a change, a stop and a rhythm (typical and heavy), checks the wake-up router's scheduler run reads a check-in set this way, and checks a time or rhythm the router could not read is never written.",
   "testLevel": "integration",
   "acIds": [
@@ -44,6 +44,13 @@
       "description": "A check-in from the session is asked naming its time and words; any other spelling is refused; a squire.json Edit is asked",
       "status": "pending",
       "testPointer": "tests/acceptance/check-ins-by-asking.test.js::the session sets a check-in only on the owner's yes: the check-in command is asked first, naming the time and the words; spelt any other way it is refused, yes or no; and an Edit of the owner's squire.json is asked"
+    },
+    {
+      "id": "TC-030-a-look-alike-spelling-of-the-check-in",
+      "acId": "AC-702-1",
+      "description": "a look-alike spelling of the check-in command the Mac opens as the same file is asked as the check-in it is, naming the time and words, in both modes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/check-ins-by-asking.test.js::a look-alike spelling of the check-in command that the Mac opens as the same file (a long s for its last s) is the check-in command: it is asked as a check-in, naming the time and the words, never as an unknown command, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

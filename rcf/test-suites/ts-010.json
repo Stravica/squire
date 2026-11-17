@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.132Z",
-  "updatedAt": "2026-11-10T20:59:34.345Z",
+  "updatedAt": "2026-11-16T20:49:18.248Z",
   "purpose": "Runs the scheduled backup job on a seeded folder and checks copies and archives; injects a known fault and checks the known fix runs, with the required yes, before any ticket is offered.",
   "testLevel": "integration",
   "acIds": [
@@ -151,6 +151,13 @@
       "description": "a yes timed after now changes nothing: the check says it could not try, and the session's request is asked again",
       "status": "pending",
       "testPointer": "tests/acceptance/known-fixes.test.js::a yes timed after now changes nothing: the check says it could not try, and the session's request is asked again"
+    },
+    {
+      "id": "TC-010-the-runner-fix-reloads-every-present-agent",
+      "acId": "AC-1101-2",
+      "description": "under the world's launchd model, the runner fix on the owner's yes leaves every Squire agent whose plist is present loaded, the page server's and the voice-notes job's included",
+      "status": "pending",
+      "testPointer": "tests/acceptance/known-fixes.test.js::the runner fix, run by the scheduler on the owner's yes under the world's launchd model, leaves every one of Squire's agents whose plist is present loaded: with the runner's, the page server's and the voice-notes job's agents unloaded, each is loaded again"
     }
   ],
   "status": "draft"

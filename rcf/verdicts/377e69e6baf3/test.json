@@ -1,0 +1,26 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "377e69e6baf390c91ee9a8e82d108d179f52a001",
+  "fbsIds": [
+    "FBS-009",
+    "FBS-010",
+    "FBS-004",
+    "FBS-002",
+    "FBS-001",
+    "FBS-003"
+  ],
+  "result": "PASS",
+  "suite": {
+    "pass": 446,
+    "fail": 0,
+    "skip": 8,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2 Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, node v24.14.0, pnpm 10.32.1; rcf-lite 0.42.0 for the verdict, rcf-lite 0.42.3 for the strength record; fresh clone served b9ff134 (reviewed head 377e69e), pnpm install --frozen-lockfile; node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js': 454 tests, 446 pass, 0 fail, 8 skipped in 2470.8 s; SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, the 8 External and Journey tests skipped; temporary homes and keychains, fake claude and fake Mac commands, loopback stand-ins only; on a standard user of the same Mac with the reviewed head's core laid down in a test home by set-up's own lay-down step under real launchd: five agents loaded yes, the speech helper built on the Mac in 20.8 s yes, the runner fix left every agent loaded yes; a synthetic recording in the watched folder kept as a note by launchd in 2.0 s yes, a non-audio file, a link and a subfolder recording left with no note yes, no permission prompt in the system log yes; headless Chrome 157.0.8103.79: 6 screens, refused without the current secret and after a restart yes, no inline script run and a script file refused yes, a comment saved by keyboard yes, no Referer yes, body contrast at least 4.5 to 1 light and dark yes; interactive Claude Code sessions (2.1.322, haiku, 10 turns over 5 sessions): a file turned into text on a yes yes, one video's captions on a yes from YouTube's host only yes (nothing kept: the caption track YouTube gave could not be read), a playlist refused yes, a research note kept with a page and its link no, the failed recording's reason told at the next start no; install and rollback not done: no signed release",
+  "node": "v24.14.0",
+  "reason": null,
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-17T03:20:42.281Z"
+}

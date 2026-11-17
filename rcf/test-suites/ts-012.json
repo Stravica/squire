@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.663Z",
-  "updatedAt": "2026-11-14T14:14:33.753Z",
+  "updatedAt": "2026-11-16T17:44:15.005Z",
   "purpose": "Builds tickets through the real ticket builder with planted personal details, compares previewed and posted bytes against an intake, checks nothing is posted without a yes, and checks what the receiver keeps and that a deletion request removes a ticket end to end; fails the send of an approved ticket and checks it is kept, retried with the same ticket id and never changed without another yes; plants values outside each field's set or pattern and checks the field is dropped; and fails, takes offline and delays the intake, and changes a waiting ticket, checking each is kept and sent only as approved.",
   "testLevel": "integration",
   "acIds": [
@@ -288,6 +288,13 @@
       "description": "an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id",
       "status": "pending",
       "testPointer": "tests/acceptance/tickets.test.js::an install id file that cannot be read is named by the health check in one plain line of its own, the rest of the check runs, the id is never made again, and no ticket carries a second id"
+    },
+    {
+      "id": "TC-012-with-a-ticket-offered-every-command-the",
+      "acId": "AC-2001-7",
+      "description": "with a ticket offered, every command the health check prints is free or asked by the floor the lay-down settings run, in both modes, never refused",
+      "status": "pending",
+      "testPointer": "tests/acceptance/tickets.test.js::in a world where the health check offers a support ticket, every command the check prints for the session goes through the safety floor as the session runs it (the settings lay-down writes) free or asked, never refused, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

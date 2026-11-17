@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-16T17:22:04.958Z",
+  "updatedAt": "2026-11-16T17:22:16.771Z",
+  "asA": "Squire owner",
+  "iWant": "my voice notes turned into text on my Mac, picked up from my voice-notes folder without my asking, or when I give Squire a recording",
+  "soThat": "I can work with what I said, and my recordings never leave my Mac",
+  "description": "A recording the Squire owner puts in the voice-notes folder Squire watches is picked up and transcribed on the Mac without the Squire owner telling Squire, and a recording the Squire owner gives Squire is transcribed the same way. No audio leaves the Mac.",
+  "usId": "US-1702",
+  "prdId": "PRD-001",
+  "reqId": "REQ-017",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Voice notes transcribed on the Mac",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-1702-1",
+      "description": "Voice notes are transcribed on the Mac and no audio leaves it: a new recording in the Squire owner's voice-notes folder is picked up and transcribed without the Squire owner telling Squire, and a recording given on request is transcribed the same way.",
+      "testable": true,
+      "given": "A Squire owner with a voice-notes folder Squire watches, and a recording of their own",
+      "when": "The Squire owner puts a new recording in the folder, or gives Squire a recording and asks for it to be transcribed",
+      "then": "The recording is transcribed on the Mac and its text kept as a note in the Squire owner's folder, a recording put in the folder without the Squire owner telling Squire; no audio leaves the Mac, and where the Mac cannot transcribe on the Mac itself, nothing is sent and Squire says why.",
+      "verification": "testOnly"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "createdAt": "2026-11-16T17:43:54.834Z",
+  "updatedAt": "2026-11-16T17:43:57.369Z",
+  "purpose": "Starts the page server on the loopback and opens, through the link, a page Squire made, a Markdown page and the dashboard; reads the stylesheets each links as a browser does and checks the default theme's text, background and links in light and in dark, their contrast and the system font; checks a Markdown page is served formatted; checks the owner's own theme file is used in place of the default; and checks nothing is fetched from another host.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-901-2"
+  ],
+  "id": "TS-035",
+  "usId": "US-901",
+  "title": "Every page Squire serves wears the default theme in light and dark, or the owner's own",
+  "testCases": [
+    {
+      "id": "TC-035-a-page-squire-made-a-markdown-page-and",
+      "acId": "AC-901-2",
+      "description": "a page Squire made, a Markdown page and the dashboard each wear the default theme's text, background and links in light and in dark, at least 4.5 to 1, in the system font",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+    },
+    {
+      "id": "TC-035-a-markdown-page-is-served-as-a-formatted",
+      "acId": "AC-901-2",
+      "description": "a Markdown page is served as a formatted page with headings, list and emphasis, no raw marks left",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-theme.test.js::a Markdown page is shown formatted, never as raw marks: served as a page with its headings, list and emphasis as HTML, and no # or ** left in its text"
+    },
+    {
+      "id": "TC-035-with-the-owner-s-own-theme-file-in-their",
+      "acId": "AC-901-2",
+      "description": "with the owner's own theme file in their Squire folder, every page uses it in place of the default",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-theme.test.js::when the owner has put a theme file of their own in their Squire folder, every page Squire serves, the dashboard included, uses it in place of the default"
+    },
+    {
+      "id": "TC-035-no-page-squire-serves-fetches-a-font",
+      "acId": "AC-901-2",
+      "description": "no page Squire serves fetches a font, script or style from another host",
+      "status": "pending",
+      "testPointer": "tests/acceptance/pages-theme.test.js::no page Squire serves fetches a font, a script or a style from any other host: every stylesheet, script and font it names is the page server's own"
+    }
+  ],
+  "status": "draft"
+}

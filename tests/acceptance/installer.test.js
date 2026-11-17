@@ -452,8 +452,9 @@ test("the one yes names every piece set-up adds: Claude Code with its own update
   const run = await I.runApp(iw);
   // Squire Update, the installer program set-up places in the Applications
   // folder of the owner's home, is named with them (the words are the app's).
+  // The voice-notes job is one of the background jobs, named with the others.
   assertWindow(run, TITLES.setUp, [/Claude Code/, /updat/i, /command line tools/i, /password/i, /Squire/, /session/i, /wake-up/i, /backup/i,
-    /Squire Update/, /Applications/], 'the one yes');
+    /voice notes?/i, /Squire Update/, /Applications/], 'the one yes');
 });
 
 test('after the one yes nothing outside the named list is installed', { timeout: FULL_RUN }, async (t) => {
@@ -467,7 +468,7 @@ test('after the one yes nothing outside the named list is installed', { timeout:
   assert.equal(installCalls(run).length, 1, 'Apple\'s tools are started once');
   const allowed = [/^Library\/Application Support\/Squire(\/|$)/, /^Squire(\/|$)/, /^\.claude(\/|$)/, /^\.claude\.json$/,
     /^\.local$/, /^\.local\/(bin|share|state)$/, /^\.local\/bin\/claude$/, /^\.local\/(share|state)\/claude(\/|$)/, /^\.cache$/, /^\.cache\/claude(\/|$)/,
-    /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup|pages)\.plist$/,
+    /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup|pages|voice-notes)\.plist$/,
     /^Applications($|\/Squire Update\.app(\/|$))/];
   const added = Object.keys(I.contentOf(iw.userHome)).filter((rel) => !(rel in before));
   const outside = added.filter((rel) => !allowed.some((re) => re.test(rel)));

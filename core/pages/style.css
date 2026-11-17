@@ -1,31 +1,35 @@
-/* Squire's default style for the pages it makes, the home dashboard and the
-   comment panel, served by the page server at /squire/style.css. A page in
-   the owner's own house style may use its own instead. Body text is #1d1d1f
-   on #ffffff (light) and #ececec on #17181a (dark); every text colour here is
-   at least 4.5 to 1 against the background it sits on. */
+/* Squire's default theme for the pages it makes, the home dashboard and the
+   comment panel, served by the page server at squire/style.css. When the
+   owner puts a theme.css of their own at the top of their Squire folder, the
+   page server serves it here in place of this one. Body text is #213b34 on
+   #f6f5f0 with links #2d5c45 (light) and #f2f2e7 on #17251f with links
+   #c0dca5 (dark), in the Mac's own system font; every text colour here is at
+   least 4.5 to 1 against the background it sits on. */
 
 :root {
-  --squire-bg: #ffffff;
-  --squire-ink: #1d1d1f;
-  --squire-muted: #4a4f57;
-  --squire-surface: #f4f5f7;
-  --squire-border: #8a8f98;
-  --squire-accent: #1f4fa3;
+  --squire-bg: #f6f5f0;
+  --squire-ink: #213b34;
+  --squire-link: #2d5c45;
+  --squire-muted: #3f5650;
+  --squire-surface: #ebeae2;
+  --squire-border: #7d8a84;
+  --squire-accent: #2d5c45;
   --squire-on-accent: #ffffff;
-  --squire-focus: #1f4fa3;
+  --squire-focus: #2d5c45;
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --squire-bg: #17181a;
-    --squire-ink: #ececec;
-    --squire-muted: #b4b8bf;
-    --squire-surface: #222428;
-    --squire-border: #6f747c;
-    --squire-accent: #8fb4ff;
-    --squire-on-accent: #10131a;
-    --squire-focus: #8fb4ff;
+    --squire-bg: #17251f;
+    --squire-ink: #f2f2e7;
+    --squire-link: #c0dca5;
+    --squire-muted: #cfd6c8;
+    --squire-surface: #20322a;
+    --squire-border: #74867c;
+    --squire-accent: #c0dca5;
+    --squire-on-accent: #17251f;
+    --squire-focus: #c0dca5;
   }
 }
 
@@ -33,10 +37,12 @@ body {
   margin: 0;
   background: var(--squire-bg);
   color: var(--squire-ink);
-  font: 1.0625rem/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.55;
 }
 
-a { color: var(--squire-accent); }
+a { color: var(--squire-link); }
 a:focus-visible, button:focus-visible, textarea:focus-visible {
   outline: 3px solid var(--squire-focus);
   outline-offset: 2px;

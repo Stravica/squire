@@ -1,0 +1,3467 @@
+{
+  "version": 1,
+  "head": "377e69e6baf390c91ee9a8e82d108d179f52a001",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-1302-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1701-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the captions reader and the transcription, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#video_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#video_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#video_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#origin_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#origin_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#origin_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.get",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.get",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.get",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.player",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.player",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.player",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.track",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.track",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.track",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.lines",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.lines",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#Reader.lines",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#keep",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#keep",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#keep",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#safe_name",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#safe_name",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#safe_name",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/captions.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a YouTube video's captions are read from its own page and kept in the owner's folder, on one request to the video's page and its caption track, with no video or audio asked for and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/captions.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#note_name",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#note_name",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#note_name",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1701-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#readable",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#readable",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#readable",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1702-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-901-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command goes through the safety floor free as the session runs it (the settings lay-down writes), with no yes, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a refused use of the page server's script from the session (a help read) is refused, yes or no, with words that name the page server, never the words for a change to Squire's core, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.main",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.kept",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.kept",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.kept",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command goes through the safety floor free as the session runs it (the settings lay-down writes), with no yes, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command goes through the safety floor free as the session runs it (the settings lay-down writes), with no yes, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.log",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.log",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.log",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.update_app_or_fault",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.update_app_or_fault",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.update_app_or_fault",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.update_app",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.update_app",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.update_app",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.sign",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.sign",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.sign",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.agents",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.agents",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.agents",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.replace",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.replace",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/tools/lay-down.py#LayDown.replace",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::lay-down writes the page server's agent beside Squire's other agents, which stay as they were: the installed page server on a port the system gives it, started at load and kept alive, and its load reaches no real launchd domain"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::every command Squire's instructions tell the session to run, read from what lay-down writes for the session, is free or asked by the safety floor exactly as written, never refused outright"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#address_allowed",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#address_allowed",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#address_allowed",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#record_path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#record_path",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#record_path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#where",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#where",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#where",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.type_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.type_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.type_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.is_script",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.is_script",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::no script runs on a page but the page server's own panel script: a .js file in the pages folder is refused with none of its bytes, every HTML answer's Content-Security-Policy lets no other script run, inline or from any address, while the panel script a made page links still may, and an SVG there that carries a script is served so the script cannot run, or refused"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.is_script",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.file",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.file",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.file",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.listed",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the home dashboard is served from the Mac by the same page server"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.listed",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the home dashboard is served from the Mac by the same page server"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.listed",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.dashboard",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the home dashboard is served from the Mac by the same page server"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.dashboard",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the home dashboard is served from the Mac by the same page server"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.dashboard",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.markdown",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.markdown",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.markdown",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.own",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's script, as a page made by Squire links it, is served to the Mac from Squire's own files"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.own",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's script, as a page made by Squire links it, is served to the Mac from Squire's own files"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.own",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.keep",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.keep",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.keep",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.log_message",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.log_message",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.log_message",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.policy",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.policy",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page from another site open in the owner's browser on the Mac is refused: a request under another host name, and a comment posted from another site, and no comment is kept"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.policy",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.refuse",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::only the pages folder is served: a climb out by dots or encoded dots, a link out of the folder, the folder's own listing and a hidden file are each refused, and none of the owner's profile is sent"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.refuse",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::only the pages folder is served: a climb out by dots or encoded dots, a link out of the folder, the folder's own listing and a hidden file are each refused, and none of the owner's profile is sent"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.refuse",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a request from the Mac the page server cannot read (a method it does not know) is refused with an answer of 400 or more that carries the same framing and script headers as every other answer"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send_error",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a request from the Mac the page server cannot read (a method it does not know) is refused with an answer of 400 or more that carries the same framing and script headers as every other answer"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send_error",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a request from the Mac the page server cannot read (a method it does not know) is refused with an answer of 400 or more that carries the same framing and script headers as every other answer"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send_error",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.from_the_mac",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.from_the_mac",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.from_the_mac",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.route",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.route",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.route",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_GET",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_GET",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_GET",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_POST",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_POST",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_POST",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.review_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.review_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the comment panel's post from the Mac is taken and the note is kept in the owner's folder"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.review_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_OPTIONS",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_OPTIONS",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_OPTIONS",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#bind_address",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#bind_address",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#bind_address",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#serve",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#serve",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#serve",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#PageLink.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a comment the panel keeps is read as untrusted: a job that has read the owner's profile and then reads a kept comment is refused a send as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#PageLink.of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::the session's link command, spelt exactly as Squire's instructions name it, goes through the safety floor free with no yes asked; page-server.py run from the session any other way is refused, yes or no"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#PageLink.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.path",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.read",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.read",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.read",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.holds",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.holds",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-on-the-mac.test.js::a page Squire made is served to a request from the Mac itself, its bytes as they are"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.holds",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.forget",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.forget",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Secret.forget",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-702-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-901-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/tools/page-server.py#Pages.type_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.type_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.type_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.is_script",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.is_script",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.is_script",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.file",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.file",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.file",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.listed",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.listed",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.listed",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.dashboard",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.dashboard",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.dashboard",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.markdown",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.markdown",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.markdown",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.own",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.own",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.own",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.keep",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.keep",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Pages.keep",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.log_message",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.log_message",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.log_message",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.policy",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.policy",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.policy",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.refuse",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.refuse",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.refuse",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send_error",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send_error",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.send_error",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.from_the_mac",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.from_the_mac",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.from_the_mac",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.route",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.route",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.route",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_GET",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_GET",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_GET",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_POST",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_POST",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_POST",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.review_of",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.review_of",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.review_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_OPTIONS",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_OPTIONS",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#Handler.do_OPTIONS",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_html",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_html",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_html",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_inline",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_inline",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_inline",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_title",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/pages-theme.test.js::every page Squire serves, the dashboard included, is shown in Squire's default theme in light and in dark: the stylesheet it links gives the default theme's text, background and links in each mode, each at least 4.5 to 1, in the Mac's own system font"
+          ]
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_title",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/page-server.py#markdown_title",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-2001-7",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1401-10",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1401-8",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1101-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-401-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1901-5",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "installer/Squire.app/Contents/MacOS/Squire:1:1: unsupported file type (none)"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 13,
+    "structuralPassed": 4,
+    "mutants": 474,
+    "killed": 228,
+    "survived": 119,
+    "timeout": 0,
+    "notApplicable": 127,
+    "blocked": 9
+  },
+  "wallMs": 2635990,
+  "node": "v24.14.0"
+}

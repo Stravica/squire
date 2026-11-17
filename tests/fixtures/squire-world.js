@@ -215,12 +215,14 @@ function hook(world, script, event, { coreDir = world.core, cwd = world.owner, e
   return runPython(world, path.join(coreDir, 'hooks', script), [], { input: JSON.stringify(event), cwd, env });
 }
 
-function preToolUseEvent(world, session, [toolName, toolInput], { cwd = world.owner } = {}) {
+// permissionMode is the event's permission_mode: 'default' unless a case runs
+// the session in another mode, as auto mode ('auto') does.
+function preToolUseEvent(world, session, [toolName, toolInput], { cwd = world.owner, permissionMode = 'default' } = {}) {
   return {
     session_id: session,
     transcript_path: world.transcript,
     cwd,
-    permission_mode: 'default',
+    permission_mode: permissionMode,
     hook_event_name: 'PreToolUse',
     tool_name: toolName,
     tool_input: toolInput,

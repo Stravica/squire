@@ -646,15 +646,6 @@
       "reqId": "REQ-009"
     },
     {
-      "id": "boo-2026-11-16-003",
-      "createdAt": "2026-11-16T00:45:09.580Z",
-      "baselineKey": "webUi.themeToggle",
-      "scope": "req",
-      "reason": "REQ-009's pages are local pages Squire writes for one owner, styled by that owner's house style and read on their own Mac; a theme toggle is a web product's chrome, not a promise these pages make on money, access, privacy or integrity.",
-      "operatorAckAt": "2026-11-16T00:45:09.580Z",
-      "reqId": "REQ-009"
-    },
-    {
       "id": "boo-2026-11-16-004",
       "createdAt": "2026-11-16T00:45:12.508Z",
       "baselineKey": "webUi.oneJourneyOrMore",
@@ -664,21 +655,30 @@
       "reqId": "REQ-009"
     },
     {
-      "id": "boo-2026-11-16-005",
-      "createdAt": "2026-11-16T00:45:15.255Z",
-      "baselineKey": "webUi.contrastFloor",
-      "scope": "req",
-      "reason": "REQ-009's pages are written by Squire per request for one owner and read on that owner's Mac; their colours follow the owner's house style and are reviewed behaviour, so a contrast floor would bind generated content, not the page server REQ-009 promises.",
-      "operatorAckAt": "2026-11-16T00:45:15.255Z",
-      "reqId": "REQ-009"
-    },
-    {
       "id": "boo-2026-11-16-006",
       "createdAt": "2026-11-16T00:45:17.939Z",
       "baselineKey": "webUi.focusRings",
       "scope": "req",
       "reason": "REQ-009's pages carry no control set of a web product: the comment panel is one note box and one button on a page Squire writes for one owner; keyboard focus there is house-style review, not a promise on money, access, privacy or integrity.",
       "operatorAckAt": "2026-11-16T00:45:17.939Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-007",
+      "createdAt": "2026-11-16T20:28:44.949Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "REQ-009's pages follow the Mac's own light or dark setting through Squire's default theme, or the owner's own theme file; a theme toggle is a web product's chrome, not a promise these pages make on money, access, privacy or integrity.",
+      "operatorAckAt": "2026-11-16T20:28:44.949Z",
+      "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-16-008",
+      "createdAt": "2026-11-16T20:32:16.013Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "Not adopted as a criterion in this batch. Squire's pages theme shipped before a contrast test was declared, so the baseline's authored-before-the-palette attestation cannot be truthfully made. Body text and links in Squire's default theme are held at 4.5 to 1 in both modes by a bound case under AC-901-2. A check of every text-on-background pair, large text and controls included, is a candidate for the theme's next amend round.",
+      "operatorAckAt": "2026-11-16T20:32:16.013Z",
       "reqId": "REQ-009"
     }
   ]

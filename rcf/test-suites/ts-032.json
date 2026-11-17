@@ -1,0 +1,71 @@
+{
+  "createdAt": "2026-11-16T17:41:28.237Z",
+  "updatedAt": "2026-11-16T20:35:37.519Z",
+  "purpose": "Lays core down and checks the voice-notes job it writes beside the other four; runs that job as launchd runs it over recordings dropped in the owner's voice-notes folder, with a stand-in speech engine and every proxy pointed at a loopback recorder; feeds the transcription command the session loads through the laid floor in the default and auto modes; and checks that where the Mac cannot recognise speech itself nothing is sent and Squire says why.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1702-1"
+  ],
+  "id": "TS-032",
+  "usId": "US-1702",
+  "title": "Voice notes picked up and transcribed on the Mac, no audio leaving it",
+  "testCases": [
+    {
+      "id": "TC-032-lay-down-writes-the-voice-notes-job",
+      "acId": "AC-1702-1",
+      "description": "lay-down writes the voice-notes job beside the other four: started when the owner's voice-notes folder changes, running the installed transcription, never kept alive",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::lay-down writes the voice-notes job beside Squire's other four, which stay as they are: launchd starts it when the owner's voice-notes folder changes, it runs the installed transcription with --watch, names the Squire home and is never kept alive"
+    },
+    {
+      "id": "TC-032-recordings-dropped-in-the-voice-notes",
+      "acId": "AC-1702-1",
+      "description": "recordings dropped in the voice-notes folder are each transcribed once on the Mac by the job, kept as notes, left as they were, nothing sent",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a recording put in the voice-notes folder is picked up by the voice-notes job, as launchd runs it, and transcribed on the Mac without the owner telling Squire: each of three recordings dropped at once becomes a note in the owner's folder once, the recordings stay as they were, and nothing is sent beyond this Mac"
+    },
+    {
+      "id": "TC-032-a-recording-the-owner-gives-is",
+      "acId": "AC-1702-1",
+      "description": "a recording the owner gives is transcribed on request: the command the session loads is asked in both modes, naming video and audio work, never free or refused, and its note is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a recording the owner gives Squire is transcribed the same way on request: the transcription, exactly as the session loads it, is asked by the safety floor as the session runs it, its question naming video and audio work, never free and never refused, in the default mode and in auto mode, and run on the owner's yes it keeps a note in the owner's folder"
+    },
+    {
+      "id": "TC-032-where-the-mac-cannot-recognise-speech",
+      "acId": "AC-1702-1",
+      "description": "where the Mac cannot recognise speech itself, nothing is sent, no other engine is tried, Squire says why and keeps no note",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::where the Mac cannot recognise speech on the Mac itself, the recording is never sent anywhere and no other engine or server is tried: on request Squire says why, plainly, and keeps no note; the voice-notes job keeps the recording as it was and sends nothing"
+    },
+    {
+      "id": "TC-032-the-voice-notes-folder-is-the-owners-input",
+      "acId": "AC-1702-1",
+      "description": "the voice-notes job makes no note from a link in the folder to a recording outside it, or from a recording in a folder inside it, and runs the engine on neither",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::the voice-notes folder is the owner's input only: the voice-notes job, as launchd runs it, makes no note from a link in the folder to a recording outside it, or from a recording in a folder inside it, and runs the engine on neither, while a recording put in the folder itself is transcribed"
+    },
+    {
+      "id": "TC-032-a-write-copy-move-or-link-into-voice-notes-is-asked",
+      "acId": "AC-1702-1",
+      "description": "a session Write of a new file in the voice-notes folder, and a copy, move or link into it from the shell, are each asked by the floor, never free, in both modes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a session Write of a new file in the owner's voice-notes folder, and a copy, a move or a link into it from the shell, are each asked by the safety floor as the session runs it, never free, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-032-a-command-setting-a-squire-variable-is-asked",
+      "acId": "AC-1702-1",
+      "description": "a session command that sets a SQUIRE_ variable, and a Write of ~/.zshenv or a LaunchAgents plist naming one, are each asked by the floor, never free, in both modes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a session command that sets a SQUIRE_ variable (inline before a command, by export, or for every program by launchctl setenv), and a Write of ~/.zshenv or of a LaunchAgents plist that names one, are each asked by the safety floor as the session runs it, never free, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-032-a-speech-engine-seam-not-absolute-or-not-runnable",
+      "acId": "AC-1702-1",
+      "description": "a speech engine seam that is relative, or names a file that cannot be run, is never run; the recording goes nowhere and no note is kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a speech engine seam that is not an absolute path, or that names a file that cannot be run, is never run: the recording goes nowhere and no note is kept, while an absolute path to an executable file is the engine"
+    }
+  ],
+  "status": "draft"
+}
