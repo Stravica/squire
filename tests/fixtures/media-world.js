@@ -120,14 +120,34 @@ async function networkRecorder(t) {
 // YouTube's video ids are eleven letters, digits, - and _.
 const VIDEOS = { captioned: 'Capti0nsOk1', uncaptioned: 'N0Captions1', refused: 'Refused0001' };
 
+// This Mac's own addresses on its networks, by family: every non-loopback,
+// non-link-local address of every interface (IPv4 169.254.0.0/16 and IPv6
+// fe80::/10 are link-local), as the pages cases find them.
+function ownNetworkAddresses() {
+  const found = { IPv4: [], IPv6: [] };
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const a of list || []) {
+      const family = a.family === 4 ? 'IPv4' : a.family === 6 ? 'IPv6' : a.family;
+      if (a.internal || !found[family]) continue;
+      if (family === 'IPv4' && (a.address.startsWith('169.254.') || a.address.startsWith('127.'))) continue;
+      if (family === 'IPv6' && (/^fe[89ab]/i.test(a.address) || a.address === '::1')) continue;
+      if (!found[family].includes(a.address)) found[family].push(a.address);
+    }
+  }
+  return found;
+}
+
 // The YouTube stand-in on loopback, started as its own process and stopped
-// after the test. Resolves { origin, requests, link(id), captionWords, env,
-// pid } once it listens; requests is read from the stand-in's record each
-// time it is read, so it holds every request answered before the read.
-async function youtubeStandIn(t) {
+// after the test. Resolves { origin, originAt, requests, link(id),
+// captionWords, env, pid } once it listens; requests is read from the
+// stand-in's record each time it is read, so it holds every request answered
+// before the read. With alsoAt (one of this Mac's own addresses on a
+// network), the stand-in also listens there for the life of the test,
+// answering this Mac only, and originAt is that origin; else originAt is null.
+async function youtubeStandIn(t, { alsoAt = null } = {}) {
   const captionWords = `Fold the dough every thirty minutes. ${mark('caption')}`;
   const state = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'squire-youtube-')));
-  fs.writeFileSync(path.join(state, 'config.json'), JSON.stringify({ videos: VIDEOS, captionWords, parent: process.pid }));
+  fs.writeFileSync(path.join(state, 'config.json'), JSON.stringify({ videos: VIDEOS, captionWords, parent: process.pid, also: alsoAt }));
   const child = spawn(process.execPath, [path.join(__dirname, 'tools', 'youtube-stand-in.js'), state], { cwd: state, stdio: 'ignore' });
   const gone = new Promise((resolve) => { child.on('exit', resolve); child.on('error', resolve); });
   t.after(async () => {
@@ -136,13 +156,20 @@ async function youtubeStandIn(t) {
     fs.rmSync(state, { recursive: true, force: true });
   });
   const portFile = path.join(state, 'port');
+  const alsoFile = path.join(state, 'port-also');
+  const ready = () => fs.existsSync(portFile) && (!alsoAt || fs.existsSync(alsoFile));
   const end = Date.now() + 10000;
-  while (!fs.existsSync(portFile) && Date.now() < end) await w.sleep(20);
-  if (!fs.existsSync(portFile)) throw new Error('the YouTube stand-in must start');
+  while (!ready() && !fs.existsSync(path.join(state, 'error')) && Date.now() < end) await w.sleep(20);
+  if (!ready()) {
+    const why = fs.existsSync(path.join(state, 'error')) ? fs.readFileSync(path.join(state, 'error'), 'utf8').trim() : 'no port in 10 s';
+    throw new Error(`the YouTube stand-in must start (${why})`);
+  }
   const origin = `http://127.0.0.1:${Number(fs.readFileSync(portFile, 'utf8'))}`;
+  const originAt = alsoAt ? `http://${alsoAt.includes(':') ? `[${alsoAt}]` : alsoAt}:${Number(fs.readFileSync(alsoFile, 'utf8'))}` : null;
   const record = path.join(state, 'requests.jsonl');
   return {
     origin,
+    originAt,
     get requests() {
       return fs.existsSync(record) ? fs.readFileSync(record, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
     },
@@ -191,6 +218,7 @@ module.exports = {
   speechEngine,
   networkRecorder,
   VIDEOS,
+  ownNetworkAddresses,
   youtubeStandIn,
   digestOf,
   changedIn,

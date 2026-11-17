@@ -222,13 +222,24 @@ test("a playlist link and a channel link are each refused with a reason naming o
 
 test("a captions origin that is not this Mac's loopback is never asked: with the YouTube seam naming another host, no request reaches it or the network and nothing is kept, while the loopback stand-in it names is read", { timeout: 120000 }, async (t) => {
   const world = U.usageWorld(t);
-  const yt = await M.youtubeStandIn(t);
+  // Another host that answers is stood in for by this Mac's own address on a
+  // network (IPv4 first, else IPv6; a family with none is named here): the
+  // stand-in also listens there, for this case only, answering this Mac only.
+  const addresses = M.ownNetworkAddresses();
+  for (const [family, list] of Object.entries(addresses)) {
+    t.diagnostic(list.length ? `${family} addresses: ${list.join(', ')}` : `this Mac has no non-loopback, non-link-local ${family} address`);
+  }
+  const elsewhere = [...addresses.IPv4, ...addresses.IPv6][0] || null;
+  const yt = await M.youtubeStandIn(t, { alsoAt: elsewhere });
   const net = await M.networkRecorder(t);
   const ok = run(world, captionsScript(world), [yt.link(M.VIDEOS.captioned)], { ...yt.env, ...net.env });
   assert.equal(ok.status, 0, `with the loopback stand-in named, the captions reader must read the captions and exit 0; got ${w.describe(ok)}`);
+  assert.ok(elsewhere, 'this Mac needs an address on a network (a non-loopback, non-link-local IPv4 or IPv6 address) to stand in for another host that answers; it has none');
   const port = new URL(yt.origin).port;
   // Names under .invalid never resolve; every proxy points at the recorder.
-  for (const origin of ['https://captions.invalid', `http://127.0.0.1.invalid:${port}`, 'http://www.youtube.com.invalid']) {
+  // The last origin is not the loopback and does answer: the stand-in itself,
+  // at this Mac's own address on a network.
+  for (const origin of ['https://captions.invalid', `http://127.0.0.1.invalid:${port}`, 'http://www.youtube.com.invalid', yt.originAt]) {
     const from = yt.requests.length;
     const before = M.digestOf(world.owner);
     const r = run(world, captionsScript(world), [yt.link(M.VIDEOS.captioned)], { SQUIRE_YOUTUBE_ORIGIN: origin, ...net.env });
@@ -239,6 +250,26 @@ test("a captions origin that is not this Mac's loopback is never asked: with the
     assert.equal(yt.requests.length, from, `with the seam naming ${origin}, the reader asks nothing of anyone; got ${JSON.stringify(yt.requests.slice(from).map((q) => q.url))}`);
     assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], `with the seam naming ${origin}, nothing in the owner's folder may change`);
   }
+
+  // The control: a small client of the test's own, run through the same run
+  // call with the seam naming that origin, asks it directly as the reader asks
+  // (no proxy) and is answered and recorded there, so a reader that asked any
+  // origin it was given would have been recorded above.
+  const control = path.join(world.root, 'control-client', 'ask-the-origin.py');
+  fs.mkdirSync(path.dirname(control), { recursive: true });
+  fs.writeFileSync(control, [
+    'import os, sys, urllib.request',
+    'opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))',
+    "with opener.open(os.environ['SQUIRE_YOUTUBE_ORIGIN'] + '/watch?v=' + sys.argv[1], timeout=10) as r:",
+    '    print(r.status)',
+    '',
+  ].join('\n'));
+  const from = yt.requests.length;
+  const asked = run(world, control, [M.VIDEOS.captioned], { SQUIRE_YOUTUBE_ORIGIN: yt.originAt, ...net.env });
+  t.diagnostic(`control at ${yt.originAt}: ${w.describe(asked)}`);
+  assert.equal(asked.status, 0, `the test's own client must reach the stand-in at ${yt.originAt}; got ${w.describe(asked)}`);
+  assert.deepEqual(yt.requests.slice(from).map((q) => [q.url, q.status, q.to]), [[`/watch?v=${M.VIDEOS.captioned}`, 200, elsewhere]],
+    `the stand-in must record the control's request at ${yt.originAt}, answered there`);
 });
 
 test("captions Squire kept, a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job", { timeout: 180000 }, async (t) => {
