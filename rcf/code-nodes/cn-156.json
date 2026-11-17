@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-156",
+  "path": "core/tools/transcribe.py#Stop",
+  "implementsAcIds": [
+    "AC-1701-2",
+    "AC-1702-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-17T00:02:16.865Z",
+  "updatedAt": "2026-11-17T00:02:16.865Z"
+}
