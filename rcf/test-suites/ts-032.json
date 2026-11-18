@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-16T17:41:28.237Z",
-  "updatedAt": "2026-11-16T20:35:37.519Z",
+  "updatedAt": "2026-11-18T12:14:44.018Z",
   "purpose": "Lays core down and checks the voice-notes job it writes beside the other four; runs that job as launchd runs it over recordings dropped in the owner's voice-notes folder, with a stand-in speech engine and every proxy pointed at a loopback recorder; feeds the transcription command the session loads through the laid floor in the default and auto modes; and checks that where the Mac cannot recognise speech itself nothing is sent and Squire says why.",
   "testLevel": "integration",
   "acIds": [
@@ -65,6 +65,27 @@
       "description": "a speech engine seam that is relative, or names a file that cannot be run, is never run; the recording goes nowhere and no note is kept",
       "status": "pending",
       "testPointer": "tests/acceptance/voice-notes.test.js::a speech engine seam that is not an absolute path, or that names a file that cannot be run, is never run: the recording goes nowhere and no note is kept, while an absolute path to an executable file is the engine"
+    },
+    {
+      "id": "TC-032-a-new-session-is-told-why-a-voice-note-was-not",
+      "acId": "AC-1702-1",
+      "description": "a new session is told, unasked, by the session-start hook, which voice note was not transcribed and the reason the voice-notes job kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a new session is told, unasked, why a voice note was not transcribed: after the voice-notes job could not turn a recording into text, the session-start hook, as Claude Code runs it at a new session's start, carries the recording's name and the reason the job kept into the session"
+    },
+    {
+      "id": "TC-032-a-voice-note-is-kept-in-the-timed-form",
+      "acId": "AC-1702-1",
+      "description": "a voice note is kept in the timed form: paragraphs each led by its time, a long pause starting a new paragraph",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::a voice note is kept in the timed form: the voice-notes job, as launchd runs it, keeps the recording's words as a note in paragraphs, each led by its time in the recording, phrases a moment apart kept together and a long pause starting a new paragraph"
+    },
+    {
+      "id": "TC-032-set-up-builds-the-speech-helper-on-macos-26",
+      "acId": "AC-1702-1",
+      "description": "a guard: set-up on a Mac that answers macOS 26 builds the speech helper from the core it lays down, or logs why it could not; nothing sent",
+      "status": "pending",
+      "testPointer": "tests/acceptance/voice-notes.test.js::set-up builds Squire's speech helper from the core it lays down on a Mac that answers macOS 26: once set-up has finished, the helper is in the Squire home's state, built from the laid core's source, where this Mac's own tools can build it, and otherwise set-up's log names why it could not; nothing is sent beyond this Mac"
     }
   ],
   "status": "draft"

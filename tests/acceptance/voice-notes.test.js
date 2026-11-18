@@ -61,9 +61,31 @@
 //   nothing the session has read can point the owner's recordings at
 //   another program (core/hooks/pre-tool-use.py).
 //
+//   Telling the owner: when the voice-notes job could not turn a recording
+//   into text, it keeps the reason in the Squire home's
+//   state/voice-notes.json (under notTranscribed, by the recording's name,
+//   as core/tools/transcribe.py keeps it today), and the session-start hook
+//   (core/hooks/session-start.py, run by Claude Code at a new session's
+//   start with the event on stdin; its stdout reaches the session) tells the
+//   new session, unasked, the recording's name and that kept reason.
+//   The timed form: a voice note is kept as the owner's own files are
+//   (video-helpers.test.js): in paragraphs, each paragraph led by the time
+//   in the recording at which it starts (minutes and seconds, M:SS, or
+//   H:MM:SS from an hour), a pause of five seconds or more between phrases
+//   starting a new paragraph and phrases a moment apart kept together. The
+//   engine gives the times (the timed phrases the media world describes).
+//   Set-up's helper step: set-up (core/tools/set-up.py, run at the app's own
+//   entry point in the installer world) builds Squire's speech helper from
+//   the core it lays down into the Squire home's state/speech-helper, the
+//   source's digest beside it, or, where this Mac cannot build it, logs why
+//   in plain words; nothing is sent anywhere.
+//
 // Usage model (assumptions, none measured): typical, one recording of a few
 // minutes a day, dropped alone; heavy, a batch saved from Voice Memos at once
-// (three here, of different lengths), each picked up once, none twice.
+// (three here, of different lengths), each picked up once, none twice. For
+// the paragraph pause: typical, a voice note of a minute in a handful of
+// phrases with one long pause; heavy, an hour's recording (in
+// video-helpers.test.js), hundreds of phrases with times past the hour.
 //
 // The class is open (any recording, any engine answer, any way out of the
 // Mac); these are instances, and the answer for audio the Mac cannot
@@ -80,6 +102,7 @@ const w = require('../fixtures/squire-world.js');
 const s = require('../fixtures/session-world.js');
 const U = require('../fixtures/usage-world.js');
 const M = require('../fixtures/media-world.js');
+const I = require('../fixtures/installer-world.js');
 
 const LABEL = 'com.stravica.squire.voice-notes';
 const watched = (world) => path.join(world.owner, 'Voice notes');
@@ -87,7 +110,8 @@ const transcribeScript = (world) => path.join(world.home, 'core', 'tools', 'tran
 const MODES = ['default', 'auto'];
 
 // The stand-in engine names each recording by its size, so each note can be
-// told from the others.
+// told from the others. It answers as the media world's engine does: one
+// timed phrase a line.
 function engineBySize(world, behaviour = 'transcribe') {
   const dir = path.join(world.root, 'speech-engine');
   fs.mkdirSync(dir, { recursive: true });
@@ -100,7 +124,7 @@ const file = process.argv[2];
 const size = file && fs.existsSync(file) ? fs.statSync(file).size : null;
 fs.appendFileSync(${JSON.stringify(callsFile)}, JSON.stringify({ argv: process.argv.slice(2), size }) + '\\n');
 if (${JSON.stringify(behaviour)} === 'unavailable') { process.stderr.write('speech recognition on this Mac itself is not available for this language\\n'); process.exit(69); }
-process.stdout.write('Remember the flour order. ${words} size-' + size + '\\n');
+process.stdout.write(JSON.stringify({ start: 0, end: 1.5, text: 'Remember the flour order. ${words} size-' + size }) + '\\n');
 `);
   fs.chmodSync(program, 0o755);
   const calls = () => (fs.existsSync(callsFile) ? fs.readFileSync(callsFile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []);
@@ -341,4 +365,76 @@ test("a speech engine seam that is not an absolute path, or that names a file th
   }
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `no audio or its text may leave the Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+// ------------------------- telling the owner, the timed form, set-up's helper
+
+test("a new session is told, unasked, why a voice note was not transcribed: after the voice-notes job could not turn a recording into text, the session-start hook, as Claude Code runs it at a new session's start, carries the recording's name and the reason the job kept into the session", { timeout: 120000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const engine = M.speechEngine(world, { behaviour: 'unavailable' });
+  const net = await M.networkRecorder(t);
+  M.fixtureRecording(path.join(watched(world), 'Shop meeting.wav'), { seconds: 1 });
+  const job = w.runPython(world, transcribeScript(world), ['--watch'], { cwd: '/', env: { ...engine.env, ...net.env }, timeout: 60000 });
+  assert.equal(job.status, 0, `the voice-notes job's command must run and exit 0; got ${w.describe(job)}`);
+  const recordFile = path.join(world.home, 'state', 'voice-notes.json');
+  const record = fs.existsSync(recordFile) ? JSON.parse(fs.readFileSync(recordFile, 'utf8')) : {};
+  const kept = (record.notTranscribed || {})['Shop meeting.wav'];
+  assert.ok(kept && typeof kept.reason === 'string' && kept.reason.length > 0, `the voice-notes job must keep why the recording was not transcribed; got ${JSON.stringify(record)}`);
+  const started = s.recordSessionByHook(world, { sessionId: 'job-a-new-session', source: 'startup' });
+  assert.equal(started.status, 0, `the SessionStart hook must exit 0; got ${w.describe(started)}`);
+  assert.match(started.stdout, /Shop meeting/, `the session-start hook must tell the new session, unasked, which voice note was not transcribed; it printed: ${w.describe(started)}`);
+  assert.ok(started.stdout.includes(kept.reason), `the session-start hook must tell the new session why, in the reason the job kept ("${kept.reason}"); it printed: ${w.describe(started)}`);
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may leave the Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+test("a voice note is kept in the timed form: the voice-notes job, as launchd runs it, keeps the recording's words as a note in paragraphs, each led by its time in the recording, phrases a moment apart kept together and a long pause starting a new paragraph", { timeout: 180000 }, async (t) => {
+  const { world } = laidWorld(t);
+  const agent = voiceAgent(world);
+  assert.ok(agent, `lay-down must write the voice-notes job (${LABEL}); found ${s.launchAgents(world).map((a) => a.plist.Label).join(', ') || 'none'}`);
+  const words = M.mark('spoken');
+  // Typical: a voice note of a minute or so, a handful of phrases, one long pause.
+  const engine = M.speechEngine(world, { phrases: [
+    { start: 0.4, end: 2.1, text: `Remember the flour order ${words}.` },
+    { start: 2.3, end: 4.0, text: 'Ask the mill about Thursday.' },
+    { start: 11.2, end: 13.9, text: 'Then call the bank about the loan.' },
+    { start: 14.1, end: 15.0, text: 'Before noon.' },
+  ] });
+  const net = await M.networkRecorder(t);
+  M.fixtureRecording(path.join(watched(world), 'New Recording.wav'), { seconds: 2 });
+  const r = runAgent(world, agent, { ...engine.env, ...net.env });
+  assert.equal(r.status, 0, `the voice-notes job must run and exit 0; got ${w.describe(r)}`);
+  const notes = w.filesHolding([world.owner], words).filter((x) => !x.startsWith(watched(world) + path.sep));
+  assert.equal(notes.length, 1, `the recording must become one note in the owner's folder, outside the voice-notes folder; got ${JSON.stringify(notes)}`);
+  M.assertTimedForm(fs.readFileSync(notes[0], 'utf8'), engine.phrases, [[0, 1], [2, 3]], 'a voice note');
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `no audio or its text may leave the Mac: the job reached the network ${net.seen.length} time(s)`);
+});
+
+test("set-up builds Squire's speech helper from the core it lays down on a Mac that answers macOS 26: once set-up has finished, the helper is in the Squire home's state, built from the laid core's source, where this Mac's own tools can build it, and otherwise set-up's log names why it could not; nothing is sent beyond this Mac", { timeout: 900000 }, async (t) => {
+  // A guard at the base head, kept: set-up already calls the build; the
+  // batch changes the helper's source, so its rebuild at set-up is held here.
+  const iw = I.makeInstallerWorld(t, { mac: { macos: '26.1', answers: { [I.TITLES.phone]: 'button returned:Later' } } });
+  const net = await M.networkRecorder(t);
+  const run = await I.runApp(iw, { env: net.env, timeout: 800000 });
+  assert.ok(I.doneSteps(iw).includes('layDown'), `set-up must lay core down; got ${I.describeRun(run)}`);
+  const folder = path.join(iw.squireHome, 'state', 'speech-helper');
+  const helper = path.join(folder, 'speech-helper');
+  const laidSource = path.join(iw.squireHome, 'core', 'lib', 'speech-helper.swift');
+  const source = fs.existsSync(laidSource) ? laidSource : path.join(w.CORE, 'lib', 'speech-helper.swift');
+  // Whether this Mac's own tools can build it: macOS 26 or later and a macOS 26 SDK.
+  const sdk = Number((spawnSync('/usr/bin/xcrun', ['--show-sdk-version'], { encoding: 'utf8' }).stdout || '').trim().split('.')[0] || 0);
+  const canBuild = M.macosMajor() >= 26 && sdk >= 26;
+  t.diagnostic(`this Mac: macOS ${M.macosMajor()}, SDK ${sdk}; the helper ${canBuild ? 'can' : 'cannot'} be built here`);
+  const logFile = path.join(iw.squireHome, 'logs', 'set-up.log');
+  const log = fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '';
+  if (canBuild) {
+    assert.ok(fs.existsSync(helper) && (fs.statSync(helper).mode & 0o111) !== 0, `set-up must build the speech helper into ${folder}; its log reads: ${log.trim() || '(empty)'}`);
+    const kept = fs.readFileSync(path.join(folder, 'source.sha256'), 'utf8').trim();
+    assert.equal(kept, w.sha256(fs.readFileSync(source)), 'the helper must be built from the source of the core set-up laid down, its digest kept beside it');
+  } else {
+    assert.match(log, /speech helper not built: \S.+/, `where this Mac cannot build the speech helper, set-up's log must name why; it reads: ${log.trim() || '(empty)'}`);
+  }
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
 });
