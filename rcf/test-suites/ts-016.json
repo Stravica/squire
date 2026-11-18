@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:42.743Z",
-  "updatedAt": "2026-11-18T12:14:03.305Z",
+  "updatedAt": "2026-11-18T15:35:35.046Z",
   "purpose": "Runs the real transcription on the owner's own files and on YouTube links, and checks nothing is asked of YouTube and no media is downloaded.",
   "testLevel": "integration",
   "acIds": [
@@ -51,6 +51,27 @@
       "description": "the owner's own recording is transcribed by Squire's own speech helper with no stand-in, built into the Squire home on first use, and a second recording reuses it without a rebuild",
       "status": "pending",
       "testPointer": "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+    },
+    {
+      "id": "TC-016-youtube-as-a-class-through-the-transcription",
+      "acId": "AC-1701-1",
+      "description": "a YouTube link with no scheme, a host in capitals or the mobile host is answered as any YouTube link: nothing asked of anyone, nothing kept, the two routes offered",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::YouTube as a class, through the transcription: a YouTube link with no scheme, with its host in capitals or on the mobile host is a YouTube link like any other, so Squire asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the transcript pasted from YouTube's own Show transcript or the owner's own file"
+    },
+    {
+      "id": "TC-016-youtube-as-a-class-through-the-web-fetch",
+      "acId": "AC-1701-1",
+      "description": "a session WebFetch of any YouTube address, with a query or none, on any YouTube host in any letter case, is refused by the floor in both modes, naming no captions reader",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::YouTube as a class, through the session's own web fetch: a WebFetch of a YouTube address, with a query or with none, on youtube.com, its www, m and music hosts, youtu.be or youtube-nocookie.com, in any letter case, is refused by the safety floor as the session runs it, never free and never asked, in the default mode and in auto mode, the refusal naming no captions reader, and nothing reaches the network"
+    },
+    {
+      "id": "TC-016-the-captions-reader-is-refused-by-the-floor",
+      "acId": "AC-1701-1",
+      "description": "on a Mac whose laid core still holds the captions reader, the command naming it with a YouTube link is refused by the floor in both modes, never asked, naming no captions reader",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-and-audio.test.js::the captions reader is never run from the session on a Mac whose laid core still holds core/tools/captions.py: the command naming it with a YouTube link is refused by the safety floor as the session runs it, never asked and never free, in the default mode and in auto mode, its words naming no captions reader, and nothing reaches the network"
     }
   ],
   "status": "draft"

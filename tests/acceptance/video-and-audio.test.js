@@ -28,7 +28,17 @@
 //       or of any host, downloads and keeps nothing, exits non-zero and says
 //       that Squire does not fetch from YouTube, offering the two routes: the
 //       transcript pasted from YouTube's own "Show transcript", or the
-//       owner's own file.
+//       owner's own file. YouTube is a class, decided fail-closed: a link
+//       with no scheme, with its host in any letter case or on any of
+//       YouTube's hosts (m., music., youtu.be, youtube-nocookie.com) is a
+//       YouTube link, answered so, never taken as a file that is not there.
+//   The safety floor (core/hooks/pre-tool-use.py) refuses, never lets
+//   through free and never asks, a session WebFetch of any YouTube address
+//   (the hosts YOUTUBE_HOSTS names below, with a query or with none, in any
+//   letter case), in the default mode and in auto mode; and it refuses,
+//   never asks, a command naming core/tools/captions.py, even on a Mac whose
+//   laid core still holds that file from an earlier core. Neither refusal
+//   names or offers a captions reader.
 //   What the session loads says the same (Squire does not fetch from
 //   YouTube; the two routes) and names no command that reads from YouTube;
 //   the laid core carries no captions reader (core/tools/captions.py goes,
@@ -138,6 +148,100 @@ test("what the session loads says Squire does not fetch from YouTube and offers 
   const reading = personaSpans(world).filter((s) => /captions/i.test(s));
   assert.deepEqual(reading, [], 'what the session loads must name no command that reads from YouTube');
   assert.ok(!fs.existsSync(path.join(world.home, 'core', 'tools', 'captions.py')), 'the laid core must carry no captions reader');
+});
+
+// YouTube as a class, fail-closed: Squire v1 fetches nothing from YouTube,
+// no captions, no audio, no page, by either route the session has (the
+// transcription, and its own web fetch), and the floor never offers the
+// captions reader a Mac may still hold from an earlier core.
+const MORE_LINKS = [
+  ["a YouTube video's page with no scheme", 'www.youtube.com/watch?v=Capti0nsOk1'],
+  ["a YouTube video's page with its host in capitals", 'https://WWW.YOUTUBE.COM/watch?v=Capti0nsOk1'],
+  ["a YouTube video's page on the mobile host", 'https://m.youtube.com/watch?v=Capti0nsOk1'],
+];
+// The hosts the floor case tries: YouTube's own, its short links and its
+// no-cookie embeds, and one of them in mixed case.
+const YOUTUBE_HOSTS = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be', 'youtube-nocookie.com', 'WwW.YouTube.CoM'];
+const youtubeAddresses = (host) => [['with no query', `https://${host}/embed/N0Captions1`], ['with a query', `https://${host}/watch?v=N0Captions1`]];
+// Words that would name or offer a captions reader.
+const READER = /captions? reader|read(s|ing)? (its |the )?captions/i;
+// The floor's answer: free (exit 0), asked (exit 2 with a request id),
+// refused (exit 2 with none), or anything else as it came.
+const floorVerdict = (r) => (r.status === 0 ? 'free' : r.status === 2 ? (w.requestIdIn(r.stderr) ? 'asked' : 'refused') : `exit ${r.status}`);
+
+test("YouTube as a class, through the transcription: a YouTube link with no scheme, with its host in capitals or on the mobile host is a YouTube link like any other, so Squire asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the transcript pasted from YouTube's own Show transcript or the owner's own file", { timeout: 120000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const engine = M.speechEngine(world);
+  const net = await M.networkRecorder(t);
+  const before = M.digestOf(world.owner);
+  for (const [what, link] of MORE_LINKS) {
+    const r = run(world, transcribeScript(world), [link], { ...engine.env, ...net.env });
+    t.diagnostic(`${what}: ${w.describe(r)}`);
+    assert.doesNotMatch(r.stderr, /Traceback|can't open file/, `${what}: Squire must answer with its own words, never a crash or a missing tool; got ${w.describe(r)}`);
+    assert.match(said(r), NO_FETCH, `${what}: Squire must say plainly that it does not fetch from YouTube; got ${w.describe(r)}`);
+    assert.match(said(r), ROUTES, `${what}: Squire must offer the transcript pasted from YouTube's own "Show transcript"; got ${w.describe(r)}`);
+    assert.match(said(r), OWN_FILE, `${what}: Squire must offer the owner's own file; got ${w.describe(r)}`);
+    assert.notEqual(r.status, 0, `${what}: nothing is done for a link, so the transcription must stop with a non-zero exit; got ${w.describe(r)}`);
+  }
+  assert.deepEqual(engine.calls(), [], 'the speech engine must never run for a link');
+  assert.deepEqual(M.mediaFiles(world.root), [], 'no video or audio may be downloaded anywhere');
+  assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], 'nothing may be kept: no file in the owner\'s folder may change');
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may be asked of YouTube or of any host but this Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+test("YouTube as a class, through the session's own web fetch: a WebFetch of a YouTube address, with a query or with none, on youtube.com, its www, m and music hosts, youtu.be or youtube-nocookie.com, in any letter case, is refused by the safety floor as the session runs it, never free and never asked, in the default mode and in auto mode, the refusal naming no captions reader, and nothing reaches the network", { timeout: 180000 }, async (t) => {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  const net = await M.networkRecorder(t);
+  const floor = U.laidFloor(world, { ...U.UTC, ...net.env });
+  assert.ok(floor.hooks.length > 0, `the settings lay-down writes must run the safety floor before every tool call; got ${floor.settings ? JSON.stringify(floor.settings.hooks || null) : 'no settings file'}`);
+  const answers = [];
+  let n = 0;
+  for (const host of YOUTUBE_HOSTS) {
+    for (const [how, url] of youtubeAddresses(host)) {
+      for (const mode of MODES) {
+        n += 1;
+        const r = floor.run(`job-${mode}-youtube-fetch-${n}`, w.tools.webFetch(url), mode);
+        answers.push({ how, url, mode, verdict: floorVerdict(r), r });
+      }
+    }
+  }
+  const through = answers.filter((a) => a.verdict !== 'refused').map((a) => `${a.mode}, ${a.how}: ${a.verdict}: ${a.url}`);
+  t.diagnostic(`not refused: ${through.join(' | ') || 'none'}`);
+  assert.deepEqual(through, [], `every WebFetch of a YouTube address, in either mode, must be refused by the floor, never free and never asked; these were not:\n${through.join('\n')}`);
+  for (const a of answers) {
+    assert.doesNotMatch(`${a.r.stdout}\n${a.r.stderr}`, READER, `the refusal of ${a.url}, in ${a.mode} mode, must name no captions reader; got ${w.describe(a.r)}`);
+  }
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may be asked of YouTube or of any host but this Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+test("the captions reader is never run from the session on a Mac whose laid core still holds core/tools/captions.py: the command naming it with a YouTube link is refused by the safety floor as the session runs it, never asked and never free, in the default mode and in auto mode, its words naming no captions reader, and nothing reaches the network", { timeout: 120000 }, async (t) => {
+  const world = U.usageWorld(t, { core: false });
+  const laid = w.layDown(world, w.CORE);
+  assert.equal(laid.status, 0, `laying down core must succeed; got ${w.describe(laid)}`);
+  // A Mac whose core still holds the reader from an earlier core: when the
+  // laid core does not carry it, it is planted in this world's Squire home.
+  const reader = path.join(world.home, 'core', 'tools', 'captions.py');
+  if (!fs.existsSync(reader)) {
+    fs.mkdirSync(path.dirname(reader), { recursive: true });
+    fs.writeFileSync(reader, '# A captions reader left from an earlier core.\nraise SystemExit(3)\n');
+  }
+  const net = await M.networkRecorder(t);
+  const floor = U.laidFloor(world, { ...U.UTC, ...net.env });
+  assert.ok(floor.hooks.length > 0, `the settings lay-down writes must run the safety floor before every tool call; got ${floor.settings ? JSON.stringify(floor.settings.hooks || null) : 'no settings file'}`);
+  const command = `/usr/bin/python3 '${reader}' 'https://www.youtube.com/watch?v=Capti0nsOk1'`;
+  for (const mode of MODES) {
+    const r = floor.run(`job-${mode}-captions-reader`, w.tools.bash(command), mode);
+    const verdict = floorVerdict(r);
+    t.diagnostic(`${mode}: ${verdict}: ${command}`);
+    assert.equal(verdict, 'refused', `the captions reader with a YouTube link, in ${mode} mode, must be refused by the floor, never asked and never free; got ${w.describe(r)}`);
+    assert.doesNotMatch(`${r.stdout}\n${r.stderr}`, READER, `the refusal, in ${mode} mode, must name no captions reader; got ${w.describe(r)}`);
+  }
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may be asked of YouTube or of any host but this Mac: reached the network ${net.seen.length} time(s)`);
 });
 
 test("the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac", { timeout: 120000 }, async (t) => {
