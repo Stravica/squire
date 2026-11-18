@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:19.957Z",
-  "updatedAt": "2026-11-18T11:58:36.688Z",
+  "updatedAt": "2026-11-18T15:24:53.897Z",
   "asA": "Squire owner",
   "iWant": "Squire to work from my own recordings and a transcript I paste",
   "soThat": "I get what I need from a video without Squire fetching anything from YouTube",
@@ -63,7 +63,7 @@
       "testable": true,
       "given": "A video of the Squire owner's own",
       "when": "The Squire owner asks for a clip between two times, for just its audio, or for a smaller copy to share",
-      "then": "Each is made on the Mac by Apple's avconvert as a new file in the Squire owner's folder, the smaller copy without the video's location data, each asked first as video and audio work; the original is never written over or changed.",
+      "then": "Each is made on the Mac by Apple's avconvert as a new file in the Squire owner's folder, each without the video's location data, each asked first as video and audio work; the original is never written over or changed.",
       "verification": "testOnly"
     }
   ]
