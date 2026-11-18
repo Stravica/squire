@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-161",
+  "path": "core/tools/video.py#main",
+  "implementsAcIds": [
+    "AC-1701-6"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-18T16:58:06.688Z",
+  "updatedAt": "2026-11-18T16:58:06.688Z"
+}

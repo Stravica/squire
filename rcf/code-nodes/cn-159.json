@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-159",
+  "path": "core/tools/video.py#seconds_of",
+  "implementsAcIds": [
+    "AC-1701-6"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-18T16:58:02.989Z",
+  "updatedAt": "2026-11-18T16:58:02.989Z"
+}
