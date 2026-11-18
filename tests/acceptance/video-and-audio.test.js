@@ -88,6 +88,14 @@ const personaSpans = (world) => [...personaBlock(world).matchAll(/`([^`\n]+)`/g)
 
 const said = (r) => `${r.stdout}\n${r.stderr}`;
 
+// Every transcript kept in the owner's folder, for a failure's message.
+function keptTranscripts(world) {
+  const dir = path.join(world.owner, 'workspace', 'transcripts');
+  if (!fs.existsSync(dir)) return '(no transcripts folder)';
+  return fs.readdirSync(dir).filter((n) => fs.statSync(path.join(dir, n)).isFile())
+    .map((n) => `${n}: ${fs.readFileSync(path.join(dir, n), 'utf8').trim()}`).join(' | ') || '(none)';
+}
+
 const LINKS = [
   ["a YouTube video's page", 'https://www.youtube.com/watch?v=Capti0nsOk1'],
   ['a short YouTube link', 'https://youtu.be/N0Captions1'],
@@ -156,20 +164,22 @@ test("the owner's own recording is transcribed on the Mac by Squire's own speech
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const helper = path.join(world.home, 'state', 'speech-helper', 'speech-helper');
-  const first = M.spokenWords(path.join(world.owner, 'workspace', 'files', 'Bakery order.aiff'), 'Buy flour on Thursday and pay the mill.');
+  // Spoken words with no number and no word that sounds like another, so the
+  // words the helper hears are the words said.
+  const first = M.spokenWords(path.join(world.owner, 'workspace', 'files', 'Bakery order.aiff'), 'Order bread on Thursday and pay the mill.');
   const firstBytes = fs.readFileSync(first);
   const r = run(world, transcribeScript(world), [first], net.env, 800000);
   assert.equal(r.status, 0, `with no stand-in engine, Squire's own speech helper must transcribe the owner's own file and exit 0; got ${w.describe(r)}`);
   assert.doesNotMatch(r.stderr, /Traceback/, `the transcription must never crash; got ${w.describe(r)}`);
   assert.ok(fs.existsSync(helper), `the helper must be built into the Squire home's state (${helper}) on first use; got ${w.describe(r)}`);
-  const notes = w.filesHolding([world.owner], 'flour').filter((f) => f !== first);
-  assert.ok(notes.some((f) => /thursday/i.test(fs.readFileSync(f, 'utf8'))), `the words must be kept as a note in the owner's folder; got ${w.describe(r)}`);
+  const notes = w.filesHolding([world.owner], 'bread').filter((f) => f !== first);
+  assert.ok(notes.some((f) => /thursday/i.test(fs.readFileSync(f, 'utf8'))), `the words must be kept as a note in the owner's folder; got ${w.describe(r)}; the transcripts kept read: ${keptTranscripts(world)}`);
   const built = fs.statSync(helper);
 
-  const second = M.spokenWords(path.join(world.owner, 'workspace', 'files', 'Bank call.aiff'), 'Call the bank about the loan before noon.');
+  const second = M.spokenWords(path.join(world.owner, 'workspace', 'files', 'Bank call.aiff'), 'Call the bank about the mortgage before lunch.');
   const again = run(world, transcribeScript(world), [second], net.env, 800000);
   assert.equal(again.status, 0, `a second recording must be transcribed by the helper already built; got ${w.describe(again)}`);
-  assert.ok(w.filesHolding([world.owner], 'bank').some((f) => f !== second && /loan/i.test(fs.readFileSync(f, 'utf8'))), `the second recording's words must be kept as a note; got ${w.describe(again)}`);
+  assert.ok(w.filesHolding([world.owner], 'bank').some((f) => f !== second && /mortgage/i.test(fs.readFileSync(f, 'utf8'))), `the second recording's words must be kept as a note; got ${w.describe(again)}; the transcripts kept read: ${keptTranscripts(world)}`);
   const now = fs.statSync(helper);
   assert.deepEqual([now.ino, now.mtimeMs], [built.ino, built.mtimeMs], 'the helper already built from the current source must be used as it is, never built again');
   assert.ok(fs.readFileSync(first).equals(firstBytes), 'the owner\'s recording must be left as it was');

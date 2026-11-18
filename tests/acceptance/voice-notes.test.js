@@ -415,6 +415,18 @@ test("set-up builds Squire's speech helper from the core it lays down on a Mac t
   // A guard at the base head, kept: set-up already calls the build; the
   // batch changes the helper's source, so its rebuild at set-up is held here.
   const iw = I.makeInstallerWorld(t, { mac: { macos: '26.1', answers: { [I.TITLES.phone]: 'button returned:Later' } } });
+  // Whether this Mac's own tools can build it: macOS 26 or later and a macOS 26 SDK.
+  const sdk = Number((spawnSync('/usr/bin/xcrun', ['--show-sdk-version'], { encoding: 'utf8' }).stdout || '').trim().split('.')[0] || 0);
+  const canBuild = M.macosMajor() >= 26 && sdk >= 26;
+  t.diagnostic(`this Mac: macOS ${M.macosMajor()}, SDK ${sdk}; the helper ${canBuild ? 'can' : 'cannot'} be built here`);
+  // The world's xcode-select answers the world's own developer folder. Where
+  // this Mac has its tools, that folder holds links to the Mac's own active
+  // developer folder's entries, as on a Mac whose tools are installed, so the
+  // folder the world names and the compiler xcrun finds are the same tools.
+  const developer = (spawnSync('/usr/bin/xcode-select', ['-p'], { encoding: 'utf8' }).stdout || '').trim();
+  if (canBuild && developer && fs.existsSync(developer)) {
+    for (const name of fs.readdirSync(developer)) fs.symlinkSync(path.join(developer, name), path.join(iw.toolsDir, name));
+  }
   const net = await M.networkRecorder(t);
   const run = await I.runApp(iw, { env: net.env, timeout: 800000 });
   assert.ok(I.doneSteps(iw).includes('layDown'), `set-up must lay core down; got ${I.describeRun(run)}`);
@@ -422,10 +434,6 @@ test("set-up builds Squire's speech helper from the core it lays down on a Mac t
   const helper = path.join(folder, 'speech-helper');
   const laidSource = path.join(iw.squireHome, 'core', 'lib', 'speech-helper.swift');
   const source = fs.existsSync(laidSource) ? laidSource : path.join(w.CORE, 'lib', 'speech-helper.swift');
-  // Whether this Mac's own tools can build it: macOS 26 or later and a macOS 26 SDK.
-  const sdk = Number((spawnSync('/usr/bin/xcrun', ['--show-sdk-version'], { encoding: 'utf8' }).stdout || '').trim().split('.')[0] || 0);
-  const canBuild = M.macosMajor() >= 26 && sdk >= 26;
-  t.diagnostic(`this Mac: macOS ${M.macosMajor()}, SDK ${sdk}; the helper ${canBuild ? 'can' : 'cannot'} be built here`);
   const logFile = path.join(iw.squireHome, 'logs', 'set-up.log');
   const log = fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '';
   if (canBuild) {
