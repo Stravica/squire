@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 import time
 import unicodedata
+from urllib.parse import urlsplit
 
 
 class SquireError(Exception):
@@ -1102,5 +1103,28 @@ def advice_due(limits, messages, given_at, now):
             continue
         took = [m for m in messages if isinstance(m, dict) and is_number(m.get('at')) and m['at'] >= since]
         if 2 * sum(1 for m in took if m.get('own') is True) > len(took):
+            return True
+    return False
+
+
+# YouTube's own hosts, each with every host under it: its pages, short links,
+# no-cookie embeds, the children's app, its pictures and its video streams.
+YOUTUBE = ('youtube.com', 'youtu.be', 'youtube-nocookie.com', 'youtubekids.com', 'ytimg.com', 'googlevideo.com')
+
+
+def youtube_link(text):
+    """True when text is an address on one of YouTube's hosts, in any letter
+    case, with a scheme or none, with a query or none: Squire fetches nothing
+    from YouTube."""
+    if not isinstance(text, str):
+        return False
+    text = text.strip()
+    for form in ((text,) if '://' in text else (text, '//' + text)):
+        try:
+            host = urlsplit(form).hostname
+        except ValueError:
+            continue
+        host = (host or '').rstrip('.')
+        if host and any(host == name or host.endswith('.' + name) for name in YOUTUBE):
             return True
     return False

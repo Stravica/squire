@@ -6,10 +6,14 @@
 //
 //     speech-helper <audio or video file>
 //
-// The text on stdout, exit 0. Where this Mac cannot recognise speech on the
-// Mac itself (below macOS 26, no transcriber on this Mac, or no speech assets
-// on it for the language), exit 69 with one line on stderr saying why. Any
-// other failure: exit 1 with one line on stderr.
+// The words heard on stdout as timed phrases, one JSON object a line, in the
+// order heard: {"start": <seconds>, "end": <seconds>, "text": "<words>"},
+// the times those of the phrase in the recording; exit 0 (no line at all when
+// no words were heard). A file with no sound track: exit 66 with one line on
+// stderr. Where this Mac cannot recognise speech on the Mac itself (below
+// macOS 26, no transcriber on this Mac, or no speech assets on it for the
+// language), exit 69 with one line on stderr saying why. Any other failure:
+// exit 1 with one line on stderr.
 //
 // Squire builds it on the owner's Mac from this source with Apple's command
 // line tools (core/lib/speech.py), into the Squire home's state, with an
@@ -20,6 +24,13 @@ import Speech
 
 func tell(_ line: String) {
     FileHandle.standardError.write((line + "\n").data(using: .utf8)!)
+}
+
+// One phrase as heard: its start and end in the recording, in seconds.
+struct Phrase: Encodable {
+    let start: Double
+    let end: Double
+    let text: String
 }
 
 @main
@@ -61,26 +72,38 @@ func transcribe(_ url: URL) async -> Int32 {
         tell("this Mac does not have the speech assets for its language, and Squire does not download them")
         return 69
     }
+    // A file with no sound track has nothing to hear.
+    if let tracks = try? await AVURLAsset(url: url).loadTracks(withMediaType: .audio), tracks.isEmpty {
+        tell("the recording has no sound")
+        return 66
+    }
     // Reserve the locale for this helper. A reservation downloads nothing.
     _ = try? await AssetInventory.reserve(locale: locale)
     let transcriber = SpeechTranscriber(locale: locale, preset: .transcription)
     do {
         let file = try AVAudioFile(forReading: url)
         let analyzer = SpeechAnalyzer(modules: [transcriber])
-        let collector = Task { () -> String in
-            var parts: [String] = []
+        let collector = Task { () -> [Phrase] in
+            var phrases: [Phrase] = []
             for try await result in transcriber.results {
-                parts.append(String(result.text.characters))
+                let text = String(result.text.characters).trimmingCharacters(in: .whitespacesAndNewlines)
+                if text.isEmpty { continue }
+                let start = result.range.start.seconds, end = result.range.end.seconds
+                phrases.append(Phrase(start: start.isFinite ? max(0, start) : 0,
+                                      end: end.isFinite ? max(0, end) : (start.isFinite ? max(0, start) : 0), text: text))
             }
-            return parts.joined()
+            return phrases
         }
         if let last = try await analyzer.analyzeSequence(from: file) {
             try await analyzer.finalizeAndFinish(through: last)
         } else {
             await analyzer.cancelAndFinishNow()
         }
-        let text = try await collector.value
-        print(text.trimmingCharacters(in: .whitespacesAndNewlines))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        for phrase in try await collector.value {
+            print(String(decoding: try encoder.encode(phrase), as: UTF8.self))
+        }
         return 0
     } catch {
         tell("the recording could not be turned into text (\((error as NSError).localizedDescription))")
