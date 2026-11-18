@@ -41,7 +41,7 @@ PYTHON = '/usr/bin/python3'
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
     from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, SquireError, paced_windows, percent_words,
-                        read_usage, reset_words, second_yes_needed)
+                        read_usage, reset_words, second_yes_needed, youtube_link)
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
     sys.exit(2)
@@ -590,59 +590,65 @@ class CheckInRequest:
 class MediaRequest:
     """The session's video and audio work through Squire's two media tools,
     each run as its one command, its path quoted as the health check's is,
-    with one link or file after it: the captions reader,
-    /usr/bin/python3 '<Squire home>/core/tools/captions.py' <YouTube link>,
-    and the transcription,
-    /usr/bin/python3 '<Squire home>/core/tools/transcribe.py' <file>. The
-    floor asks the owner at every run, the question naming video and audio
-    work: never free and never refused; a yes covers that one run, once. Once
-    it runs, the job holds untrusted input (captions and transcripts are
-    words from elsewhere), and a transcript of a file in the owner's private
-    places holds those too. The captions reader asks YouTube for a video, so
-    a job holding untrusted input and private things runs it only as a job
-    of its own. The transcription's --watch is the voice-notes job's own,
-    run outside the session: from the session it is refused, as is either
-    tool spelt any other way (Floor.judge_argv)."""
+    with its values after it: the transcription,
+    /usr/bin/python3 '<Squire home>/core/tools/transcribe.py' <file>, and the
+    video tool, /usr/bin/python3 '<Squire home>/core/tools/video.py' with
+    clip <file> <from> <to>, audio <file> or smaller <file>. The floor asks
+    the owner at every run, the question naming video and audio work: never
+    free and never refused; a yes covers that one run, once. Once it runs,
+    the job holds untrusted input (a transcript is words from elsewhere, and
+    the video tool's answer names the owner's file), and the work on a file
+    in the owner's private places holds those too. The transcription's
+    --watch is the voice-notes job's own, run outside the session: from the
+    session it is refused, as is either tool spelt any other way, another
+    verb or another count of values (Floor.judge_argv)."""
 
     SCRIPTS = {
-        'captions.py': 'read the captions of one YouTube video, kept in workspace/captions in the owner\'s folder: {arg}',
         'transcribe.py': 'turn a recording or video file into text on this Mac, kept as a note in workspace/transcripts '
                          'in the owner\'s folder: {arg}',
+        'video.py': 'make {made} of a video of the owner\'s with Apple\'s avconvert on this Mac, as a new file in '
+                    'workspace/files in the owner\'s folder, the original left as it was: {arg}',
     }
+    # The video tool's verbs, with the count of values each takes.
+    VERBS = {'clip': 4, 'audio': 2, 'smaller': 2}
     WHAT = 'video and audio work: {action}'
 
     @classmethod
     def of(cls, floor, tool, data):
-        """(the tool's name, its one argument) when a Bash call runs one of the
-        two tools as its one command, or None."""
+        """(the tool's name, its values) when a Bash call runs one of the two
+        tools as its one command, as Squire's instructions name it, or
+        None."""
         argv = Floor.one_command(tool, data)
-        if argv is None or len(argv) != 3 or str(argv[2]).startswith('-') or not str(argv[2]).strip():
+        if argv is None or len(argv) < 3:
             return None
         script = floor.path(argv[1], strict=False)
-        for name in cls.SCRIPTS:
-            if floor.is_core_tool(script, name):
-                return name, str(argv[2])
-        return None
+        values = tuple(str(word) for word in argv[2:])
+        if floor.is_core_tool(script, 'transcribe.py'):
+            name, given = 'transcribe.py', (values if len(values) == 1 else ())
+        elif floor.is_core_tool(script, 'video.py'):
+            name, given = 'video.py', (values[1:2] if len(values) == cls.VERBS.get(values[0], 0) else ())
+        else:
+            return None
+        if not given or given[0].startswith('-') or not all(v.strip() for v in values):
+            return None
+        return name, values
 
     @classmethod
     def settle(cls, floor, ledger, session, asked):
-        name, arg = asked
+        name, values = asked
         now = time.time()
-        what = cls.WHAT.format(action=cls.SCRIPTS[name].format(arg=arg))
-        item = 'media:' + hashlib.sha256(json.dumps([name, arg]).encode('utf-8')).hexdigest()
-        held = ledger.taints(session)
-        if name == 'captions.py' and held['untrusted'] and held['private']:
-            return 2, Floor.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']),
-                                         what=what)
+        arg = values[-1] if name == 'transcribe.py' else values[1]
+        made = {'clip': f'a clip from {values[2]} to {values[3]}' if len(values) == 4 else 'a clip',
+                'audio': 'just the sound', 'smaller': 'a smaller copy'}.get(values[0], '')
+        what = cls.WHAT.format(action=cls.SCRIPTS[name].format(arg=arg, made=made))
+        item = 'media:' + hashlib.sha256(json.dumps([name, list(values)]).encode('utf-8')).hexdigest()
         approved = ledger.approval(session, item, now, floor.config.timeout)
         if approved:
             ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
-            source = ('the captions of ' if name == 'captions.py' else 'the transcript of ') + arg
-            taints = [('untrusted', source)]
-            if name == 'transcribe.py':
-                given = floor.path(arg, strict=False)
-                taints += [(kind, source) for kind, _ in (floor.taints_of(given, source) if given else [])
-                           if kind == 'private']
+            source = ('the transcript of ' if name == 'transcribe.py' else 'the video tool\'s work on ') + arg
+            given = floor.path(arg, strict=False)
+            taints = [('untrusted', source)] + [(kind, source) for kind, _ in
+                                                (floor.taints_of(given, source) if given else []) if kind == 'private']
             for kind, text in taints:
                 ledger.taint(session, kind, text, now)
             return 0, ''
@@ -730,14 +736,19 @@ class Floor:
     NEVER_PAGES = ('Squire\'s safety floor: the session never runs Squire\'s page server itself, yes or no; it only asks '
                    'the page server for the link, with the one link command Squire\'s instructions name, exactly as '
                    'written there. Nothing ran: {what}')
-    NEVER_MEDIA = ('Squire\'s safety floor: Squire\'s captions reader and its transcription run from the session only as '
-                   'the one command Squire\'s instructions name for each, with one link or file after it, yes or no; '
+    NEVER_MEDIA = ('Squire\'s safety floor: Squire\'s transcription and its video tool run from the session only as the '
+                   'one command Squire\'s instructions name for each, with its file and values after it, yes or no; '
                    'watching the Voice notes folder is the voice-notes job\'s own. Nothing ran: {what}')
+    NEVER_YOUTUBE = ('Squire\'s safety floor: Squire fetches nothing from YouTube, no captions, no audio and no page, '
+                     'yes or no. Offer the owner the two routes instead: the transcript from YouTube\'s own Show '
+                     'transcript, pasted into the chat, or their own file, a recording or video of theirs. Nothing ran.')
+    # A tool an earlier core held that asked YouTube for a video's words:
+    # refused from the session wherever a Mac still holds it.
+    EARLIER_YOUTUBE_TOOL = 'captions.py'
     VOICE_NOTES = 'Voice notes'
-    # Places in the owner's folder whose words came from elsewhere: kept
-    # captions, every transcript (a voice note's included) and kept research.
-    OUTSIDE = (os.path.join('workspace', 'captions'), os.path.join('workspace', 'transcripts'),
-               os.path.join('workspace', 'research'))
+    # Places in the owner's folder whose words came from elsewhere: every
+    # transcript (a voice note's included) and kept research.
+    OUTSIDE = (os.path.join('workspace', 'transcripts'), os.path.join('workspace', 'research'))
     NEVER_UPDATE = ('Squire\'s safety floor: the session may never run Squire\'s update tool, yes or no. Squire\'s updates '
                     'install only from Squire Update on the owner\'s Mac; when a release is waiting, tell the owner to '
                     'open Squire Update there. Nothing ran.')
@@ -962,6 +973,8 @@ class Floor:
             return 'ask', f'{tool} {given}', []
         if tool == 'WebFetch':
             url = self.field(data, 'url')
+            if youtube_link(url):
+                return 'never', self.NEVER_YOUTUBE, []
             fetched = [('untrusted', f'WebFetch {url}')]
             return ('ask' if urlsplit(url).query else 'fetch'), f'WebFetch {url}', fetched
         if tool == 'WebSearch':
@@ -1147,6 +1160,9 @@ class Floor:
             pieces = [p for t in argv for p in re.split(r'[\s()|<>;&`\'"=]+', t) if p]
             if any(self.is_update_tool(p) for p in (self.path(t, strict=False) for t in pieces) if p):
                 return 'never', self.NEVER_UPDATE, []
+            if any(self.is_core_tool(p, self.EARLIER_YOUTUBE_TOOL) for p in (self.path(t, strict=False) for t in pieces)
+                   if p):
+                return 'never', self.NEVER_YOUTUBE, []
             # Squire's job, import and check-in commands spelt any way but the
             # one the floor asks for (HeavyJob, ImportRequest, CheckInRequest),
             # and the page server's script any way but the link command
