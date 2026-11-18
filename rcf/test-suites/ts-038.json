@@ -1,0 +1,22 @@
+{
+  "createdAt": "2026-11-18T12:15:13.848Z",
+  "updatedAt": "2026-11-18T12:15:40.562Z",
+  "purpose": "Release Verify on a signed release: notes from a recording of the owner's own, read from the owner's folder on the target.",
+  "testLevel": "e2e",
+  "acIds": [
+    "AC-1701-5"
+  ],
+  "id": "TS-038",
+  "usId": "US-1701",
+  "title": "Notes from a recording, on a signed release",
+  "testCases": [
+    {
+      "id": "TC-038-notes-from-a-recording-on-a-signed-release",
+      "acId": "AC-1701-5",
+      "description": "external, release Verify: call notes and creator notes from a recording of the owner's own on a signed release, nothing sent by Squire",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-helpers.test.js::on a signed release, notes from a recording of the owner's own: call notes with decisions, actions and a follow-up draft for the owner to send, never sent by Squire, and creator notes with chapters, show notes and post drafts, the recording itself left on the Mac as it was"
+    }
+  ],
+  "status": "draft"
+}
