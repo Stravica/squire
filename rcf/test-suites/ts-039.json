@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-18T12:15:16.648Z",
-  "updatedAt": "2026-11-18T12:15:52.679Z",
+  "updatedAt": "2026-11-18T15:35:15.776Z",
   "purpose": "Runs the real video tool with Apple's avconvert on made videos and the laid floor, and checks each new file and the original left as it was.",
   "testLevel": "integration",
   "acIds": [
@@ -15,14 +15,14 @@
       "acId": "AC-1701-6",
       "description": "a clip between two times by avconvert, twice from one video, each a new file, neither over the other, the original unchanged",
       "status": "pending",
-      "testPointer": "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+      "testPointer": "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
     },
     {
       "id": "TC-039-just-the-sound",
       "acId": "AC-1701-6",
       "description": "just the sound by avconvert as a new audio file with no picture, the original unchanged",
       "status": "pending",
-      "testPointer": "tests/acceptance/video-helpers.test.js::just the sound of the owner's own video is kept on the Mac by Apple's avconvert as a new audio file in the owner's folder, with no picture, the original never written over or changed"
+      "testPointer": "tests/acceptance/video-helpers.test.js::just the sound of the owner's own video is kept on the Mac by Apple's avconvert as a new audio file in the owner's folder, with no picture and without the video's location data, the original never written over or changed"
     },
     {
       "id": "TC-039-a-smaller-copy-without-location",
@@ -37,6 +37,13 @@
       "description": "the clip, the sound and the smaller copy the session loads are each asked by the laid floor as video and audio work, never free or refused, in both modes",
       "status": "pending",
       "testPointer": "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-039-a-name-already-taken-is-left-as-it-was",
+      "acId": "AC-1701-6",
+      "description": "a file or a link out of the owner's folder already at the name a clip, the sound or a smaller copy would take is left as it was, the link's target untouched; each is one new file of its own",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-helpers.test.js::a file of the owner's, or a link to a file outside the owner's folder, already at the name a clip, the sound or a smaller copy would take is left as it was, the link the same link and the file it points at untouched: each is made as one new file of its own, never over what was there"
     }
   ],
   "status": "draft"

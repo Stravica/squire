@@ -29,7 +29,11 @@
 //       note: in the same folder, with the same name but .srt, one cue a
 //       phrase in order, numbered from 1, each cue's times the phrase's start
 //       and end (HH:MM:SS,mmm, to the millisecond) and its text the phrase's
-//       words. Nothing is burned into the video, which is left as it was. A
+//       words. The note and its captions file take one stem free for both:
+//       where a file of the note's name with .srt is already in the folder,
+//       the pass takes the next free stem for the pair (`... 2.md` and
+//       `... 2.srt`, as keep() numbers a note today) and never writes over
+//       or changes what was there. Nothing is burned into the video, which is left as it was. A
 //       video with no sound: Squire says plainly that it has no sound (the
 //       words "no sound"), keeps no note and no captions file, and never
 //       crashes. The writer of the timed note and of the .srt is expected to
@@ -48,7 +52,17 @@
 //       avconvert's metadata filter leaves it out by default), makes a new
 //       file in the owner's folder, never over the original or any file
 //       already there, says where, exit 0. The original is never written,
-//       moved or changed. The avconvert arguments are expected to be built
+//       moved or changed. Each new file, the clip and the sound as well as
+//       the smaller copy, is made without the video's location data.
+//       The new file's name (a builder's contract this file fixes, on the
+//       fail-closed reading): the original's stem, a space and the verb
+//       (`Bread class clip`, `Bread class audio`, `Bread class smaller`),
+//       with the extension the preset writes; where that name is taken by
+//       anything already there (a file, a link to a file anywhere, a
+//       folder), the tool takes another free name of the same stem and verb
+//       (`Bread class clip 2.mov`, say). What is already there is never
+//       written, followed, replaced or moved: a link stays the same link and
+//       the file it points at is never touched. The avconvert arguments are expected to be built
 //       by one module function of video.py (the request in, the argument
 //       list out), so it can be mutated at unit speed.
 //       What the session loads names each of the three as one command in a
@@ -65,7 +79,10 @@
 // with one long pause; heavy, an hour's recording, eight hundred phrases with
 // a long pause every fifty and times past the hour. For a clip: typical, a
 // few seconds cut from a short video; heavy, two clips from the same video,
-// one after the other, neither over the other.
+// one after the other, neither over the other. For a name already taken (no
+// threshold): typical, one file of the owner's at the new file's name;
+// heavy, a link at every name of that stem and verb the presets could
+// write, pointing at a file outside the owner's folder.
 //
 // The made videos are made at run time by the media world (a drawn picture
 // and the Mac's own synthetic voice; nothing downloaded, nothing third-party,
@@ -221,6 +238,39 @@ test("a captions file (.srt) from the same pass is kept beside the transcript of
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
 });
 
+test("a captions file already beside where the transcript is kept, at the name the pass's own would take, is left byte for byte: the pass keeps its own captions file as a new file beside its own transcript, never over the one already there", { skip: gate(M.madeVideoGate), timeout: 300000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const net = await M.networkRecorder(t);
+  const video = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Shop tour.mov'), { seconds: 2 });
+  const profile = typicalPhrases(M.mark('typical'));
+  const engine = M.speechEngine(world, { phrases: profile.phrases });
+  // The note's stem as the transcription names a note today (the day in UTC,
+  // then the recording's name), in the folder it keeps notes in; the day
+  // after too, should the run cross midnight.
+  const folder = path.join(world.owner, 'workspace', 'transcripts');
+  fs.mkdirSync(folder, { recursive: true });
+  const days = [...new Set([Date.now(), Date.now() + 10 * 60000].map((ms) => new Date(ms).toISOString().slice(0, 10)))];
+  const planted = days.map((day) => path.join(folder, `${day} Shop tour.srt`));
+  const theirs = Buffer.from('1\n00:00:00,000 --> 00:00:01,000\nA captions file the owner keeps already.\n');
+  for (const f of planted) fs.writeFileSync(f, theirs);
+  const bytes = fs.readFileSync(video);
+  const before = M.digestOf(world.owner);
+  const r = run(world, transcribeScript(world), [video], { ...U.UTC, ...engine.env, ...net.env });
+  assert.equal(r.status, 0, `the transcription must run and exit 0; got ${w.describe(r)}`);
+  for (const f of planted) {
+    assert.ok(fs.lstatSync(f).isFile() && fs.readFileSync(f).equals(theirs), `the captions file already there (${path.basename(f)}) must be left byte for byte`);
+  }
+  const made = newSince(world, before);
+  const note = made.find((f) => f.endsWith('.md'));
+  assert.ok(note, `the transcript must be kept as a note in the owner's folder; got ${w.describe(r)}`);
+  const srt = note.replace(/\.md$/, '.srt');
+  assert.ok(made.includes(srt) && !planted.includes(srt), `the pass's own captions file must be kept as a new file beside its transcript, with its name (${srt}), never over the one already there; new files ${JSON.stringify(made)}`);
+  assert.equal(M.srtCues(fs.readFileSync(srt, 'utf8')).length, profile.phrases.length, 'the pass\'s own captions file must hold one cue a phrase of this pass');
+  assert.ok(fs.readFileSync(video).equals(bytes), 'the video must be left as it was');
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
+});
+
 // ---------------------------------------------- notes from a recording
 
 const TARGET = process.env.SQUIRE_TARGET_HOST || process.env.RCF_TARGET_URL || '';
@@ -269,10 +319,11 @@ test("on a signed release, notes from a recording of the owner's own: call notes
 
 const AVCONVERT = [M.avconvertGate, M.madeVideoGate];
 
-test("a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder, twice from the same video, each a new file, neither over the other, and the original never written over or changed", { skip: gate(...AVCONVERT), timeout: 300000 }, async (t) => {
+test("a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed", { skip: gate(...AVCONVERT), timeout: 300000 }, async (t) => {
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
-  const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'One. Two. Three. Four. Five. Six.', seconds: 6 });
+  const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'One. Two. Three. Four. Five. Six.', seconds: 6, location: PLACE });
+  assert.equal(M.describeMedia(original).location, true, 'the made video must carry location data');
   const bytes = fs.readFileSync(original);
   const whole = M.describeMedia(original).duration;
   const clips = [];
@@ -286,6 +337,8 @@ test("a clip of the owner's own video between two times is cut on the Mac by App
     const clip = M.describeMedia(made[0]);
     assert.ok(clip.videoTracks >= 1 && clip.audioTracks >= 1, `the clip must keep the picture and the sound; got ${JSON.stringify(clip)}`);
     assert.ok(clip.duration >= 1 && clip.duration <= 3.5 && clip.duration < whole - 1, `the clip must be the part between ${from} and ${to} (about two seconds of ${whole}); got ${clip.duration}`);
+    assert.equal(clip.location, false, 'the clip must not carry the video\'s location data');
+    assert.ok(!fs.readFileSync(made[0]).includes(Buffer.from('+51.5074')), 'the clip must not carry the place, in any form');
     clips.push([made[0], fs.readFileSync(made[0])]);
   }
   assert.notEqual(clips[0][0], clips[1][0], 'a second clip must be a new file, never over the first');
@@ -295,10 +348,11 @@ test("a clip of the owner's own video between two times is cut on the Mac by App
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
 });
 
-test("just the sound of the owner's own video is kept on the Mac by Apple's avconvert as a new audio file in the owner's folder, with no picture, the original never written over or changed", { skip: gate(...AVCONVERT), timeout: 300000 }, async (t) => {
+test("just the sound of the owner's own video is kept on the Mac by Apple's avconvert as a new audio file in the owner's folder, with no picture and without the video's location data, the original never written over or changed", { skip: gate(...AVCONVERT), timeout: 300000 }, async (t) => {
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
-  const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'Fold the dough every half hour.', seconds: 3 });
+  const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'Fold the dough every half hour.', seconds: 3, location: PLACE });
+  assert.equal(M.describeMedia(original).location, true, 'the made video must carry location data');
   const bytes = fs.readFileSync(original);
   const before = M.digestOf(world.owner);
   const r = run(world, videoScript(world), ['audio', original], net.env);
@@ -308,6 +362,8 @@ test("just the sound of the owner's own video is kept on the Mac by Apple's avco
   assert.ok(said(r).includes(path.basename(made[0])), `Squire must say where it is; got ${w.describe(r)}`);
   const sound = M.describeMedia(made[0]);
   assert.ok(sound.audioTracks >= 1 && sound.videoTracks === 0, `the new file must hold the sound and no picture; got ${JSON.stringify(sound)}`);
+  assert.equal(sound.location, false, 'just the sound must not carry the video\'s location data');
+  assert.ok(!fs.readFileSync(made[0]).includes(Buffer.from('+51.5074')), 'just the sound must not carry the place, in any form');
   assert.ok(fs.readFileSync(original).equals(bytes), 'the original must never be written over or changed');
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
@@ -332,6 +388,51 @@ test("a smaller copy of the owner's own video to share is made on the Mac by App
   assert.ok(fs.readFileSync(original).equals(bytes), 'the original must never be written over or changed');
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+// The names a clip, the sound and a smaller copy of `Bread class.mov` would
+// take first (the header's rule: the stem, a space, the verb, and every
+// extension the presets could write).
+const TAKEN = { clip: ['.mov', '.mp4', '.m4v'], audio: ['.m4a'], smaller: ['.mov', '.mp4', '.m4v'] };
+const TIMES = { clip: ['0:01', '0:03'], audio: [], smaller: [] };
+
+test("a file of the owner's, or a link to a file outside the owner's folder, already at the name a clip, the sound or a smaller copy would take is left as it was, the link the same link and the file it points at untouched: each is made as one new file of its own, never over what was there", { skip: gate(...AVCONVERT), timeout: 600000 }, async (t) => {
+  for (const kind of ["a file of the owner's", "a link to a file outside the owner's folder"]) {
+    const link = kind.startsWith('a link');
+    const world = U.usageWorld(t);
+    const net = await M.networkRecorder(t);
+    const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'One. Two. Three. Four.', seconds: 4 });
+    const bytes = fs.readFileSync(original);
+    const outside = path.join(world.root, 'elsewhere', 'kept.mov');
+    fs.mkdirSync(path.dirname(outside), { recursive: true });
+    const outsideBytes = Buffer.from('a file outside the owner\'s folder, never to be written\n');
+    fs.writeFileSync(outside, outsideBytes);
+    for (const verb of ['clip', 'audio', 'smaller']) {
+      const planted = TAKEN[verb].map((ext) => path.join(path.dirname(original), `Bread class ${verb}${ext}`));
+      const theirs = Buffer.from(`${kind}, at the name the ${verb} would take\n`);
+      for (const f of planted) {
+        if (link) fs.symlinkSync(outside, f);
+        else fs.writeFileSync(f, theirs);
+      }
+      const before = M.digestOf(world.owner);
+      const r = run(world, videoScript(world), [verb, original, ...TIMES[verb]], net.env);
+      assert.equal(r.status, 0, `${kind}: the video tool (core/tools/video.py ${verb} '<file>'${verb === 'clip' ? " '<from>' '<to>'" : ''}) must make its new file and exit 0 with the name taken; got ${w.describe(r)}`);
+      for (const f of planted) {
+        const st = fs.lstatSync(f);
+        if (link) assert.ok(st.isSymbolicLink() && fs.readlinkSync(f) === outside, `${kind}, ${verb}: the link at ${path.basename(f)} must stay the same link`);
+        else assert.ok(st.isFile() && fs.readFileSync(f).equals(theirs), `${kind}, ${verb}: the file at ${path.basename(f)} must be left byte for byte`);
+      }
+      assert.ok(fs.readFileSync(outside).equals(outsideBytes), `${kind}, ${verb}: the file a link points at, outside the owner's folder, must never be touched`);
+      const made = newSince(world, before);
+      assert.equal(made.length, 1, `${kind}, ${verb}: one new file in the owner's folder, nothing else changed; got ${JSON.stringify(made)}`);
+      assert.ok(!planted.includes(made[0]), `${kind}, ${verb}: the new file must never be made over what was there; got ${made[0]}`);
+      assert.ok(path.basename(made[0]).startsWith(`Bread class ${verb}`), `${kind}, ${verb}: the new file takes the original's stem and the verb; got ${path.basename(made[0])}`);
+      assert.ok(said(r).includes(path.basename(made[0])), `${kind}, ${verb}: Squire must say where the new file is; got ${w.describe(r)}`);
+      assert.ok(fs.readFileSync(original).equals(bytes), `${kind}, ${verb}: the original must never be written over or changed`);
+    }
+    await w.sleep(200);
+    assert.equal(net.seen.length, 0, `${kind}: nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
+  }
 });
 
 test("the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode", { timeout: 180000 }, (t) => {

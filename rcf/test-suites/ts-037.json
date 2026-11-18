@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-18T12:15:11.805Z",
-  "updatedAt": "2026-11-18T12:15:37.504Z",
+  "updatedAt": "2026-11-18T15:35:19.425Z",
   "purpose": "Runs the real transcription on a made video and checks the captions file beside the transcript, cue by cue, with nothing burned into the video.",
   "testLevel": "integration",
   "acIds": [
@@ -16,6 +16,13 @@
       "description": "a captions file beside the transcript of a made video, one numbered cue a phrase with its own times and words, short and hour-long, nothing burned in",
       "status": "pending",
       "testPointer": "tests/acceptance/video-helpers.test.js::a captions file (.srt) from the same pass is kept beside the transcript of the owner's own video, one numbered cue a phrase with the phrase's own times and words, for a short video and an hour's, and nothing is burned into the video, which is left as it was"
+    },
+    {
+      "id": "TC-037-a-captions-file-already-there-is-left",
+      "acId": "AC-1701-4",
+      "description": "a captions file already at the name the pass's own would take is left byte for byte; the pass keeps its own as a new file beside its own transcript",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-helpers.test.js::a captions file already beside where the transcript is kept, at the name the pass's own would take, is left byte for byte: the pass keeps its own captions file as a new file beside its own transcript, never over the one already there"
     }
   ],
   "status": "draft"
