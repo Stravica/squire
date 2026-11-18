@@ -1,24 +1,24 @@
 {
   "createdAt": "2026-11-07T17:40:19.957Z",
-  "updatedAt": "2026-11-16T20:28:24.138Z",
+  "updatedAt": "2026-11-18T11:58:36.688Z",
   "asA": "Squire owner",
-  "iWant": "Squire to work from YouTube captions and my own recordings",
-  "soThat": "I get what I need from a video without any YouTube video being downloaded",
-  "description": "Captions-based YouTube analysis and local transcription of the Squire owner's own files.",
+  "iWant": "Squire to work from my own recordings and a transcript I paste",
+  "soThat": "I get what I need from a video without Squire fetching anything from YouTube",
+  "description": "Local transcription of the Squire owner's own files on the Mac, and work from a transcript the Squire owner pastes; nothing is fetched from YouTube.",
   "usId": "US-1701",
   "prdId": "PRD-001",
   "reqId": "REQ-017",
   "version": "0.1.0",
   "status": "draft",
-  "title": "Video and audio: captions and the Squire owner's own files only",
+  "title": "Video and audio: the Squire owner's own files and a pasted transcript",
   "acceptanceCriteria": [
     {
       "id": "AC-1701-1",
-      "description": "Squire uses YouTube captions and the Squire owner's own files, and never downloads a YouTube video.",
+      "description": "Squire transcribes the Squire owner's own files on the Mac, asks nothing of YouTube, and never downloads a YouTube video.",
       "testable": true,
-      "given": "A YouTube video with captions, a YouTube video without captions, an audio or video file of the Squire owner's own, and a link to a YouTube playlist or channel",
+      "given": "An audio or video file of the Squire owner's own, and a YouTube link to a video, a playlist or a channel",
       "when": "Squire is asked to work with each",
-      "then": "It uses the captions and transcribes the Squire owner's own file on the Mac; for the video without captions, or one YouTube refuses, it downloads no video or audio, makes no further request, and says it cannot, offering the transcript from YouTube's own Show transcript or the Squire owner's own file; a playlist or channel link is refused with a reason and nothing is asked of YouTube.",
+      "then": "It transcribes the Squire owner's own file on the Mac; for any YouTube link (a video, a playlist or a channel) it asks nothing of YouTube, downloads nothing, and says it does not fetch from YouTube, offering the transcript pasted from YouTube's own Show transcript or the Squire owner's own file.",
       "verification": "testOnly"
     },
     {
@@ -28,6 +28,42 @@
       "given": "A video or audio job on a file of the Squire owner's that is missing or cannot be read",
       "when": "Squire is asked to work with it",
       "then": "The job stops and Squire explains why; nothing is downloaded and no existing file is changed.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1701-3",
+      "description": "Squire turns an audio or video file of the Squire owner's own into a transcript with times, in paragraphs, that the Squire owner can search and quote, and says plainly when a video has no sound.",
+      "testable": true,
+      "given": "An audio or video file of the Squire owner's own with speech, and a video of the Squire owner's own with no sound",
+      "when": "Squire is asked to turn each into text",
+      "then": "For the file with speech, a transcript made on the Mac is kept in the Squire owner's folder in paragraphs, each with its time in the recording; for the video with no sound, Squire says plainly that it has no sound and keeps no transcript.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1701-4",
+      "description": "Squire makes a captions file (.srt) for the Squire owner's own video from the same on-device pass as its transcript, kept beside the transcript and not burned in.",
+      "testable": true,
+      "given": "A video of the Squire owner's own with speech",
+      "when": "Squire turns it into text",
+      "then": "A captions file (.srt) from the same pass on the Mac, its times those of the transcript, is kept beside the transcript in the Squire owner's folder, ready to upload where the Squire owner posts; nothing is burned into the video, which is left as it was.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1701-5",
+      "description": "Squire makes notes from a recording of the Squire owner's own: decisions, actions and a follow-up draft for the Squire owner to send, or chapters, show notes and post drafts.",
+      "testable": true,
+      "given": "A transcript with times of a recording of the Squire owner's own",
+      "when": "The Squire owner asks for notes from the recording",
+      "then": "Squire writes call notes (decisions, actions and a follow-up draft for the Squire owner to send, never sent by Squire) or creator notes (chapters, show notes and post drafts) from the transcript, and the recording itself stays on the Mac.",
+      "verification": "external"
+    },
+    {
+      "id": "AC-1701-6",
+      "description": "Squire cuts a clip, keeps just the audio or makes a smaller copy of the Squire owner's own video with Apple's avconvert, on the Mac, into a new file, never over the original.",
+      "testable": true,
+      "given": "A video of the Squire owner's own",
+      "when": "The Squire owner asks for a clip between two times, for just its audio, or for a smaller copy to share",
+      "then": "Each is made on the Mac by Apple's avconvert as a new file in the Squire owner's folder, the smaller copy without the video's location data, each asked first as video and audio work; the original is never written over or changed.",
       "verification": "testOnly"
     }
   ]
