@@ -101,9 +101,27 @@ class SpeechHelper:
         code, swiftc = cls.ask([System.command('/usr/bin/xcrun'), '--find', 'swiftc'])
         if code != 0 or not swiftc or not os.path.isfile(swiftc):
             return None, None, 'Apple\'s command line tools on this Mac have no Swift compiler'
-        # The newest macOS 26 SDK the tools carry, when they carry one.
-        sdks = sorted(glob.glob(os.path.join(developer, 'SDKs', f'MacOSX{cls.LOWEST}*.sdk')))
-        return swiftc, (sdks[-1] if sdks else None), None
+        return swiftc, cls.sdk(developer), None
+
+    @classmethod
+    def sdk(cls, developer):
+        """The newest macOS 26 SDK the developer folder carries, or None: in
+        the command line tools' layout (<developer>/SDKs), in Xcode's
+        (<developer>/Platforms/MacOSX.platform/Developer/SDKs), or else the
+        one Apple's own xcrun names for macOS, when its version is 26 or
+        later. Without one, swiftc cannot load its standard library."""
+        for folder in (os.path.join(developer, 'SDKs'),
+                       os.path.join(developer, 'Platforms', 'MacOSX.platform', 'Developer', 'SDKs')):
+            sdks = sorted(glob.glob(os.path.join(folder, f'MacOSX{cls.LOWEST}*.sdk')))
+            if sdks:
+                return sdks[-1]
+        xcrun = System.command('/usr/bin/xcrun')
+        code, version = cls.ask([xcrun, '--sdk', 'macosx', '--show-sdk-version'])
+        major = re.match(r'^(\d+)', version or '')
+        if code != 0 or not major or int(major.group(1)) < cls.LOWEST:
+            return None
+        code, path = cls.ask([xcrun, '--sdk', 'macosx', '--show-sdk-path'])
+        return path if code == 0 and path and os.path.isdir(path) else None
 
     @classmethod
     def build(cls, home):
