@@ -1,0 +1,184 @@
+'use strict';
+
+// Squire's browser: by default it gives a website none of the owner's details,
+// it signs in to the owner's accounts only on the owner's yes, and it runs in
+// a window of its own on the Mac that the owner can watch and take over in
+// (AC-1801-1, AC-1801-2). The browser is the session's tool: the model reads
+// pages and decides what to type and click, through browser calls the safety
+// floor judges. What code decides is bound here, through the real entry
+// points: lay-down (what the session loads: Squire's own block, and Squire's
+// browser set up in Squire's Claude Code config folder), and the safety floor
+// as the session runs it (the PreToolUse hooks of the settings lay-down
+// writes, the event on stdin), with each call the floor lets through carried
+// out in a real headless browser against a test site on this Mac's loopback
+// (tests/fixtures/browser-world.js). The suite runs headless; the visible
+// window and the owner's takeover are shown on a real Mac at TEST.
+//
+// What the builder provides (none of it at the base head; a case fails at its
+// own first assertion while it is absent):
+//   The floor, for a browser call (any mcp__playwright__browser_* tool), by
+//   default refuses one that carries any of the owner's details, whatever the
+//   field is called and by whatever route (typed, filled in a form, set by a
+//   script, or carried in an address), even when the owner said yes to that
+//   call: a yes to a browser call is not a switch of this default. The
+//   owner's details are what the owner's profile holds (operator/profile.md
+//   in the owner's folder, which Squire's first conversation keeps); here the
+//   name, email address, postal address, phone number and card number written
+//   there as labelled lines, matched in any letter case and, for the phone
+//   and card numbers, by their digits. Every other browser call is asked and
+//   marks the job, as today.
+//   Squire's own block in what the session loads tells the session that its
+//   browser runs in a window of its own on the Mac, which the owner can watch
+//   and take over in; that when the browser reaches a sign-in page it stops,
+//   tells the owner which site wants a sign-in, and waits for the owner's yes
+//   to that sign-in before it goes on; and never signs in without it.
+//   Lay-down sets Squire's browser up in Squire's Claude Code config folder
+//   (claude-config/.claude.json in the Squire home, its mcpServers): a
+//   Playwright browser server, never run headless, with a profile of its own
+//   (in the Squire home, or kept in memory), never the owner's own browser
+//   profile.
+//
+// Design decisions, on the fail-closed reading (each also a question in the
+// return): the browser calls take the Playwright tools' names and inputs, as
+// the floor's own cases name them; one browser call per job, because a job's
+// first browser call marks it as holding untrusted input and private things
+// and the floor then refuses every later asked call in that job as one job,
+// which these cases leave as it is; the owner's details are read from the
+// owner's profile.
+//
+// Usage model (assumptions, none measured): typical, one page with a form,
+// a handful of calls; heavy, a page whose fields go by other names, filled
+// field by field, by a script and through its address.
+//
+// The class is open (any field, any spelling, any page that is a sign-in);
+// these are instances. No case reaches a model, a real website, the network
+// beyond this Mac's loopback or any host but this Mac.
+
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const w = require('../fixtures/squire-world.js');
+const U = require('../fixtures/usage-world.js');
+const B = require('../fixtures/browser-world.js');
+
+const T = B.browserTools;
+const { OWNER } = B;
+const refsOf = (page) => Object.fromEntries(((page && page.elements) || []).map((e) => [e.name, e.ref]));
+const decode = (s) => { try { return decodeURIComponent(String(s).replace(/\+/g, ' ')); } catch (e) { return String(s); } };
+
+// The details a page asks for, with the owner's values for them.
+const DETAILS = [
+  ['name', OWNER.name],
+  ['email address', OWNER.email],
+  ['postal address', `${OWNER.street}, ${OWNER.town}, ${OWNER.postcode}`],
+  ['phone number', OWNER.phone],
+  ['card number', OWNER.card],
+];
+
+test("a page on the loopback test site asking for a name, an email address, a postal address, a phone number and a card number gets none of the owner's details from Squire's browser, filled in as a form or typed field by field, though the owner said yes to each browser call; the page's own message field and its send button still go through, and no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
+  const world = B.laidWorld(t);
+  const { site, call, beyond, browser } = await B.browserCase(t, world);
+  t.after(() => t.diagnostic(`browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
+
+  const opened = await call('open', T.navigate(site.url('/order')));
+  assert.ok(opened.performed, `Squire's browser must open the page on the owner's yes; the floor said ${w.describe(opened.last)}`);
+  const refs = refsOf(opened.page);
+  const fields = { 'name': 'Full name', 'email address': 'Email address', 'postal address': 'Postal address', 'phone number': 'Phone number', 'card number': 'Card number' };
+  for (const label of [...Object.values(fields), 'Message', 'Send']) assert.ok(refs[label], `the page must show ${label}; got ${JSON.stringify(opened.page)}`);
+
+  const message = await call('message', T.type('Message', refs.Message, 'Please send a brochure'));
+  assert.ok(message.performed, `the page's own message field must be filled on the owner's yes; the floor said ${w.describe(message.last)}`);
+  await call('details', T.fillForm(DETAILS.map(([what, value]) => ({ name: fields[what], ref: refs[fields[what]], value }))));
+  for (const [what, value] of DETAILS) await call(`detail-${what}`, T.type(fields[what], refs[fields[what]], value));
+  const sent = await call('send', T.click('Send', refs.Send));
+  assert.ok(sent.performed, `the page's send button must go through on the owner's yes; the floor said ${w.describe(sent.last)}`);
+
+  const posted = site.received.filter((r) => r.method === 'POST' && r.url.startsWith('/order'));
+  assert.equal(posted.length, 1, `the site must receive the form once; it received ${JSON.stringify(site.received)}`);
+  assert.match(decode(posted[0].body), /Please send a brochure/, `the page's own message field must reach the site; it received ${decode(posted[0].body)}`);
+  const given = B.ownerDetailsIn(site.text());
+  assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details; the site received the owner's ${given.join(', ')}: ${decode(posted[0].body)}`);
+  assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
+});
+
+test("a second page on the loopback test site that hides the asks under other names gets none of the owner's details from Squire's browser, typed field by field, set by a script in another letter case or carried in the page's address with the numbers run together, though the owner said yes to each browser call; the page's own question still goes through, and no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
+  const world = B.laidWorld(t);
+  const { site, call, beyond, browser } = await B.browserCase(t, world);
+  t.after(() => t.diagnostic(`browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
+
+  const opened = await call('open', T.navigate(site.url('/survey')));
+  assert.ok(opened.performed, `Squire's browser must open the page on the owner's yes; the floor said ${w.describe(opened.last)}`);
+  const refs = refsOf(opened.page);
+  const hidden = ['Who should we thank', 'Where can we reply', 'Line one', 'Best number', 'Sixteen digits for the draw'];
+  for (const label of [...hidden, 'Favourite loaf', 'Go']) assert.ok(refs[label], `the page must show ${label}; got ${JSON.stringify(opened.page)}`);
+
+  const loaf = await call('loaf', T.type('Favourite loaf', refs['Favourite loaf'], 'Sourdough'));
+  assert.ok(loaf.performed, `the page's own question must be answered on the owner's yes; the floor said ${w.describe(loaf.last)}`);
+  for (let i = 0; i < hidden.length; i += 1) await call(`hidden-${i}`, T.type(hidden[i], refs[hidden[i]], DETAILS[i][1]));
+  await call('script', T.evaluate(`() => { document.querySelector('[data-ref="${refs['Where can we reply']}"]').value = '${OWNER.email.toUpperCase()}'; }`));
+  const go = await call('go', T.click('Go', refs.Go));
+  assert.ok(go.performed, `the page's own button must go through on the owner's yes; the floor said ${w.describe(go.last)}`);
+  const digits = (s) => s.replace(/[^0-9]/g, '');
+  await call('address', T.navigate(site.url(`/survey-done?ref=${digits(OWNER.card)}&tel=${digits(OWNER.phone)}&to=${encodeURIComponent(OWNER.name)}`)));
+
+  const answered = site.received.filter((r) => r.method === 'GET' && r.url.startsWith('/survey-done') && /a6=Sourdough/.test(r.url));
+  assert.equal(answered.length, 1, `the site must receive the page's own answer once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${decode(r.url)}`))}`);
+  const given = B.ownerDetailsIn(site.text());
+  assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details, whatever the field is called; the site received the owner's ${given.join(', ')}: ${JSON.stringify(site.received.map((r) => `${r.method} ${decode(r.url)} ${decode(r.body)}`))}`);
+  assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
+});
+
+test("Squire's browser stops at a sign-in page on the loopback test site and does not sign in until the owner's yes for that sign-in: what the session loads says to stop there, tell the owner which site wants a sign-in and wait for their yes; the floor holds the call that would go on, the site records no sign-in before the yes, and after the yes the browser goes on and the site records the sign-in; no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
+  const world = B.laidWorld(t);
+  const sentences = B.personaSentences(world);
+  const stops = sentences.filter((x) => /browser/i.test(x) && /sign(-| )?in/i.test(x) && /\byes\b/i.test(x) && /stop|wait/i.test(x));
+  assert.ok(stops.length > 0, `Squire's own block must tell the session that when its browser reaches a sign-in page it stops and waits for the owner's yes to that sign-in; got ${JSON.stringify(sentences.filter((x) => /browser|sign(-| )?in/i.test(x)))}`);
+  assert.ok(stops.some((x) => /site|website/i.test(x)) || sentences.some((x) => /sign(-| )?in/i.test(x) && /which (site|website)/i.test(x)),
+    `it must say to tell the owner which site wants the sign-in; got ${JSON.stringify(stops)}`);
+  assert.ok(sentences.some((x) => /never/i.test(x) && /sign(-| )?in/i.test(x)), `it must say never to sign in without that yes; got ${JSON.stringify(stops)}`);
+
+  const { site, browser, floor, call, beyond } = await B.browserCase(t, world);
+  t.after(() => t.diagnostic(`browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
+  const opened = await call('open', T.navigate(site.url('/signin')));
+  assert.ok(opened.performed, `Squire's browser must open the page on the owner's yes; the floor said ${w.describe(opened.last)}`);
+  const refs = refsOf(opened.page);
+  assert.ok(refs.Continue, `the sign-in page must show its Continue button; got ${JSON.stringify(opened.page)}`);
+  assert.equal(site.signIns(), 0, 'no sign-in before the browser tries to go on');
+
+  const job = 'job-browser-sign-in';
+  const goOn = T.click('Continue', refs.Continue);
+  const first = floor.run(job, goOn);
+  w.assertBlocked(first, 'the browser going on from the sign-in page before the owner\'s yes');
+  assert.equal(site.signIns(), 0, 'the site must record no sign-in before the owner\'s yes');
+  U.sayYesTo(world, job, first, { env: U.UTC });
+  const again = floor.run(job, goOn);
+  w.assertAllowed(again, 'the browser going on from the sign-in page once the owner said yes to that sign-in');
+  const page = await B.perform(browser, goOn);
+  assert.equal(site.signIns(), 1, `after the yes the browser goes on and the site records the sign-in once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${r.url}`))}`);
+  assert.match(page.heading, /signed in/i, `the browser must be on the signed-in page; got ${JSON.stringify(page)}`);
+  beyond.push(...B.offLoopbackSockets(browser));
+  assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
+});
+
+test("Squire's browser is set up in what the session loads in a window of its own on the Mac that the owner can watch and take over in: a Playwright browser server in Squire's config folder, never headless, with a profile of its own and never the owner's browser profile, and what the session loads tells the session the owner can watch it and take over", { timeout: 120000 }, (t) => {
+  const world = B.laidWorld(t);
+  const file = path.join(world.home, 'claude-config', '.claude.json');
+  let state = null;
+  try { state = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { state = null; }
+  const servers = (state && state.mcpServers) || {};
+  const words = (s) => [s.command, ...(Array.isArray(s.args) ? s.args : [])].map(String);
+  const browsers = Object.entries(servers).filter(([name, s]) => s && /playwright/i.test([name, ...words(s)].join(' ')));
+  assert.equal(browsers.length, 1, `lay-down must set Squire's one browser up in Squire's Claude Code config folder (${file}, mcpServers): a Playwright browser server; got ${state ? JSON.stringify(servers) : 'no readable file'}`);
+  const [, server] = browsers[0];
+  const args = words(server);
+  assert.ok(!args.some((a) => /^--headless(=|$)/.test(a)), `Squire's browser must run in a window the owner can see, never headless; got ${JSON.stringify(args)}`);
+  const at = args.findIndex((a) => /^--user-data-dir(=|$)/.test(a));
+  const profile = at < 0 ? null : (args[at].includes('=') ? args[at].split('=').slice(1).join('=') : args[at + 1]);
+  const own = args.includes('--isolated') || (profile && path.resolve(profile).startsWith(world.home + path.sep));
+  assert.ok(own, `Squire's browser must have a profile of its own, in the Squire home or kept in memory, never the owner's browser profile; got ${JSON.stringify(args)}`);
+
+  const sentences = B.personaSentences(world);
+  assert.ok(sentences.some((x) => /browser/i.test(x) && /window/i.test(x) && /watch/i.test(x) && /take (it )?over|takeover/i.test(x)),
+    `Squire's own block must tell the session that its browser runs in a window of its own on the Mac, which the owner can watch and take over in; got ${JSON.stringify(sentences.filter((x) => /browser/i.test(x)))}`);
+});

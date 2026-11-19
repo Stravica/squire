@@ -457,6 +457,18 @@ test("the one yes names every piece set-up adds: Claude Code with its own update
     /voice notes?/i, /Squire Update/, /Applications/], 'the one yes');
 });
 
+// Squire's built-in browser, the one Squire drives in a window of its own, is
+// a piece set-up adds: the one yes names it beside the others, and on Not now
+// nothing of it, as of anything else, is downloaded, installed or written.
+test("the one yes names Squire's built-in browser beside Claude Code, Apple's tools, Squire and its background jobs, and on Not now nothing of the browser is downloaded, installed or written", { timeout: 60000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, answers: { [TITLES.setUp]: 'button returned:Not now' } } });
+  const before = w.snapshot(iw.userHome);
+  const run = await I.runApp(iw);
+  assertWindow(run, TITLES.setUp, [/built-in browser|Squire's (own )?browser|browser Squire/i, /Claude Code/, /command line tools/i, /background jobs?/i], 'the one yes');
+  assert.equal(downloads(run).length + installerRuns(run).length + installCalls(run).length, 0, `on Not now nothing may be downloaded or installed; got ${I.describeRun(run)}`);
+  assert.deepEqual(w.snapshotDifferences(before, w.snapshot(iw.userHome)), [], 'on Not now nothing of the browser, or of anything else, may be written in the home folder');
+});
+
 test('after the one yes nothing outside the named list is installed', { timeout: FULL_RUN }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false } });
   const before = I.contentOf(iw.userHome);
