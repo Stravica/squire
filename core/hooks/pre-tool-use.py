@@ -16,12 +16,16 @@ yes, its block naming usage credits. A big job starts only through Squire's
 one job command, on the owner's yes, and on a second yes above 90% usage.
 Squire's import and check-in commands run only as their one command, each on
 the owner's yes to that run, and an import leaves its job holding untrusted
-input.
+input. Each call of Squire's browser is asked on its own and leaves its job
+holding untrusted input only; by default one that carries any of the
+owner's details, runs a script in the page, sends a file, or is made while
+the owner's details cannot be read is refused, yes or no.
 """
 
 import fnmatch
 import glob
 import hashlib
+import html
 import json
 import os
 import re
@@ -33,7 +37,8 @@ import subprocess
 import sys
 import tempfile
 import time
-from urllib.parse import urlsplit
+import unicodedata
+from urllib.parse import unquote_plus, urlsplit
 
 CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 PYTHON = '/usr/bin/python3'
@@ -683,6 +688,175 @@ class PageLink:
         return floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT)
 
 
+class VersionsCommand:
+    """The session keeping, listing or getting back a version of what Squire
+    builds, with Squire's versions command:
+    /usr/bin/python3 '<Squire home>/core/tools/versions.py' keep|list '<folder>',
+    or back '<folder>' <number>. It works on this Mac only, and going back
+    first keeps any change not yet kept, so it is free and the job takes in
+    nothing, but only as that whole Bash command, on one app's own folder
+    (workspace/apps/<name> in the owner's folder, as the Mac resolves it).
+    Any other folder, verb, word or option is refused, yes or no; spelt any
+    other way the versions command stays refused, as any program naming
+    Squire's home is (Floor.judge_argv)."""
+
+    SCRIPT = 'versions.py'
+    APPS = os.path.join('workspace', 'apps')
+    NEVER = ('Squire\'s safety floor: Squire\'s versions command runs from the session only as the one command '
+             'Squire\'s instructions name, with keep, list or back, one app\'s own folder in workspace/apps and, for '
+             'back, one version number, yes or no. Nothing ran: {what}')
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """None when the call is not the versions command as one plain
+        command; else the floor's answer: (0, '') when it is free, (2, why)
+        when it is refused."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        verb, rest = argv[2:3], argv[3:]
+        fits = (verb in (['keep'], ['list']) and len(rest) == 1) or \
+            (verb == ['back'] and len(rest) == 2 and rest[1].isascii() and rest[1].isdigit())
+        folder = floor.path(rest[0], strict=False) if fits and not rest[0].startswith('-') else None
+        apps = os.path.join(floor.owner, cls.APPS)
+        if folder and Paths.fold(os.path.dirname(folder)) == Paths.fold(apps) and os.path.isdir(folder):
+            return 0, ''
+        return 2, cls.NEVER.format(what=data.get('command'))
+
+
+class OwnerDetails:
+    """The owner's details, as the floor finds them for a browser call: the
+    labelled lines of the owner's profile (operator/profile.md in the
+    owner's folder, a line each for the name, email address, postal address,
+    phone number and card number, led by its label and a colon) and the
+    first name set-up keeps in the owner's squire.json. The floor decides in
+    code: it matches the values those lines hold, never the profile's prose.
+    A detail is found in a call's input wherever it is carried (any field,
+    a script, an address with its escapes taken off), in any letter case:
+    the names, the email address and the postal address (whole, or a part of
+    it that holds a number, as a street or a postcode) as whole words, the
+    phone and card numbers by their digits."""
+
+    PROFILE = os.path.join('operator', 'profile.md')
+    OWNER_CONFIG = 'squire.json'
+    ORDER = ('name', 'email address', 'postal address', 'phone number', 'card number')
+    LABELS = {
+        'name': 'name', 'full name': 'name', 'first name': 'name', 'last name': 'name', 'surname': 'name',
+        'email': 'email address', 'email address': 'email address', 'e-mail': 'email address',
+        'e-mail address': 'email address',
+        'address': 'postal address', 'postal address': 'postal address', 'home address': 'postal address',
+        'street address': 'postal address',
+        'phone': 'phone number', 'phone number': 'phone number', 'mobile': 'phone number',
+        'mobile number': 'phone number', 'telephone': 'phone number', 'telephone number': 'phone number',
+        'card': 'card number', 'card number': 'card number', 'credit card': 'card number',
+        'debit card': 'card number', 'bank card': 'card number',
+    }
+    LINE = re.compile(r'^\s*(?:[-*+]\s+)?(?:\*\*|__)?([^\W\d_][^:*]*?)\s*(?:\*\*|__)?\s*:\s*(?:\*\*|__)?\s*(.*?)\s*$')
+    NUMBERS = ('phone number', 'card number')
+    # The fewest digits a phone or card number is matched by; a shorter one
+    # is matched as words.
+    FEWEST_DIGITS = 6
+    PHONE_DIGITS = 9
+
+    def __init__(self, values):
+        """values: [(what, value)] as the owner keeps them."""
+        self.words, self.digits = [], []
+        for what, value in values:
+            if what in self.NUMBERS:
+                digits = re.sub(r'\D', '', unicodedata.normalize('NFKC', value))
+                if what == 'phone number':
+                    # Its last digits, so that it is found with or without
+                    # its country code or leading zero.
+                    digits = digits.lstrip('0')[-self.PHONE_DIGITS:]
+                if len(digits) >= self.FEWEST_DIGITS:
+                    self.digits.append((what, digits))
+                    continue
+            parts = [value]
+            if what == 'postal address':
+                parts += [p for p in re.split(r'[,;\n]', value) if re.search(r'\d', p)]
+            for part in parts:
+                said = self.words_of(part)
+                if len(said.strip()) >= 2:
+                    self.words.append((what, said))
+                    self.words.append((what, ' ' + said.replace(' ', '') + ' '))
+
+    @classmethod
+    def read(cls, owner_folder):
+        """The owner's details from the profile's labelled lines and the
+        first name in the owner's squire.json; None when the floor cannot
+        check a call for them: the profile cannot be read (unreadable, or
+        not there yet), or squire.json is there and cannot be read."""
+        try:
+            with open(os.path.join(owner_folder, cls.PROFILE), encoding='utf-8') as f:
+                profile = f.read()
+        except (OSError, ValueError):
+            return None
+        values = []
+        for line in profile.splitlines():
+            m = cls.LINE.match(line)
+            if not m:
+                continue
+            what = cls.LABELS.get(' '.join(m.group(1).casefold().split()))
+            if what and m.group(2):
+                values.append((what, m.group(2)))
+        try:
+            with open(os.path.join(owner_folder, cls.OWNER_CONFIG), encoding='utf-8') as f:
+                config = json.load(f)
+        except FileNotFoundError:
+            config = {}
+        except (OSError, ValueError):
+            return None
+        if not isinstance(config, dict):
+            return None
+        if isinstance(config.get('firstName'), str) and config['firstName'].strip():
+            values.append(('name', config['firstName']))
+        return cls(values)
+
+    @staticmethod
+    def words_of(text):
+        """A text as words: its compatibility form, case folded, every run
+        of other characters one space, with a space at each end."""
+        folded = unicodedata.normalize('NFKC', text).casefold()
+        return ' ' + re.sub(r'[\W_]+', ' ', folded).strip() + ' '
+
+    @staticmethod
+    def texts_of(data):
+        """Every text a call's input carries, its keys among them, each also
+        with its address and HTML escapes taken off."""
+        found, stack = [], [data]
+        while stack:
+            item = stack.pop()
+            if isinstance(item, dict):
+                stack.extend(item.keys())
+                stack.extend(item.values())
+            elif isinstance(item, (list, tuple)):
+                stack.extend(item)
+            elif isinstance(item, str):
+                found.append(item)
+            elif isinstance(item, (int, float)) and not isinstance(item, bool):
+                found.append(str(item))
+        texts = []
+        for text in found:
+            forms = [unicodedata.normalize('NFKC', text)]
+            for _ in range(3):
+                plain = unicodedata.normalize('NFKC', html.unescape(unquote_plus(forms[-1])))
+                if plain == forms[-1]:
+                    break
+                forms.append(plain)
+            texts += forms
+        return texts
+
+    def found(self, data):
+        """Which of the owner's details a call's input carries, in the order
+        the owner's details are named; none when it carries none."""
+        texts = self.texts_of(data)
+        said = ' '.join(self.words_of(t) for t in texts)
+        digits = [re.sub(r'\D', '', t) for t in texts]
+        carried = {what for what, words in self.words if words in said}
+        carried |= {what for what, number in self.digits if any(number in d for d in digits)}
+        return [what for what in self.ORDER if what in carried]
+
+
 class Floor:
     """Judges one tool call against the owner's folder, Squire's home and
     the approvals ledger, and decides it."""
@@ -704,7 +878,16 @@ class Floor:
     CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
     SPENDING = re.compile(r'(?:^|[\s\'"`(=;&|])/(?:upgrade|usage-credits)', re.IGNORECASE)
     SEND_TOOLS = {'mcp__claude_ai_Gmail__send_message'}
+    # Squire's browser: the tools of its one browser server, keyed playwright.
+    # A call that runs a script in the page or sends a file cannot be checked
+    # for the owner's details.
+    BROWSER = 'mcp__playwright__browser_'
+    BROWSER_UNCHECKED = ('mcp__playwright__browser_evaluate', 'mcp__playwright__browser_file_upload')
     PRIVATE = ('operator', 'state', 'reference', os.path.join('workspace', 'files'))
+    # A preview on this Mac: Python's own web server, bound to the loopback.
+    PYTHONS = re.compile(r'python(\d+(\.\d+)?)?')
+    PREVIEW_MODULE = 'http.server'
+    LOOPBACK = re.compile(r'127(\.\d{1,3}){3}|::1|\[::1\]|localhost', re.IGNORECASE)
 
     # The reads the floor resolves to literal paths, by command: its options
     # that take no value, the options that take the next word, and the
@@ -762,6 +945,21 @@ class Floor:
                    '/usage-credits or /upgrade in Claude themselves. Nothing ran.')
     CREDITS = ('{what}\nThis picks a model outside the plan\'s set (opus, sonnet and haiku), or one Squire cannot read, '
                'and that model may need usage credits, beyond what the plan includes.')
+    NEVER_BROWSER_DETAILS = ('Squire\'s safety floor: by default Squire\'s browser gives a website none of the owner\'s '
+                             'details, yes or no, and this call carries the owner\'s {details}. Nothing ran: {tool}. '
+                             'Leave it out; if the owner wants a website to have it, they can type it themselves by '
+                             'taking over the browser\'s window.')
+    NEVER_BROWSER_UNCHECKED = ('Squire\'s safety floor: Squire\'s browser does not run a script in the page or send a '
+                               'file, yes or no, because Squire cannot check either for the owner\'s details. Nothing '
+                               'ran: {tool}. The owner can do that step themselves by taking over the browser\'s window.')
+    NEVER_BROWSER_PROFILE = ('Squire\'s safety floor: Squire\'s browser makes no call while the owner\'s profile '
+                             '(operator/profile.md in their folder) cannot be read, yes or no, because Squire cannot '
+                             'then check the call for the owner\'s details. Nothing ran: {tool}. The guided first '
+                             'conversation writes the profile; browse once it is there and can be read.')
+    NEVER_OPEN_PREVIEW = ('Squire\'s safety floor: a preview is served on this Mac only, so a web server that would '
+                          'listen beyond this Mac\'s loopback is never started, yes or no: Python\'s http.server with '
+                          'no --bind, or bound to another address, can be reached from other machines. Start it bound '
+                          'to the loopback (--bind 127.0.0.1) from the app\'s own folder. Nothing ran: {what}')
     ASK = ('Request {id}: this needs the owner\'s yes first: {what}\n'
            'Ask the owner and wait for their answer; a yes covers this one action, once.')
     OPEN = (' Open requests in this job: {ids}. With more than one open, the owner answers one by naming it, '
@@ -823,6 +1021,9 @@ class Floor:
                     return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         if PageLink.of(self, tool, data):
             return 0, ''
+        versions = VersionsCommand.of(self, tool, data)
+        if versions:
+            return versions
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
@@ -982,6 +1183,8 @@ class Floor:
             return 'search', searched, [('untrusted', searched)]
         if tool in self.FREE_TOOLS:
             return 'free', '', []
+        if tool.startswith(self.BROWSER):
+            return self.judge_browser(tool, data)
         what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
         if tool in self.AGENT_TOOLS:
             if 'model' in data:
@@ -997,6 +1200,24 @@ class Floor:
             return 'ask', what, []
         # A tool the floor does not know: it cannot tell what the tool reads.
         return 'ask', what, [('untrusted', tool), ('private', tool)]
+
+    def judge_browser(self, tool, data):
+        """A call of Squire's browser. Refused, yes or no, when the floor
+        cannot check it for the owner's details (it runs a script in the
+        page or sends a file, or the owner's details cannot be read) or when
+        it carries one of them, by whatever route; otherwise asked, each call
+        on its own, and once it runs the job holds untrusted input only: a
+        browser call is not a read of the owner's private things."""
+        if tool in self.BROWSER_UNCHECKED:
+            return 'never', self.NEVER_BROWSER_UNCHECKED.format(tool=tool), []
+        details = OwnerDetails.read(self.owner)
+        if details is None:
+            return 'never', self.NEVER_BROWSER_PROFILE.format(tool=tool), []
+        carried = details.found(data)
+        if carried:
+            named = ', '.join(carried[:-1]) + ' and ' + carried[-1] if len(carried) > 1 else carried[0]
+            return 'never', self.NEVER_BROWSER_DETAILS.format(details=named, tool=tool), []
+        return 'ask', f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}', [('untrusted', tool)]
 
     def named_agent_free(self, name):
         """True when a subagent called with no model runs on a model in the
@@ -1080,6 +1301,8 @@ class Floor:
         never = next((v for v in verdicts if v[0] == 'never'), None)
         if never:
             return never[0], never[1].format(what=command), []
+        if any(self.open_preview(argv) for argv in shell.segments):
+            return 'never', self.NEVER_OPEN_PREVIEW.format(what=command), []
         taints = [t for v in verdicts for t in v[2]]
         kinds = {v[0] for v in verdicts}
         if shell.plain and kinds <= {'free'}:
@@ -1091,6 +1314,43 @@ class Floor:
             return 'model', command, taints
         run = [('untrusted', command), ('private', command)] if 'read' in kinds else [('private', command)]
         return 'ask', self.CREDITS.format(what=command) if credits else command, taints + run
+
+    @classmethod
+    def open_preview(cls, argv):
+        """True when one command starts Python's own web server (python -m
+        http.server) with no bind to the loopback, or a bind beyond it: it
+        would listen for other machines as well as this Mac. Its bind is
+        read as Python reads it: -b or --bind (or a shortening of --bind)
+        with the address next or after =, the last one given. A bind the
+        floor cannot read as written counts as beyond the loopback."""
+        if not argv or not cls.PYTHONS.fullmatch(os.path.basename(argv[0])):
+            return False
+        args, module, rest = argv[1:], None, []
+        for i, word in enumerate(args):
+            if word == '-m' and i + 1 < len(args):
+                module, rest = args[i + 1], args[i + 2:]
+                break
+            if word.startswith('-m') and len(word) > 2:
+                module, rest = word[2:], args[i + 1:]
+                break
+            if not word.startswith('-'):
+                return False
+        if module != cls.PREVIEW_MODULE:
+            return False
+        bind, i = None, 0
+        while i < len(rest):
+            word = rest[i]
+            name, sep, value = word.partition('=')
+            if word == '-b' or (word.startswith('--') and not sep and len(word) >= 3 and '--bind'.startswith(word)):
+                bind = rest[i + 1] if i + 1 < len(rest) else Word('', literal=False)
+                i += 2
+                continue
+            if sep and name.startswith('--') and len(name) >= 3 and '--bind'.startswith(name):
+                bind = Word(value, getattr(word, 'literal', True))
+            elif word.startswith('-b') and not word.startswith('--') and len(word) > 2:
+                bind = Word(word[2:], getattr(word, 'literal', True))
+            i += 1
+        return bind is None or not getattr(bind, 'literal', True) or not cls.LOOPBACK.fullmatch(str(bind))
 
     def picks_credits(self, shell):
         """True when the command holds a claude command line (a word naming
