@@ -28,6 +28,9 @@ const FULL_RUN = 180000;
 const noAdmin = 'staff everyone localaccounts _appserverusr';
 const installCalls = (run) => I.callsOf(run, 'xcode-select', (c) => c.argv.includes('--install'));
 const downloads = (run) => I.callsOf(run, 'curl');
+// Claude Code's own download, apart from the browser's (set-up downloads
+// Squire's built-in browser too, after the one yes).
+const claudeDownloads = (run) => I.callsOf(run, 'curl', (c) => c.url === I.INSTALL_URL);
 const installerRuns = (run) => I.callsOf(run, 'claude-installer');
 const authCalls = (run, verb) => I.callsOf(run, 'claude', (c) => c.argv[0] === 'auth' && c.argv[1] === verb);
 const launcher = (iw) => path.join(iw.userHome, '.local', 'bin', 'claude');
@@ -154,7 +157,7 @@ test('a plan found below Pro at sign-in never touches a Claude Code the owner al
   const before = I.contentOf(iw.userHome);
   const run = await I.runApp(iw);
   assertWindow(run, TITLES.stopped, [/Pro/], 'a Free plan read at sign-in, with Claude Code already there');
-  assert.equal(downloads(run).length, 0, 'Claude Code already there must not be downloaded again');
+  assert.equal(claudeDownloads(run).length, 0, 'Claude Code already there must not be downloaded again');
   assert.deepEqual(I.claudeCodePlaces(iw), places, 'the owner\'s Claude Code, its folders and its own ~/.claude and ~/.claude.json must be untouched');
   assert.equal(fs.statSync(version).ino, inode, 'the owner\'s Claude Code must be the same file, never removed and laid again');
   assert.ok(authCalls(run, 'logout').every((c) => c.configDir === iw.configDir), 'only Squire\'s config folder may be signed out');
@@ -208,7 +211,7 @@ function failedDownload(mode, what) {
       `${what}: no launcher and no versions folder may be left`);
     assert.ok(I.doneSteps(iw).includes('yes') && !I.doneSteps(iw).includes('claudeCode'),
       `${what}: the one yes stays done and Claude Code is not recorded done; record ${JSON.stringify(I.readRecord(iw))}`);
-    const curl = downloads(run)[0];
+    const curl = claudeDownloads(run)[0];
     const bound = curl.argv.indexOf('--max-time') >= 0 ? curl.argv[curl.argv.indexOf('--max-time') + 1] : curl.argv[curl.argv.indexOf('-m') + 1];
     assert.ok(Number(bound) > 0 && Number(bound) <= 600, `the download must be bounded at 10 minutes; curl was called with ${curl.argv.join(' ')}`);
     iw.set({ download: 'ok' });
@@ -252,7 +255,7 @@ function failedSignIn(mode, what) {
     assert.ok(fs.existsSync(launcher(iw)), `${what}: Claude Code must be kept`);
     iw.setClaude({ signIn: 'ok' });
     const again = await I.runApp(iw, { killWhen: doneWith('signIn') });
-    assert.equal(downloads(again).length, 0, `the re-run must not download Claude Code again; got ${I.describeRun(again)}`);
+    assert.equal(claudeDownloads(again).length, 0, `the re-run must not download Claude Code again; got ${I.describeRun(again)}`);
     assert.ok(authCalls(again, 'login').length === 1 && I.doneSteps(iw).includes('signIn'), 'the re-run must sign in once and record it done');
     assert.ok(I.signedInto(iw), 'the sign-in must land in Squire\'s config folder');
   };
@@ -296,7 +299,7 @@ test('a step killed part way is not recorded done and runs again from its start 
   assert.ok(!I.doneSteps(iw).includes('claudeCode'), 'a step killed part way must not be recorded done');
   iw.set({ installer: 'ok' });
   const again = await I.runApp(iw, { killWhen: doneWith('signIn') });
-  assert.equal(downloads(again).length, 1, `the step must run again from its start, the download included; got ${I.describeRun(again)}`);
+  assert.equal(claudeDownloads(again).length, 1, `the step must run again from its start, the download included; got ${I.describeRun(again)}`);
   assert.ok(I.doneSteps(iw).includes('claudeCode'), 'the re-run must record Claude Code done');
 });
 
@@ -307,7 +310,7 @@ test('a re-run resumes at the first step not recorded done, and runs again a ste
   fs.rmSync(launcher(iw));
   const again = await I.runApp(iw, { killWhen: doneWith('appleTools') });
   assert.ok(!asked(again, TITLES.plan) && !asked(again, TITLES.setUp), `the re-run must not ask the plan or the yes again; got ${I.describeRun(again)}`);
-  assert.equal(downloads(again).length, 1, 'Claude Code, recorded done but its launcher gone, must be installed again');
+  assert.equal(claudeDownloads(again).length, 1, 'Claude Code, recorded done but its launcher gone, must be installed again');
   assert.ok(fs.existsSync(launcher(iw)), 'the launcher must be back');
 });
 
@@ -386,7 +389,7 @@ test("with the sign-in gone, the health line says to open Squire's installer to 
   // The sign-in is already in the record, so the re-run is let finish: it repairs the one step whose end state is gone.
   const again = await I.runApp(iw);
   assert.equal(authCalls(again, 'login').length, 1, `the re-run must sign in again; got ${I.describeRun(again)}`);
-  assert.equal(downloads(again).length, 0, 'the re-run must not reinstall Claude Code');
+  assert.equal(claudeDownloads(again).length, 0, 'the re-run must not reinstall Claude Code');
   assert.ok(I.signedInto(iw), 'the sign-in must land in Squire\'s config folder');
 });
 
@@ -411,7 +414,7 @@ test('a Claude Code whose launcher is there but whose version is incomplete is n
   assert.ok(!I.doneSteps(iw).includes('claudeCode'), `Claude Code that does not answer --version must not be recorded done; got ${I.describeRun(run)}`);
   assert.equal(authCalls(run, 'login').length, 0, 'set-up must not go on to the sign-in');
   const second = await I.runApp(iw);
-  assert.equal(downloads(second).length, 1, `a re-run must install it again from its start, never skip it; got ${I.describeRun(second)}`);
+  assert.equal(claudeDownloads(second).length, 1, `a re-run must install it again from its start, never skip it; got ${I.describeRun(second)}`);
   assert.ok(!I.doneSteps(iw).includes('claudeCode'), 'still incomplete: still not done');
   iw.set({ installer: 'ok' });
   await I.runApp(iw, { killWhen: doneWith('signIn') });
