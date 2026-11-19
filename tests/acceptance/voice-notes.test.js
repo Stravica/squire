@@ -129,7 +129,7 @@ const fs = require('fs');
 const file = process.argv[2];
 const size = file && fs.existsSync(file) ? fs.statSync(file).size : null;
 fs.appendFileSync(${JSON.stringify(callsFile)}, JSON.stringify({ argv: process.argv.slice(2), size }) + '\\n');
-if (${JSON.stringify(behaviour)} === 'unavailable') { process.stderr.write('speech recognition on this Mac itself is not available for this language\\n'); process.exit(69); }
+if (${JSON.stringify(behaviour)} === 'unavailable') { process.stderr.write(${JSON.stringify(`${M.SPEECH_UNAVAILABLE}\n`)}); process.exit(69); }
 process.stdout.write(JSON.stringify({ start: 0, end: 1.5, text: 'Remember the flour order. ${words} size-' + size }) + '\\n');
 `);
   fs.chmodSync(program, 0o755);
@@ -248,6 +248,8 @@ test("where the Mac cannot recognise speech on the Mac itself, the recording is 
   assert.doesNotMatch(r.stderr, /Traceback|can't open file/, `it must stop with Squire's own words, never a crash or a missing tool; got ${w.describe(r)}`);
   assert.match(`${r.stdout}\n${r.stderr}`, /(this|the|your) Mac/i, `Squire must say plainly that the Mac itself cannot transcribe it; got ${w.describe(r)}`);
   assert.match(`${r.stdout}\n${r.stderr}`, /cannot|can't|could not|couldn't|not available|isn't available/i, `Squire must say it cannot; got ${w.describe(r)}`);
+  assert.ok(r.stderr.includes(M.SPEECH_UNAVAILABLE), `on request Squire must say why in the Mac's own reason, the one its speech engine gave ("${M.SPEECH_UNAVAILABLE}"); got ${w.describe(r)}`);
+  assert.ok(!/[\r\n]/.test(r.stderr.trim()), `Squire's answer, with the Mac's own reason passed in it, must be one line, no line break inside it; got ${JSON.stringify(r.stderr)}`);
   assert.ok(engine.calls().length <= 1, `the one local engine is tried at most once; got ${JSON.stringify(engine.calls())}`);
   assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], 'no note may be kept and nothing in the owner\'s folder may change');
 
@@ -386,6 +388,8 @@ test("a new session is told, unasked, why a voice note was not transcribed: afte
   const record = fs.existsSync(recordFile) ? JSON.parse(fs.readFileSync(recordFile, 'utf8')) : {};
   const kept = (record.notTranscribed || {})['Shop meeting.wav'];
   assert.ok(kept && typeof kept.reason === 'string' && kept.reason.length > 0, `the voice-notes job must keep why the recording was not transcribed; got ${JSON.stringify(record)}`);
+  assert.ok(kept.reason.includes(M.SPEECH_UNAVAILABLE), `the reason the job kept must carry the Mac's own reason, the one its speech engine gave ("${M.SPEECH_UNAVAILABLE}"), so the next session is told it; got ${JSON.stringify(kept.reason)}`);
+  assert.ok(!/[\r\n]/.test(kept.reason), `the reason the job kept must be one line, no line break inside it; got ${JSON.stringify(kept.reason)}`);
   const started = s.recordSessionByHook(world, { sessionId: 'job-a-new-session', source: 'startup' });
   assert.equal(started.status, 0, `the SessionStart hook must exit 0; got ${w.describe(started)}`);
   assert.match(started.stdout, /Shop meeting/, `the session-start hook must tell the new session, unasked, which voice note was not transcribed; it printed: ${w.describe(started)}`);
