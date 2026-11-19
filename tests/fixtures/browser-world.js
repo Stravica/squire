@@ -24,7 +24,8 @@
 //                       _type, _fill_form, _click, _evaluate, as the floor's
 //                       own cases name them); each call is put to the safety
 //                       floor as the session runs it (the PreToolUse hooks of
-//                       the settings lay-down writes) and is carried out in
+//                       the settings lay-down writes), every call of one
+//                       browsing job in that one job, and is carried out in
 //                       the browser only when the floor lets it through. A
 //                       ref names an element of the last snapshot, as the
 //                       Playwright tools' refs do.
@@ -327,18 +328,19 @@ async function perform(browser, [name, input]) {
   return snapshotOf(browser);
 }
 
-// One browser call, made as the session makes it, in a job of its own: put to
-// the floor; when the floor asks, the owner says yes to that request and the
-// session makes the call again. Carried out in the browser only when the
-// floor lets it through. Returns { first, last, performed, page }.
-async function callWithYes(world, floor, browser, job, call) {
-  const first = floor.run(job, call);
+// One browser call, made as the session makes it, in the job it names: put to
+// the floor (in the permission mode given, the default unless named); when
+// the floor asks, the owner says yes to that request and the session makes
+// the call again. Carried out in the browser only when the floor lets it
+// through. Returns { first, last, performed, page }.
+async function callWithYes(world, floor, browser, job, call, mode = 'default') {
+  const first = floor.run(job, call, mode);
   let last = first;
   if (first.status !== 0) {
     const id = w.requestIdIn(first.stderr);
     if (id) {
       U.sayYesTo(world, job, first, { env: U.UTC });
-      last = floor.run(job, call);
+      last = floor.run(job, call, mode);
     }
   }
   if (last.status !== 0) return { first, last, performed: false, page: null };
@@ -393,22 +395,25 @@ function offLoopbackSockets(browser) {
   return off;
 }
 
-// A browser world for one case: the loopback site, the browser, the laid
-// floor, and a note of every socket that reached beyond the loopback, read
-// after each call the browser carried out.
-async function browserCase(t, world) {
+// A browser world for one browsing job: the loopback site, the browser, the
+// laid floor, and a note of every socket that reached beyond the loopback,
+// read after each call the browser carried out. Every call goes to the floor
+// in the one job the world names (a browser job makes many calls, each asked
+// on its own), in the permission mode given.
+let browsingJobs = 0;
+async function browserCase(t, world, { mode = 'default' } = {}) {
   const site = await testSite(t);
   const browser = await startBrowser(t, world);
   const floor = U.laidFloor(world, U.UTC);
   const beyond = [];
-  let jobs = 0;
+  browsingJobs += 1;
+  const job = `job-browser-${mode}-${browsingJobs}`;
   const call = async (what, c) => {
-    jobs += 1;
-    const r = await callWithYes(world, floor, browser, `job-browser-${what}-${jobs}`, c);
+    const r = await callWithYes(world, floor, browser, job, c, mode);
     if (r.performed) beyond.push(...offLoopbackSockets(browser));
     return r;
   };
-  return { site, browser, floor, call, beyond };
+  return { site, browser, floor, call, beyond, job, mode };
 }
 
 module.exports = {

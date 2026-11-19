@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-19T13:46:02.416Z",
+  "updatedAt": "2026-11-19T16:53:41.820Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -497,6 +497,13 @@
       "description": "the one yes names Squire's built-in browser, and on Not now nothing of it is downloaded, installed or written",
       "status": "pending",
       "testPointer": "tests/acceptance/installer.test.js::the one yes names Squire's built-in browser beside Claude Code, Apple's tools, Squire and its background jobs, and on Not now nothing of the browser is downloaded, installed or written"
+    },
+    {
+      "id": "TC-002-a-browsing-job-that-has-also-read-the",
+      "acId": "AC-1901-1",
+      "description": "a browsing job that has also read the owner's profile, before or after its first browser call, is refused as one job at its next asked browser call, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::a browsing job that has also read the owner's private things by another route is still stopped as one job: with the owner's profile read before the job's first browser call, or after it, the job's next asked browser call is refused, not asked, even after a yes, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

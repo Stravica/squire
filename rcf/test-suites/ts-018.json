@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.274Z",
-  "updatedAt": "2026-11-19T13:46:00.289Z",
+  "updatedAt": "2026-11-19T16:53:41.544Z",
   "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
   "testLevel": "integration",
   "acIds": [
@@ -38,6 +38,13 @@
       "description": "Squire's browser is set up in a window of its own the owner can watch and take over, never headless, with a profile of its own",
       "status": "pending",
       "testPointer": "tests/acceptance/browser.test.js::Squire's browser is set up in what the session loads in a window of its own on the Mac that the owner can watch and take over in: a Playwright browser server in Squire's config folder, never headless, with a profile of its own and never the owner's browser profile, and what the session loads tells the session the owner can watch it and take over"
+    },
+    {
+      "id": "TC-018-one-browsing-job-makes-several-calls-in",
+      "acId": "AC-1801-1",
+      "description": "one browsing job makes several calls in a row, each asked and carried out on its own yes, and a call in that job carrying one of the owner's details is still refused, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::one browsing job on the loopback test site makes several calls in a row, each asked on its own and carried out on the owner's yes to it (opening the page, reading it, typing into the page's own field and clicking its button), in the default mode and in auto mode; a call in that same job carrying one of the owner's details is still refused, even after a yes, and the site receives the page's own message and none of the owner's details; no socket leaves the loopback"
     }
   ],
   "status": "draft"

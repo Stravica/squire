@@ -25,8 +25,14 @@
 //   in the owner's folder, which Squire's first conversation keeps); here the
 //   name, email address, postal address, phone number and card number written
 //   there as labelled lines, matched in any letter case and, for the phone
-//   and card numbers, by their digits. Every other browser call is asked and
-//   marks the job, as today.
+//   and card numbers, by their digits. Every other browser call is asked,
+//   each on its own, and a browsing job makes many of them: a browser call
+//   marks the job as holding untrusted input only, never as having read the
+//   owner's private things merely by being a browser call, so the job's next
+//   browser call is asked again on its own rather than refused as one job.
+//   A job that has read the owner's private things by another route (the
+//   owner's profile read, for one) and has taken in untrusted input is still
+//   refused as one job at its next asked call, as for any other tool.
 //   Squire's own block in what the session loads tells the session that its
 //   browser runs in a window of its own on the Mac, which the owner can watch
 //   and take over in; that when the browser reaches a sign-in page it stops,
@@ -40,11 +46,11 @@
 //
 // Design decisions, on the fail-closed reading (each also a question in the
 // return): the browser calls take the Playwright tools' names and inputs, as
-// the floor's own cases name them; one browser call per job, because a job's
-// first browser call marks it as holding untrusted input and private things
-// and the floor then refuses every later asked call in that job as one job,
-// which these cases leave as it is; the owner's details are read from the
-// owner's profile.
+// the floor's own cases name them; every call of one case's browsing is made
+// in one job, each asked on its own and carried out on its own yes; a check
+// that one call is refused outright is made as the first call of a job of its
+// own, so that it is the call itself, not the job's earlier calls, that the
+// floor refuses; the owner's details are read from the owner's profile.
 //
 // Usage model (assumptions, none measured): typical, one page with a form,
 // a handful of calls; heavy, a page whose fields go by other names, filled
@@ -75,6 +81,28 @@ const DETAILS = [
   ['phone number', OWNER.phone],
   ['card number', OWNER.card],
 ];
+
+const MODES = ['default', 'auto'];
+
+// A browser call the floor asked the owner about, with a request the owner
+// could answer, and carried out once the owner said yes to it.
+function assertAskedThenDone(r, what) {
+  assert.equal(r.first.status, 2, `${what}: the browser call must be asked first; the floor said ${w.describe(r.first)}`);
+  assert.ok(w.requestIdIn(r.first.stderr), `${what}: each browser call in the job must be asked on its own, with a request the owner can answer, never refused as one job; the floor said ${w.describe(r.first)}`);
+  assert.ok(r.performed, `${what}: the browser call must go through on the owner's yes to it; the floor said ${w.describe(r.last)}`);
+}
+
+// A call the floor refuses outright: blocked with no request the owner could
+// answer, and still blocked after the owner says yes.
+function assertRefusedEvenAfterYes(world, floor, job, call, mode, what) {
+  const first = floor.run(job, call, mode);
+  w.assertBlocked(first, `${what}, in ${mode} mode`);
+  assert.equal(w.requestIdIn(first.stderr), null, `${what}, in ${mode} mode: refused, not asked; got a request the owner could answer: ${w.describe(first)}`);
+  w.ownerSays(world, job, 'yes', { env: U.UTC });
+  const again = floor.run(job, call, mode);
+  w.assertBlocked(again, `${what}, in ${mode} mode, even after the owner said yes`);
+  assert.equal(w.requestIdIn(again.stderr), null, `${what}, in ${mode} mode, after a yes: still refused, not asked; got ${w.describe(again)}`);
+}
 
 test("a page on the loopback test site asking for a name, an email address, a postal address, a phone number and a card number gets none of the owner's details from Squire's browser, filled in as a form or typed field by field, though the owner said yes to each browser call; the page's own message field and its send button still go through, and no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
   const world = B.laidWorld(t);
@@ -138,7 +166,7 @@ test("Squire's browser stops at a sign-in page on the loopback test site and doe
     `it must say to tell the owner which site wants the sign-in; got ${JSON.stringify(stops)}`);
   assert.ok(sentences.some((x) => /never/i.test(x) && /sign(-| )?in/i.test(x)), `it must say never to sign in without that yes; got ${JSON.stringify(stops)}`);
 
-  const { site, browser, floor, call, beyond } = await B.browserCase(t, world);
+  const { site, browser, floor, call, beyond, job } = await B.browserCase(t, world);
   t.after(() => t.diagnostic(`browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
   const opened = await call('open', T.navigate(site.url('/signin')));
   assert.ok(opened.performed, `Squire's browser must open the page on the owner's yes; the floor said ${w.describe(opened.last)}`);
@@ -146,7 +174,7 @@ test("Squire's browser stops at a sign-in page on the loopback test site and doe
   assert.ok(refs.Continue, `the sign-in page must show its Continue button; got ${JSON.stringify(opened.page)}`);
   assert.equal(site.signIns(), 0, 'no sign-in before the browser tries to go on');
 
-  const job = 'job-browser-sign-in';
+  // In the same browsing job as the page was opened in.
   const goOn = T.click('Continue', refs.Continue);
   const first = floor.run(job, goOn);
   w.assertBlocked(first, 'the browser going on from the sign-in page before the owner\'s yes');
@@ -181,4 +209,62 @@ test("Squire's browser is set up in what the session loads in a window of its ow
   const sentences = B.personaSentences(world);
   assert.ok(sentences.some((x) => /browser/i.test(x) && /window/i.test(x) && /watch/i.test(x) && /take (it )?over|takeover/i.test(x)),
     `Squire's own block must tell the session that its browser runs in a window of its own on the Mac, which the owner can watch and take over in; got ${JSON.stringify(sentences.filter((x) => /browser/i.test(x)))}`);
+});
+
+test("one browsing job on the loopback test site makes several calls in a row, each asked on its own and carried out on the owner's yes to it (opening the page, reading it, typing into the page's own field and clicking its button), in the default mode and in auto mode; a call in that same job carrying one of the owner's details is still refused, even after a yes, and the site receives the page's own message and none of the owner's details; no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
+  const world = B.laidWorld(t);
+  for (const mode of MODES) {
+    const { site, call, beyond, browser, floor, job } = await B.browserCase(t, world, { mode });
+    t.after(() => t.diagnostic(`${mode}: browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
+
+    const opened = await call('open', T.navigate(site.url('/order')));
+    assertAskedThenDone(opened, `opening the page, the job's first browser call, in ${mode} mode`);
+    const read = await call('read', T.snapshot());
+    assertAskedThenDone(read, `reading the page, the job's second browser call, in ${mode} mode`);
+    const refs = refsOf(read.page);
+    for (const label of ['Message', 'Email address', 'Send']) assert.ok(refs[label], `the page must show ${label}; got ${JSON.stringify(read.page)}`);
+    const typed = await call('message', T.type('Message', refs.Message, 'Please send a brochure'));
+    assertAskedThenDone(typed, `typing into the page's own message field, the job's third browser call, in ${mode} mode`);
+
+    assertRefusedEvenAfterYes(world, floor, job, T.type('Email address', refs['Email address'], OWNER.email),
+      mode, 'typing the owner\'s email address, in the same browsing job');
+
+    const sent = await call('send', T.click('Send', refs.Send));
+    assertAskedThenDone(sent, `clicking the page's send button, the job's next browser call, in ${mode} mode`);
+    const posted = site.received.filter((r) => r.method === 'POST' && r.url.startsWith('/order'));
+    assert.equal(posted.length, 1, `the site must receive the form once, in ${mode} mode; it received ${JSON.stringify(site.received)}`);
+    assert.match(decode(posted[0].body), /Please send a brochure/, `the page's own message must reach the site, in ${mode} mode; it received ${decode(posted[0].body)}`);
+    const given = B.ownerDetailsIn(site.text());
+    assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details, in ${mode} mode; the site received the owner's ${given.join(', ')}`);
+    assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback, in ${mode} mode; lsof read ${JSON.stringify(beyond)}`);
+  }
+});
+
+test("a browsing job that has also read the owner's private things by another route is still stopped as one job: with the owner's profile read before the job's first browser call, or after it, the job's next asked browser call is refused, not asked, even after a yes, in the default mode and in auto mode", { timeout: 120000 }, (t) => {
+  const world = B.laidWorld(t);
+  const floor = U.laidFloor(world, U.UTC);
+  const profile = path.join(world.owner, 'operator', 'profile.md');
+  const page = 'http://127.0.0.1:9/order';
+  const harmless = T.type('Message', 'e6', 'Please send a brochure');
+  for (const mode of MODES) {
+    // The profile read first, then the browsing.
+    const before = `job-browser-read-first-${mode}`;
+    w.assertAllowed(floor.run(before, w.tools.read(profile), mode), `reading the owner's profile, in ${mode} mode`);
+    const opened = floor.run(before, T.navigate(page), mode);
+    w.assertBlocked(opened, `the job's first browser call after the profile was read, in ${mode} mode`);
+    if (w.requestIdIn(opened.stderr)) {
+      U.sayYesTo(world, before, opened, { env: U.UTC });
+      w.assertAllowed(floor.run(before, T.navigate(page), mode), `the job's first browser call on the owner's yes, in ${mode} mode`);
+    }
+    assertRefusedEvenAfterYes(world, floor, before, harmless, mode, 'the next browser call in a job that read the owner\'s profile and then browsed');
+
+    // The browsing first, then the profile read.
+    const after = `job-browser-read-after-${mode}`;
+    const first = floor.run(after, T.navigate(page), mode);
+    w.assertBlocked(first, `the job's first browser call, in ${mode} mode`);
+    U.sayYesTo(world, after, first, { env: U.UTC });
+    w.assertAllowed(floor.run(after, T.navigate(page), mode), `the job's first browser call on the owner's yes, in ${mode} mode`);
+    w.assertAllowed(floor.run(after, w.tools.read(profile), mode), `reading the owner's profile after browsing, in ${mode} mode`);
+    assertRefusedEvenAfterYes(world, floor, after, harmless, mode, 'the next browser call in a job that browsed and then read the owner\'s profile');
+  }
 });
