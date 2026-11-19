@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-162",
+  "path": "core/tools/transcribe.py#engine_reason",
+  "implementsAcIds": [
+    "AC-1702-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-19T05:45:21.811Z",
+  "updatedAt": "2026-11-19T05:45:21.811Z"
+}
