@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:21.031Z",
-  "updatedAt": "2026-11-19T13:44:46.779Z",
+  "updatedAt": "2026-11-19T16:54:51.869Z",
   "asA": "Squire owner",
   "iWant": "Squire's own browser, in a window I can watch and take over, that never gives a website my details or signs in to my accounts without my yes",
   "soThat": "Squire can use the web for me without exposing me",
@@ -28,6 +28,15 @@
       "given": "Squire's browser reaches a sign-in page and the Squire owner has not said yes to that sign-in",
       "when": "Squire tries to go on",
       "then": "The browser stops and does not sign in until the yes; its window is visible on the Mac, and the Squire owner can take over in it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1801-3",
+      "description": "By default, when Squire cannot check a browser call for the Squire owner's details, the browser does not make that call.",
+      "testable": true,
+      "given": "A browser call Squire cannot check for the Squire owner's details: their details cannot be read, or the call runs a script or sends a file",
+      "when": "Squire's browser would make that call, whether or not the Squire owner said yes to it",
+      "then": "By default, the browser does not make that call, and the website receives nothing from it.",
       "verification": "testOnly"
     }
   ]

@@ -296,6 +296,7 @@ const browserTools = {
   fillForm: (fields) => tool('fill_form', { fields: fields.map((f) => ({ name: f.name, type: 'textbox', ref: f.ref, value: f.value })) }),
   click: (element, ref) => tool('click', { element, ref }),
   evaluate: (fn) => tool('evaluate', { function: fn }),
+  fileUpload: (paths) => tool('file_upload', { paths }),
 };
 
 // Carries out one browser call the floor let through.

@@ -1,11 +1,12 @@
 {
   "createdAt": "2026-11-07T17:40:43.274Z",
-  "updatedAt": "2026-11-19T16:53:41.544Z",
+  "updatedAt": "2026-11-19T16:55:41.692Z",
   "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
   "testLevel": "integration",
   "acIds": [
     "AC-1801-1",
-    "AC-1801-2"
+    "AC-1801-2",
+    "AC-1801-3"
   ],
   "id": "TS-018",
   "usId": "US-1801",
@@ -45,6 +46,13 @@
       "description": "one browsing job makes several calls in a row, each asked and carried out on its own yes, and a call in that job carrying one of the owner's details is still refused, even after a yes",
       "status": "pending",
       "testPointer": "tests/acceptance/browser.test.js::one browsing job on the loopback test site makes several calls in a row, each asked on its own and carried out on the owner's yes to it (opening the page, reading it, typing into the page's own field and clicking its button), in the default mode and in auto mode; a call in that same job carrying one of the owner's details is still refused, even after a yes, and the site receives the page's own message and none of the owner's details; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-a-browser-call-squire-cannot-check-for",
+      "acId": "AC-1801-3",
+      "description": "a browser call Squire cannot check for the owner's details (a script, a file upload, or any typed text while the owner's profile is unreadable or absent) is refused, not asked, even after a yes, and the site receives nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::by default Squire's browser does not make a call Squire cannot check for the owner's details: a script whose function builds what it sets only when it runs, a file upload of a file in the owner's folder, and, with the owner's profile unreadable or absent, a typed text, are each refused rather than asked, even after a yes, in the default mode and in auto mode, and the site receives nothing from them; no socket leaves the loopback"
     }
   ],
   "status": "draft"

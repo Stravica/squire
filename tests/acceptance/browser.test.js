@@ -33,6 +33,12 @@
 //   A job that has read the owner's private things by another route (the
 //   owner's profile read, for one) and has taken in untrusted input is still
 //   refused as one job at its next asked call, as for any other tool.
+//   By default the floor also refuses, even after a yes, a browser call it
+//   cannot check for the owner's details: one made while the owner's profile
+//   cannot be read (unreadable, or not there yet), one that runs a script in
+//   the page (_evaluate, whose text can build a value only when it runs), and
+//   one that sends a file (_file_upload). In version 1 the owner uploads a
+//   file by taking over the browser's window.
 //   Squire's own block in what the session loads tells the session that its
 //   browser runs in a window of its own on the Mac, which the owner can watch
 //   and take over in; that when the browser reaches a sign-in page it stops,
@@ -236,6 +242,39 @@ test("one browsing job on the loopback test site makes several calls in a row, e
     assert.match(decode(posted[0].body), /Please send a brochure/, `the page's own message must reach the site, in ${mode} mode; it received ${decode(posted[0].body)}`);
     const given = B.ownerDetailsIn(site.text());
     assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details, in ${mode} mode; the site received the owner's ${given.join(', ')}`);
+    assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback, in ${mode} mode; lsof read ${JSON.stringify(beyond)}`);
+  }
+});
+
+test("by default Squire's browser does not make a call Squire cannot check for the owner's details: a script whose function builds what it sets only when it runs, a file upload of a file in the owner's folder, and, with the owner's profile unreadable or absent, a typed text, are each refused rather than asked, even after a yes, in the default mode and in auto mode, and the site receives nothing from them; no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
+  const world = B.laidWorld(t);
+  const profile = path.join(world.owner, 'operator', 'profile.md');
+  t.after(() => { try { fs.chmodSync(profile, 0o644); } catch (e) { /* gone */ } });
+  for (const mode of MODES) {
+    B.writeOwnerProfile(world);
+    const { site, call, beyond, browser, floor } = await B.browserCase(t, world, { mode });
+    t.after(() => t.diagnostic(`${mode}: browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
+    const opened = await call('open', T.navigate(site.url('/order')));
+    assert.ok(opened.performed, `Squire's browser must open the page on the owner's yes, in ${mode} mode; the floor said ${w.describe(opened.last)}`);
+    const refs = refsOf(opened.page);
+    assert.ok(refs.Message, `the page must show Message; got ${JSON.stringify(opened.page)}`);
+
+    // Each as the first call of a job of its own.
+    const own = (what) => `job-browser-unchecked-${what}-${mode}`;
+    const built = `() => { const el = document.querySelector('[data-ref="${refs.Message}"]'); el.value = ['Please', 'send', 'a', 'brochure'].join(' '); el.form.requestSubmit(); }`;
+    assertRefusedEvenAfterYes(world, floor, own('script'), T.evaluate(built), mode, 'a browser script whose function builds what it sets only when it runs');
+    const file = path.join(world.owner, 'workspace', 'files', 'notes.txt');
+    assert.ok(fs.existsSync(file), `the owner's folder must hold ${file}`);
+    assertRefusedEvenAfterYes(world, floor, own('upload'), T.fileUpload([file]), mode, 'a browser file upload of a file in the owner\'s folder');
+    const text = T.type('Message', refs.Message, 'Please send a brochure');
+    fs.chmodSync(profile, 0o000);
+    assertRefusedEvenAfterYes(world, floor, own('unreadable'), text, mode, 'a typed text with the owner\'s profile unreadable');
+    fs.chmodSync(profile, 0o644);
+    fs.rmSync(profile);
+    assertRefusedEvenAfterYes(world, floor, own('absent'), text, mode, 'a typed text with the owner\'s profile absent');
+
+    const after = site.received.filter((r) => !(r.method === 'GET' && (r.url === '/order' || r.url === '/favicon.ico')));
+    assert.deepEqual(after, [], `the site must receive nothing from a call Squire could not check, in ${mode} mode; it received ${JSON.stringify(after)}`);
     assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback, in ${mode} mode; lsof read ${JSON.stringify(beyond)}`);
   }
 });
