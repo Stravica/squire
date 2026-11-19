@@ -469,15 +469,35 @@ test("the one yes names Squire's built-in browser beside Claude Code, Apple's to
   assert.deepEqual(w.snapshotDifferences(before, w.snapshot(iw.userHome)), [], 'on Not now nothing of the browser, or of anything else, may be written in the home folder');
 });
 
+// What Squire's built-in browser is, as set-up downloads it (this file's pin):
+// everything the browser needs to run, the browser server Squire's session
+// drives (Playwright's), the browser build it drives and anything they need
+// to run, fetched by set-up after the one yes with the Mac's own curl, as
+// Claude Code's installer is, as one or more gzip'd tar archives from https
+// addresses, each address once, and kept in one place named for it: browser/
+// in the Squire home (~/Library/Application Support/Squire/browser). The
+// installer world serves each such address a small stand-in archive holding
+// one folder; which addresses, and how set-up unpacks what it fetched inside
+// that place, are the builder's. Nothing of the browser is fetched later, at
+// its first use (browser.test.js binds that for the browser server lay-down
+// sets up).
 test('after the one yes nothing outside the named list is installed', { timeout: FULL_RUN }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false } });
   const before = I.contentOf(iw.userHome);
   const run = await I.runApp(iw);
   assert.deepEqual(I.doneSteps(iw), STEPS, `set-up must finish; got ${I.describeRun(run)}`);
   assert.equal(I.dialogsTitled(run, TITLES.setUp).length, 1, 'one yes, asked once');
-  assert.deepEqual(downloads(run).map((c) => c.url), [I.INSTALL_URL], 'the one download is Claude Code\'s installer');
+  const urls = downloads(run).map((c) => c.url);
+  assert.equal(urls.filter((u) => u === I.INSTALL_URL).length, 1, `Claude Code's installer is downloaded once; the downloads were ${JSON.stringify(urls)}`);
+  const browserDownloads = urls.filter((u) => u !== I.INSTALL_URL);
+  assert.ok(browserDownloads.length >= 1, `after the one yes set-up must download Squire's built-in browser (an https address of a gzip'd tar archive), beside Claude Code's installer; the downloads were ${JSON.stringify(urls)}`);
+  assert.ok(browserDownloads.every((u) => /^https:\/\/[^/]+\/\S*\.(tar\.gz|tgz)$/.test(u)), `every other download must be the browser's own, a gzip'd tar archive from an https address; the downloads were ${JSON.stringify(urls)}`);
+  assert.equal(new Set(browserDownloads).size, browserDownloads.length, `each of the browser's downloads is fetched once; the downloads were ${JSON.stringify(urls)}`);
   assert.equal(installerRuns(run).length, 1, 'Claude Code\'s installer runs once');
   assert.equal(installCalls(run).length, 1, 'Apple\'s tools are started once');
+  const browserPlace = 'Library/Application Support/Squire/browser';
+  const keptForBrowser = Object.keys(I.contentOf(iw.userHome)).filter((rel) => rel.startsWith(`${browserPlace}/`));
+  assert.ok(keptForBrowser.length > 0, `set-up must keep what it downloaded for the browser in its one place, ${browserPlace}; it holds nothing`);
   const allowed = [/^Library\/Application Support\/Squire(\/|$)/, /^Squire(\/|$)/, /^\.claude(\/|$)/, /^\.claude\.json$/,
     /^\.local$/, /^\.local\/(bin|share|state)$/, /^\.local\/bin\/claude$/, /^\.local\/(share|state)\/claude(\/|$)/, /^\.cache$/, /^\.cache\/claude(\/|$)/,
     /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup|pages|voice-notes)\.plist$/,
