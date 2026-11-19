@@ -20,7 +20,12 @@
 //                                    puts the folder's files back as they were
 //                                    at that version, exit 0, and keeps every
 //                                    version kept so far, so a later one can
-//                                    be got back too.
+//                                    be got back too. Before it does, any
+//                                    change made since the last keep is kept
+//                                    as a version of its own (a new number),
+//                                    so going back never loses work; and the
+//                                    folder is left whole as that version
+//                                    was: a file added since is gone.
 //   The versions are kept on this Mac (in the Squire home or beside the
 //   folder), never sent anywhere: no remote, no push, no upload.
 //   Squire's own block in what the session loads names the command and tells
@@ -81,6 +86,47 @@ test("after two changes to an app Squire built for the owner, the earlier versio
   const forward = run(['back', folder, '3']);
   assert.equal(forward.status, 0, `the later version must be got back too; got ${w.describe(forward)}`);
   assert.equal(fs.readFileSync(page, 'utf8'), versions[2], 'the app must be as it was at the third version');
+
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may leave this Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+test("going back to an earlier version first keeps any change made since the last keep as a version of its own, which can be got back, and leaves the app's folder whole as that earlier version was, a file added in a later version gone; nothing leaves the Mac", { timeout: 180000 }, async (t) => {
+  const world = U.usageWorld(t);
+  const net = await M.networkRecorder(t);
+  const folder = path.join(world.owner, 'workspace', 'apps', 'order-board');
+  const page = path.join(folder, 'index.html');
+  const totals = path.join(folder, 'totals.js');
+  const run = (args) => w.runPython(world, versionsScript(world), args, { env: net.env, timeout: 60000 });
+  const numbersIn = (r) => r.stdout.split('\n').map((l) => (l.trim().match(/^(\d+)\b/) || [])[1]).filter(Boolean).map(Number);
+  const first = '<!doctype html><title>Orders</title><p>First version: this week\'s orders.</p>\n';
+  const second = '<!doctype html><title>Orders</title><p>Second version: orders with totals.</p><script src="totals.js"></script>\n';
+  const added = 'document.title = "Orders: 3";\n';
+  const unkept = '<!doctype html><title>Orders</title><p>Changed after the last keep: orders by day.</p><script src="totals.js"></script>\n';
+
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(page, first);
+  const one = run(['keep', folder]);
+  assert.equal(one.status, 0, `Squire's versions command must keep version 1 of the app; got ${w.describe(one)}`);
+  fs.writeFileSync(page, second);
+  fs.writeFileSync(totals, added);
+  const two = run(['keep', folder]);
+  assert.equal(two.status, 0, `the versions command must keep version 2, with a file added; got ${w.describe(two)}`);
+  fs.writeFileSync(page, unkept);
+  const before = numbersIn(run(['list', folder]));
+
+  const back = run(['back', folder, '1']);
+  assert.equal(back.status, 0, `version 1 must be got back on request; got ${w.describe(back)}`);
+  assert.deepEqual(fs.readdirSync(folder).sort(), ['index.html'], 'the app\'s folder must be whole as version 1 was: the file added in a later version is gone, and nothing else is there');
+  assert.equal(fs.readFileSync(page, 'utf8'), first, 'the app must be as it was at version 1');
+  const after = numbersIn(run(['list', folder]));
+  const kept = after.filter((n) => !before.includes(n));
+  assert.ok([1, 2].every((n) => after.includes(n)) && kept.length >= 1,
+    `going back must first keep the change made since the last keep as a version of its own, and keep every version kept so far; listed ${JSON.stringify(before)} before and ${JSON.stringify(after)} after`);
+  const again = run(['back', folder, String(Math.max(...kept))]);
+  assert.equal(again.status, 0, `the change kept on the way back must be got back too; got ${w.describe(again)}`);
+  assert.equal(fs.readFileSync(page, 'utf8'), unkept, 'the change made since the last keep must be got back as it was');
+  assert.equal(fs.existsSync(totals) && fs.readFileSync(totals, 'utf8'), added, 'with the file added in version 2');
 
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `nothing may leave this Mac: reached the network ${net.seen.length} time(s)`);
