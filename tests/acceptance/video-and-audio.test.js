@@ -65,8 +65,10 @@
 // the network beyond this Mac's loopback, real YouTube or a model. Two cases
 // run Squire's own speech helper for real on spoken words made by the Mac's
 // own synthetic voice (`say`); they are target-gated below macOS 26, as the
-// helper is. Every other case reaches the engine through the media world's
-// stand-in.
+// helper is, and skipped with a printed reason only where Apple's own
+// SpeechTranscriber.isAvailable reads false (the media world's guard, as on a
+// hosted virtual Mac). Every other case reaches the engine through the media
+// world's stand-in.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -262,9 +264,12 @@ test("the owner's own recording is transcribed on the Mac by the one local speec
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: the transcription reached the network ${net.seen.length} time(s)`);
 });
 
-test("the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again", { skip: M.realHelperGate() || (fs.existsSync('/usr/bin/say') ? false : 'target-gated: needs the Mac\'s own /usr/bin/say for the spoken words'), timeout: 900000 }, async (t) => {
+test("the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again", { skip: (fs.existsSync('/usr/bin/say') ? false : 'target-gated: needs the Mac\'s own /usr/bin/say for the spoken words') || M.realSpeechGate(), timeout: 900000 }, async (t) => {
   // A guard at the base head, kept: today's helper already does this; no
   // bound case ran Squire's own helper path before (every case set the seam).
+  // Skipped only where Apple itself says this Mac cannot recognise speech on
+  // the Mac itself (the media world's guard); the guard's reading is printed.
+  t.diagnostic(M.realSpeechReading());
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const helper = path.join(world.home, 'state', 'speech-helper', 'speech-helper');
@@ -412,6 +417,26 @@ test("a file of the owner's that opens but that the speech engine cannot read st
   assert.doesNotMatch(r.stderr, /Traceback/, `the job must stop with Squire's own words, never a crash; got ${w.describe(r)}`);
   assert.match(said(r), /(could not|couldn't|cannot|can't) (be read|read|turn [^\n]* into text|be turned into text)/i, `Squire must explain that the file could not be read or turned into text; got ${w.describe(r)}`);
   assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], 'no note may be kept and no file in the owner\'s folder may change');
+  await w.sleep(200);
+  assert.equal(net.seen.length, 0, `nothing may be downloaded or sent: the job reached the network ${net.seen.length} time(s)`);
+});
+
+test("a file of the owner's whose speech engine finishes but answers with lines that are not timed phrases stops the job with a plain reason, never a crash: a non-zero exit, Squire's own words that it could not be turned into text, no note kept, not even of the part that was timed, nothing sent and no file in the owner's folder changed", { timeout: 120000 }, async (t) => {
+  // A guard at the base head: transcribe.py already stops so; no bound case
+  // gave the job an engine answer it cannot read.
+  const world = U.usageWorld(t);
+  const engine = M.speechEngine(world, { behaviour: 'untimed' });
+  const net = await M.networkRecorder(t);
+  const recording = M.fixtureRecording(path.join(world.owner, 'workspace', 'files', 'supplier-call.wav'), { seconds: 2 });
+  const bytes = fs.readFileSync(recording);
+  const before = M.digestOf(world.owner);
+  const r = run(world, transcribeScript(world), [recording], { ...engine.env, ...net.env });
+  assert.equal(engine.calls().length, 1, `the file opens, so the speech engine must be run on it once; got ${JSON.stringify(engine.calls())}; ${w.describe(r)}`);
+  assert.doesNotMatch(r.stderr, /Traceback/, `an engine answer Squire cannot read must stop the job with Squire's own words, never a crash; got ${w.describe(r)}`);
+  assert.notEqual(r.status, 0, `an engine answer Squire cannot read must stop the job with a non-zero exit; got ${w.describe(r)}`);
+  assert.match(said(r), /(could not|couldn't|cannot|can't) (be read|read|turn [^\n]* into text|be turned into text)/i, `Squire must explain that the file could not be turned into text; got ${w.describe(r)}`);
+  assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], `no note may be kept, not even of the part of the answer that was timed, and no file in the owner's folder may change; the transcripts kept read: ${keptTranscripts(world)}`);
+  assert.ok(fs.readFileSync(recording).equals(bytes), 'the owner\'s recording must be left as it was');
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `nothing may be downloaded or sent: the job reached the network ${net.seen.length} time(s)`);
 });

@@ -33,8 +33,9 @@ the transcript from YouTube's own Show transcript or the owner's own file.
 Where this Mac cannot recognise speech on the Mac itself (the engine exits
 69, or the helper cannot be built: below macOS 26, no command line tools, or
 a failed build), nothing is sent anywhere, no other engine is tried, no note
-is kept, and Squire says why. Any other failure keeps no note and is not
-tried again in that run.
+is kept, and Squire says why: when the engine exits 69 with a reason of its
+own, in that reason, bounded by Squire (engine_reason). Any other failure
+keeps no note and is not tried again in that run.
 
 SQUIRE_SPEECH_ENGINE, when set, names the engine in place of the helper, and
 is honoured only as an absolute path to a file that can be run; set any other
@@ -53,6 +54,7 @@ import stat
 import subprocess
 import sys
 import time
+import unicodedata
 
 CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.join(CORE, 'lib'))
@@ -73,6 +75,8 @@ SETTLE = 1.0
 # A pause of this many seconds or more between one phrase's end and the next
 # one's start starts a new paragraph.
 PAUSE = 5.0
+# The most of the speech engine's own reason Squire passes on, in characters.
+REASON_MOST = 200
 NO_YOUTUBE = ('Squire does not fetch from YouTube: no captions, no audio and no page. Nothing was asked of YouTube or '
               'of anyone, and nothing was kept. Two routes instead: open the video on YouTube, use YouTube\'s own Show '
               'transcript and paste the transcript into the chat; or give Squire your own file, a recording or video '
@@ -88,6 +92,23 @@ class Stop(Exception):
     def __init__(self, words, code=1):
         super().__init__(words)
         self.code = code
+
+
+def engine_reason(said):
+    """The speech engine's own reason, from what it wrote on stderr, as Squire
+    passes it on: its first line only, every control or format character and
+    line or paragraph separator in it taken out, its spaces run together and
+    its closing full stops dropped, at most REASON_MOST characters (cut at a
+    space and ended with ...). None when nothing is left. The engine's words
+    are not Squire's, so Squire bounds them before the owner reads them."""
+    lines = (said or '').strip().splitlines()
+    if not lines:
+        return None
+    line = ''.join(' ' if unicodedata.category(c) in ('Cc', 'Cf', 'Zl', 'Zp') else c for c in lines[0])
+    line = ' '.join(line.split()).rstrip(' .')
+    if len(line) > REASON_MOST:
+        line = line[:REASON_MOST].rsplit(' ', 1)[0].rstrip(' .,;:') + '...'
+    return line or None
 
 
 class Engine:
@@ -131,8 +152,12 @@ class Engine:
             raise Stop(f'Squire could not turn {os.path.basename(recording)} into text: its speech engine would not '
                        'start. Nothing was sent anywhere and no note was kept.')
         if r.returncode == CANNOT:
-            raise Stop('This Mac cannot recognise speech on the Mac itself right now, so Squire sent the recording '
-                       'nowhere, tried no other engine and kept no note.', CANNOT)
+            why = engine_reason(r.stderr)
+            if why is None:
+                raise Stop('This Mac cannot recognise speech on the Mac itself right now, so Squire sent the recording '
+                           'nowhere, tried no other engine and kept no note.', CANNOT)
+            raise Stop('This Mac cannot recognise speech on the Mac itself, so Squire sent the recording nowhere, tried '
+                       f'no other engine and kept no note. The Mac\'s own reason: "{why}".', CANNOT)
         if r.returncode == NO_SOUND:
             raise Stop(f'{os.path.basename(recording)} has no sound, so there are no words to turn into text: Squire '
                        'kept no transcript and no captions file. Nothing was sent anywhere.')

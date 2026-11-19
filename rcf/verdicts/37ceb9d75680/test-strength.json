@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "head": "37ceb9d75680d0d6cb0768a25d13f03bc6499f2a",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-1701-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1701-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1701-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1701-6",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1702-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    }
+  ],
+  "result": "blocked",
+  "totals": {
+    "criteria": 5,
+    "structuralPassed": 0,
+    "mutants": 0,
+    "killed": 0,
+    "survived": 0,
+    "timeout": 0,
+    "notApplicable": 0,
+    "blocked": 5
+  },
+  "wallMs": 723946,
+  "node": "v24.14.0"
+}
