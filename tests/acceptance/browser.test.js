@@ -39,6 +39,14 @@
 //   the page (_evaluate, whose text can build a value only when it runs), and
 //   one that sends a file (_file_upload). In version 1 the owner uploads a
 //   file by taking over the browser's window.
+//   The owner's details are found wherever they are kept: in the profile,
+//   whose details Squire's own block tells the guided first conversation to
+//   keep, when the owner gives them, as labelled lines (name, email address,
+//   postal address, phone number, card number); and the owner's first name,
+//   which set-up keeps in squire.json in the owner's folder, which the floor
+//   reads too. The choice, and why: the floor decides in code, and labelled
+//   lines are a form it can match without guessing at prose; the first name
+//   is the one detail set-up itself writes outside the profile.
 //   Squire's own block in what the session loads tells the session that its
 //   browser runs in a window of its own on the Mac, which the owner can watch
 //   and take over in; that when the browser reaches a sign-in page it stops,
@@ -311,6 +319,23 @@ test("when Squire cannot tell whether a page or a step would sign the owner in o
   assert.equal(site.signIns(), 1, `after the yes the browser goes on and the site records the sign-in once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${r.url}`))}`);
   beyond.push(...B.offLoopbackSockets(browser));
   assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
+});
+
+test("the owner's details are found wherever they are kept: what the session loads tells the guided first conversation to keep the owner's name, email address, postal address, phone number and card number, when the owner gives them, as labelled lines in the owner's profile; and the owner's first name, which set-up keeps in squire.json in the owner's folder, is refused in a browser call even after a yes while the profile holds it nowhere, in the default mode and in auto mode", { timeout: 120000 }, (t) => {
+  const world = B.laidWorld(t);
+  const sentences = B.personaSentences(world);
+  const labelled = sentences.filter((x) => /profile/i.test(x) && /label/i.test(x));
+  assert.ok(labelled.some((x) => /\bname\b/i.test(x) && /email/i.test(x) && /address/i.test(x) && /phone/i.test(x) && /card/i.test(x)),
+    `Squire's own block must tell the guided first conversation to keep the owner's name, email address, postal address, phone number and card number, when the owner gives them, as labelled lines in the owner's profile; got ${JSON.stringify(sentences.filter((x) => /profile/i.test(x)))}`);
+
+  const owner = JSON.parse(fs.readFileSync(path.join(world.owner, 'squire.json'), 'utf8'));
+  assert.ok(owner.firstName, `set-up's squire.json in the owner's folder must hold the owner's first name; got ${JSON.stringify(owner)}`);
+  fs.writeFileSync(path.join(world.owner, 'operator', 'profile.md'), '# About the owner\n\n- Runs a small bakery. Prefers short answers. Allergic to jargon.\n');
+  const floor = U.laidFloor(world, U.UTC);
+  for (const mode of MODES) {
+    assertRefusedEvenAfterYes(world, floor, `job-browser-first-name-${mode}`, T.type('Message', 'e6', `Thanks, ${owner.firstName}`),
+      mode, 'typing the owner\'s first name, kept by set-up in squire.json, as the first call of a browsing job');
+  }
 });
 
 test("a browsing job that has also read the owner's private things by another route is still stopped as one job: with the owner's profile read before the job's first browser call, or after it, the job's next asked browser call is refused, not asked, even after a yes, in the default mode and in auto mode", { timeout: 120000 }, (t) => {

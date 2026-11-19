@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.274Z",
-  "updatedAt": "2026-11-19T16:57:06.375Z",
+  "updatedAt": "2026-11-19T17:01:30.943Z",
   "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
   "testLevel": "integration",
   "acIds": [
@@ -61,6 +61,13 @@
       "description": "a page or step Squire cannot tell is a sign-in is treated as one: the session is told to stop, name the site and wait for the yes, and a Continue with button records no sign-in before the yes",
       "status": "pending",
       "testPointer": "tests/acceptance/browser.test.js::when Squire cannot tell whether a page or a step would sign the owner in or open an account, its browser treats it as a sign-in: what the session loads says so, to stop, tell the owner which site and wait for their yes; and on a second shape of sign-in on the loopback test site, a Continue with button for a provider and no password field, the site records no sign-in before the owner's yes and one after it; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-the-owner-s-details-are-found-wherever",
+      "acId": "AC-1801-1",
+      "description": "the owner's details are found wherever they are kept: the first conversation keeps them as labelled lines in the profile, and the first name set-up keeps in squire.json is refused in a browser call even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::the owner's details are found wherever they are kept: what the session loads tells the guided first conversation to keep the owner's name, email address, postal address, phone number and card number, when the owner gives them, as labelled lines in the owner's profile; and the owner's first name, which set-up keeps in squire.json in the owner's folder, is refused in a browser call even after a yes while the profile holds it nowhere, in the default mode and in auto mode"
     }
   ],
   "status": "draft"
