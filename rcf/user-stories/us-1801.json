@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:21.031Z",
-  "updatedAt": "2026-11-07T17:40:21.563Z",
+  "updatedAt": "2026-11-19T13:44:46.779Z",
   "asA": "Squire owner",
   "iWant": "Squire's own browser, in a window I can watch and take over, that never gives a website my details or signs in to my accounts without my yes",
   "soThat": "Squire can use the web for me without exposing me",
@@ -14,11 +14,11 @@
   "acceptanceCriteria": [
     {
       "id": "AC-1801-1",
-      "description": "Squire never gives a website the Squire owner's details.",
+      "description": "By default, Squire never gives a website the Squire owner's details.",
       "testable": true,
       "given": "A website that asks for personal details (name, email address, postal address, phone number, card number)",
       "when": "Squire's browser fills in the page",
-      "then": "The browser supplies none of the Squire owner's details.",
+      "then": "By default, the browser supplies none of the Squire owner's details.",
       "verification": "testOnly"
     },
     {
