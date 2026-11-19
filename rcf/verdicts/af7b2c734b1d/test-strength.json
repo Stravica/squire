@@ -1,0 +1,1918 @@
+{
+  "version": 1,
+  "head": "af7b2c734b1df897439e50dd1f22c408343536cf",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-1701-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.handle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.decide",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.consult",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.one_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.item",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.named_agent_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.frontmatter",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_bash",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.picks_credits",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.judge_argv",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.marks",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.reach_find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.text_known",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_mac_command",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.expand",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_free",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_core_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_floor",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_update_tool",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_settings",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.is_keychain",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.taints_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.quarantined",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.path",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a transcript of the owner's own file, a voice note's transcript and kept research are read as untrusted: in a job that has read the owner's profile, a read of any of them, by Read or by the shell, leaves a send refused as one job"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#Floor.field",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the transcription, named by what the session loads, is asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode; a video job starts through Squire's one job command, which the floor asks for"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.sdk",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.sdk",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.sdk",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#note_name",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::the owner's own recording is transcribed on the Mac by the one local speech engine and the text kept in the owner's folder, the recording left as it was and nothing sent beyond this Mac"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#note_name",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#note_name",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#youtube_link",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#youtube_link",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::for any YouTube link (a video's page, a short link, a playlist or a channel), Squire's transcription asks nothing of YouTube or of anyone, downloads and keeps nothing, and says it does not fetch from YouTube, offering the two routes: the transcript pasted from YouTube's own Show transcript, or the owner's own file"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#youtube_link",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1701-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that opens but that the speech engine cannot read stops the job with a plain reason, never a crash: a non-zero exit, Squire's own words that it could not be read or turned into text, no note kept, nothing downloaded and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that opens but that the speech engine cannot read stops the job with a plain reason, never a crash: a non-zero exit, Squire's own words that it could not be read or turned into text, no note kept, nothing downloaded and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that opens but that the speech engine cannot read stops the job with a plain reason, never a crash: a non-zero exit, Squire's own words that it could not be read or turned into text, no note kept, nothing downloaded and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that opens but that the speech engine cannot read stops the job with a plain reason, never a crash: a non-zero exit, Squire's own words that it could not be read or turned into text, no note kept, nothing downloaded and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "stubToThrow",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that opens but that the speech engine cannot read stops the job with a plain reason, never a crash: a non-zero exit, Squire's own words that it could not be read or turned into text, no note kept, nothing downloaded and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#readable",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#readable",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#readable",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-and-audio.test.js::a file of the owner's that is missing stops the job with a plain reason before anything runs: nothing downloaded, the engine never run, and no file in the owner's folder changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1701-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.folder",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.digest",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ready",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.ask",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.why_not",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.sdk",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.sdk",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.sdk",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.build",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/lib/speech.py#SpeechHelper.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.find",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.text",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.phrases",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#Engine.env",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#one",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#timed",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#timed",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#timed",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1701-4",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a captions file (.srt) from the same pass is kept beside the transcript of the owner's own video, one numbered cue a phrase with the phrase's own times and words, for a short video and an hour's, and nothing is burned into the video, which is left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a captions file (.srt) from the same pass is kept beside the transcript of the owner's own video, one numbered cue a phrase with the phrase's own times and words, for a short video and an hour's, and nothing is burned into the video, which is left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#keep",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/transcribe.py#timed",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a captions file (.srt) from the same pass is kept beside the transcript of the owner's own video, one numbered cue a phrase with the phrase's own times and words, for a short video and an hour's, and nothing is burned into the video, which is left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#timed",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a captions file (.srt) from the same pass is kept beside the transcript of the owner's own video, one numbered cue a phrase with the phrase's own times and words, for a short video and an hour's, and nothing is burned into the video, which is left as it was"
+          ]
+        },
+        {
+          "symbol": "core/tools/transcribe.py#timed",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        }
+      ],
+      "result": "pass"
+    },
+    {
+      "acId": "AC-1701-5",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "bound tests that all skipped: tests/acceptance/video-helpers.test.js::on a signed release, notes from a recording of the owner's own: call notes with decisions, actions and a follow-up draft for the owner to send, never sent by Squire, and creator notes with chapters, show notes and post drafts, the recording itself left on the Mac as it was"
+    },
+    {
+      "acId": "AC-1701-6",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.problem",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "noOp",
+          "result": "survived",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.block",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/lib/squire.py#Persona.write",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/hooks/pre-tool-use.py#MediaRequest.settle",
+          "operator": "callRemoval",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::the clip, just the sound and the smaller copy, each named by what the session loads, are asked by the safety floor as the session runs it, the question naming video and audio work, never free and never refused, in the default mode and in auto mode"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#avconvert_args",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#avconvert_args",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#avconvert_args",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/video.py#seconds_of",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#seconds_of",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#seconds_of",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/video.py#make",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#make",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#make",
+          "operator": "callRemoval",
+          "result": "notApplicable",
+          "killedBy": []
+        },
+        {
+          "symbol": "core/tools/video.py#main",
+          "operator": "stubToThrow",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#main",
+          "operator": "noOp",
+          "result": "killed",
+          "killedBy": [
+            "tests/acceptance/video-helpers.test.js::a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed"
+          ]
+        },
+        {
+          "symbol": "core/tools/video.py#main",
+          "operator": "callRemoval",
+          "result": "survived",
+          "killedBy": []
+        }
+      ],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1702-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1401-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 8,
+    "structuralPassed": 5,
+    "mutants": 255,
+    "killed": 141,
+    "survived": 41,
+    "timeout": 0,
+    "notApplicable": 73,
+    "blocked": 3
+  },
+  "wallMs": 4437040,
+  "node": "v24.14.0"
+}
