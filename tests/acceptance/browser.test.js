@@ -61,7 +61,13 @@
 //   (claude-config/.claude.json in the Squire home, its mcpServers): a
 //   Playwright browser server, never run headless, with a profile of its own
 //   (in the Squire home, or kept in memory), never the owner's own browser
-//   profile.
+//   profile. It is the only server there and is keyed playwright, so its
+//   tools are the ones the floor guards; it never attaches to a browser
+//   already running (no --cdp-endpoint, --extension or the like); and its
+//   command and the browser it drives are the ones set-up wrote in the
+//   browser's place, browser/ in the Squire home (the browser's
+//   --executable-path, or PLAYWRIGHT_BROWSERS_PATH, inside it), so nothing
+//   is fetched when it starts or at the browser's first use.
 //
 // Design decisions, on the fail-closed reading (each also a question in the
 // return): the browser calls take the Playwright tools' names and inputs, as
@@ -215,15 +221,35 @@ test("Squire's browser is set up in what the session loads in a window of its ow
   try { state = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { state = null; }
   const servers = (state && state.mcpServers) || {};
   const words = (s) => [s.command, ...(Array.isArray(s.args) ? s.args : [])].map(String);
-  const browsers = Object.entries(servers).filter(([name, s]) => s && /playwright/i.test([name, ...words(s)].join(' ')));
-  assert.equal(browsers.length, 1, `lay-down must set Squire's one browser up in Squire's Claude Code config folder (${file}, mcpServers): a Playwright browser server; got ${state ? JSON.stringify(servers) : 'no readable file'}`);
-  const [, server] = browsers[0];
+  // Exactly one server, keyed playwright: its tools are then the
+  // mcp__playwright__browser_* tools the floor guards, and no other server
+  // gives the session a browser the floor does not know by name.
+  assert.deepEqual(Object.keys(servers), ['playwright'], `lay-down must set Squire's one browser up in Squire's Claude Code config folder (${file}, mcpServers) as exactly one server, keyed playwright, so that its tools are the mcp__playwright__browser_* tools the safety floor guards; got ${state ? JSON.stringify(servers) : 'no readable file'}`);
+  const server = servers.playwright;
   const args = words(server);
+  const env = (server && typeof server.env === 'object' && server.env) || {};
+  const valueOf = (flag) => {
+    const i = args.findIndex((a) => a === flag || a.startsWith(`${flag}=`));
+    return i < 0 ? null : (args[i].includes('=') ? args[i].split('=').slice(1).join('=') : args[i + 1]);
+  };
   assert.ok(!args.some((a) => /^--headless(=|$)/.test(a)), `Squire's browser must run in a window the owner can see, never headless; got ${JSON.stringify(args)}`);
-  const at = args.findIndex((a) => /^--user-data-dir(=|$)/.test(a));
-  const profile = at < 0 ? null : (args[at].includes('=') ? args[at].split('=').slice(1).join('=') : args[at + 1]);
+  const profile = valueOf('--user-data-dir');
   const own = args.includes('--isolated') || (profile && path.resolve(profile).startsWith(world.home + path.sep));
   assert.ok(own, `Squire's browser must have a profile of its own, in the Squire home or kept in memory, never the owner's browser profile; got ${JSON.stringify(args)}`);
+  // A browser of its own, started by the server: never one already running.
+  const attach = args.filter((a) => /^--(cdp-endpoint|cdp-header|extension|remote-debugging-(port|address|pipe)|ws-endpoint|browser-url|connect|endpoint)(=|$)/.test(a));
+  assert.deepEqual(attach, [], `Squire's browser must never attach to a browser already running (the owner's or any other); got ${JSON.stringify(args)}`);
+  assert.deepEqual(Object.keys(env).filter((k) => /CDP|EXTENSION|ENDPOINT|CONNECT/i.test(k)), [], `nor through the server's environment; got ${JSON.stringify(env)}`);
+  // The server and the browser it drives are the ones set-up wrote in the
+  // browser's place, browser/ in the Squire home; nothing is fetched when the
+  // server starts or at the browser's first use.
+  const place = path.join(world.home, 'browser');
+  const inPlace = (p) => typeof p === 'string' && path.isAbsolute(p) && path.resolve(p).startsWith(place + path.sep);
+  assert.ok(inPlace(server.command), `the browser server's command must be the one set-up wrote in the browser's place (${place}); got ${JSON.stringify(server.command)}`);
+  assert.ok(!args.some((a) => /(^|\/)(npx|npm|pnpm|yarn|bunx|pipx|uvx)$/.test(a) || /^@playwright\/|@latest$/.test(a) || /^(--yes|-y)$/.test(a)),
+    `nothing may be fetched when the browser server starts (no package run through npx or npm); got ${JSON.stringify(args)}`);
+  assert.ok(inPlace(valueOf('--executable-path')) || inPlace(env.PLAYWRIGHT_BROWSERS_PATH),
+    `the browser the server drives must be the one set-up wrote in ${place} (its --executable-path, or PLAYWRIGHT_BROWSERS_PATH, inside it), so none is downloaded at its first use; got ${JSON.stringify({ args, env })}`);
 
   const sentences = B.personaSentences(world);
   assert.ok(sentences.some((x) => /browser/i.test(x) && /window/i.test(x) && /watch/i.test(x) && /take (it )?over|takeover/i.test(x)),
