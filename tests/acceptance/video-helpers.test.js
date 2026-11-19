@@ -87,7 +87,10 @@
 // The made videos are made at run time by the media world (a drawn picture
 // and the Mac's own synthetic voice; nothing downloaded, nothing third-party,
 // no recording of anyone). Cases that run Squire's own speech helper are
-// target-gated below macOS 26, as the helper is; cases that run avconvert are
+// target-gated below macOS 26, as the helper is, and skipped with a printed
+// reason only where Apple's own SpeechTranscriber.isAvailable reads false (the
+// media world's guard, as on a hosted virtual Mac; its decision table is
+// tested below with no Mac); cases that run avconvert are
 // target-gated where /usr/bin/avconvert is absent, naming what was found; a
 // case that needs the made video is gated where the Mac has no Swift
 // compiler. No case reaches the network beyond this Mac's loopback or a
@@ -120,7 +123,8 @@ const newSince = (world, before) => M.changedIn(before, M.digestOf(world.owner))
 
 // ---------------------------------------------------- the timed transcript
 
-test("the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was", { skip: gate(M.realHelperGate, M.madeVideoGate), timeout: 900000 }, async (t) => {
+test("the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was", { skip: gate(M.madeVideoGate, M.realSpeechGate), timeout: 900000 }, async (t) => {
+  t.diagnostic(M.realSpeechReading());
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const video = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'Fold the dough every half hour. Then shape the loaves and leave them overnight.' });
@@ -146,7 +150,8 @@ test("the owner's own video, given to Squire's own speech helper with no stand-i
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
 });
 
-test("a video of the owner's with no sound: Squire says plainly that it has no sound, keeps no transcript and no captions file, and never crashes, with Squire's own speech helper and no stand-in engine", { skip: gate(M.realHelperGate, M.madeVideoGate), timeout: 900000 }, async (t) => {
+test("a video of the owner's with no sound: Squire says plainly that it has no sound, keeps no transcript and no captions file, and never crashes, with Squire's own speech helper and no stand-in engine", { skip: gate(M.madeVideoGate, M.realSpeechGate), timeout: 900000 }, async (t) => {
+  t.diagnostic(M.realSpeechReading());
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const video = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Shop tour.mov'), { seconds: 3 });
@@ -159,6 +164,62 @@ test("a video of the owner's with no sound: Squire says plainly that it has no s
   assert.deepEqual(M.changedIn(before, M.digestOf(world.owner)), [], 'no transcript and no captions file may be kept, and nothing in the owner\'s folder may change');
   await w.sleep(200);
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
+});
+
+// The media world's guard on the cases above (and on the owner's own
+// recording by Squire's own helper, video-and-audio.test.js), its decision
+// driven row by row with no Mac: a test of the test world, bound to no case.
+test("the guard on the cases that hear speech through Squire's own helper skips a case only on a clean reading of SpeechTranscriber.isAvailable false on macOS 26 or later, and runs it on every other reading: an able Mac, no installed locale, a probe that fails to build, crashes, times out or prints a malformed line, the product's own words or exit, and an unread macOS version", { timeout: 60000 }, (t) => {
+  const reading = (isAvailable, localeForLanguage, macos, installedLocales = localeForLanguage ? 9 : 0) => ({
+    line: `${JSON.stringify({ installedLocales, isAvailable, localeForLanguage, macos })}\n`,
+  });
+  const able = reading(true, 'en-GB', '26.3.1');
+  const unable = reading(false, null, '26.7.2');
+  const BELOW = /^target-gated: needs macOS 26 or later for Squire's own speech helper; this Mac runs macOS (\d+)$/;
+  const UNABLE = (version) => (why) => typeof why === 'string' && why.startsWith('environment: ')
+    && why.includes('SpeechTranscriber.isAvailable false') && why.includes(`macOS ${version}`);
+  const RUNS = (why) => why === false;
+  const rows = [
+    ['1, macOS below 26, not probed', 25, null, (why) => BELOW.test(why) && why.endsWith(' 25')],
+    ['1, macOS below 26, whatever a probe would read', 15, able, (why) => BELOW.test(why) && why.endsWith(' 15')],
+    ['1, macOS below 26, a probe reading false', 25, unable, (why) => BELOW.test(why) && why.endsWith(' 25')],
+    ['2, able: available, an installed locale', 26, able, RUNS],
+    ['2, able on a later macOS', 27, reading(true, 'en-US', '27.0'), RUNS],
+    ['3, isAvailable false', 26, unable, UNABLE('26.7.2')],
+    ['3, isAvailable false, a locale installed all the same', 26, reading(false, 'en-US', '26.7.2', 1), UNABLE('26.7.2')],
+    ['3, isAvailable false on a later macOS', 27, reading(false, null, '27.1'), UNABLE('27.1')],
+    ['4, available, no installed locale', 26, reading(true, null, '26.3.1'), RUNS],
+    ['5, the product\'s helper failed to build (never looked at)', 26, { failed: 'failed to build', detail: "This Mac cannot turn speech into text on the Mac itself: Squire's speech helper could not be built on this Mac with its command line tools." }, RUNS],
+    ['5, the product\'s exit 69 (never keyed on)', 26, { failed: 'crashed', detail: 'exit 69 this Mac cannot recognise speech on the Mac itself' }, RUNS],
+    ['5, the product\'s own words for exit 69 in place of a reading', 26, { line: 'This Mac cannot recognise speech on the Mac itself right now, so Squire sent the recording nowhere, tried no other engine and kept no note.\n' }, RUNS],
+    ['6, the probe failed to build', 26, { failed: 'failed to build', detail: "error: cannot find 'SpeechTranscriber' in scope" }, RUNS],
+    ['6, the probe timed out building', 26, { failed: 'timed out building', detail: 'spawnSync /usr/bin/xcrun ETIMEDOUT' }, RUNS],
+    ['6, the probe crashed', 26, { failed: 'crashed', detail: 'signal SIGSEGV' }, RUNS],
+    ['6, the probe timed out', 26, { failed: 'timed out', detail: 'no line within 30 seconds' }, RUNS],
+    ['6, no outcome at all', 26, null, RUNS],
+    ['6, an empty line', 26, { line: '' }, RUNS],
+    ['6, a line that is not JSON', 26, { line: 'isAvailable=false\n' }, RUNS],
+    ['6, isAvailable as a word, not a boolean', 26, { line: '{"installedLocales":0,"isAvailable":"false","localeForLanguage":null,"macos":"26.7.2"}\n' }, RUNS],
+    ['6, a reading with fields missing', 26, { line: '{"isAvailable":false}\n' }, RUNS],
+    ['6, two lines where one belongs', 26, { line: `${unable.line}${unable.line}` }, RUNS],
+    ['6, a line with words before it', 26, { line: `warning: something\n${unable.line}` }, RUNS],
+    ['6, a reading of false from a probe below macOS 26', 26, reading(false, null, '25.4'), RUNS],
+    ['7, macOS unread, able', 0, able, RUNS],
+    ['7, macOS unread, the probe failed', 0, { failed: 'crashed', detail: 'exit 1' }, RUNS],
+    ['7, macOS unread, a malformed line', 0, { line: 'nothing\n' }, RUNS],
+    ['7, macOS unread, falls through to the probe, which reads false', 0, unable, UNABLE('26.7.2')],
+  ];
+  let checked = 0;
+  for (const [row, major, outcome, expect] of rows) {
+    const why = M.speechGuard(major, outcome);
+    assert.ok(expect(why), `row ${row} (macOS major ${major}, outcome ${JSON.stringify(outcome)}): got ${JSON.stringify(why)}`);
+    const words = M.speechGuardReading(major, outcome);
+    assert.ok(typeof words === 'string' && words.includes(why ? 'this case is skipped' : 'this case runs'), `row ${row}: the reading must say whether the case runs; got ${JSON.stringify(words)}`);
+    if (outcome && outcome.failed) assert.ok(words.includes(outcome.failed), `row ${row}: the reading must print the probe's failure; got ${JSON.stringify(words)}`);
+    checked += 1;
+  }
+  assert.equal(M.speechGuard.length, 2, 'the decision takes the macOS major version and the probe\'s outcome, nothing of the product');
+  t.diagnostic(`decision table: ${checked} of ${rows.length} rows as ruled`);
 });
 
 // Typical and heavy phrase lists: { phrases, groups } with the paragraphs
@@ -322,7 +383,15 @@ const AVCONVERT = [M.avconvertGate, M.madeVideoGate];
 test("a clip of the owner's own video between two times is cut on the Mac by Apple's avconvert into a new file in the owner's folder without the video's location data, twice from the same video, each a new file, neither over the other, and the original never written over or changed", { skip: gate(...AVCONVERT), timeout: 300000 }, async (t) => {
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
-  const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'One. Two. Three. Four. Five. Six.', seconds: 6, location: PLACE });
+  // The source's sound is this world's own tone, six seconds of it, so it
+  // sounds through the whole clip window (1 s to 3 s); it is checked before
+  // the product runs, and on a clip that loses the picture or the sound the
+  // case prints the source's tracks and the window's sound beside the clip's.
+  const tone = M.fixtureRecording(path.join(world.root, 'tone', 'six-seconds.wav'), { seconds: 6 });
+  const original = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { audio: tone, seconds: 6, location: PLACE });
+  const source = M.mediaTracks(original, 1, 3);
+  assert.ok(M.soundsIn(source), `the made video had no sound in the clip window (1 s to 3 s), so the clip could not be judged; its tracks: ${JSON.stringify(source)}`);
+  t.diagnostic(`the source's tracks and the window's sound (1 s to 3 s): ${JSON.stringify(source)}`);
   assert.equal(M.describeMedia(original).location, true, 'the made video must carry location data');
   const bytes = fs.readFileSync(original);
   const whole = M.describeMedia(original).duration;
@@ -335,7 +404,10 @@ test("a clip of the owner's own video between two times is cut on the Mac by App
     assert.equal(made.length, 1, `the clip must be one new file in the owner's folder, nothing else changed; got ${JSON.stringify(made)}`);
     assert.ok(said(r).includes(path.basename(made[0])), `Squire must say where the clip is; got ${w.describe(r)}`);
     const clip = M.describeMedia(made[0]);
-    assert.ok(clip.videoTracks >= 1 && clip.audioTracks >= 1, `the clip must keep the picture and the sound; got ${JSON.stringify(clip)}`);
+    const keeps = clip.videoTracks >= 1 && clip.audioTracks >= 1;
+    const shown = keeps ? '' : `; the source: ${JSON.stringify(M.describeMedia(original))}, its tracks and the window's sound (1 s to 3 s): ${JSON.stringify(M.mediaTracks(original, 1, 3))}; the clip's tracks and its sound (0 s to 2 s): ${JSON.stringify(M.mediaTracks(made[0], 0, 2))}`;
+    if (!keeps) t.diagnostic(`the clip lost the picture or the sound${shown}`);
+    assert.ok(keeps, `the clip must keep the picture and the sound; got ${JSON.stringify(clip)}${shown}`);
     assert.ok(clip.duration >= 1 && clip.duration <= 3.5 && clip.duration < whole - 1, `the clip must be the part between ${from} and ${to} (about two seconds of ${whole}); got ${clip.duration}`);
     assert.equal(clip.location, false, 'the clip must not carry the video\'s location data');
     assert.ok(!fs.readFileSync(made[0]).includes(Buffer.from('+51.5074')), 'the clip must not carry the place, in any form');
