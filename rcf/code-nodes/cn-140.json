@@ -3,11 +3,12 @@
   "path": "core/hooks/pre-tool-use.py#MediaRequest",
   "implementsAcIds": [
     "AC-1701-1",
-    "AC-1702-1"
+    "AC-1702-1",
+    "AC-1701-6"
   ],
   "dependencies": [],
   "version": "0.1.0",
   "status": "draft",
   "createdAt": "2026-11-16T22:46:29.172Z",
-  "updatedAt": "2026-11-16T22:46:29.172Z"
+  "updatedAt": "2026-11-18T16:59:07.792Z"
 }

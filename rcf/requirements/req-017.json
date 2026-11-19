@@ -1,7 +1,7 @@
 {
   "createdAt": "2026-11-07T17:39:56.871Z",
-  "updatedAt": "2026-11-07T17:39:56.876Z",
-  "description": "Squire analyses YouTube videos from their captions and transcribes the Squire owner's own audio and video files on the Mac. It never downloads a YouTube video. Video work is a heavy job, so Squire warns first.",
+  "updatedAt": "2026-11-18T11:58:33.988Z",
+  "description": "Squire transcribes the Squire owner's own audio and video files on the Mac and works from a transcript the Squire owner pastes. It fetches nothing from YouTube: no captions, no audio, no page. Video work is a heavy job, so Squire warns first.",
   "category": "functional",
   "domain": "video-audio",
   "priority": "must",
@@ -10,7 +10,7 @@
   ],
   "reqId": "REQ-017",
   "prdId": "PRD-001",
-  "title": "Video and audio: YouTube captions and the Squire owner's own files",
+  "title": "Video and audio: the Squire owner's own files and a pasted transcript",
   "version": "0.1.0",
   "status": "draft",
   "shapeClassification": {

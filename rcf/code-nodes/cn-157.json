@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-157",
+  "path": "core/lib/squire.py#youtube_link",
+  "implementsAcIds": [
+    "AC-1701-1"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-18T16:57:29.457Z",
+  "updatedAt": "2026-11-18T16:57:29.457Z"
+}

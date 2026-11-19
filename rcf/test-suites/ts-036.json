@@ -1,0 +1,36 @@
+{
+  "createdAt": "2026-11-18T12:15:09.156Z",
+  "updatedAt": "2026-11-18T12:15:34.183Z",
+  "purpose": "Runs the real transcription on the owner's own recordings and made videos, through the engine seam and through Squire's own speech helper, and checks the timed paragraphs and the plain no sound.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1701-3"
+  ],
+  "id": "TS-036",
+  "usId": "US-1701",
+  "title": "A transcript with times, and a plain no sound",
+  "testCases": [
+    {
+      "id": "TC-036-the-real-helper-on-a-made-video",
+      "acId": "AC-1701-3",
+      "description": "the owner's own made video through Squire's own speech helper, no stand-in: a transcript with times read from the video's sound, its captions file beside it, the video unchanged",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-helpers.test.js::the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was"
+    },
+    {
+      "id": "TC-036-a-video-with-no-sound",
+      "acId": "AC-1701-3",
+      "description": "a made video with no sound, through Squire's own speech helper: Squire says plainly it has no sound, keeps nothing, never crashes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-helpers.test.js::a video of the owner's with no sound: Squire says plainly that it has no sound, keeps no transcript and no captions file, and never crashes, with Squire's own speech helper and no stand-in engine"
+    },
+    {
+      "id": "TC-036-the-timed-paragraphs",
+      "acId": "AC-1701-3",
+      "description": "the timed form through the engine seam: paragraphs led by their times, a long pause starting a new one, for a short recording and an hour's",
+      "status": "pending",
+      "testPointer": "tests/acceptance/video-helpers.test.js::a transcript with times, in paragraphs: the owner's own recording is kept as a note whose paragraphs are each led by their time in the recording, phrases a moment apart kept together and a long pause starting a new paragraph, the words as heard, for a short recording and for an hour's"
+    }
+  ],
+  "status": "draft"
+}
