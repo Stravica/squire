@@ -18,7 +18,8 @@
 //                       test's temporary folder, with the Mac's keychain
 //                       never used (a mock keychain) and every request for a
 //                       host but this Mac sent to a recorder on the loopback,
-//                       which counts it. The session's browser calls take
+//                       which counts it and keeps its line and headers, read
+//                       for the owner's details. The session's browser calls take
 //                       the shape of the Playwright browser tools
 //                       (mcp__playwright__browser_navigate, _snapshot,
 //                       _type, _fill_form, _click, _evaluate, as the floor's
@@ -191,12 +192,19 @@ async function testSite(t) {
   };
 }
 
-// A recorder on the loopback that counts every connection made to it.
+// A recorder on the loopback that counts every connection made to it and
+// keeps each request's line and headers (first, and head: the line with
+// every header after it), so a case can read what would have left the Mac.
 async function offMacRecorder(t) {
   const seen = [];
   const server = net.createServer((socket) => {
     let first = '';
-    socket.once('data', (d) => { first = d.toString('latin1').split('\r\n')[0]; seen.push({ at: Date.now(), first }); socket.destroy(); });
+    socket.once('data', (d) => {
+      const head = d.toString('latin1').split('\r\n\r\n')[0];
+      first = head.split('\r\n')[0];
+      seen.push({ at: Date.now(), first, head });
+      socket.destroy();
+    });
     socket.on('error', () => {});
     setTimeout(() => { if (!first) { seen.push({ at: Date.now(), first: '(no request line)' }); socket.destroy(); } }, 2000);
   });
@@ -377,6 +385,12 @@ function personaSentences(world) {
   return block.replace(/`[^`\n]*`/g, (m) => m.replace(/\./g, '․')).split(/(?<=[.!?])\s+/);
 }
 
+// Which of the owner's details any request the browser tried to send beyond
+// this Mac held, in its line or its headers (the recorder's record).
+function detailsHeldBeyond(browser) {
+  return ownerDetailsIn(browser.recorder.seen.map((s) => s.head || s.first).join('\n'));
+}
+
 // Every process of the browser's group still alive, by pid.
 function browserProcesses(browser) {
   const r = spawnSync('/bin/ps', ['-axo', 'pid=,pgid='], { encoding: 'utf8' });
@@ -437,6 +451,7 @@ module.exports = {
   laidWorld,
   personaSentences,
   browserProcesses,
+  detailsHeldBeyond,
   offLoopbackSockets,
   browserCase,
 };

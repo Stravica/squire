@@ -81,6 +81,11 @@
 // a handful of calls; heavy, a page whose fields go by other names, filled
 // field by field, by a script and through its address.
 //
+// Each case that drives the browser also reads every request the browser
+// tried to send beyond this Mac (held by the test world's recorder, its line
+// and headers) and finds none of the owner's details there: a detail must not
+// leave by a route the page never sees, a suggestion or a prefetch.
+//
 // The class is open (any field, any spelling, any page that is a sign-in);
 // these are instances. No case reaches a model, a real website, the network
 // beyond this Mac's loopback or any host but this Mac.
@@ -152,6 +157,8 @@ test("a page on the loopback test site asking for a name, an email address, a po
   assert.match(decode(posted[0].body), /Please send a brochure/, `the page's own message field must reach the site; it received ${decode(posted[0].body)}`);
   const given = B.ownerDetailsIn(site.text());
   assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details; the site received the owner's ${given.join(', ')}: ${decode(posted[0].body)}`);
+  const held = B.detailsHeldBeyond(browser);
+  assert.deepEqual(held, [], `no request the browser tried to send beyond this Mac may hold any of the owner's details; its line or headers held the owner's ${held.join(', ')}: ${JSON.stringify(browser.recorder.seen.map((s) => s.head))}`);
   assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
 });
 
@@ -179,6 +186,8 @@ test("a second page on the loopback test site that hides the asks under other na
   assert.equal(answered.length, 1, `the site must receive the page's own answer once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${decode(r.url)}`))}`);
   const given = B.ownerDetailsIn(site.text());
   assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details, whatever the field is called; the site received the owner's ${given.join(', ')}: ${JSON.stringify(site.received.map((r) => `${r.method} ${decode(r.url)} ${decode(r.body)}`))}`);
+  const held = B.detailsHeldBeyond(browser);
+  assert.deepEqual(held, [], `no request the browser tried to send beyond this Mac may hold any of the owner's details; its line or headers held the owner's ${held.join(', ')}: ${JSON.stringify(browser.recorder.seen.map((s) => s.head))}`);
   assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
 });
 
@@ -211,6 +220,8 @@ test("Squire's browser stops at a sign-in page on the loopback test site and doe
   assert.equal(site.signIns(), 1, `after the yes the browser goes on and the site records the sign-in once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${r.url}`))}`);
   assert.match(page.heading, /signed in/i, `the browser must be on the signed-in page; got ${JSON.stringify(page)}`);
   beyond.push(...B.offLoopbackSockets(browser));
+  const held = B.detailsHeldBeyond(browser);
+  assert.deepEqual(held, [], `no request the browser tried to send beyond this Mac may hold any of the owner's details; its line or headers held the owner's ${held.join(', ')}: ${JSON.stringify(browser.recorder.seen.map((s) => s.head))}`);
   assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
 });
 
@@ -281,6 +292,8 @@ test("one browsing job on the loopback test site makes several calls in a row, e
     assert.match(decode(posted[0].body), /Please send a brochure/, `the page's own message must reach the site, in ${mode} mode; it received ${decode(posted[0].body)}`);
     const given = B.ownerDetailsIn(site.text());
     assert.deepEqual(given, [], `by default Squire's browser must supply none of the owner's details, in ${mode} mode; the site received the owner's ${given.join(', ')}`);
+    const held = B.detailsHeldBeyond(browser);
+    assert.deepEqual(held, [], `no request the browser tried to send beyond this Mac may hold any of the owner's details, in ${mode} mode; its line or headers held the owner's ${held.join(', ')}: ${JSON.stringify(browser.recorder.seen.map((s) => s.head))}`);
     assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback, in ${mode} mode; lsof read ${JSON.stringify(beyond)}`);
   }
 });
@@ -314,6 +327,8 @@ test("by default Squire's browser does not make a call Squire cannot check for t
 
     const after = site.received.filter((r) => !(r.method === 'GET' && (r.url === '/order' || r.url === '/favicon.ico')));
     assert.deepEqual(after, [], `the site must receive nothing from a call Squire could not check, in ${mode} mode; it received ${JSON.stringify(after)}`);
+    const held = B.detailsHeldBeyond(browser);
+    assert.deepEqual(held, [], `no request the browser tried to send beyond this Mac may hold any of the owner's details, in ${mode} mode; its line or headers held the owner's ${held.join(', ')}: ${JSON.stringify(browser.recorder.seen.map((s) => s.head))}`);
     assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback, in ${mode} mode; lsof read ${JSON.stringify(beyond)}`);
   }
 });
@@ -344,6 +359,8 @@ test("when Squire cannot tell whether a page or a step would sign the owner in o
   await B.perform(browser, goOn);
   assert.equal(site.signIns(), 1, `after the yes the browser goes on and the site records the sign-in once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${r.url}`))}`);
   beyond.push(...B.offLoopbackSockets(browser));
+  const held = B.detailsHeldBeyond(browser);
+  assert.deepEqual(held, [], `no request the browser tried to send beyond this Mac may hold any of the owner's details; its line or headers held the owner's ${held.join(', ')}: ${JSON.stringify(browser.recorder.seen.map((s) => s.head))}`);
   assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
 });
 
