@@ -31,7 +31,9 @@
 //       to the job is not.
 //   The floor lets the job write its brief and work in the app's folder, asks
 //   before the preview server starts, and asks before a push or a deploy,
-//   as today.
+//   as today. A preview server started with no bind to the loopback, or with
+//   a bind beyond it (every address, 0.0.0.0), is refused outright, never
+//   asked, even after a yes: it would be reachable from beyond this Mac.
 //
 // Design decisions, on the fail-closed reading (each also a question in the
 // return): an app's folder is workspace/apps/<name> in the owner's folder;
@@ -156,5 +158,27 @@ test("an app's preview runs on this Mac on the loopback from the app's own folde
     const folder = path.join(world.owner, 'workspace', 'apps', `order-board-${mode}`);
     w.assertBlocked(floor.run(job, w.tools.bash(`/usr/bin/python3 -m http.server 0 --bind 127.0.0.1 --directory '${folder}'`), mode),
       `the app's preview server starting, in ${mode} mode: the floor asks the owner first`);
+  }
+});
+
+test("in an app job the owner said yes to, a preview server started with no loopback bind or bound beyond the loopback is refused, not asked, even after a yes, in the default mode and in auto mode: Python's http.server with no --bind, which listens on every address, and with --bind 0.0.0.0", { timeout: 180000 }, (t) => {
+  const world = laidWorld(t);
+  const floor = U.laidFloor(world, U.UTC);
+  for (const mode of MODES) {
+    const job = `job-app-open-preview-${mode}`;
+    startApp(world, floor, job, mode);
+    const folder = path.join(world.owner, 'workspace', 'apps', `order-board-${mode}`);
+    for (const [what, command] of [
+      ['no loopback bind', `/usr/bin/python3 -m http.server 0 --directory '${folder}'`],
+      ['a bind to every address', `/usr/bin/python3 -m http.server 0 --bind 0.0.0.0 --directory '${folder}'`],
+    ]) {
+      const first = floor.run(job, w.tools.bash(command), mode);
+      w.assertBlocked(first, `the app's preview server with ${what}, in ${mode} mode`);
+      assert.equal(w.requestIdIn(first.stderr), null, `the app's preview server with ${what}, in ${mode} mode: refused, not asked, since it would be reachable beyond this Mac; got a request the owner could answer: ${w.describe(first)}`);
+      w.ownerSays(world, job, 'yes', { env: U.UTC });
+      const again = floor.run(job, w.tools.bash(command), mode);
+      w.assertBlocked(again, `the app's preview server with ${what}, in ${mode} mode, even after the owner said yes`);
+      assert.equal(w.requestIdIn(again.stderr), null, `the app's preview server with ${what}, in ${mode} mode, after a yes: still refused, not asked; got ${w.describe(again)}`);
+    }
   }
 });

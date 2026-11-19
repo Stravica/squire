@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-19T13:45:58.762Z",
-  "updatedAt": "2026-11-19T13:46:01.526Z",
+  "updatedAt": "2026-11-19T17:03:58.988Z",
   "purpose": "Lays core down and reads what the session loads for an app the owner said yes to: the one-page brief, plan, build, test and preview, the work kept in the app's own folder, a failed step explained with the work kept, a preview on the loopback from the app's folder and never through the page server, and shipping on its own yes; drives the app job's start, its writes, its resume, the preview's start and a push and a deploy through the laid floor in the default and auto modes.",
   "testLevel": "integration",
   "acIds": [
@@ -37,6 +37,13 @@
       "description": "an app preview runs on the loopback from the app folder, never through the page server, and the floor asks before it starts",
       "status": "pending",
       "testPointer": "tests/acceptance/app-jobs.test.js::an app's preview runs on this Mac on the loopback from the app's own folder, never through Squire's page server: what the session loads says so, and the floor asks the owner before the preview starts"
+    },
+    {
+      "id": "TC-040-in-an-app-job-a-preview-server-with-no",
+      "acId": "AC-1302-2",
+      "description": "in an app job, a preview server with no loopback bind or a bind beyond the loopback is refused, not asked, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-jobs.test.js::in an app job the owner said yes to, a preview server started with no loopback bind or bound beyond the loopback is refused, not asked, even after a yes, in the default mode and in auto mode: Python's http.server with no --bind, which listens on every address, and with --bind 0.0.0.0"
     }
   ],
   "status": "draft"
