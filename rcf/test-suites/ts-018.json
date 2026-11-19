@@ -1,12 +1,13 @@
 {
   "createdAt": "2026-11-07T17:40:43.274Z",
-  "updatedAt": "2026-11-19T16:55:41.692Z",
+  "updatedAt": "2026-11-19T16:57:06.375Z",
   "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
   "testLevel": "integration",
   "acIds": [
     "AC-1801-1",
     "AC-1801-2",
-    "AC-1801-3"
+    "AC-1801-3",
+    "AC-1801-4"
   ],
   "id": "TS-018",
   "usId": "US-1801",
@@ -53,6 +54,13 @@
       "description": "a browser call Squire cannot check for the owner's details (a script, a file upload, or any typed text while the owner's profile is unreadable or absent) is refused, not asked, even after a yes, and the site receives nothing",
       "status": "pending",
       "testPointer": "tests/acceptance/browser.test.js::by default Squire's browser does not make a call Squire cannot check for the owner's details: a script whose function builds what it sets only when it runs, a file upload of a file in the owner's folder, and, with the owner's profile unreadable or absent, a typed text, are each refused rather than asked, even after a yes, in the default mode and in auto mode, and the site receives nothing from them; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-a-page-or-step-squire-cannot-tell-is-a",
+      "acId": "AC-1801-4",
+      "description": "a page or step Squire cannot tell is a sign-in is treated as one: the session is told to stop, name the site and wait for the yes, and a Continue with button records no sign-in before the yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::when Squire cannot tell whether a page or a step would sign the owner in or open an account, its browser treats it as a sign-in: what the session loads says so, to stop, tell the owner which site and wait for their yes; and on a second shape of sign-in on the loopback test site, a Continue with button for a provider and no password field, the site records no sign-in before the owner's yes and one after it; no socket leaves the loopback"
     }
   ],
   "status": "draft"

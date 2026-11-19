@@ -43,7 +43,12 @@
 //   browser runs in a window of its own on the Mac, which the owner can watch
 //   and take over in; that when the browser reaches a sign-in page it stops,
 //   tells the owner which site wants a sign-in, and waits for the owner's yes
-//   to that sign-in before it goes on; and never signs in without it.
+//   to that sign-in before it goes on; and never signs in without it. When
+//   Squire cannot tell whether a page or a step would sign the owner in or
+//   open an account (a "Continue with" button for an account held elsewhere,
+//   with no password field, is one such shape), the block tells the session
+//   to treat it as a sign-in: stop, tell the owner which site, and wait for
+//   their yes.
 //   Lay-down sets Squire's browser up in Squire's Claude Code config folder
 //   (claude-config/.claude.json in the Squire home, its mcpServers): a
 //   Playwright browser server, never run headless, with a profile of its own
@@ -277,6 +282,35 @@ test("by default Squire's browser does not make a call Squire cannot check for t
     assert.deepEqual(after, [], `the site must receive nothing from a call Squire could not check, in ${mode} mode; it received ${JSON.stringify(after)}`);
     assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback, in ${mode} mode; lsof read ${JSON.stringify(beyond)}`);
   }
+});
+
+test("when Squire cannot tell whether a page or a step would sign the owner in or open an account, its browser treats it as a sign-in: what the session loads says so, to stop, tell the owner which site and wait for their yes; and on a second shape of sign-in on the loopback test site, a Continue with button for a provider and no password field, the site records no sign-in before the owner's yes and one after it; no socket leaves the loopback", { skip: B.browserGate(), timeout: 300000 }, async (t) => {
+  const world = B.laidWorld(t);
+  const sentences = B.personaSentences(world);
+  const unsure = sentences.filter((x) => /browser/i.test(x) && /sign(-| )?in/i.test(x) && /account/i.test(x) && /(cannot|can't|not) tell|unsure|not sure|uncertain/i.test(x));
+  assert.ok(unsure.length > 0, `Squire's own block must tell the session that when its browser cannot tell whether a page or a step would sign the owner in or open an account, it treats it as a sign-in; got ${JSON.stringify(sentences.filter((x) => /sign(-| )?in|account/i.test(x)))}`);
+  assert.ok(unsure.some((x) => /stop/i.test(x) && /\byes\b/i.test(x) && /site|website/i.test(x)),
+    `it must say to stop there, tell the owner which site and wait for their yes; got ${JSON.stringify(unsure)}`);
+
+  const { site, browser, floor, call, beyond, job } = await B.browserCase(t, world);
+  t.after(() => t.diagnostic(`browser pid ${browser.pid}; held beyond the Mac ${JSON.stringify(browser.recorder.seen.map((s) => s.first))}`));
+  const opened = await call('open', T.navigate(site.url('/join')));
+  assert.ok(opened.performed, `Squire's browser must open the page on the owner's yes; the floor said ${w.describe(opened.last)}`);
+  const button = 'Continue with Example ID';
+  const refs = refsOf(opened.page);
+  assert.ok(refs[button], `the page must show its ${button} button; got ${JSON.stringify(opened.page)}`);
+  assert.ok(!opened.page.elements.some((e) => /password/i.test(e.name)), `this shape of sign-in has no password field; got ${JSON.stringify(opened.page)}`);
+
+  const goOn = T.click(button, refs[button]);
+  const first = floor.run(job, goOn);
+  w.assertBlocked(first, 'the browser going on from a Continue with button before the owner\'s yes');
+  assert.equal(site.signIns(), 0, 'the site must record no sign-in before the owner\'s yes');
+  U.sayYesTo(world, job, first, { env: U.UTC });
+  w.assertAllowed(floor.run(job, goOn), 'the browser going on from the Continue with button once the owner said yes');
+  await B.perform(browser, goOn);
+  assert.equal(site.signIns(), 1, `after the yes the browser goes on and the site records the sign-in once; it received ${JSON.stringify(site.received.map((r) => `${r.method} ${r.url}`))}`);
+  beyond.push(...B.offLoopbackSockets(browser));
+  assert.deepEqual(beyond, [], `no socket of the browser may leave this Mac's loopback; lsof read ${JSON.stringify(beyond)}`);
 });
 
 test("a browsing job that has also read the owner's private things by another route is still stopped as one job: with the owner's profile read before the job's first browser call, or after it, the job's next asked browser call is refused, not asked, even after a yes, in the default mode and in auto mode", { timeout: 120000 }, (t) => {

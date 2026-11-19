@@ -135,6 +135,11 @@ const PAGES = {
     '<form method="post" action="/signin"><input type="hidden" name="account" value="remembered">' +
     '<p>Your saved account</p><label for="password">Password</label><input id="password" name="password" type="password">' +
     '<button type="submit">Continue</button></form>'),
+  // A second shape of sign-in: one button that goes on with an account held
+  // by a provider, and no password field. Going on signs in.
+  '/join': PAGE('Join Example Flour Club', '<h1>Join Example Flour Club</h1>' +
+    '<form method="post" action="/join"><input type="hidden" name="provider" value="example-id">' +
+    '<p>Use the account you already have.</p><button type="submit">Continue with Example ID</button></form>'),
 };
 
 async function testSite(t) {
@@ -151,7 +156,7 @@ async function testSite(t) {
         res.end(PAGES[u.pathname]);
         return;
       }
-      if (u.pathname === '/signin' && req.method === 'POST') {
+      if ((u.pathname === '/signin' || u.pathname === '/join') && req.method === 'POST') {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         res.end(PAGE('Your account', '<h1>Signed in</h1><p>Welcome back.</p>'));
         return;
@@ -182,7 +187,7 @@ async function testSite(t) {
     // Every request after the page itself was served: what the browser sent.
     sent: () => received.filter((r) => !(r.method === 'GET' && PAGES[new URL(r.url, base).pathname] && !new URL(r.url, base).search)),
     text: () => received.map(decoded).join('\n'),
-    signIns: () => received.filter((r) => r.method === 'POST' && r.url.startsWith('/signin')).length,
+    signIns: () => received.filter((r) => r.method === 'POST' && (r.url.startsWith('/signin') || r.url.startsWith('/join'))).length,
   };
 }
 

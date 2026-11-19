@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:21.031Z",
-  "updatedAt": "2026-11-19T16:54:51.869Z",
+  "updatedAt": "2026-11-19T16:57:05.540Z",
   "asA": "Squire owner",
   "iWant": "Squire's own browser, in a window I can watch and take over, that never gives a website my details or signs in to my accounts without my yes",
   "soThat": "Squire can use the web for me without exposing me",
@@ -37,6 +37,15 @@
       "given": "A browser call Squire cannot check for the Squire owner's details: their details cannot be read, or the call runs a script or sends a file",
       "when": "Squire's browser would make that call, whether or not the Squire owner said yes to it",
       "then": "By default, the browser does not make that call, and the website receives nothing from it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1801-4",
+      "description": "When Squire cannot tell whether a page or a step would sign the Squire owner in or open an account, its browser treats it as a sign-in.",
+      "testable": true,
+      "given": "Squire's browser reaches a page or a step that Squire cannot tell would sign the Squire owner in or open an account for them",
+      "when": "Squire tries to go on",
+      "then": "The browser treats it as a sign-in: it stops, tells the Squire owner which site, and does not go on until their yes.",
       "verification": "testOnly"
     }
   ]
