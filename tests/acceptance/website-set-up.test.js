@@ -50,6 +50,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const w = require('../fixtures/squire-world.js');
 const U = require('../fixtures/usage-world.js');
+const B = require('../fixtures/browser-world.js');
 const W = require('../fixtures/website-world.js');
 
 const MODES = ['default', 'auto'];
@@ -195,8 +196,9 @@ test("the set-up token reaches the set-up only through Squire's secret helper, f
 });
 
 // Adding a payment method: the public API reference read names no route for
-// it, so no instance here; a browser call on the hosting dashboard is an open
-// class, not decided by these instances.
+// it, so no instance here; a browser call on the Cloudflare dashboard is
+// refused by its host (a case below), and no other hosting dashboard is
+// decided by these instances.
 test("Squire never upgrades a plan or buys on the Cloudflare account: a call to Cloudflare's API that would is refused, not asked, yes or no, in the default mode and in auto mode, by curl or through Squire's secret helper with the deploy token", { timeout: 180000 }, (t) => {
   const ctx = W.websiteWorld(t, { laid: true });
   const { world } = ctx;
@@ -248,6 +250,36 @@ test("Squire never buys on the Cloudflare account by a client other than curl: t
         w.assertBlocked(r, `${what}, in ${mode} mode${when}`);
         assert.equal(w.requestIdIn(r.stderr), null, `${what}, in ${mode} mode${when}: refused, not asked, since it would spend the owner's money; got a request the owner could answer: ${w.describe(r)}`);
         assert.match(r.stderr.split(command).join(' '), /money|spend|pay|buy|billing/i, `${what}, in ${mode} mode${when}: the refusal says it is about money; got ${w.describe(r)}`);
+      }
+    }
+  }
+  assert.deepEqual(billingWrites(ctx.standIn), [], 'nothing reached the account\'s billing');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+// The Cloudflare dashboard's host, as Cloudflare's public pages link to it
+// (https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
+// The floor cannot tell a purchase, a plan change or a payment method added
+// there from any other act, so a browser call to it is refused, yes or no:
+// decided on the fail-closed reading, for this one host. No browser is
+// started: the call is put to the floor only, so nothing is opened.
+const DASHBOARD = 'https://dash.cloudflare.com';
+
+test("Squire's browser never opens the Cloudflare dashboard, where a plan could be bought: in a site job, with the owner's profile there to check, a browser navigate to the dashboard's host is refused, not asked, yes or no, the refusal naming the dashboard or money, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  B.writeOwnerProfile(world);
+  const floor = U.laidFloor(world, U.UTC);
+  for (const mode of MODES) {
+    const job = `job-site-dashboard-money-${mode}`;
+    W.startSite(world, floor, job, mode);
+    for (const url of [`${DASHBOARD}/`, `${DASHBOARD}/?to=/:account/home`]) {
+      for (const when of ['', ', even after the owner said yes']) {
+        if (when) w.ownerSays(world, job, 'yes', { env: U.UTC });
+        const r = floor.run(job, B.browserTools.navigate(url), mode);
+        w.assertBlocked(r, `a browser navigate to ${url}, in ${mode} mode${when}`);
+        assert.equal(w.requestIdIn(r.stderr), null, `a browser navigate to ${url}, in ${mode} mode${when}: refused, not asked; got a request the owner could answer: ${w.describe(r)}`);
+        assert.match(r.stderr.split(url).join(' '), /dashboard|money|spend|pay|buy|billing/i, `a browser navigate to ${url}, in ${mode} mode${when}: the refusal names the dashboard or money, not another reason; got ${w.describe(r)}`);
       }
     }
   }

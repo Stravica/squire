@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-21T19:05:45.265Z",
+  "updatedAt": "2026-11-21T20:54:23.554Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -539,6 +539,13 @@
       "description": "a deploy by any route Squire did not set up is asked, never free, naming its target",
       "status": "pending",
       "testPointer": "tests/acceptance/website-deploy.test.js::a deploy by any route Squire did not set up is asked, never free, naming its target where the command does, in the default mode and in auto mode: wrangler deploy, npx wrangler, a Workers or Pages call to Cloudflare's API by curl, and a git push to a connected repository"
+    },
+    {
+      "id": "TC-002-a-site-never-goes-live-through-the",
+      "acId": "AC-1901-1",
+      "description": "a site never goes live through the Cloudflare dashboard in Squire's browser",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-deploy.test.js::a site never goes live through the Cloudflare dashboard in Squire's browser: in a site job, with the owner's profile there to check, a browser navigate to the dashboard's host is refused, not asked, yes or no, the refusal naming the dashboard, in the default mode and in auto mode, and nothing is deployed"
     }
   ],
   "status": "draft"

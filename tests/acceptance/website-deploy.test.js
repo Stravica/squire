@@ -181,3 +181,33 @@ test("a deploy by any route Squire did not set up is asked, never free, naming i
   }
   assert.deepEqual(W.uploads(ctx.standIn), [], 'nothing was deployed');
 });
+
+// The Cloudflare dashboard's host, as Cloudflare's public pages link to it
+// (https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/).
+// The floor cannot tell a deploy or a purchase there from any other act, so a
+// browser call to it is refused, yes or no: decided on the fail-closed
+// reading, for this one host. No browser is started: the call is put to the
+// floor only, so nothing is opened.
+const DASHBOARD = 'https://dash.cloudflare.com';
+
+test("a site never goes live through the Cloudflare dashboard in Squire's browser: in a site job, with the owner's profile there to check, a browser navigate to the dashboard's host is refused, not asked, yes or no, the refusal naming the dashboard, in the default mode and in auto mode, and nothing is deployed", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  B.writeOwnerProfile(world);
+  const floor = U.laidFloor(world, U.UTC);
+  for (const mode of MODES) {
+    const job = `job-site-dashboard-${mode}`;
+    W.startSite(world, floor, job, mode);
+    for (const url of [`${DASHBOARD}/?to=/:account/workers-and-pages`, `${DASHBOARD}/`]) {
+      for (const when of ['', ', even after the owner said yes']) {
+        if (when) w.ownerSays(world, job, 'yes', { env: U.UTC });
+        const r = floor.run(job, B.browserTools.navigate(url), mode);
+        w.assertBlocked(r, `a browser navigate to ${url}, in ${mode} mode${when}`);
+        assert.equal(w.requestIdIn(r.stderr), null, `a browser navigate to ${url}, in ${mode} mode${when}: refused, not asked; got a request the owner could answer: ${w.describe(r)}`);
+        assert.match(r.stderr.split(url).join(' '), /dashboard|money|spend|pay|buy|billing/i, `a browser navigate to ${url}, in ${mode} mode${when}: the refusal names the dashboard or money, not another reason; got ${w.describe(r)}`);
+      }
+    }
+  }
+  assert.deepEqual(W.uploads(ctx.standIn), [], 'nothing was deployed');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
