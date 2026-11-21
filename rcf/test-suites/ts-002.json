@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-09T15:16:27.430Z",
+  "updatedAt": "2026-11-19T18:49:05.004Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -490,6 +490,27 @@
       "description": "a set-up record that lists every step done, with no yes in the approvals ledger, still gets the one yes asked before anything installs",
       "status": "pending",
       "testPointer": "tests/acceptance/installer.test.js::a set-up record that lists every step done, with no yes in the approvals ledger, still gets the one yes asked before anything installs"
+    },
+    {
+      "id": "TC-002-the-one-yes-names-squire-s-built-in",
+      "acId": "AC-1901-5",
+      "description": "the one yes names Squire's built-in browser, and on Not now nothing of it is downloaded, installed or written",
+      "status": "pending",
+      "testPointer": "tests/acceptance/installer.test.js::the one yes names Squire's built-in browser beside Claude Code, Apple's tools, Squire and its background jobs, and on Not now nothing of the browser is downloaded, installed or written"
+    },
+    {
+      "id": "TC-002-a-browsing-job-that-has-also-read-the",
+      "acId": "AC-1901-1",
+      "description": "a browsing job that has also read the owner's profile, before or after its first browser call, is refused as one job at its next asked browser call, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::a browsing job that has also read the owner's private things by another route is still stopped as one job: with the owner's profile read before the job's first browser call, or after it, the job's next asked browser call is refused, not asked, even after a yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-the-versions-command-on-a-folder-outside",
+      "acId": "AC-1901-1",
+      "description": "the versions command on a folder outside workspace/apps, with a fourth verb, or with an extra argument or an option is refused through the floor, not asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-versions.test.js::through the safety floor, Squire's versions command on a folder outside workspace/apps (the owner's operator folder, Squire's home, a path climbing out of an app's folder), with a fourth verb, or with an extra argument or an option, is refused, not asked, in an app job the owner said yes to, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

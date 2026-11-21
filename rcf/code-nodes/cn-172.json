@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-172",
+  "path": "installer/Squire.app/Contents/MacOS/Squire#sq_browser_or_pause",
+  "implementsAcIds": [
+    "AC-1901-5"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-19T19:12:40.967Z",
+  "updatedAt": "2026-11-19T19:12:40.967Z"
+}

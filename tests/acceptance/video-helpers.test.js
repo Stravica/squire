@@ -123,8 +123,12 @@ const newSince = (world, before) => M.changedIn(before, M.digestOf(world.owner))
 
 // ---------------------------------------------------- the timed transcript
 
-test("the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was", { skip: gate(M.madeVideoGate, M.realSpeechGate), timeout: 900000 }, async (t) => {
+test("the owner's own video, given to Squire's own speech helper with no stand-in engine, becomes a transcript with times read from the video's sound, and its captions file (.srt) beside it, the video left as it was", { skip: gate(M.madeVideoGate), timeout: 900000 }, async (t) => {
+  // The speech guard is decided here, in the case, not in its options, so only
+  // the cases that hear speech build the guard's probe.
   t.diagnostic(M.realSpeechReading());
+  const speech = M.realSpeechGate();
+  if (speech) { t.skip(speech); return; }
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const video = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Bread class.mov'), { words: 'Fold the dough every half hour. Then shape the loaves and leave them overnight.' });
@@ -150,8 +154,11 @@ test("the owner's own video, given to Squire's own speech helper with no stand-i
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: reached the network ${net.seen.length} time(s)`);
 });
 
-test("a video of the owner's with no sound: Squire says plainly that it has no sound, keeps no transcript and no captions file, and never crashes, with Squire's own speech helper and no stand-in engine", { skip: gate(M.madeVideoGate, M.realSpeechGate), timeout: 900000 }, async (t) => {
+test("a video of the owner's with no sound: Squire says plainly that it has no sound, keeps no transcript and no captions file, and never crashes, with Squire's own speech helper and no stand-in engine", { skip: gate(M.madeVideoGate), timeout: 900000 }, async (t) => {
+  // The speech guard is decided here, as in the case above.
   t.diagnostic(M.realSpeechReading());
+  const speech = M.realSpeechGate();
+  if (speech) { t.skip(speech); return; }
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const video = M.madeVideo(path.join(world.owner, 'workspace', 'files', 'Shop tour.mov'), { seconds: 3 });

@@ -1,0 +1,50 @@
+{
+  "createdAt": "2026-11-19T13:45:58.762Z",
+  "updatedAt": "2026-11-19T17:03:58.988Z",
+  "purpose": "Lays core down and reads what the session loads for an app the owner said yes to: the one-page brief, plan, build, test and preview, the work kept in the app's own folder, a failed step explained with the work kept, a preview on the loopback from the app's folder and never through the page server, and shipping on its own yes; drives the app job's start, its writes, its resume, the preview's start and a push and a deploy through the laid floor in the default and auto modes.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1302-2"
+  ],
+  "id": "TS-040",
+  "usId": "US-1302",
+  "title": "An app the owner said yes to runs from a one-page brief to a preview on the Mac, keeps its work when a step fails, and ships only on its own yes",
+  "testCases": [
+    {
+      "id": "TC-040-an-approved-one-page-app-brief-runs",
+      "acId": "AC-1302-2",
+      "description": "an approved one-page app brief runs through plan, build, test and preview, its work kept in the app folder, started as an app job on the owner yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-jobs.test.js::an approved one-page app brief runs through plan, build, test and preview: what the session loads says so, the brief and the work kept in the app's own folder in workspace/apps, started only through the job command as app; the floor asks for the app job, starts it on the owner's yes and lets the job keep its brief and work in that folder"
+    },
+    {
+      "id": "TC-040-when-a-step-of-an-app-build-fails-the",
+      "acId": "AC-1302-2",
+      "description": "when a step of an app build fails the owner is told plainly with the work kept, and resuming is a new start the floor asks for",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-jobs.test.js::when a step of an app's build fails, what the session loads says to tell the owner plainly which step failed and that the work so far is kept in the app's folder, and to pick up from that folder to resume; the kept work stays, and a resumed build is a new start the floor asks the owner for again"
+    },
+    {
+      "id": "TC-040-shipping-an-app-still-needs-its-own-yes",
+      "acId": "AC-1302-2",
+      "description": "shipping an app still needs its own yes, and the floor asks before a push or a deploy inside the app job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-jobs.test.js::shipping an app still needs its own yes: what the session loads says that putting the app live, publishing, deploying or pushing it waits for the owner's yes to that, which the yes to the job is not; and in the app job the owner said yes to, the floor still asks before a push or a deploy"
+    },
+    {
+      "id": "TC-040-an-app-preview-runs-on-the-loopback-from",
+      "acId": "AC-1302-2",
+      "description": "an app preview runs on the loopback from the app folder, never through the page server, and the floor asks before it starts",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-jobs.test.js::an app's preview runs on this Mac on the loopback from the app's own folder, never through Squire's page server: what the session loads says so, and the floor asks the owner before the preview starts"
+    },
+    {
+      "id": "TC-040-in-an-app-job-a-preview-server-with-no",
+      "acId": "AC-1302-2",
+      "description": "in an app job, a preview server with no loopback bind or a bind beyond the loopback is refused, not asked, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-jobs.test.js::in an app job the owner said yes to, a preview server started with no loopback bind or bound beyond the loopback is refused, not asked, even after a yes, in the default mode and in auto mode: Python's http.server with no --bind, which listens on every address, and with --bind 0.0.0.0"
+    }
+  ],
+  "status": "draft"
+}

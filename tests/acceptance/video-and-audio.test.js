@@ -264,12 +264,16 @@ test("the owner's own recording is transcribed on the Mac by the one local speec
   assert.equal(net.seen.length, 0, `nothing may be sent beyond this Mac: the transcription reached the network ${net.seen.length} time(s)`);
 });
 
-test("the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again", { skip: (fs.existsSync('/usr/bin/say') ? false : 'target-gated: needs the Mac\'s own /usr/bin/say for the spoken words') || M.realSpeechGate(), timeout: 900000 }, async (t) => {
+test("the owner's own recording is transcribed on the Mac by Squire's own speech helper, with no stand-in engine: the helper is built into the Squire home's state on first use and the words kept as a note, and a second recording is transcribed by the helper already built, without building it again", { skip: fs.existsSync('/usr/bin/say') ? false : 'target-gated: needs the Mac\'s own /usr/bin/say for the spoken words', timeout: 900000 }, async (t) => {
   // A guard at the base head, kept: today's helper already does this; no
   // bound case ran Squire's own helper path before (every case set the seam).
   // Skipped only where Apple itself says this Mac cannot recognise speech on
   // the Mac itself (the media world's guard); the guard's reading is printed.
+  // The guard is decided here, in the case, not in its options, so only the
+  // cases that hear speech build the guard's probe.
   t.diagnostic(M.realSpeechReading());
+  const speech = M.realSpeechGate();
+  if (speech) { t.skip(speech); return; }
   const world = U.usageWorld(t);
   const net = await M.networkRecorder(t);
   const helper = path.join(world.home, 'state', 'speech-helper', 'speech-helper');

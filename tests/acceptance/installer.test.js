@@ -28,6 +28,9 @@ const FULL_RUN = 180000;
 const noAdmin = 'staff everyone localaccounts _appserverusr';
 const installCalls = (run) => I.callsOf(run, 'xcode-select', (c) => c.argv.includes('--install'));
 const downloads = (run) => I.callsOf(run, 'curl');
+// Claude Code's own download, apart from the browser's (set-up downloads
+// Squire's built-in browser too, after the one yes).
+const claudeDownloads = (run) => I.callsOf(run, 'curl', (c) => c.url === I.INSTALL_URL);
 const installerRuns = (run) => I.callsOf(run, 'claude-installer');
 const authCalls = (run, verb) => I.callsOf(run, 'claude', (c) => c.argv[0] === 'auth' && c.argv[1] === verb);
 const launcher = (iw) => path.join(iw.userHome, '.local', 'bin', 'claude');
@@ -154,7 +157,7 @@ test('a plan found below Pro at sign-in never touches a Claude Code the owner al
   const before = I.contentOf(iw.userHome);
   const run = await I.runApp(iw);
   assertWindow(run, TITLES.stopped, [/Pro/], 'a Free plan read at sign-in, with Claude Code already there');
-  assert.equal(downloads(run).length, 0, 'Claude Code already there must not be downloaded again');
+  assert.equal(claudeDownloads(run).length, 0, 'Claude Code already there must not be downloaded again');
   assert.deepEqual(I.claudeCodePlaces(iw), places, 'the owner\'s Claude Code, its folders and its own ~/.claude and ~/.claude.json must be untouched');
   assert.equal(fs.statSync(version).ino, inode, 'the owner\'s Claude Code must be the same file, never removed and laid again');
   assert.ok(authCalls(run, 'logout').every((c) => c.configDir === iw.configDir), 'only Squire\'s config folder may be signed out');
@@ -208,7 +211,7 @@ function failedDownload(mode, what) {
       `${what}: no launcher and no versions folder may be left`);
     assert.ok(I.doneSteps(iw).includes('yes') && !I.doneSteps(iw).includes('claudeCode'),
       `${what}: the one yes stays done and Claude Code is not recorded done; record ${JSON.stringify(I.readRecord(iw))}`);
-    const curl = downloads(run)[0];
+    const curl = claudeDownloads(run)[0];
     const bound = curl.argv.indexOf('--max-time') >= 0 ? curl.argv[curl.argv.indexOf('--max-time') + 1] : curl.argv[curl.argv.indexOf('-m') + 1];
     assert.ok(Number(bound) > 0 && Number(bound) <= 600, `the download must be bounded at 10 minutes; curl was called with ${curl.argv.join(' ')}`);
     iw.set({ download: 'ok' });
@@ -252,7 +255,7 @@ function failedSignIn(mode, what) {
     assert.ok(fs.existsSync(launcher(iw)), `${what}: Claude Code must be kept`);
     iw.setClaude({ signIn: 'ok' });
     const again = await I.runApp(iw, { killWhen: doneWith('signIn') });
-    assert.equal(downloads(again).length, 0, `the re-run must not download Claude Code again; got ${I.describeRun(again)}`);
+    assert.equal(claudeDownloads(again).length, 0, `the re-run must not download Claude Code again; got ${I.describeRun(again)}`);
     assert.ok(authCalls(again, 'login').length === 1 && I.doneSteps(iw).includes('signIn'), 'the re-run must sign in once and record it done');
     assert.ok(I.signedInto(iw), 'the sign-in must land in Squire\'s config folder');
   };
@@ -296,7 +299,7 @@ test('a step killed part way is not recorded done and runs again from its start 
   assert.ok(!I.doneSteps(iw).includes('claudeCode'), 'a step killed part way must not be recorded done');
   iw.set({ installer: 'ok' });
   const again = await I.runApp(iw, { killWhen: doneWith('signIn') });
-  assert.equal(downloads(again).length, 1, `the step must run again from its start, the download included; got ${I.describeRun(again)}`);
+  assert.equal(claudeDownloads(again).length, 1, `the step must run again from its start, the download included; got ${I.describeRun(again)}`);
   assert.ok(I.doneSteps(iw).includes('claudeCode'), 'the re-run must record Claude Code done');
 });
 
@@ -307,7 +310,7 @@ test('a re-run resumes at the first step not recorded done, and runs again a ste
   fs.rmSync(launcher(iw));
   const again = await I.runApp(iw, { killWhen: doneWith('appleTools') });
   assert.ok(!asked(again, TITLES.plan) && !asked(again, TITLES.setUp), `the re-run must not ask the plan or the yes again; got ${I.describeRun(again)}`);
-  assert.equal(downloads(again).length, 1, 'Claude Code, recorded done but its launcher gone, must be installed again');
+  assert.equal(claudeDownloads(again).length, 1, 'Claude Code, recorded done but its launcher gone, must be installed again');
   assert.ok(fs.existsSync(launcher(iw)), 'the launcher must be back');
 });
 
@@ -386,7 +389,7 @@ test("with the sign-in gone, the health line says to open Squire's installer to 
   // The sign-in is already in the record, so the re-run is let finish: it repairs the one step whose end state is gone.
   const again = await I.runApp(iw);
   assert.equal(authCalls(again, 'login').length, 1, `the re-run must sign in again; got ${I.describeRun(again)}`);
-  assert.equal(downloads(again).length, 0, 'the re-run must not reinstall Claude Code');
+  assert.equal(claudeDownloads(again).length, 0, 'the re-run must not reinstall Claude Code');
   assert.ok(I.signedInto(iw), 'the sign-in must land in Squire\'s config folder');
 });
 
@@ -411,7 +414,7 @@ test('a Claude Code whose launcher is there but whose version is incomplete is n
   assert.ok(!I.doneSteps(iw).includes('claudeCode'), `Claude Code that does not answer --version must not be recorded done; got ${I.describeRun(run)}`);
   assert.equal(authCalls(run, 'login').length, 0, 'set-up must not go on to the sign-in');
   const second = await I.runApp(iw);
-  assert.equal(downloads(second).length, 1, `a re-run must install it again from its start, never skip it; got ${I.describeRun(second)}`);
+  assert.equal(claudeDownloads(second).length, 1, `a re-run must install it again from its start, never skip it; got ${I.describeRun(second)}`);
   assert.ok(!I.doneSteps(iw).includes('claudeCode'), 'still incomplete: still not done');
   iw.set({ installer: 'ok' });
   await I.runApp(iw, { killWhen: doneWith('signIn') });
@@ -457,15 +460,51 @@ test("the one yes names every piece set-up adds: Claude Code with its own update
     /voice notes?/i, /Squire Update/, /Applications/], 'the one yes');
 });
 
+// Squire's built-in browser, the one Squire drives in a window of its own, is
+// a piece set-up adds: the one yes names it beside the others, and on Not now
+// nothing of it, as of anything else, is downloaded, installed or written.
+test("the one yes names Squire's built-in browser beside Claude Code, Apple's tools, Squire and its background jobs, and on Not now nothing of the browser is downloaded, installed or written", { timeout: 60000 }, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, answers: { [TITLES.setUp]: 'button returned:Not now' } } });
+  const before = w.snapshot(iw.userHome);
+  const run = await I.runApp(iw);
+  assertWindow(run, TITLES.setUp, [/built-in browser|Squire's (own )?browser|browser Squire/i, /Claude Code/, /command line tools/i, /background jobs?/i], 'the one yes');
+  assert.equal(downloads(run).length + installerRuns(run).length + installCalls(run).length, 0, `on Not now nothing may be downloaded or installed; got ${I.describeRun(run)}`);
+  assert.deepEqual(w.snapshotDifferences(before, w.snapshot(iw.userHome)), [], 'on Not now nothing of the browser, or of anything else, may be written in the home folder');
+});
+
+// What Squire's built-in browser is, as set-up downloads it (this file's pin):
+// everything the browser needs to run, the browser server Squire's session
+// drives (Playwright's), the browser build it drives and anything they need
+// to run, fetched by set-up after the one yes with the Mac's own curl, as
+// Claude Code's installer is, each address once, and kept in one place named
+// for it: browser/ in the Squire home (~/Library/Application
+// Support/Squire/browser). The browser server and what it needs to run (the
+// runtime) come as gzip'd tar archives from https addresses; the browser
+// build comes as its maker serves it, a zip from an https address that names
+// its version, unpacked with the Mac's own tool inside browser/. The
+// installer world serves each https address of a gzip'd tar archive a small
+// stand-in archive holding one folder, and each https address of a zip a
+// small stand-in zip holding one folder; which addresses, and how set-up
+// unpacks what it fetched inside that place, are the builder's. Nothing of
+// the browser is fetched later, at its first use (browser.test.js binds that
+// for the browser server lay-down sets up).
 test('after the one yes nothing outside the named list is installed', { timeout: FULL_RUN }, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false } });
   const before = I.contentOf(iw.userHome);
   const run = await I.runApp(iw);
   assert.deepEqual(I.doneSteps(iw), STEPS, `set-up must finish; got ${I.describeRun(run)}`);
   assert.equal(I.dialogsTitled(run, TITLES.setUp).length, 1, 'one yes, asked once');
-  assert.deepEqual(downloads(run).map((c) => c.url), [I.INSTALL_URL], 'the one download is Claude Code\'s installer');
+  const urls = downloads(run).map((c) => c.url);
+  assert.equal(urls.filter((u) => u === I.INSTALL_URL).length, 1, `Claude Code's installer is downloaded once; the downloads were ${JSON.stringify(urls)}`);
+  const browserDownloads = urls.filter((u) => u !== I.INSTALL_URL);
+  assert.ok(browserDownloads.length >= 1, `after the one yes set-up must download Squire's built-in browser (https addresses of gzip'd tar archives, and the browser build's zip), beside Claude Code's installer; the downloads were ${JSON.stringify(urls)}`);
+  assert.ok(browserDownloads.every((u) => /^https:\/\/[^/]+\/\S*\.(tar\.gz|tgz|zip)$/.test(u)), `every other download must be the browser's own, a gzip'd tar archive or a zip from an https address; the downloads were ${JSON.stringify(urls)}`);
+  assert.equal(new Set(browserDownloads).size, browserDownloads.length, `each of the browser's downloads is fetched once; the downloads were ${JSON.stringify(urls)}`);
   assert.equal(installerRuns(run).length, 1, 'Claude Code\'s installer runs once');
   assert.equal(installCalls(run).length, 1, 'Apple\'s tools are started once');
+  const browserPlace = 'Library/Application Support/Squire/browser';
+  const keptForBrowser = Object.keys(I.contentOf(iw.userHome)).filter((rel) => rel.startsWith(`${browserPlace}/`));
+  assert.ok(keptForBrowser.length > 0, `set-up must keep what it downloaded for the browser in its one place, ${browserPlace}; it holds nothing`);
   const allowed = [/^Library\/Application Support\/Squire(\/|$)/, /^Squire(\/|$)/, /^\.claude(\/|$)/, /^\.claude\.json$/,
     /^\.local$/, /^\.local\/(bin|share|state)$/, /^\.local\/bin\/claude$/, /^\.local\/(share|state)\/claude(\/|$)/, /^\.cache$/, /^\.cache\/claude(\/|$)/,
     /^Library\/LaunchAgents$/, /^Library\/LaunchAgents\/com\.stravica\.squire\.(runner|wake-ups|backup|pages|voice-notes)\.plist$/,

@@ -3,7 +3,8 @@
 #
 # Everything before Apple's command line tools are present runs here, in
 # zsh: the Mac check, the plan the owner declares and the one yes (step yes);
-# Claude Code found or installed (claudeCode); the sign-in into Squire's
+# Claude Code found or installed, and Squire's built-in browser downloaded
+# into browser/ in the Squire home (claudeCode); the sign-in into Squire's
 # config folder and the plan read (signIn); Apple's tools (appleTools). Then
 # core's Python carries on from naming:
 #   /usr/bin/python3 -B Contents/Resources/core/tools/set-up.py <that core>
@@ -431,6 +432,7 @@ sq_yes_text() {
     REPLY+="• Apple's command line tools, from Apple's own installer, which asks for an administrator's password."$'\n'
   fi
   REPLY+="• Squire itself, in your Library, with a folder of your own at ~/Squire, and Squire Update, the program that installs Squire's updates, in the Applications folder in your home folder."$'\n'
+  REPLY+="• Squire's built-in browser, which Squire uses in a window of its own on this Mac that you can watch and take over: a browser, the browser server Squire drives it with and what they need to run, downloaded after your yes and kept in Squire's own place in your Library."$'\n'
   REPLY+="• Five background jobs: Squire's always-on session, its wake-ups, a nightly backup of ~/Squire, a page server that shows Squire's pages and dashboard on this Mac only, and a voice notes job that turns the recordings you put in ~/Squire/Voice notes into text on this Mac."$'\n\n'
   REPLY+="Nothing else is installed."
 }
@@ -549,9 +551,122 @@ sq_save_copy() {
   fi
 }
 
+# What set-up downloads for Squire's built-in browser, for this Mac's
+# processor, in pairs: the place inside browser/ in the Squire home where the
+# part is kept, and the https address it comes from. The runtime the browser
+# server runs on and the server with the two packages it needs come as
+# gzip'd tar archives; the browser build it drives comes as its maker's zip,
+# at an address that names its version. reply.
+sq_browser_parts() {
+  local cpu=arm64
+  if sq_out 10 $SQ_ROOT/usr/bin/uname -m && [[ $REPLY == x86_64 ]]; then
+    cpu=x64
+  fi
+  reply=(
+    runtime "https://nodejs.org/dist/v24.14.0/node-v24.14.0-darwin-$cpu.tar.gz"
+    server/node_modules/@playwright/mcp "https://registry.npmjs.org/@playwright/mcp/-/mcp-0.0.86.tgz"
+    server/node_modules/playwright "https://registry.npmjs.org/playwright/-/playwright-1.66.0-alpha-2026-11-18.tgz"
+    server/node_modules/playwright-core "https://registry.npmjs.org/playwright-core/-/playwright-core-1.66.0-alpha-2026-11-18.tgz"
+    chrome "https://storage.googleapis.com/chrome-for-testing-public/159.0.8154.6/mac-$cpu/chrome-mac-$cpu.zip"
+  )
+}
+
+# sq_browser_unpack <file> <staged>: one part of the browser unpacked into
+# the fresh folder <staged> and checked, its one folder REPLY. Every entry's
+# path is relative and climbs out of nothing; the Mac's own tar unpacks both
+# forms, without -P, so it writes nothing through a link; the part holds one
+# folder; and every link in it points inside that folder. A link's target is
+# relative and climbs only at its start (../ first, then down), never above
+# that folder; so a link can never climb out through another link, which a
+# check of the words alone would let pass, nor name its way back in by the
+# folder's own name, which stops being its name once it is moved to its
+# place. Returns 1 when any of that fails, leaving the clearing up to its
+# caller.
+sq_browser_unpack() {
+  local file=$1 staged=$2 name link to top
+  local -a names tops target
+  sq_bounded 300 $SQ_TMP/browser-list $SQ_ROOT/usr/bin/tar -tf $file || return 1
+  names=(${(f)"$(<$SQ_TMP/browser-list)"})
+  (( $#names )) || return 1
+  for name in $names; do
+    [[ $name == /* || /$name/ == */../* ]] && return 1
+  done
+  sq_bounded 600 /dev/null $SQ_ROOT/usr/bin/tar -xf $file -C $staged || return 1
+  tops=($staged/*(DN))
+  (( $#tops == 1 )) && [[ -d $tops[1] && ! -L $tops[1] ]] || return 1
+  top=$tops[1]
+  for link in $top/**/*(D@N); do
+    zstat -L -A target +link -- $link 2>/dev/null || return 1
+    [[ -n $target[1] && $target[1] != /* ]] || return 1
+    [[ /${${:-$target[1]/}##(../)#} == */../* ]] && return 1
+    to=${${:-${link:h}/${(M)${:-$target[1]/}##(../)#}}:a}
+    [[ $to == $top || $to == $top/* ]] || return 1
+    to=${${:-${link:h}/$target[1]}:a}
+    [[ $to == $top || $to == $top/* ]] || return 1
+  done
+  REPLY=$top
+}
+
+# Squire's built-in browser, after the one yes: each part not yet kept is
+# fetched with the Mac's curl through the same bounded call as Claude Code's
+# installer, over https only (a redirect too), into a file of its own in
+# browser/, unpacked into a fresh folder
+# there and moved to its place only once its checks pass, so a part refused
+# leaves nothing placed. Nothing unpacked is run. browser/kept.txt lists the
+# address of each part in place, so a part already kept is never fetched
+# again.
+sq_browser() {
+  local dir=$SQ_HOME/browser place url file staged top rc n=0
+  local -a parts kept
+  sq_browser_parts
+  parts=($reply)
+  zf_mkdir -p -m 700 $dir 2>/dev/null || return 1
+  [[ -f $dir/kept.txt ]] && kept=(${(f)"$(<$dir/kept.txt)"})
+  for place url in $parts; do
+    (( ${kept[(Ie)$url]} )) && [[ -d $dir/$place ]] && continue
+    (( ++n ))
+    file=$dir/.download-$n
+    staged=$dir/.unpacking-$n
+    zf_rm -rf -- $file $staged 2>/dev/null
+    sq_log "downloading Squire's built-in browser from $url"
+    sq_bounded 610 $SQ_TMP/curl $SQ_ROOT/usr/bin/curl -fsSL --proto '=https' --proto-redir '=https' --max-time 600 -o $file $url
+    rc=$?
+    if (( rc != 0 )) || [[ ! -s $file ]]; then
+      zf_rm -f -- $file 2>/dev/null
+      sq_log "the browser's download from $url did not finish (curl exit $rc)"
+      return 1
+    fi
+    if ! zf_mkdir -m 700 $staged 2>/dev/null || ! sq_browser_unpack $file $staged; then
+      zf_rm -rf -- $file $staged 2>/dev/null
+      sq_log "the browser's download from $url was not kept: it did not unpack as one folder that stays inside its place"
+      return 1
+    fi
+    top=$REPLY
+    zf_rm -f -- $file 2>/dev/null
+    zf_rm -rf -- $dir/$place 2>/dev/null
+    zf_mkdir -p -m 700 $dir/${place:h} 2>/dev/null
+    if ! zf_mv -- $top $dir/$place 2>/dev/null; then
+      zf_rm -rf -- $staged 2>/dev/null
+      return 1
+    fi
+    zf_rm -rf -- $staged 2>/dev/null
+    print -r -- $url >>$dir/kept.txt || return 1
+  done
+}
+
+# Squire's built-in browser in place, or set-up paused: the claudeCode step
+# is done only once both Claude Code and the browser are there.
+sq_browser_or_pause() {
+  sq_browser && return 0
+  sq_not_done claudeCode
+  sq_paused "The download of Squire's built-in browser did not finish, so it was not set up. Check this Mac is online, then open Squire again."
+  return 1
+}
+
 sq_step_claude_code() {
   if sq_claude_found; then
     (( ${SQ_DONE[(Ie)claudeCode]} )) && return 0
+    sq_browser_or_pause || return 1
     sq_mark_done claudeCode
     return
   fi
@@ -605,6 +720,7 @@ sq_step_claude_code() {
     sq_paused "Claude Code did not finish installing. Open Squire again to install it once more."
     return 1
   fi
+  sq_browser_or_pause || return 1
   sq_mark_done claudeCode
 }
 

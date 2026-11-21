@@ -1,0 +1,43 @@
+{
+  "createdAt": "2026-11-19T13:45:59.084Z",
+  "updatedAt": "2026-11-19T18:48:55.569Z",
+  "purpose": "Runs Squire's versions command on an app changed twice, gets the first version back and the third again, with every proxy pointed at a recorder on the loopback; and reads what the session loads for the command and when to use it.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1302-3"
+  ],
+  "id": "TS-041",
+  "usId": "US-1302",
+  "title": "Versions of what Squire builds are kept on the Mac and an earlier one is got back on request",
+  "testCases": [
+    {
+      "id": "TC-041-after-two-changes-to-an-app-the-earlier",
+      "acId": "AC-1302-3",
+      "description": "after two changes to an app the earlier version is got back on request, the later one kept, and nothing leaves the Mac",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-versions.test.js::after two changes to an app Squire built for the owner, the earlier version is got back on request through Squire's versions command, the later version is still kept and can be got back too, and nothing leaves the Mac"
+    },
+    {
+      "id": "TC-041-what-the-session-loads-names-squire-s",
+      "acId": "AC-1302-3",
+      "description": "what the session loads names Squire's versions command and says to keep a version after each change and give an earlier one back on request",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-versions.test.js::what the session loads names Squire's versions command and says to keep a version of what Squire builds for the owner after each change, kept on this Mac only, and to get an earlier version back when the owner asks"
+    },
+    {
+      "id": "TC-041-going-back-first-keeps-the-change-made",
+      "acId": "AC-1302-3",
+      "description": "going back first keeps the change made since the last keep as a version, which can be got back, and leaves the folder whole as the earlier version was",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-versions.test.js::going back to an earlier version first keeps any change made since the last keep as a version of its own, which can be got back, and leaves the app's folder whole as that earlier version was, a file added in a later version gone; nothing leaves the Mac"
+    },
+    {
+      "id": "TC-041-through-the-floor-in-an-app-job-the",
+      "acId": "AC-1302-3",
+      "description": "through the floor, in an app job the owner said yes to, keeping, listing and getting back versions of an app's folder in workspace/apps runs with no question asked and leaves the job holding none of the owner's private things",
+      "status": "pending",
+      "testPointer": "tests/acceptance/app-versions.test.js::through the safety floor, in an app job the owner said yes to, the session keeps, lists and gets back versions of an app's folder in workspace/apps with Squire's versions command, each with no question asked, in the default mode and in auto mode, and the job is left holding none of the owner's private things"
+    }
+  ],
+  "status": "draft"
+}

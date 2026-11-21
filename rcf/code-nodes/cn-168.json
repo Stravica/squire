@@ -1,0 +1,12 @@
+{
+  "cnId": "CN-168",
+  "path": "core/tools/versions.py#main",
+  "implementsAcIds": [
+    "AC-1302-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-19T18:54:04.297Z",
+  "updatedAt": "2026-11-19T18:54:04.297Z"
+}
