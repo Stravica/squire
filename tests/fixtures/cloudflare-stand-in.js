@@ -303,6 +303,7 @@ function route(state, options, req, body) {
     }
     if (rest.length === 2 && req.method === 'DELETE') {
       if (!holds(token, account, ['Account API Tokens Write'])) return refused();
+      if (fail.deleteToken) return fault();
       if (!target) return notFound();
       target.status = 'deleted';
       return ok({ id: target.id });
@@ -401,8 +402,9 @@ function site(state, options, parts) {
 // Starts a stand-in for one case, in a folder of the world's, and stops it
 // when the case ends. options: accountId, subdomain, tokens (each { id,
 // value, name, policies }), subscriptions, certificateWaitMs, fail
-// ({ createToken, readToken, subdomain, subscriptions }: answer 500), widen
-// ('extraGroup' | 'allAccounts' | 'allZones').
+// ({ createToken, readToken, deleteToken, subdomain, subscriptions }: answer
+// 500; deleteToken, a token's removal, leaving the token on the account),
+// widen ('extraGroup' | 'allAccounts' | 'allZones').
 function startStandIn(t, world, options) {
   const folder = path.join(world.root, `cloudflare-stand-in-${crypto.randomBytes(3).toString('hex')}`);
   fs.mkdirSync(folder, { recursive: true });

@@ -34,6 +34,11 @@
 //     whether it finished or a later step failed, and a set-up that did not
 //     finish tells the owner what it left on the account.
 //
+// Decided on the fail-closed reading and named here (no record settles them):
+// a set-up that did not report done leaves no token of its own active on the
+// account and keeps nothing in the Keychain, so Squire's own deploy after it
+// is asked saying it cannot tell where the site goes, as before any set-up.
+//
 // Usage model (assumptions, none measured): typical, one account on the free
 // plans with one free subscription, set up once; heavy, an account with a
 // paid or unreadable subscription, or a step that fails part-way, set up again
@@ -58,7 +63,32 @@ function assertSetUpTokenRemoved(ctx, what) {
   assert.ok(after.status === 401 || after.status === 403, `${what}: a call made with the set-up token afterwards is refused; got ${after.status}`);
 }
 
-test('after the one-off set-up, the account read back shows no paid subscription, the only token left on it deploys and nothing else, so nothing left there can spend, and the set-up token is gone; a paid subscription found on stops the set-up, which names it and changes no billing; a set-up token without the rights it needs runs nothing', { timeout: 180000 }, (t) => {
+const CANNOT_TELL = /(cannot|can't|can not|could not|does not|doesn't) (tell|know|read) where/i;
+
+// A set-up that did not report done leaves no token it made active on the
+// account and nothing kept in the Keychain, so Squire's own deploy is then
+// not let through as set up: it is asked saying it cannot tell where the site
+// goes, as before any set-up. The world must be laid (websiteWorld laid).
+function assertNothingKept(ctx, what) {
+  const made = W.tokensOn(ctx.standIn).filter((x) => x.createdBy && x.status === 'active');
+  assert.deepEqual(made.map((x) => x.name), [], `${what}: no token the set-up made is left active on the account`);
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `${what}: nothing is kept in the Keychain as ${W.KEPT_SECRET}`);
+  const { world } = ctx;
+  const floor = U.laidFloor(world, U.UTC);
+  for (const mode of MODES) {
+    const job = `job-site-not-set-up-${mode}`;
+    const name = `ada-bakes-${mode}`;
+    W.startSite(world, floor, job, mode);
+    const folder = W.writeSite(world, floor, job, name, mode);
+    W.previewSite(world, floor, job, folder, mode);
+    const r = floor.run(job, w.tools.bash(W.deployCommand(world, folder, name)), mode);
+    w.assertBlocked(r, `${what}: Squire's own deploy of a previewed site after it, in ${mode} mode`);
+    assert.notEqual(w.requestIdIn(r.stderr), null, `${what}: Squire's own deploy after it is asked, not let through as set up, in ${mode} mode; got ${w.describe(r)}`);
+    assert.match(r.stderr, CANNOT_TELL, `${what}: the ask says it cannot tell where the site goes, as before any set-up, in ${mode} mode; got ${w.describe(r)}`);
+  }
+}
+
+test('after the one-off set-up, the account read back shows no paid subscription, the only token left on it deploys and nothing else, so nothing left there can spend, and the set-up token is gone; a paid subscription found on stops the set-up, which names it and changes no billing; a set-up token without the rights it needs runs nothing', { timeout: 300000 }, (t) => {
   const ctx = W.websiteWorld(t);
   const r = W.runSetUp(ctx);
   W.assertRan(r, 'the set-up on an account on the free plans');
@@ -75,13 +105,14 @@ test('after the one-off set-up, the account read back shows no paid subscription
   assert.match(W.said(r), /spend|cost|money/i, `the set-up tells the owner that nothing left on the account can spend; got ${w.describe(r)}`);
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 
-  const paid = W.websiteWorld(t, { subscriptions: [...W.FREE, { ...W.FREE[0], id: 'standin-sub-0002', rate_plan: { ...W.FREE[0].rate_plan, id: 'standin-paid', public_name: 'Workers Paid' }, price: 5, state: 'Paid' }] });
+  const paid = W.websiteWorld(t, { laid: true, subscriptions: [...W.FREE, { ...W.FREE[0], id: 'standin-sub-0002', rate_plan: { ...W.FREE[0].rate_plan, id: 'standin-paid', public_name: 'Workers Paid' }, price: 5, state: 'Paid' }] });
   const p = W.runSetUp(paid);
   W.assertRan(p, 'the set-up on an account with a paid subscription on');
   assertSetUpTokenRemoved(paid, 'a set-up that found a paid subscription');
   assert.notEqual(p.status, 0, `a set-up that finds a paid subscription on does not report done; got ${w.describe(p)}`);
   assert.ok(W.said(p).includes('Workers Paid'), `it names the paid subscription to the owner; got ${w.describe(p)}`);
   assert.deepEqual(billingWrites(paid.standIn), [], 'Squire switches no paid feature off itself: that is the owner\'s to do');
+  assertNothingKept(paid, 'a set-up that found a paid subscription');
   assert.deepEqual(paid.standIn.offLoopback(), [], 'no call left the loopback');
 
   const narrow = W.websiteWorld(t, { rights: ['Account API Tokens Write'] });
@@ -91,6 +122,8 @@ test('after the one-off set-up, the account read back shows no paid subscription
   assert.match(W.said(n), /Billing Read/, `it names the rights it needs: Billing Read; got ${w.describe(n)}`);
   assert.match(W.said(n), /Account API Tokens/, `it names the rights it needs: Account API Tokens; got ${w.describe(n)}`);
   assert.deepEqual(narrow.standIn.calls().filter((c) => c.method === 'POST' && /\/tokens$/.test(c.path)), [], 'it makes no token on a set-up token without the rights it needs');
+  assert.ok(setUpGone(narrow) || W.said(n).includes(narrow.setUp.name) || W.said(n).includes(narrow.setUp.id),
+    `the set-up token, which can still make tokens, is removed from the account or named to the owner as left there; got ${w.describe(n)}`);
   assert.deepEqual(narrow.standIn.offLoopback(), [], 'no call left the loopback');
 });
 
@@ -111,6 +144,24 @@ test('the set-up token is removed from the account even when a later step of the
     }
     assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
   }
+});
+
+test('when the set-up cannot remove its own set-up token from the account, it does not report done and names the set-up token to the owner as still on the account, names every other token it left there, and keeps nothing in the Keychain', { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { fail: { deleteToken: true } });
+  const r = W.runSetUp(ctx);
+  W.assertRan(r, 'the set-up when removing the set-up token fails');
+  assert.ok(ctx.standIn.calls().some((c) => c.method === 'DELETE' && c.path.split('?')[0] === `/client/v4/accounts/${W.ACCOUNT}/tokens/${ctx.setUp.id}`),
+    'the set-up tries to remove its own set-up token from the account');
+  assert.equal((W.tokensOn(ctx.standIn).find((x) => x.id === ctx.setUp.id) || {}).status, 'active', 'the removal failed: the set-up token is still on the account');
+  assert.notEqual(r.status, 0, `a set-up whose set-up token is still on the account does not report done; got ${w.describe(r)}`);
+  assert.ok(W.said(r).includes(ctx.setUp.name) || W.said(r).includes(ctx.setUp.id),
+    `it names the set-up token to the owner as still on the account (${ctx.setUp.name}); got ${w.describe(r)}`);
+  for (const token of W.activeTokens(ctx.standIn).filter((x) => x.id !== ctx.setUp.id)) {
+    assert.ok(token.name && W.said(r).includes(token.name), `it names each other token it left on the account (${token.name}); got ${w.describe(r)}`);
+  }
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `a set-up that did not report done keeps nothing in the Keychain as ${W.KEPT_SECRET}`);
+  assert.deepEqual(billingWrites(ctx.standIn), [], 'Squire changes no billing');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
 
 test("the set-up token reaches the set-up only through Squire's secret helper, from the Keychain, and is never written to a file, the chat or the ledger; a set-up token given any other way, or a Cloudflare token already on the Mac, is never used", { timeout: 180000 }, (t) => {
@@ -176,7 +227,7 @@ test("Squire never upgrades a plan or buys on the Cloudflare account: a call to 
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
 
-test('a subscription the set-up cannot read as free counts as paid: the set-up does not report done and names it to the owner; when it cannot read the subscriptions at all it does not report done and says so; Squire changes no billing', { timeout: 180000 }, (t) => {
+test('a subscription the set-up cannot read as free counts as paid: the set-up does not report done and names it to the owner; when it cannot read the subscriptions at all it does not report done and says so; Squire changes no billing', { timeout: 300000 }, (t) => {
   const base = W.FREE[0];
   for (const [what, extra, named] of [
     ['a subscription with no price', { id: 'standin-sub-0003', rate_plan: { ...base.rate_plan, id: 'standin-plan-x', public_name: 'Mystery Add-on' }, state: 'Provisioned', price: undefined }, 'Mystery Add-on'],
@@ -185,17 +236,18 @@ test('a subscription the set-up cannot read as free counts as paid: the set-up d
   ]) {
     const sub = { ...base, ...extra };
     if (extra.price === undefined) delete sub.price;
-    const ctx = W.websiteWorld(t, { subscriptions: [...W.FREE, sub] });
+    const ctx = W.websiteWorld(t, { laid: true, subscriptions: [...W.FREE, sub] });
     const r = W.runSetUp(ctx);
     W.assertRan(r, `the set-up with ${what}`);
     assertSetUpTokenRemoved(ctx, `a set-up that found ${what}`);
     assert.notEqual(r.status, 0, `with ${what}, the set-up does not report done: it counts as paid; got ${w.describe(r)}`);
     assert.ok(W.said(r).includes(named), `with ${what}, the set-up names it to the owner (${named}); got ${w.describe(r)}`);
     assert.deepEqual(billingWrites(ctx.standIn), [], `with ${what}, Squire changes no billing`);
+    assertNothingKept(ctx, `a set-up that found ${what}`);
     assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
   }
 
-  const unread = W.websiteWorld(t, { fail: { subscriptions: true } });
+  const unread = W.websiteWorld(t, { laid: true, fail: { subscriptions: true } });
   const u = W.runSetUp(unread);
   W.assertRan(u, 'the set-up when the subscriptions cannot be read');
   assertSetUpTokenRemoved(unread, 'a set-up that could not read the subscriptions');
@@ -203,5 +255,6 @@ test('a subscription the set-up cannot read as free counts as paid: the set-up d
   assert.match(W.said(u), /subscription|billing/i, `it tells the owner what it could not read; got ${w.describe(u)}`);
   assert.match(W.said(u), /(could not|cannot|couldn't|can't|unable to) (read|check|tell)/i, `it says it could not read them; got ${w.describe(u)}`);
   assert.deepEqual(billingWrites(unread.standIn), [], 'Squire changes no billing');
+  assertNothingKept(unread, 'a set-up that could not read the subscriptions');
   assert.deepEqual(unread.standIn.offLoopback(), [], 'no call left the loopback');
 });
