@@ -106,15 +106,23 @@ test('after the one-off set-up, the account read back shows no paid subscription
   assert.match(W.said(r), /spend|cost|money/i, `the set-up tells the owner that nothing left on the account can spend; got ${w.describe(r)}`);
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 
-  const paid = W.websiteWorld(t, { laid: true, subscriptions: [...W.FREE, { ...W.FREE[0], id: 'standin-sub-0002', rate_plan: { ...W.FREE[0].rate_plan, id: 'standin-paid', public_name: 'Workers Paid' }, price: 5, state: 'Paid' }] });
-  const p = W.runSetUp(paid);
-  W.assertRan(p, 'the set-up on an account with a paid subscription on');
-  assertSetUpTokenRemoved(paid, 'a set-up that found a paid subscription');
-  assert.notEqual(p.status, 0, `a set-up that finds a paid subscription on does not report done; got ${w.describe(p)}`);
-  assert.ok(W.said(p).includes('Workers Paid'), `it names the paid subscription to the owner; got ${w.describe(p)}`);
-  assert.deepEqual(billingWrites(paid.standIn), [], 'Squire switches no paid feature off itself: that is the owner\'s to do');
-  assertNothingKept(paid, 'a set-up that found a paid subscription');
-  assert.deepEqual(paid.standIn.offLoopback(), [], 'no call left the loopback');
+  // Every paid feature, not only Workers plans: a paid Workers plan, and a
+  // paid plan on a zone, each priced above 0 in the account's answer.
+  for (const [what, sub] of [
+    ['a paid Workers plan', { ...W.FREE[0], id: 'standin-sub-0002', rate_plan: { ...W.FREE[0].rate_plan, id: 'standin-paid', public_name: 'Workers Paid' }, price: 5, state: 'Paid' }],
+    ['a paid plan on a zone, not a Workers plan', { ...W.FREE[0], id: 'standin-sub-0006', rate_plan: { ...W.FREE[0].rate_plan, id: 'standin-zone-pro', public_name: 'Pro Plan', scope: 'zone' }, price: 20, state: 'Paid' }],
+  ]) {
+    const named = sub.rate_plan.public_name;
+    const paid = W.websiteWorld(t, { laid: true, subscriptions: [...W.FREE, sub] });
+    const p = W.runSetUp(paid);
+    W.assertRan(p, `the set-up on an account with ${what} on`);
+    assertSetUpTokenRemoved(paid, `a set-up that found ${what}`);
+    assert.notEqual(p.status, 0, `a set-up that finds ${what} on does not report done; got ${w.describe(p)}`);
+    assert.ok(W.said(p).includes(named), `it names ${what} to the owner (${named}); got ${w.describe(p)}`);
+    assert.deepEqual(billingWrites(paid.standIn), [], 'Squire switches no paid feature off itself: that is the owner\'s to do');
+    assertNothingKept(paid, `a set-up that found ${what}`);
+    assert.deepEqual(paid.standIn.offLoopback(), [], 'no call left the loopback');
+  }
 
   const narrow = W.websiteWorld(t, { rights: ['Account API Tokens Write'] });
   const n = W.runSetUp(narrow);
