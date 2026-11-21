@@ -30,6 +30,17 @@
 //   ask for a site's deploy until the owner has previewed that folder as it
 //   now stands, and a site changed since its last preview waits for a new one.
 //
+// Decided on the fail-closed reading and named here (no record settles them):
+// a refusal is read for what it says beyond the command it echoes back, so a
+// refusal for another reason does not pass; Squire's deploy spelt any way but
+// the one it is asked in is refused, naming that one spelling, so the session
+// can use it; a preview of any folder but the site's own does not count for
+// the site, and a deploy of any folder but workspace/sites/<site name> is
+// refused whatever was previewed; a site's content decides whether it changed
+// since its preview, not its file names, sizes or times; and the owner's yes
+// to a deploy covers the site as it was previewed, so after a change the site
+// is previewed again and its deploy asked again.
+//
 // Usage model (assumptions, none measured): typical, one small site of a page
 // or two, previewed once and deployed once; heavy, a site changed after its
 // preview and previewed again before a second deploy. No case reaches a model,
@@ -37,6 +48,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
 const U = require('../fixtures/usage-world.js');
@@ -44,6 +56,26 @@ const B = require('../fixtures/browser-world.js');
 const W = require('../fixtures/website-world.js');
 
 const MODES = ['default', 'auto'];
+
+// What a refusal says beyond the command it echoes back.
+const toldBeyond = (r, echoed) => r.stderr.split(echoed).join(' ');
+
+// The one spelling Squire's deploy is asked in: the stock Python, Squire's
+// website command by its path, then deploy.
+const ONE_SPELLING = /\/usr\/bin\/python3\s+(?:'[^'\n]*website\.py'|\S*website\.py)\s+deploy\b/;
+
+// A call the floor refuses, not asks, in this mode, saying what `says`
+// matches beyond the command it echoes; and still refused, not asked, once
+// the owner has said yes.
+function assertRefused(world, floor, job, command, mode, what, says, why) {
+  for (const when of ['', ', even after the owner said yes']) {
+    if (when) w.ownerSays(world, job, 'yes', { env: U.UTC });
+    const r = floor.run(job, w.tools.bash(command), mode);
+    w.assertBlocked(r, `${what}, in ${mode} mode${when}`);
+    assert.equal(w.requestIdIn(r.stderr), null, `${what}, in ${mode} mode${when}: refused, not asked; got a request the owner could answer: ${w.describe(r)}`);
+    assert.match(toldBeyond(r, command), says, `${what}, in ${mode} mode${when}: ${why}; got ${w.describe(r)}`);
+  }
+}
 
 test("the token the set-up keeps deploys the site and nothing else: a call it makes to read or change billing, tokens, account settings, DNS or another product is refused, the set-up reports done only after reading its rights back as deploy-only, and the deploy waits out a new address's certificate before it reports the site live", { timeout: 180000 }, (t) => {
   const ctx = W.websiteWorld(t);
@@ -194,4 +226,112 @@ test("in a site job the owner said yes to, a site preview by Python's http.serve
       assert.equal(w.requestIdIn(again.stderr), null, `the site's preview with ${what}, in ${mode} mode, after a yes: still refused; got ${w.describe(again)}`);
     }
   }
+});
+
+test("before any preview, Squire's deploy spelt any way but the one it is asked in is refused, not asked, even after a yes, and the refusal names that one spelling: from Squire's tools folder by a relative path, by a python3 found on the PATH, inside bash -c, or wrapped by Squire's secret helper, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  const floor = U.laidFloor(world, U.UTC);
+  const toolsFolder = path.dirname(W.websiteTool(world));
+  const secretTool = `/usr/bin/python3 '${path.join(toolsFolder, 'secret.py')}'`;
+  for (const mode of MODES) {
+    const job = `job-site-near-spellings-${mode}`;
+    const name = `ada-bakes-${mode}`;
+    W.startSite(world, floor, job, mode);
+    const folder = W.writeSite(world, floor, job, name, mode);
+    const plain = W.deployCommand(world, folder, name);
+    for (const [what, command] of [
+      ['from Squire\'s tools folder by a relative path', `cd '${toolsFolder}' && /usr/bin/python3 website.py deploy '${folder}' ${name}`],
+      ['by a python3 found on the PATH', `python3 '${W.websiteTool(world)}' deploy '${folder}' ${name}`],
+      ['inside bash -c', `bash -c "${plain}"`],
+      ['wrapped by Squire\'s secret helper', `${secretTool} run ${W.KEPT_SECRET} --as CLOUDFLARE_API_TOKEN -- ${plain}`],
+    ]) {
+      assertRefused(world, floor, job, command, mode, `Squire's deploy ${what}, before any preview`, ONE_SPELLING,
+        'the refusal names the one spelling Squire\'s deploy is asked in, so the session can use it');
+    }
+  }
+  assert.deepEqual(W.uploads(ctx.standIn), [], 'nothing was deployed');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+// A call put to the floor as the session makes it: when the floor asks, the
+// owner says yes and the session makes it again. Whatever the floor answers.
+function throughFloor(world, floor, job, call, mode) {
+  const first = floor.run(job, call, mode);
+  if (first.status !== 2 || !w.requestIdIn(first.stderr)) return first;
+  U.sayYesTo(world, job, first, { env: U.UTC });
+  return floor.run(job, call, mode);
+}
+
+test("a site's deploy waits for a preview of the site's own folder, and Squire deploys a site only from its own folder: after a preview of another folder the site's deploy is refused, not asked, naming the preview, and a deploy of a folder that is not the site's own is refused, not asked, even once the site is previewed, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  const floor = U.laidFloor(world, U.UTC);
+  const files = path.join(world.owner, 'workspace', 'files');
+  fs.mkdirSync(files, { recursive: true });
+  fs.writeFileSync(path.join(files, 'suppliers.txt'), 'Flour from Example Mills, every Monday (invented).\n');
+  for (const mode of MODES) {
+    const job = `job-site-other-folder-${mode}`;
+    const name = `ada-bakes-${mode}`;
+    W.startSite(world, floor, job, mode);
+    const folder = W.writeSite(world, floor, job, name, mode);
+    // A preview on the loopback, but of the owner's whole folder, not the site's.
+    throughFloor(world, floor, job, w.tools.bash(W.previewCommand(world.owner)), mode);
+    assertRefused(world, floor, job, W.deployCommand(world, folder, name), mode, 'the site\'s deploy after a preview of the owner\'s folder, not the site\'s own', /preview/i,
+      'the refusal says the site is previewed first, from its own folder');
+
+    W.previewSite(world, floor, job, folder, mode);
+    for (const [what, other] of [['the owner\'s folder', world.owner], ['the owner\'s files (workspace/files)', files]]) {
+      assertRefused(world, floor, job, W.deployCommand(world, other, name), mode, `a deploy of ${what} as the site ${name}, once the site is previewed`,
+        /workspace\/sites|(its|the site'?s) own folder/i, 'the refusal says Squire deploys a site only from its own folder, workspace/sites/<site name>');
+    }
+  }
+  assert.deepEqual(W.uploads(ctx.standIn), [], 'nothing was deployed');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+// A page of the site rewritten in place: the same name and size, only its
+// content changed, and its modification time put back as far as the file
+// system keeps it.
+function rewriteInPlace(file, content) {
+  const before = fs.statSync(file);
+  assert.equal(Buffer.byteLength(content), before.size, 'the rewrite keeps the page\'s size');
+  fs.writeFileSync(file, content);
+  fs.utimesSync(file, before.atime, before.mtime);
+}
+
+test("what goes live is what the owner previewed and said yes to: a page of the site rewritten after its preview, under the same name, leaves the deploy refused, not asked, naming the preview, and a change after the owner's yes to the deploy leaves that deploy refused, the yes not spent on other content, and the site's deploy asked again once it is previewed again, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  const floor = U.laidFloor(world, U.UTC);
+  const page = (when) => `<!doctype html><title>Ada Bakes</title><p>Fresh every ${when}.</p>\n`;
+  for (const mode of MODES) {
+    const job = `job-site-content-${mode}`;
+    const name = `ada-bakes-${mode}`;
+    W.startSite(world, floor, job, mode);
+    const folder = W.writeSite(world, floor, job, name, mode, page('morning'));
+    const index = path.join(folder, 'index.html');
+    const deploy = W.deployCommand(world, folder, name);
+
+    W.previewSite(world, floor, job, folder, mode);
+    rewriteInPlace(index, page('evening'));
+    assertRefused(world, floor, job, deploy, mode, 'the site\'s deploy after its page was rewritten under the same name since its preview', /preview/i,
+      'the refusal says the changed site is previewed again first');
+
+    W.previewSite(world, floor, job, folder, mode);
+    const asked = floor.run(job, w.tools.bash(deploy), mode);
+    w.assertBlocked(asked, `the site's deploy once previewed again, in ${mode} mode`);
+    assert.notEqual(w.requestIdIn(asked.stderr), null, `the site's deploy once previewed again is asked, in ${mode} mode; got ${w.describe(asked)}`);
+    U.sayYesTo(world, job, asked, { env: U.UTC });
+    rewriteInPlace(index, page('Tuesday'));
+    assertRefused(world, floor, job, deploy, mode, 'the site\'s deploy the owner said yes to, after its page changed since', /preview/i,
+      'the yes was to the site as it was previewed: the refusal says the changed site is previewed again first');
+
+    W.previewSite(world, floor, job, folder, mode);
+    const next = floor.run(job, w.tools.bash(deploy), mode);
+    w.assertBlocked(next, `the changed site's deploy, previewed again, in ${mode} mode: the earlier yes does not cover other content`);
+    assert.notEqual(w.requestIdIn(next.stderr), null, `the changed site's deploy, previewed again, is asked again, in ${mode} mode; got ${w.describe(next)}`);
+  }
+  assert.deepEqual(W.uploads(ctx.standIn), [], 'nothing was deployed');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
