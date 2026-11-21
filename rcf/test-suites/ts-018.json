@@ -1,15 +1,81 @@
 {
   "createdAt": "2026-11-07T17:40:43.274Z",
-  "updatedAt": "2026-11-07T17:40:43.274Z",
+  "updatedAt": "2026-11-21T10:46:21.538Z",
   "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
   "testLevel": "integration",
   "acIds": [
     "AC-1801-1",
-    "AC-1801-2"
+    "AC-1801-2",
+    "AC-1801-3",
+    "AC-1801-4"
   ],
   "id": "TS-018",
   "usId": "US-1801",
   "title": "No details to websites; no sign-in without a yes; visible window and takeover",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-018-a-page-asking-for-a-name-an-email",
+      "acId": "AC-1801-1",
+      "description": "a page asking for a name, an email address, a postal address, a phone number and a card number gets none of the owner's details from Squire's browser, though each browser call had the owner's yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::a page on the loopback test site asking for a name, an email address, a postal address, a phone number and a card number gets none of the owner's details from Squire's browser, filled in as a form or typed field by field, though the owner said yes to each browser call; the page's own message field and its send button still go through, and no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-a-page-that-hides-the-asks-under-other",
+      "acId": "AC-1801-1",
+      "description": "a page that hides the asks under other names gets none of the owner's details, typed, set by a script or carried in its address",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::a second page on the loopback test site that hides the asks under other names gets none of the owner's details from Squire's browser, typed field by field, set by a script in another letter case or carried in the page's address with the numbers run together, though the owner said yes to each browser call; the page's own question still goes through, and no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-squire-s-browser-stops-at-a-sign-in-page",
+      "acId": "AC-1801-2",
+      "description": "Squire's browser stops at a sign-in page and signs in only after the owner's yes for that sign-in",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::Squire's browser stops at a sign-in page on the loopback test site and does not sign in until the owner's yes for that sign-in: what the session loads says to stop there, tell the owner which site wants a sign-in and wait for their yes; the floor holds the call that would go on, the site records no sign-in before the yes, and after the yes the browser goes on and the site records the sign-in; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-squire-s-browser-is-set-up-in-a-window",
+      "acId": "AC-1801-2",
+      "description": "Squire's browser is set up in a window of its own the owner can watch and take over, never headless, with a profile of its own",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::Squire's browser is set up in what the session loads in a window of its own on the Mac that the owner can watch and take over in: a Playwright browser server in Squire's config folder, never headless, with a profile of its own and never the owner's browser profile, and what the session loads tells the session the owner can watch it and take over"
+    },
+    {
+      "id": "TC-018-one-browsing-job-makes-several-calls-in",
+      "acId": "AC-1801-1",
+      "description": "one browsing job makes several calls in a row, each asked and carried out on its own yes, and a call in that job carrying one of the owner's details is still refused, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::one browsing job on the loopback test site makes several calls in a row, each asked on its own and carried out on the owner's yes to it (opening the page, reading it, typing into the page's own field and clicking its button), in the default mode and in auto mode; a call in that same job carrying one of the owner's details is still refused, even after a yes, and the site receives the page's own message and none of the owner's details; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-a-browser-call-squire-cannot-check-for",
+      "acId": "AC-1801-3",
+      "description": "a browser call Squire cannot check for the owner's details (a script, a file upload, or any typed text while the owner's profile is unreadable or absent) is refused, not asked, even after a yes, and the site receives nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::by default Squire's browser does not make a call Squire cannot check for the owner's details: a script whose function builds what it sets only when it runs, a file upload of a file in the owner's folder, and, with the owner's profile unreadable or absent, a typed text, are each refused rather than asked, even after a yes, in the default mode and in auto mode, and the site receives nothing from them; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-a-page-or-step-squire-cannot-tell-is-a",
+      "acId": "AC-1801-4",
+      "description": "a page or step Squire cannot tell is a sign-in is treated as one: the session is told to stop, name the site and wait for the yes, and a Continue with button records no sign-in before the yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::when Squire cannot tell whether a page or a step would sign the owner in or open an account, its browser treats it as a sign-in: what the session loads says so, to stop, tell the owner which site and wait for their yes; and on a second shape of sign-in on the loopback test site, a Continue with button for a provider and no password field, the site records no sign-in before the owner's yes and one after it; no socket leaves the loopback"
+    },
+    {
+      "id": "TC-018-the-owner-s-details-are-found-wherever",
+      "acId": "AC-1801-1",
+      "description": "the owner's details are found wherever they are kept: the first conversation keeps them as labelled lines in the profile, and the first name set-up keeps in squire.json is refused in a browser call even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::the owner's details are found wherever they are kept: what the session loads tells the guided first conversation to keep the owner's name, email address, postal address, phone number and card number, when the owner gives them, as labelled lines in the owner's profile; and the owner's first name, which set-up keeps in squire.json in the owner's folder, is refused in a browser call even after a yes while the profile holds it nowhere, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-018-a-browser-call-squire-has-no-check-for",
+      "acId": "AC-1801-3",
+      "description": "a browser call Squire has no check for, whatever the tool is called (code to run as text or from a file in the owner's folder, a drop of the owner's files by their paths, or a browser tool the floor does not know, under the browser's own name or a name a page supplies) is refused, not asked, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::Squire's browser does not make a call it has no check for, whatever the tool is called: code given to run as text, code to run from a file in the owner's folder, a drop of the owner's files onto a page by their paths, and a browser tool the floor does not know, under the browser's own name or under a name a page supplies, are each refused rather than asked, even after a yes, in the default mode and in auto mode"
+    }
+  ],
   "status": "draft"
 }

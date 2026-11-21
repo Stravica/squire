@@ -18,7 +18,9 @@ Once core is down it writes the settings of Claude Code's config folder for
 Squire's session (claude-config/settings.json) from core's settings and the
 Squire's name and personality from the owner's squire.json into its
 CLAUDE.md, records the SHA-256 digests of core's settings and the four floor
-hooks in core-digests.json in the Squire home, lays Squire Update down in
+hooks in core-digests.json in the Squire home, sets Squire's one browser
+server up in that folder's .claude.json (keyed playwright, started from the
+copy set-up keeps in browser/ in the Squire home), lays Squire Update down in
 Applications under the home folder it is given (from core's update-app/,
 signed ad hoc; when it cannot, that is a log line and update-app.json in the
 Squire home, which the health check names, and the rest goes on), and writes
@@ -56,6 +58,14 @@ class LayDown:
     UPDATE_APP = 'Squire Update.app'
     HOME_MARK = '__SQUIRE_HOME__'
     WITHIN = 60
+    # Squire's browser, as set-up keeps it in browser/ in the Squire home: the
+    # runtime, the browser server (Playwright's) and the browser build it
+    # drives, each in its own place there, and the browser's own profile.
+    BROWSER = 'browser'
+    BROWSER_RUNTIME = ('runtime', 'bin', 'node')
+    BROWSER_SERVER = ('server', 'node_modules', '@playwright', 'mcp', 'cli.js')
+    BROWSER_BUILD = ('chrome', 'Google Chrome for Testing.app', 'Contents', 'MacOS', 'Google Chrome for Testing')
+    BROWSER_PROFILE = ('profile',)
 
     @staticmethod
     def main(argv):
@@ -130,6 +140,39 @@ class LayDown:
             except FileNotFoundError:
                 pass
         LayDown.write(os.path.join(home, 'core-digests.json'), (json.dumps(digests, indent=2) + '\n').encode('utf-8'))
+        LayDown.browser_server(home)
+
+    @staticmethod
+    def browser_server(home):
+        """Squire's one browser server, keyed playwright, in Claude Code's own
+        state in Squire's config folder (claude-config/.claude.json), so its
+        tools are the ones the safety floor guards: started from set-up's
+        copy in browser/ in the Squire home and driving the browser build
+        there, with a profile of its own there, in a window (never headless),
+        never attached to a browser already running. Every other key of
+        that file is kept. A file that is
+        there and cannot be read as one JSON object is left as it is, with a
+        log line: it holds Claude Code's own state."""
+        place = os.path.join(home, LayDown.BROWSER)
+        server = {
+            'command': os.path.join(place, *LayDown.BROWSER_RUNTIME),
+            'args': [os.path.join(place, *LayDown.BROWSER_SERVER),
+                     '--executable-path', os.path.join(place, *LayDown.BROWSER_BUILD),
+                     '--user-data-dir', os.path.join(place, *LayDown.BROWSER_PROFILE)],
+        }
+        path = os.path.join(home, 'claude-config', '.claude.json')
+        try:
+            with open(path, encoding='utf-8') as f:
+                state = json.load(f)
+        except FileNotFoundError:
+            state = {}
+        except (OSError, ValueError):
+            state = None
+        if not isinstance(state, dict):
+            LayDown.log(home, 'Squire\'s browser was not set up: claude-config/.claude.json cannot be read')
+            return
+        state['mcpServers'] = {'playwright': server}
+        LayDown.write(path, (json.dumps(state, indent=2) + '\n').encode('utf-8'))
 
     @staticmethod
     def log(home, text):

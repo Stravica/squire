@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-11-19T13:43:49.880Z",
+  "updatedAt": "2026-11-21T15:02:38.558Z",
+  "summary": "Squire's own browser runs in a window of its own on the Mac that the owner can watch and take over in, by default gives a website none of the owner's details, and signs in to the owner's accounts only on their yes; an app the owner said yes to runs from a one-page brief through plan, build, test and a preview on this Mac, keeps its work when a step fails, keeps its versions on this Mac only, and needs its own yes to ship.",
+  "dependsOnFbsIds": [
+    "FBS-005"
+  ],
+  "uiBearing": false,
+  "acIds": [
+    "AC-1801-1",
+    "AC-1801-2",
+    "AC-1302-2",
+    "AC-1302-3",
+    "AC-1801-3",
+    "AC-1801-4"
+  ],
+  "fbsId": "FBS-011",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 11,
+  "executionStatus": "complete",
+  "title": "Squire's own browser, and apps built on the owner's yes"
+}

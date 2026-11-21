@@ -16,7 +16,18 @@
 //                            reporting that it is still installing)
 //   curl                     the download of Claude Code's installer, which
 //                            serves a fake installer (or fails, times out, is
-//                            cut short, finds no network, or is slow)
+//                            cut short, finds no network, or is slow); and
+//                            the download of Squire's built-in browser, any
+//                            gzip'd tar archive at an https address, served
+//                            as a small stand-in archive holding one folder,
+//                            squire-browser/, and any zip at an https address
+//                            (the browser build, as its maker serves it),
+//                            served as a small stand-in zip made by the Mac's
+//                            own /usr/bin/zip holding one folder of another
+//                            name, squire-browser-build/, so that unpacking
+//                            both in one place overwrites nothing (each
+//                            failing, timing out or finding no network as the
+//                            installer's download does)
 //   osascript                set-up's own windows: each answered by its title
 //                            from the test's answers (one answer, a sequence
 //                            of answers, or an answer given once a file the
@@ -197,10 +208,46 @@ const out = (() => { const i = argv.findIndex((a) => a === '-o' || a === '--outp
 const url = argv.find((a) => /^https?:\\/\\//.test(a)) || '';
 const how = mac().download;
 record({ url, out, how });
+const fail = (code, line) => { process.stderr.write('curl: (' + code + ') ' + line + '\\n'); process.exit(code); };
+let urlPath = '';
+try { urlPath = new URL(url).pathname; } catch (e) { urlPath = ''; }
+if (url !== ${JSON.stringify(INSTALL_URL)} && url.startsWith('https://') && /\\.(tar\\.gz|tgz)$/.test(urlPath)) {
+  // Squire's built-in browser: a gzip'd tar archive at an https address,
+  // served as a small stand-in holding one folder, squire-browser/.
+  if (how === 'fail') fail(22, 'The requested URL returned error: 503');
+  if (how === 'timeout') fail(28, 'Operation timed out after 600000 milliseconds with 0 bytes received');
+  if (how === 'offline') fail(6, 'Could not resolve host: ' + url);
+  const path = require('path');
+  const dir = fs.mkdtempSync(path.join(out ? path.dirname(out) : require('os').tmpdir(), '.browser-stand-in-'));
+  fs.mkdirSync(path.join(dir, 'squire-browser'));
+  fs.writeFileSync(path.join(dir, 'squire-browser', 'STAND-IN.txt'), 'A stand-in for Squire\\'s built-in browser, served by the test world for ' + url + '\\n');
+  const packed = path.join(dir, 'browser.tar.gz');
+  const made = spawnSync('/usr/bin/tar', ['-czf', packed, '-C', dir, 'squire-browser']);
+  if (made.status !== 0) fail(23, 'the stand-in archive could not be made');
+  if (out) fs.copyFileSync(packed, out); else process.stdout.write(fs.readFileSync(packed));
+  fs.rmSync(dir, { recursive: true, force: true });
+  process.exit(0);
+}
+if (url !== ${JSON.stringify(INSTALL_URL)} && url.startsWith('https://') && /\\.zip$/.test(urlPath)) {
+  // The browser build, as its maker serves it: a zip at an https address,
+  // served as a small stand-in zip holding one folder, squire-browser-build/.
+  if (how === 'fail') fail(22, 'The requested URL returned error: 503');
+  if (how === 'timeout') fail(28, 'Operation timed out after 600000 milliseconds with 0 bytes received');
+  if (how === 'offline') fail(6, 'Could not resolve host: ' + url);
+  const path = require('path');
+  const dir = fs.mkdtempSync(path.join(out ? path.dirname(out) : require('os').tmpdir(), '.browser-stand-in-'));
+  fs.mkdirSync(path.join(dir, 'squire-browser-build'));
+  fs.writeFileSync(path.join(dir, 'squire-browser-build', 'STAND-IN.txt'), 'A stand-in for the build of Squire\\'s built-in browser, served by the test world for ' + url + '\\n');
+  const packed = path.join(dir, 'browser.zip');
+  const made = spawnSync('/usr/bin/zip', ['-q', '-r', packed, 'squire-browser-build'], { cwd: dir });
+  if (made.status !== 0) fail(23, 'the stand-in zip could not be made');
+  if (out) fs.copyFileSync(packed, out); else process.stdout.write(fs.readFileSync(packed));
+  fs.rmSync(dir, { recursive: true, force: true });
+  process.exit(0);
+}
 if (url !== ${JSON.stringify(INSTALL_URL)}) { process.stderr.write('curl: (6) Could not resolve host: ' + url + '\\n'); process.exit(6); }
 const script = fs.readFileSync(${JSON.stringify('INSTALLER_SCRIPT')}, 'utf8');
 const write = (text) => { if (out) fs.writeFileSync(out, text); else process.stdout.write(text); };
-const fail = (code, line) => { process.stderr.write('curl: (' + code + ') ' + line + '\\n'); process.exit(code); };
 if (how === 'fail') fail(22, 'The requested URL returned error: 503');
 if (how === 'timeout') fail(28, 'Operation timed out after 600000 milliseconds with 0 bytes received');
 if (how === 'offline') fail(6, 'Could not resolve host: claude.ai');

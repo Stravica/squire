@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:19.425Z",
-  "updatedAt": "2026-11-07T18:02:38.294Z",
+  "updatedAt": "2026-11-19T13:44:36.742Z",
   "asA": "Squire owner",
   "iWant": "Squire to tell me before a big job (deep research, building an app or a site, video work) and wait for my yes",
   "soThat": "a big job never uses up my allowance without my say",
@@ -28,6 +28,15 @@
       "given": "Approved deep research, and an approved one-page brief for an app",
       "when": "The job runs, and the network fails, the job times out or a step of the build fails",
       "then": "Approved research ends with a result the Squire owner can see; a network or time-out failure is explained and the work so far is kept so it can resume. An approved app brief runs through plan, build, test and preview; a failure keeps the work; shipping the app still needs its own yes.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1302-3",
+      "description": "Squire keeps versions of what it builds for the Squire owner on the Mac, and an earlier version can be got back on request; nothing leaves the Mac.",
+      "testable": true,
+      "given": "Something Squire built for the Squire owner, such as an app, changed more than once",
+      "when": "The Squire owner asks for an earlier version",
+      "then": "The earlier version is got back and the later ones are still kept; the versions are kept on the Mac only, and nothing is sent anywhere.",
       "verification": "testOnly"
     }
   ]

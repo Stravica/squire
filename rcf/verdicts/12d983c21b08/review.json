@@ -1,0 +1,33 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "12d983c21b08a8b2309a17870e03156a3bd3e0c5",
+  "fbsIds": [
+    "FBS-011",
+    "FBS-009",
+    "FBS-001",
+    "FBS-003"
+  ],
+  "touchedAcIds": [
+    "AC-1801-1",
+    "AC-1801-2",
+    "AC-1801-3",
+    "AC-1801-4",
+    "AC-1302-2",
+    "AC-1302-3",
+    "AC-1901-5",
+    "AC-1901-1"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1801-3",
+      "text": "Squire's browser server, as set-up installs it (@playwright/mcp 0.0.86, started by lay-down with no tool filter), offers browser_run_code_unsafe, which runs any code it is given, as text or from a named file, in the server's own process on the Mac, and browser_drop, which drops files from the Mac onto a page by their paths. The safety floor asks both like any browser call and does not refuse them (core/hooks/pre-tool-use.py lines 884 to 885, and the browser rule from line 1204), so on a yes the code runs or the file is sent, unchecked for the owner's details. Shown by calling each through the floor in a laid test world: code, code from a file, and a drop of the owner's profile file by its path are each asked, then made on the yes, while a script in the page and a file upload are refused. A red test would assert that, through the floor in the default mode and in auto mode, browser_run_code_unsafe in both forms and browser_drop with paths are refused, not asked, even after a yes. Smallest fix: add both to the browser tools refused yes or no, or refuse every browser tool the floor does not know it can check. Owning hand: the test author for the red test, then the builder."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-19T21:39:44.307Z"
+}

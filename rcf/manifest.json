@@ -680,6 +680,60 @@
       "reason": "Not adopted as a criterion in this batch. Squire's pages theme shipped before a contrast test was declared, so the baseline's authored-before-the-palette attestation cannot be truthfully made. Body text and links in Squire's default theme are held at 4.5 to 1 in both modes by a bound case under AC-901-2. A check of every text-on-background pair, large text and controls included, is a candidate for the theme's next amend round.",
       "operatorAckAt": "2026-11-16T20:32:16.013Z",
       "reqId": "REQ-009"
+    },
+    {
+      "id": "boo-2026-11-19-001",
+      "createdAt": "2026-11-19T14:20:43.143Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page to carry a contrast floor. Re-read if a later round has Squire itself render or frame a page under this requirement.",
+      "operatorAckAt": "2026-11-19T14:20:43.143Z",
+      "reqId": "REQ-018"
+    },
+    {
+      "id": "boo-2026-11-19-002",
+      "createdAt": "2026-11-19T14:20:43.443Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page to carry focus rings. Re-read if a later round has Squire itself render or frame a page under this requirement.",
+      "operatorAckAt": "2026-11-19T14:20:43.443Z",
+      "reqId": "REQ-018"
+    },
+    {
+      "id": "boo-2026-11-19-003",
+      "createdAt": "2026-11-19T14:20:43.767Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page with a journey of its own. Re-read if a later round has Squire itself render or frame a page under this requirement.",
+      "operatorAckAt": "2026-11-19T14:20:43.767Z",
+      "reqId": "REQ-018"
+    },
+    {
+      "id": "boo-2026-11-19-004",
+      "createdAt": "2026-11-19T14:20:44.116Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page to carry a shared navigation. Re-read if a later round has Squire itself render or frame a page under this requirement.",
+      "operatorAckAt": "2026-11-19T14:20:44.116Z",
+      "reqId": "REQ-018"
+    },
+    {
+      "id": "boo-2026-11-19-005",
+      "createdAt": "2026-11-19T14:20:44.462Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page to carry a signed-in marker. Re-read if a later round has Squire itself render or frame a page under this requirement.",
+      "operatorAckAt": "2026-11-19T14:20:44.462Z",
+      "reqId": "REQ-018"
+    },
+    {
+      "id": "boo-2026-11-19-006",
+      "createdAt": "2026-11-19T14:20:44.844Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page to carry a theme switch. Re-read if a later round has Squire itself render or frame a page under this requirement.",
+      "operatorAckAt": "2026-11-19T14:20:44.844Z",
+      "reqId": "REQ-018"
     }
   ]
 }
