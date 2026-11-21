@@ -32,6 +32,34 @@ test('the website command refuses a verb it does not take, a missing or extra wo
   assert.equal(w.hasSecret(ctx.keychain, W.SET_UP_SECRET), true, 'a refused command leaves the set-up token where the owner stored it');
 });
 
+test('the deploy refuses, before any call, a name Cloudflare would not take, a folder that is not the site\'s own, a link in the site, and a site before the set-up has finished', { timeout: 60000 }, (t) => {
+  const ctx = W.websiteWorld(t);
+  const folder = W.makeSite(ctx.world, 'ada-bakes');
+  const other = W.makeSite(ctx.world, 'other-site');
+  const deploy = (args) => w.runPython(ctx.world, WEBSITE, ['deploy', ...args], { env: ctx.standIn.proxyEnv, timeout: 30000 });
+  for (const [args, what, says] of [
+    [[folder, 'Ada_Bakes'], 'a name with capitals and an underscore', /name Cloudflare takes/],
+    [[other, 'ada-bakes'], 'another site\'s folder', /own folder, workspace\/sites\/ada-bakes/],
+    [[ctx.world.owner, 'ada-bakes'], 'the owner\'s whole folder', /own folder/],
+    [[folder, 'ada-bakes'], 'a site before the set-up', /cannot tell where/],
+    [[folder], 'no site name', /takes/],
+  ]) {
+    const r = deploy(args);
+    assert.equal(r.status, 1, `${what}: refused with exit 1; got ${w.describe(r)}`);
+    assert.match(r.stderr, says, `${what}: says why; got ${w.describe(r)}`);
+    assert.doesNotMatch(r.stderr, /Traceback/, `${what}: never a crash; got ${w.describe(r)}`);
+  }
+  assert.deepEqual(ctx.standIn.calls(), [], 'nothing was called');
+  const set = W.runSetUp(ctx);
+  assert.equal(set.status, 0, `the set-up is done; got ${w.describe(set)}`);
+  require('node:fs').symlinkSync('/etc/hosts', path.join(folder, 'hosts.html'));
+  const before = ctx.standIn.calls().length;
+  const linked = deploy([folder, 'ada-bakes']);
+  assert.equal(linked.status, 1, `a site holding a link is refused; got ${w.describe(linked)}`);
+  assert.match(linked.stderr, /not a plain file/, `it names the link; got ${w.describe(linked)}`);
+  assert.equal(ctx.standIn.calls().length, before, 'nothing was called for a site holding a link');
+});
+
 test('the set-up calls no address that is not https, unless it is on the loopback', { timeout: 60000 }, (t) => {
   const ctx = W.websiteWorld(t);
   w.writeConfig(ctx.world, { cloudflareApi: 'http://api.example.net/client/v4' });
