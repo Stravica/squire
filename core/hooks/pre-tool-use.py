@@ -45,8 +45,8 @@ PYTHON = '/usr/bin/python3'
 
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
-    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, SquireError, paced_windows, percent_words,
-                        read_usage, reset_words, second_yes_needed, youtube_link)
+    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, Runtime, SquireError, paced_windows,
+                        percent_words, read_usage, reset_words, second_yes_needed, youtube_link)
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
     sys.exit(2)
@@ -724,6 +724,202 @@ class VersionsCommand:
         return 2, cls.NEVER.format(what=data.get('command'))
 
 
+class WebsiteCommand:
+    """Squire's website command as the session runs it, in its one plain
+    spelling: /usr/bin/python3 '<Squire home>/core/tools/website.py' set-up
+    <account id>, or deploy '<site folder>' <site name>. The set-up is asked,
+    naming the account, each run on its own yes. A deploy goes live only as
+    the owner previewed it and said yes to it. It is refused, yes or no,
+    unless its folder is the site's own (workspace/sites/<site name> in the
+    owner's folder, as the Mac resolves it) and that folder, as it now
+    stands, is what the owner last previewed in this job: the preview check
+    comes before where the site goes. Then it is asked, naming the site and
+    the address it goes live at from the set-up's record in the Squire home,
+    or saying the floor cannot tell where before the set-up has read the
+    account; its item is the site's content as previewed, so a change after
+    the yes needs a new preview and a new yes. A site is previewed by the one
+    preview command (Python's http.server bound to the loopback, from the
+    site's own folder): once the floor lets that run, it keeps the folder's
+    content, by digest, as previewed in this job, in a runtime record the
+    session cannot write. Spelt any other way, with another verb or other
+    words, the website command is refused, naming its one spelling
+    (Floor.judge_bash)."""
+
+    SCRIPT = 'website.py'
+    SITES = os.path.join('workspace', 'sites')
+    PREVIEWS = 'site-previews.json'
+    RECORD = 'cloudflare.json'
+    KEEP = 200
+    NAME = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?')
+    ACCOUNT = re.compile(r'[0-9a-fA-F]{32}')
+    MOST_ENTRIES = 20000
+    NEVER = ('Squire\'s safety floor: Squire\'s website command runs from the session only as the one command Squire\'s '
+             'instructions name for each, exactly so and as one command, yes or no: {deploy} for a site\'s deploy, or '
+             '{set_up} for the one-off Cloudflare set-up. Nothing ran: {{what}}')
+    NEVER_FOLDER = ('Squire\'s safety floor: Squire deploys a site only from its own folder, workspace/sites/<site name> '
+                    'in the owner\'s folder, yes or no, and this deploy of {name} names another folder. Nothing ran: '
+                    '{what}')
+    NEVER_PREVIEW = ('Squire\'s safety floor: a site goes live only as the owner has seen it, yes or no, so its deploy '
+                     'waits for a preview of the site\'s own folder as it now stands. Preview it on this Mac first, '
+                     'served on the loopback from its own folder ({preview}), show it to the owner, and preview it '
+                     'again after any change; then its deploy is asked. Nothing ran: {what}')
+    LIVE = ('put the site {name} live at {address}, as the owner previewed it from its folder {folder}, replacing '
+            'whatever is live there now')
+    CANNOT_TELL = ('deploy the site {name} from its folder {folder}. Squire cannot tell where it would go live: '
+                   'Squire\'s Cloudflare set-up has not read the account on this Mac')
+    SET_UP = ('run Squire\'s one-off Cloudflare set-up on account {account}: it reads the account\'s subscriptions, '
+              'makes and keeps a deploy-only token, and removes the owner\'s set-up token')
+
+    @staticmethod
+    def quoted(path):
+        return "'" + path.replace("'", "'\"'\"'") + "'"
+
+    @classmethod
+    def never(cls, floor):
+        """The refusal of the website command spelt any other way, naming its
+        one spelling; {what} is left to fill."""
+        tool = f'{PYTHON} ' + cls.quoted(os.path.join(floor.config.home, 'core', 'tools', cls.SCRIPT))
+        deploy, set_up = (s.replace('{', '{{').replace('}', '}}') for s in
+                          (f"{tool} deploy '<site folder>' <site name>", f'{tool} set-up <account id>'))
+        return cls.NEVER.format(deploy=deploy, set_up=set_up)
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """None when the call is not the website command as one plain
+        command; else ('set-up', account), ('deploy', folder, name) or
+        ('never', why)."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        words = [str(word) for word in argv[2:]]
+        if len(words) == 2 and words[0] == 'set-up' and cls.ACCOUNT.fullmatch(words[1]):
+            return ('set-up', words[1])
+        if len(words) == 3 and words[0] == 'deploy' and not words[1].startswith('-'):
+            return ('deploy', words[1], words[2])
+        return ('never', cls.never(floor).format(what=data.get('command')))
+
+    @classmethod
+    def settle(cls, floor, session, tool, data, asked):
+        command = data.get('command')
+        if asked[0] == 'never':
+            return 2, asked[1]
+        taints = [('private', command)]
+        if asked[0] == 'set-up':
+            with Ledger(floor.config.ledger_path) as ledger:
+                return floor.settle(ledger, session, tool, data, 'ask', cls.SET_UP.format(account=asked[1]), taints)
+        _, given, name = asked
+        folder = floor.path(given, strict=False)
+        own = os.path.realpath(os.path.join(floor.owner, cls.SITES, name))
+        if not cls.NAME.fullmatch(name) or not folder or Paths.fold(folder) != Paths.fold(own) \
+                or not os.path.isdir(folder):
+            return 2, cls.NEVER_FOLDER.format(name=name, what=command)
+        digest = cls.digest(folder)
+        if digest is None or digest != cls.previewed(floor, session, folder):
+            preview = f'{PYTHON} -m {Floor.PREVIEW_MODULE} 0 --bind 127.0.0.1 --directory {cls.quoted(folder)}'
+            return 2, cls.NEVER_PREVIEW.format(preview=preview, what=command)
+        record = Runtime.read(floor.config.home, cls.RECORD)
+        account, subdomain = record.get('accountId'), record.get('subdomain')
+        if isinstance(account, str) and cls.ACCOUNT.fullmatch(account) and isinstance(subdomain, str) \
+                and cls.NAME.fullmatch(subdomain):
+            what = cls.LIVE.format(name=name, address=f'https://{name}.{subdomain}.workers.dev', folder=folder)
+        else:
+            account = subdomain = None
+            what = cls.CANNOT_TELL.format(name=name, folder=folder)
+        item = 'site:' + hashlib.sha256(json.dumps([folder, name, digest, account, subdomain]).encode('utf-8')).hexdigest()
+        with Ledger(floor.config.ledger_path) as ledger:
+            return floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
+
+    @classmethod
+    def preview_of(cls, floor, tool, data):
+        """The site's folder a Bash call previews by the one preview command
+        (the stock Python's http.server, bound to the loopback, from a folder
+        in workspace/sites), or None."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or [str(word) for word in argv[1:3]] != ['-m', Floor.PREVIEW_MODULE]:
+            return None
+        bind = folder = None
+        rest, i = [str(word) for word in argv[3:]], 0
+        while i < len(rest):
+            word = rest[i]
+            name, sep, value = word.partition('=')
+            if word in ('-b', '--bind', '-d', '--directory') and i + 1 < len(rest):
+                if word in ('-b', '--bind'):
+                    bind = rest[i + 1]
+                else:
+                    folder = rest[i + 1]
+                i += 2
+                continue
+            if sep and name == '--bind':
+                bind = value
+            elif sep and name == '--directory':
+                folder = value
+            elif not word.isdigit():
+                return None
+            i += 1
+        if bind is None or folder is None or not Floor.LOOPBACK.fullmatch(bind):
+            return None
+        path = floor.path(folder, strict=False)
+        sites = os.path.realpath(os.path.join(floor.owner, cls.SITES))
+        if not path or not os.path.isdir(path) or Paths.fold(os.path.dirname(path)) != Paths.fold(sites):
+            return None
+        return path
+
+    @classmethod
+    def keep(cls, floor, session, folder):
+        """The site's folder, as it stands now, kept as previewed in this job."""
+        digest = cls.digest(folder)
+        if digest is None:
+            return
+        seen = {'session': session, 'folder': Paths.fold(folder), 'digest': digest, 'at': time.time()}
+        try:
+            Runtime.update(floor.config.home, cls.PREVIEWS,
+                           lambda old: {'previews': ([p for p in old.get('previews', []) if isinstance(p, dict)]
+                                                     + [seen])[-cls.KEEP:]})
+        except OSError:
+            pass
+
+    @classmethod
+    def previewed(cls, floor, session, folder):
+        """The digest of the site's folder as last previewed in this job, or None."""
+        record = Runtime.read(floor.config.home, cls.PREVIEWS)
+        previews = record.get('previews') if isinstance(record.get('previews'), list) else []
+        seen = [p for p in previews if isinstance(p, dict) and p.get('session') == session
+                and p.get('folder') == Paths.fold(folder)]
+        return seen[-1].get('digest') if seen else None
+
+    @classmethod
+    def digest(cls, folder):
+        """A folder's content as one digest: each entry's path, kind, link
+        target and bytes, never its times; None when it cannot be read whole."""
+        def stop(error):
+            raise error
+        entries = []
+        try:
+            for root, folders, names in os.walk(folder, onerror=stop):
+                folders.sort()
+                for entry in sorted(folders + names):
+                    path = os.path.join(root, entry)
+                    rel = os.path.relpath(path, folder)
+                    mode = os.lstat(path).st_mode
+                    if stat.S_ISLNK(mode):
+                        entries.append(['link', rel, os.readlink(path)])
+                    elif stat.S_ISDIR(mode):
+                        entries.append(['folder', rel])
+                    elif stat.S_ISREG(mode):
+                        content = hashlib.sha256()
+                        with open(path, 'rb') as f:
+                            for chunk in iter(lambda: f.read(1 << 20), b''):
+                                content.update(chunk)
+                        entries.append(['file', rel, content.hexdigest()])
+                    else:
+                        entries.append(['other', rel])
+                    if len(entries) > cls.MOST_ENTRIES:
+                        return None
+        except OSError:
+            return None
+        return hashlib.sha256(json.dumps(entries).encode('utf-8')).hexdigest()
+
+
 class OwnerDetails:
     """The owner's details, as the floor finds them for a browser call: the
     labelled lines of the owner's profile (operator/profile.md in the
@@ -894,6 +1090,11 @@ class Floor:
     PYTHONS = re.compile(r'python(\d+(\.\d+)?)?')
     PREVIEW_MODULE = 'http.server'
     LOOPBACK = re.compile(r'127(\.\d{1,3}){3}|::1|\[::1\]|localhost', re.IGNORECASE)
+    # A deploy to Cloudflare's Workers or Pages API names its account and its
+    # script or project in its path.
+    DEPLOY_PATH = re.compile(r'/accounts/([^/\s\'"]*)/(?:workers/scripts|pages/projects)/([^/\s\'"?#]*)', re.IGNORECASE)
+    CANNOT_TELL = ('Squire cannot tell where this site would go live: the command does not name its account, project '
+                   'or address in words Squire can read.')
 
     # The reads the floor resolves to literal paths, by command: its options
     # that take no value, the options that take the next word, and the
@@ -1031,6 +1232,12 @@ class Floor:
                     return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         if PageLink.of(self, tool, data):
             return 0, ''
+        website = WebsiteCommand.of(self, tool, data)
+        if website:
+            try:
+                return WebsiteCommand.settle(self, session, tool, data, website)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         versions = VersionsCommand.of(self, tool, data)
         if versions:
             return versions
@@ -1048,6 +1255,7 @@ class Floor:
                     return FixRequest.settle(ledger, session, fault, self.config.timeout)
             except SquireError as e:
                 return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
+        preview = WebsiteCommand.preview_of(self, tool, data)
         verdict, what, taints = self.judge(tool, data)
         if verdict == 'never':
             return 2, what
@@ -1055,7 +1263,10 @@ class Floor:
             if verdict == 'model':
                 verdict, taints = self.consult(session, self.item(tool, data), what, taints)
             with Ledger(self.config.ledger_path) as ledger:
-                return self.settle(ledger, session, tool, data, verdict, what, taints)
+                answer = self.settle(ledger, session, tool, data, verdict, what, taints)
+            if preview and answer[0] == 0:
+                WebsiteCommand.keep(self, session, preview)
+            return answer
         except SquireError as e:
             return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked' + (f': {what}' if what else '.')
 
@@ -1081,13 +1292,14 @@ class Floor:
             return 'free', taints + [('private', command)]
         return ('free' if answer == 'yes' else 'ask'), taints + both
 
-    def settle(self, ledger, session, tool, data, verdict, what, taints):
+    def settle(self, ledger, session, tool, data, verdict, what, taints, item=None):
         """Decides a call against the ledger, held under its lock. A web fetch
         is free until the job holds the owner's private things; from then on
         its path or host can carry them out as well as its query can, and the
         floor cannot tell which do, so it is a send. A web search is free
         until the job holds untrusted input and private things; then its
-        words can carry them out, so it is refused as one job."""
+        words can carry them out, so it is refused as one job. The item a yes
+        covers is the call itself unless one is given."""
         now = time.time()
         held = ledger.taints(session)
         if verdict == 'fetch':
@@ -1100,7 +1312,7 @@ class Floor:
             return 0, ''
         if held['untrusted'] and held['private']:
             return 2, self.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']), what=what)
-        item = self.item(tool, data)
+        item = item or self.item(tool, data)
         approved = ledger.approval(session, item, now, self.config.timeout)
         if approved:
             ledger.append({'type': 'use', 'request': approved['id'], 'at': now})
@@ -1311,6 +1523,8 @@ class Floor:
         if self.CLAUDE.search(command) and self.SPENDING.search(command):
             return 'never', self.NEVER_SPEND, []
         shell = ShellCommand(command)
+        if self.names_website(shell):
+            return 'never', WebsiteCommand.never(self).format(what=command), []
         verdicts = [self.judge_argv(argv, shell.plain) for argv in shell.segments]
         never = next((v for v in verdicts if v[0] == 'never'), None)
         if never:
@@ -1327,7 +1541,61 @@ class Floor:
         if shell.plain and kinds <= {'free', 'model'} and not credits:
             return 'model', command, taints
         run = [('untrusted', command), ('private', command)] if 'read' in kinds else [('private', command)]
-        return 'ask', self.CREDITS.format(what=command) if credits else command, taints + run
+        what = self.CREDITS.format(what=command) if credits else command
+        if self.target_unread(shell):
+            what += '\n' + self.CANNOT_TELL
+        return 'ask', what, taints + run
+
+    def names_website(self, shell):
+        """True when a command names Squire's website command outside its
+        one plain spelling (WebsiteCommand), in any word of a program, or of
+        a command that is not plain, each word read from the folder its
+        simple command runs in (a cd before it moves that)."""
+        where = self.cwd
+        for argv in shell.segments:
+            if argv[0] == 'cd':
+                try:
+                    if len(argv) == 2 and getattr(argv[1], 'literal', True):
+                        where = Paths.canonical(argv[1], where)
+                except (TypeError, ValueError, OSError):
+                    pass
+                continue
+            elsewhere = os.path.basename(argv[0]) in self.LISTED and not self.is_mac_command(argv[0])
+            if shell.plain and self.is_free(argv) and not elsewhere:
+                continue
+            for piece in (p for word in argv for p in re.split(r'[\s()|<>;&`\'"=]+', word) if p):
+                try:
+                    if self.is_core_tool(Paths.canonical(piece, where), WebsiteCommand.SCRIPT):
+                        return True
+                except (TypeError, ValueError, OSError):
+                    continue
+        return False
+
+    def target_unread(self, shell):
+        """True when a command deploys a site somewhere the floor cannot read
+        from its words: wrangler's deploy with no literal --name (or, for
+        Pages, --project-name), or a call to Cloudflare's Workers or Pages
+        API whose account, script or project is not written out."""
+        for argv in shell.segments:
+            words = [str(word) for word in argv]
+            names = [Paths.fold(os.path.basename(word)) for word in words]
+            at = next((i for i, n in enumerate(names) if n == 'wrangler' or n.startswith('wrangler@')), None)
+            if at is not None and any(word in ('deploy', 'publish') for word in words[at + 1:]):
+                option = '--project-name' if 'pages' in words[at + 1:] else '--name'
+                rest, value = argv[at + 1:], None
+                for i, word in enumerate(rest):
+                    if word == option and i + 1 < len(rest):
+                        value = rest[i + 1]
+                    elif str(word).startswith(option + '='):
+                        value = Word(str(word)[len(option) + 1:], getattr(word, 'literal', True))
+                if value is None or not getattr(value, 'literal', True) or not str(value) or str(value).startswith('-'):
+                    return True
+            for word in argv:
+                for match in self.DEPLOY_PATH.finditer(str(word)):
+                    if not match.group(1) or not match.group(2) or not getattr(word, 'literal', True) \
+                            or any(mark in match.group(0) for mark in '$`'):
+                        return True
+        return False
 
     @classmethod
     def open_preview(cls, argv):

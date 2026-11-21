@@ -1,0 +1,15 @@
+{
+  "cnId": "CN-178",
+  "path": "core/hooks/pre-tool-use.py#WebsiteCommand",
+  "implementsAcIds": [
+    "AC-1901-1",
+    "AC-1201-1",
+    "AC-1201-2",
+    "AC-1201-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-21T22:18:43.351Z",
+  "updatedAt": "2026-11-21T22:18:43.351Z"
+}
