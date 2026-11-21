@@ -71,6 +71,16 @@ test('a preview the floor does not pin is not the site\'s preview, and a deploy 
   assert.match(pages.stderr, /cannot tell where/, `it says it cannot tell where; got ${w.describe(pages)}`);
 });
 
+test('what the session loads names the website command in plain words, by the laid tool\'s path, never in a code span a placeholder could fill', { timeout: 60000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const sites = B.personaSentences(ctx.world).filter((x) => /\bsites?\b/i.test(x) && /website[․.]py/.test(x));
+  assert.ok(sites.length > 0, 'the site block names the website command');
+  for (const x of sites) {
+    assert.doesNotMatch(x, /`/, `the website command is never in a code span; got ${JSON.stringify(x)}`);
+    assert.ok(x.includes(`/usr/bin/python3 '${W.websiteTool(ctx.world)}'`), `it is named by the laid tool's path; got ${JSON.stringify(x)}`);
+  }
+});
+
 test('the money refusal reads Cloudflare\'s host as the Mac does and lets a plain read be asked; the dashboard refusal takes the host in any case, with a trailing dot, escaped or under it, and no look-alike', { timeout: 120000 }, (t) => {
   const ctx = W.websiteWorld(t, { laid: true });
   const { world } = ctx;
