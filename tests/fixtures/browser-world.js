@@ -310,6 +310,12 @@ const browserTools = {
   click: (element, ref) => tool('click', { element, ref }),
   evaluate: (fn) => tool('evaluate', { function: fn }),
   fileUpload: (paths) => tool('file_upload', { paths }),
+  // The browser server's own code and drop tools, in the shapes it takes:
+  // code to run as text, code to run from a file named on the Mac, and files
+  // dropped onto a page by their paths on the Mac.
+  runCode: (code) => tool('run_code_unsafe', { code }),
+  runCodeFrom: (filename) => tool('run_code_unsafe', { filename }),
+  drop: (element, ref, paths) => tool('drop', { element, ref, paths }),
 };
 
 // Carries out one browser call the floor let through.

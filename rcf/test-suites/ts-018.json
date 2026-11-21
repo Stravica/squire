@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.274Z",
-  "updatedAt": "2026-11-19T17:01:30.943Z",
+  "updatedAt": "2026-11-21T10:46:21.538Z",
   "purpose": "Drives the real browser tool against test sites that ask for personal details and present a sign-in, and checks nothing personal is supplied, the sign-in waits for a yes, and the window is visible and can be taken over.",
   "testLevel": "integration",
   "acIds": [
@@ -68,6 +68,13 @@
       "description": "the owner's details are found wherever they are kept: the first conversation keeps them as labelled lines in the profile, and the first name set-up keeps in squire.json is refused in a browser call even after a yes",
       "status": "pending",
       "testPointer": "tests/acceptance/browser.test.js::the owner's details are found wherever they are kept: what the session loads tells the guided first conversation to keep the owner's name, email address, postal address, phone number and card number, when the owner gives them, as labelled lines in the owner's profile; and the owner's first name, which set-up keeps in squire.json in the owner's folder, is refused in a browser call even after a yes while the profile holds it nowhere, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-018-a-browser-call-squire-has-no-check-for",
+      "acId": "AC-1801-3",
+      "description": "a browser call Squire has no check for, whatever the tool is called (code to run as text or from a file in the owner's folder, a drop of the owner's files by their paths, or a browser tool the floor does not know, under the browser's own name or a name a page supplies) is refused, not asked, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/browser.test.js::Squire's browser does not make a call it has no check for, whatever the tool is called: code given to run as text, code to run from a file in the owner's folder, a drop of the owner's files onto a page by their paths, and a browser tool the floor does not know, under the browser's own name or under a name a page supplies, are each refused rather than asked, even after a yes, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

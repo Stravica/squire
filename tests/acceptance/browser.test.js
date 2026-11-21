@@ -39,6 +39,15 @@
 //   the page (_evaluate, whose text can build a value only when it runs), and
 //   one that sends a file (_file_upload). In version 1 the owner uploads a
 //   file by taking over the browser's window.
+//   A browser call Squire has no check for is not made either, whatever its
+//   tool's name, because the floor cannot tell what it reads or sends: the
+//   browser server Squire sets up also offers a call that runs code the
+//   session gives it, as text or from a file named on the Mac
+//   (_run_code_unsafe), and one that drops files from the Mac onto a page by
+//   their paths (_drop), and it adds tools a page itself supplies, under
+//   names of their own (mcp__playwright__webmcp_*); a browser tool the floor
+//   does not know is one it has no check for. Each such call is refused, not
+//   asked, even after a yes.
 //   The owner's details are found wherever they are kept: in the profile,
 //   whose details Squire's own block tells the guided first conversation to
 //   keep, when the owner gives them, as labelled lines (name, email address,
@@ -75,7 +84,14 @@
 // in one job, each asked on its own and carried out on its own yes; a check
 // that one call is refused outright is made as the first call of a job of its
 // own, so that it is the call itself, not the job's earlier calls, that the
-// floor refuses; the owner's details are read from the owner's profile.
+// floor refuses; the owner's details are read from the owner's profile. The
+// calls Squire has no check for are put to the floor alone, with no page,
+// since the floor's refusal comes before the call and so nothing is made;
+// the code from a file names a file in the owner's folder, and the files
+// dropped are the owner's own (a file in their folder and their profile);
+// the tools the floor does not know take names no browser server offers,
+// invented for the test, one under the browser's own prefix and one under
+// the prefix the server gives tools a page supplies.
 //
 // Usage model (assumptions, none measured): typical, one page with a form,
 // a handful of calls; heavy, a page whose fields go by other names, filled
@@ -407,5 +423,28 @@ test("a browsing job that has also read the owner's private things by another ro
     w.assertAllowed(floor.run(after, T.navigate(page), mode), `the job's first browser call on the owner's yes, in ${mode} mode`);
     w.assertAllowed(floor.run(after, w.tools.read(profile), mode), `reading the owner's profile after browsing, in ${mode} mode`);
     assertRefusedEvenAfterYes(world, floor, after, harmless, mode, 'the next browser call in a job that browsed and then read the owner\'s profile');
+  }
+});
+
+test("Squire's browser does not make a call it has no check for, whatever the tool is called: code given to run as text, code to run from a file in the owner's folder, a drop of the owner's files onto a page by their paths, and a browser tool the floor does not know, under the browser's own name or under a name a page supplies, are each refused rather than asked, even after a yes, in the default mode and in auto mode", { timeout: 120000 }, (t) => {
+  const world = B.laidWorld(t);
+  const floor = U.laidFloor(world, U.UTC);
+  const files = path.join(world.owner, 'workspace', 'files');
+  const notes = path.join(files, 'notes.txt');
+  const profile = path.join(world.owner, 'operator', 'profile.md');
+  for (const f of [notes, profile]) assert.ok(fs.existsSync(f), `the owner's folder must hold ${f}`);
+  const code = "async (page) => { await page.getByRole('textbox', { name: 'Message' }).fill('Please send a brochure'); }";
+  const steps = path.join(files, 'steps.js');
+  fs.writeFileSync(steps, `${code}\n`);
+  const calls = [
+    ['code given to the browser to run as text', T.runCode(code)],
+    ['code given to the browser to run from a file in the owner\'s folder', T.runCodeFrom(steps)],
+    ['a drop onto a page, by their paths, of a file in the owner\'s folder and of the owner\'s profile', T.drop('Drop zone', 'e3', [notes, profile])],
+    ['a browser tool the floor does not know, under the browser\'s own name', ['mcp__playwright__browser_ring_the_shop_bell', { note: 'Please send a brochure' }]],
+    ['a browser tool the floor does not know, under a name a page supplies', ['mcp__playwright__webmcp_order_a_loaf', { loaf: 'Sourdough' }]],
+  ];
+  for (const mode of MODES) {
+    // Each as the first call of a job of its own.
+    calls.forEach(([what, call], i) => assertRefusedEvenAfterYes(world, floor, `job-browser-no-check-${i}-${mode}`, call, mode, what));
   }
 });
