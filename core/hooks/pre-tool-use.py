@@ -1163,6 +1163,20 @@ class Floor:
                               'the owner\'s details, yes or no, and Squire has no check for this tool. Nothing ran: '
                               '{tool}. In the browser Squire only opens a page, reads it, types and clicks; the owner '
                               'can do any other step themselves by taking over the browser\'s window.')
+    NEVER_MONEY = ('Squire\'s safety floor: Squire never changes what the owner\'s Cloudflare account pays, yes or no: '
+                   'this call could write to the account\'s subscriptions, its billing or a zone\'s plan, which could '
+                   'buy a plan or spend the owner\'s money. The floor lets only a plain read of them by curl or wget '
+                   'be asked; a plan change is the owner\'s own to make on Cloudflare. Nothing ran: {what}')
+    NEVER_BROWSER_DASHBOARD = ('Squire\'s safety floor: Squire\'s browser never opens the Cloudflare dashboard, yes or '
+                               'no: a plan bought, a payment method added or a site put live there cannot be told '
+                               'apart from anything else done on it, and could spend the owner\'s money. Squire\'s own '
+                               'set-up and deploy do what a site needs on Cloudflare; anything else on the dashboard is '
+                               'the owner\'s own to do. Nothing ran: {tool}')
+    # Cloudflare's API and dashboard hosts, and the paths on the API that
+    # change what the account pays.
+    CLOUDFLARE_API = re.compile(r'(?<![A-Za-z0-9.-])api\.cloudflare\.com\.?(?::\d+)?(/[^\s\'"\\)]*)?', re.IGNORECASE)
+    CLOUDFLARE_DASHBOARD = 'dash.cloudflare.com'
+    MONEY_SEGMENTS = ('subscription', 'subscriptions', 'billing')
     NEVER_BROWSER_PROFILE = ('Squire\'s safety floor: Squire\'s browser makes no call while the owner\'s profile '
                              '(operator/profile.md in their folder) cannot be read, yes or no, because Squire cannot '
                              'then check the call for the owner\'s details. Nothing ran: {tool}. The guided first '
@@ -1436,6 +1450,8 @@ class Floor:
             return 'never', self.NEVER_BROWSER_UNCHECKED.format(tool=tool), []
         if tool not in self.BROWSER_CHECKED:
             return 'never', self.NEVER_BROWSER_UNLISTED.format(tool=tool), []
+        if self.on_dashboard(data.get('url')):
+            return 'never', self.NEVER_BROWSER_DASHBOARD.format(tool=tool), []
         details = OwnerDetails.read(self.owner)
         if details is None:
             return 'never', self.NEVER_BROWSER_PROFILE.format(tool=tool), []
@@ -1444,6 +1460,108 @@ class Floor:
             named = ', '.join(carried[:-1]) + ' and ' + carried[-1] if len(carried) > 1 else carried[0]
             return 'never', self.NEVER_BROWSER_DETAILS.format(details=named, tool=tool), []
         return 'ask', f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}', [('untrusted', tool)]
+
+    @classmethod
+    def on_dashboard(cls, url):
+        """True when a browser address is on the Cloudflare dashboard's host
+        or a name under it: read as the browser would, unescaped, with
+        https:// before it when it names no scheme, the host compared
+        without case and with a trailing dot taken off."""
+        if not isinstance(url, str):
+            return False
+        text = url
+        for _ in range(3):
+            text = unquote_plus(text)
+        text = unicodedata.normalize('NFKC', text).strip()
+        if not re.match(r'[A-Za-z][A-Za-z0-9+.-]*://', text):
+            text = 'https://' + text.lstrip('/')
+        try:
+            host = (urlsplit(text).hostname or '').rstrip('.').lower()
+        except ValueError:
+            return False
+        return host == cls.CLOUDFLARE_DASHBOARD or host.endswith('.' + cls.CLOUDFLARE_DASHBOARD)
+
+    def spends_on_cloudflare(self, argv):
+        """True when a command names a path on Cloudflare's API that changes
+        what the account pays (its subscriptions, its billing or a zone,
+        whose plan a change of the zone sets) and is not readable as a plain
+        read: curl or wget sending no data and asking for no method but GET
+        or HEAD. Any other program naming such a path could write to it, so
+        it is counted as writing."""
+        named = False
+        for word in argv:
+            text = unicodedata.normalize('NFKC', str(word))
+            for match in self.CLOUDFLARE_API.finditer(text):
+                segments = [unquote_plus(s).strip().lower() for s in
+                            (match.group(1) or '').split('?')[0].split('#')[0].split('/') if s]
+                if segments[:2] != ['client', 'v4']:
+                    continue
+                rest = segments[2:]
+                if any(s in self.MONEY_SEGMENTS for s in rest) or (len(rest) == 2 and rest[0] == 'zones'):
+                    named = True
+        if not named:
+            return False
+        program = Paths.fold(os.path.basename(str(argv[0])))
+        words = [str(word) for word in argv[1:]]
+        if program == 'curl':
+            return not self.curl_reads(words)
+        if program == 'wget':
+            return not self.wget_reads(words)
+        return True
+
+    @staticmethod
+    def curl_reads(words):
+        """curl's words ask for a plain read: no method but GET or HEAD, no
+        data sent unless -G turns it into the address's query, no form and
+        no upload."""
+        get, sends, i = False, False, 0
+        while i < len(words):
+            word = words[i]
+            if word.startswith('--'):
+                name, sep, value = word.partition('=')
+                if name == '--request':
+                    method = value if sep else (words[i + 1] if i + 1 < len(words) else '')
+                    i += 0 if sep else 1
+                    if method.upper() not in ('GET', 'HEAD'):
+                        return False
+                elif name == '--get':
+                    get = True
+                elif name in ('--data', '--json') or name.startswith('--data-'):
+                    sends = True
+                elif name in ('--form', '--form-string', '--upload-file') or name.startswith('--form-'):
+                    return False
+            elif word.startswith('-') and len(word) > 1:
+                letters = word[1:]
+                for at, letter in enumerate(letters):
+                    if letter == 'X':
+                        method = letters[at + 1:] or (words[i + 1] if i + 1 < len(words) else '')
+                        i += 0 if letters[at + 1:] else 1
+                        if method.upper() not in ('GET', 'HEAD'):
+                            return False
+                        break
+                    if letter == 'G':
+                        get = True
+                    elif letter == 'd':
+                        sends = True
+                        break
+                    elif letter in 'FT':
+                        return False
+            i += 1
+        return get or not sends
+
+    @staticmethod
+    def wget_reads(words):
+        """wget's words ask for a plain read: no method but GET or HEAD and
+        no data or file sent."""
+        for i, word in enumerate(words):
+            name, sep, value = word.partition('=')
+            if name == '--method':
+                method = value if sep else (words[i + 1] if i + 1 < len(words) else '')
+                if method.upper() not in ('GET', 'HEAD'):
+                    return False
+            elif name in ('--post-data', '--post-file', '--body-data', '--body-file'):
+                return False
+        return True
 
     def named_agent_free(self, name):
         """True when a subagent called with no model runs on a model in the
@@ -1687,6 +1805,11 @@ class Floor:
                     taints + [('private', f'the secret {name} through Squire\'s secret helper')]
             if self.is_core_tool(script, 'health.py') and len(argv) == 2:
                 return 'free', '', []
+        # What the owner's Cloudflare account pays is never changed from the
+        # session, by any program: the command a secret helper run wraps is
+        # judged above, as itself.
+        if self.spends_on_cloudflare(argv):
+            return 'never', self.NEVER_MONEY, []
         words = argv + [t.split('=', 1)[1] for t in argv if '=' in t] + \
             [p for t in argv if not getattr(t, 'literal', True) for p in re.split(r'[\s()|<>;&`]+', t) if p]
         paths = [p for p in (self.path(t, strict=False) for t in words) if p]

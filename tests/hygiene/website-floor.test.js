@@ -15,6 +15,7 @@ const path = require('node:path');
 const w = require('../fixtures/squire-world.js');
 const U = require('../fixtures/usage-world.js');
 const W = require('../fixtures/website-world.js');
+const B = require('../fixtures/browser-world.js');
 
 const ONE_SPELLING = /\/usr\/bin\/python3 '[^'\n]*website\.py' set-up <account id>/;
 
@@ -68,4 +69,39 @@ test('a preview the floor does not pin is not the site\'s preview, and a deploy 
   w.assertBlocked(pages, 'a Pages deploy with its project in a variable');
   assert.notEqual(w.requestIdIn(pages.stderr), null, `it is asked; got ${w.describe(pages)}`);
   assert.match(pages.stderr, /cannot tell where/, `it says it cannot tell where; got ${w.describe(pages)}`);
+});
+
+test('the money refusal reads Cloudflare\'s host as the Mac does and lets a plain read be asked; the dashboard refusal takes the host in any case, with a trailing dot, escaped or under it, and no look-alike', { timeout: 120000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  B.writeOwnerProfile(world);
+  const floor = U.laidFloor(world, U.UTC);
+  const job = 'job-site-money-edges';
+  W.startSite(world, floor, job, 'default');
+  const subscriptions = `https://api.cloudflare.com/client/v4/accounts/${W.ACCOUNT}/subscriptions`;
+  const refused = (r) => r.status === 2 && w.requestIdIn(r.stderr) === null;
+  for (const command of [
+    `curl -sXPOST ${subscriptions} -d '{}'`,
+    `curl --request=PUT 'HTTPS://API.CLOUDFLARE.COM./client/v4/accounts/${W.ACCOUNT}/subscriptions/one'`,
+    `curl -X PATCH https://api.cloudflare.com/client/v4/zones/abcdabcdabcdabcdabcdabcdabcdabcd --json '{"plan":{"id":"pro"}}'`,
+    `curl https://api.cloudflare.com/client/v4/user/billing/profile -F 'x=1'`,
+    `node -e "fetch('${subscriptions}', { method: 'POST' })"`,
+  ]) {
+    const r = floor.run(job, w.tools.bash(command));
+    assert.ok(refused(r), `${command}: refused, not asked; got ${w.describe(r)}`);
+    assert.match(r.stderr.split(command).join(' '), /money/, `${command}: the refusal is about money; got ${w.describe(r)}`);
+  }
+  for (const command of [`curl -s ${subscriptions}`, `curl -G ${subscriptions} -d page=1`, `wget -q -O - ${subscriptions}`,
+    `curl -X PUT https://api.cloudflare.com/client/v4/accounts/${W.ACCOUNT}/workers/scripts/ada-bakes -F 'metadata=@meta.json'`]) {
+    const r = floor.run(job, w.tools.bash(command));
+    assert.notEqual(w.requestIdIn(r.stderr), null, `${command}: asked, not refused as money; got ${w.describe(r)}`);
+  }
+  for (const url of ['https://DASH.Cloudflare.COM./', 'dash.cloudflare.com/?to=/:account/home', 'https://one.dash.cloudflare.com/', 'https%3A%2F%2Fdash.cloudflare.com%2F']) {
+    const r = floor.run(job, B.browserTools.navigate(url));
+    assert.ok(refused(r), `a navigate to ${url}: refused, not asked; got ${w.describe(r)}`);
+    assert.match(r.stderr.split(url).join(' '), /dashboard/, `a navigate to ${url}: the refusal names the dashboard; got ${w.describe(r)}`);
+  }
+  const lookAlike = floor.run(job, B.browserTools.navigate('https://dash.cloudflare.com.example.net/'));
+  assert.notEqual(w.requestIdIn(lookAlike.stderr), null, `a look-alike host is asked as any other site; got ${w.describe(lookAlike)}`);
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
