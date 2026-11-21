@@ -878,10 +878,16 @@ class Floor:
     CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
     SPENDING = re.compile(r'(?:^|[\s\'"`(=;&|])/(?:upgrade|usage-credits)', re.IGNORECASE)
     SEND_TOOLS = {'mcp__claude_ai_Gmail__send_message'}
-    # Squire's browser: the tools of its one browser server, keyed playwright.
-    # A call that runs a script in the page or sends a file cannot be checked
-    # for the owner's details.
-    BROWSER = 'mcp__playwright__browser_'
+    # Squire's browser: the tools of its one browser server, keyed playwright,
+    # whatever they are called (a page can add tools of its own to it). The
+    # floor checks a call only of a tool it lists here: one whose whole input
+    # the floor reads for the owner's details and that acts on the page alone,
+    # running no code of its own, reading no file of the Mac and sending no
+    # file. Every other tool of the server is refused. A call that runs a
+    # script in the page or sends a file cannot be checked either.
+    BROWSER = 'mcp__playwright__'
+    BROWSER_CHECKED = frozenset(f'mcp__playwright__browser_{name}'
+                                for name in ('navigate', 'snapshot', 'click', 'type', 'fill_form'))
     BROWSER_UNCHECKED = ('mcp__playwright__browser_evaluate', 'mcp__playwright__browser_file_upload')
     PRIVATE = ('operator', 'state', 'reference', os.path.join('workspace', 'files'))
     # A preview on this Mac: Python's own web server, bound to the loopback.
@@ -952,6 +958,10 @@ class Floor:
     NEVER_BROWSER_UNCHECKED = ('Squire\'s safety floor: Squire\'s browser does not run a script in the page or send a '
                                'file, yes or no, because Squire cannot check either for the owner\'s details. Nothing '
                                'ran: {tool}. The owner can do that step themselves by taking over the browser\'s window.')
+    NEVER_BROWSER_UNLISTED = ('Squire\'s safety floor: Squire\'s browser does not make a call Squire cannot check for '
+                              'the owner\'s details, yes or no, and Squire has no check for this tool. Nothing ran: '
+                              '{tool}. In the browser Squire only opens a page, reads it, types and clicks; the owner '
+                              'can do any other step themselves by taking over the browser\'s window.')
     NEVER_BROWSER_PROFILE = ('Squire\'s safety floor: Squire\'s browser makes no call while the owner\'s profile '
                              '(operator/profile.md in their folder) cannot be read, yes or no, because Squire cannot '
                              'then check the call for the owner\'s details. Nothing ran: {tool}. The guided first '
@@ -1204,12 +1214,16 @@ class Floor:
     def judge_browser(self, tool, data):
         """A call of Squire's browser. Refused, yes or no, when the floor
         cannot check it for the owner's details (it runs a script in the
-        page or sends a file, or the owner's details cannot be read) or when
-        it carries one of them, by whatever route; otherwise asked, each call
-        on its own, and once it runs the job holds untrusted input only: a
-        browser call is not a read of the owner's private things."""
+        page or sends a file, its tool is not one the floor lists as one it
+        checks, whatever the tool is called, or the owner's details cannot be
+        read) or when it carries one of them, by whatever route; otherwise
+        asked, each call on its own, and once it runs the job holds untrusted
+        input only: a browser call is not a read of the owner's private
+        things."""
         if tool in self.BROWSER_UNCHECKED:
             return 'never', self.NEVER_BROWSER_UNCHECKED.format(tool=tool), []
+        if tool not in self.BROWSER_CHECKED:
+            return 'never', self.NEVER_BROWSER_UNLISTED.format(tool=tool), []
         details = OwnerDetails.read(self.owner)
         if details is None:
             return 'never', self.NEVER_BROWSER_PROFILE.format(tool=tool), []
