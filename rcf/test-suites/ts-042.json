@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-11-21T19:04:20.638Z",
+  "updatedAt": "2026-11-21T19:04:20.638Z",
+  "purpose": "Runs Squire's one-off set-up and its deploy against a loopback stand-in of Cloudflare's API, and the safety floor as the session runs it, to check that the token Squire keeps can deploy and nothing else and that a site is previewed on this Mac before its deploy is asked.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1201-2"
+  ],
+  "id": "TS-042",
+  "usId": "US-1201",
+  "title": "Websites: the deploy-only token and the preview first",
+  "testCases": [],
+  "status": "draft"
+}

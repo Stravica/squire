@@ -1,10 +1,11 @@
 {
   "createdAt": "2026-11-07T17:40:43.008Z",
-  "updatedAt": "2026-11-07T17:40:43.008Z",
-  "purpose": "Runs the real one-off set-up against a test Cloudflare account, never a live one, and reads the account's settings to check paid features, the spend guard and the removal of the set-up token.",
+  "updatedAt": "2026-11-21T19:04:17.330Z",
+  "purpose": "Runs Squire's one-off set-up against a loopback stand-in of Cloudflare's API and reads the account back through it, to check paid features, anything the set-up cannot read as free, the spend guard and the removal of the set-up token; the real one-off set-up, against a test Cloudflare account and never a live one, is the test stage's own step.",
   "testLevel": "integration",
   "acIds": [
-    "AC-1201-1"
+    "AC-1201-1",
+    "AC-1201-3"
   ],
   "id": "TS-017",
   "usId": "US-1201",
