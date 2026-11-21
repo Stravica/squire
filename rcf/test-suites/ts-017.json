@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.008Z",
-  "updatedAt": "2026-11-21T20:52:58.404Z",
+  "updatedAt": "2026-11-21T20:53:37.834Z",
   "purpose": "Runs Squire's one-off set-up against a loopback stand-in of Cloudflare's API and reads the account back through it, to check paid features, anything the set-up cannot read as free, the spend guard and the removal of the set-up token; the real one-off set-up, against a test Cloudflare account and never a live one, is the test stage's own step.",
   "testLevel": "integration",
   "acIds": [
@@ -52,6 +52,13 @@
       "description": "a set-up token whose removal fails is named, and the set-up does not report done",
       "status": "pending",
       "testPointer": "tests/acceptance/website-set-up.test.js::when the set-up cannot remove its own set-up token from the account, it does not report done and names the set-up token to the owner as still on the account, names every other token it left there, and keeps nothing in the Keychain"
+    },
+    {
+      "id": "TC-017-a-paid-plan-write-by-a-client-other-than",
+      "acId": "AC-1201-1",
+      "description": "a paid-plan write by a client other than curl is refused, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::Squire never buys on the Cloudflare account by a client other than curl: the same paid-plan write to the account's subscriptions by wget or by a python3 urllib call is refused, not asked, yes or no, the refusal saying it is about money, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

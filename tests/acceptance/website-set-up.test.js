@@ -227,6 +227,34 @@ test("Squire never upgrades a plan or buys on the Cloudflare account: a call to 
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
 
+// The money refusal is about what a call does, not which program makes it:
+// the same paid-plan write by two other clients. The refusal is read for what
+// it says beyond the command it echoes back.
+test("Squire never buys on the Cloudflare account by a client other than curl: the same paid-plan write to the account's subscriptions by wget or by a python3 urllib call is refused, not asked, yes or no, the refusal saying it is about money, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  const floor = U.laidFloor(world, U.UTC);
+  const subscriptions = `https://api.cloudflare.com/client/v4/accounts/${W.ACCOUNT}/subscriptions`;
+  for (const mode of MODES) {
+    const job = `job-site-money-clients-${mode}`;
+    W.startSite(world, floor, job, mode);
+    for (const [what, command] of [
+      ['a paid plan bought by wget', `wget --method=POST --header='Content-Type: application/json' --body-data='{"rate_plan":{"id":"workers_paid"}}' ${subscriptions}`],
+      ['a paid plan bought by a python3 urllib call', `python3 -c "import json, urllib.request as u; u.urlopen(u.Request('${subscriptions}', data=json.dumps({'rate_plan': {'id': 'workers_paid'}}).encode(), method='POST', headers={'Content-Type': 'application/json'}))"`],
+    ]) {
+      for (const when of ['', ', even after the owner said yes']) {
+        if (when) w.ownerSays(world, job, 'yes', { env: U.UTC });
+        const r = floor.run(job, w.tools.bash(command), mode);
+        w.assertBlocked(r, `${what}, in ${mode} mode${when}`);
+        assert.equal(w.requestIdIn(r.stderr), null, `${what}, in ${mode} mode${when}: refused, not asked, since it would spend the owner's money; got a request the owner could answer: ${w.describe(r)}`);
+        assert.match(r.stderr.split(command).join(' '), /money|spend|pay|buy|billing/i, `${what}, in ${mode} mode${when}: the refusal says it is about money; got ${w.describe(r)}`);
+      }
+    }
+  }
+  assert.deepEqual(billingWrites(ctx.standIn), [], 'nothing reached the account\'s billing');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
 test('a subscription the set-up cannot read as free counts as paid: the set-up does not report done and names it to the owner; when it cannot read the subscriptions at all it does not report done and says so; Squire changes no billing', { timeout: 300000 }, (t) => {
   const base = W.FREE[0];
   for (const [what, extra, named] of [
