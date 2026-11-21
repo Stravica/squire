@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-175",
+  "path": "core/tools/website.py#Keychain",
+  "implementsAcIds": [
+    "AC-1201-1",
+    "AC-1201-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-21T22:07:11.923Z",
+  "updatedAt": "2026-11-21T22:07:11.923Z"
+}
