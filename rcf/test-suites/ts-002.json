@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-19T18:49:05.004Z",
+  "updatedAt": "2026-11-21T19:05:45.265Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -511,6 +511,34 @@
       "description": "the versions command on a folder outside workspace/apps, with a fourth verb, or with an extra argument or an option is refused through the floor, not asked",
       "status": "pending",
       "testPointer": "tests/acceptance/app-versions.test.js::through the safety floor, Squire's versions command on a folder outside workspace/apps (the owner's operator folder, Squire's home, a path climbing out of an app's folder), with a fourth verb, or with an extra argument or an option, is refused, not asked, in an app job the owner said yes to, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-squire-s-own-deploy-is-asked-naming-the",
+      "acId": "AC-1901-1",
+      "description": "Squire's own deploy is asked naming the site and its address, and runs only on the yes to that deploy",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-deploy.test.js::Squire's own deploy of a site, under the token the set-up kept, is asked naming the site and the address it goes live at, and runs only on the owner's yes to that deploy: a yes to the site job, to its preview or to an earlier deploy does not cover it, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-a-deploy-whose-target-the-floor-cannot",
+      "acId": "AC-1901-1",
+      "description": "a deploy whose target the floor cannot read is asked saying it cannot tell where the site goes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-deploy.test.js::a deploy whose account, project or address the floor cannot read from the command is asked saying it cannot tell where the site goes, never free and never covered by an earlier yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-nothing-reaches-the-site-s-address",
+      "acId": "AC-1901-1",
+      "description": "nothing reaches the site's address before the owner's yes to its deploy",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-deploy.test.js::nothing reaches the site's address before the owner's yes to its deploy: the set-up, the preview and the deploy's ask put nothing there, a no keeps it so, and the site answers at its address only once the deploy the owner said yes to has run"
+    },
+    {
+      "id": "TC-002-a-deploy-by-any-route-squire-did-not-set",
+      "acId": "AC-1901-1",
+      "description": "a deploy by any route Squire did not set up is asked, never free, naming its target",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-deploy.test.js::a deploy by any route Squire did not set up is asked, never free, naming its target where the command does, in the default mode and in auto mode: wrangler deploy, npx wrangler, a Workers or Pages call to Cloudflare's API by curl, and a git push to a connected repository"
     }
   ],
   "status": "draft"

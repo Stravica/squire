@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-21T19:04:20.638Z",
-  "updatedAt": "2026-11-21T19:04:20.638Z",
+  "updatedAt": "2026-11-21T19:05:46.670Z",
   "purpose": "Runs Squire's one-off set-up and its deploy against a loopback stand-in of Cloudflare's API, and the safety floor as the session runs it, to check that the token Squire keeps can deploy and nothing else and that a site is previewed on this Mac before its deploy is asked.",
   "testLevel": "integration",
   "acIds": [
@@ -9,6 +9,42 @@
   "id": "TS-042",
   "usId": "US-1201",
   "title": "Websites: the deploy-only token and the preview first",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-042-the-kept-token-deploys-the-site-and",
+      "acId": "AC-1201-2",
+      "description": "the kept token deploys the site and nothing else, read back as deploy-only",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-token-and-preview.test.js::the token the set-up keeps deploys the site and nothing else: a call it makes to read or change billing, tokens, account settings, DNS or another product is refused, the set-up reports done only after reading its rights back as deploy-only, and the deploy waits out a new address's certificate before it reports the site live"
+    },
+    {
+      "id": "TC-042-a-set-up-that-would-keep-a-token-wider",
+      "acId": "AC-1201-2",
+      "description": "a set-up that would keep a token wider than deploy-only does not finish and keeps none",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-token-and-preview.test.js::a set-up that would keep a token wider than deploy-only does not finish and keeps no token: one carrying another right, one on every account, one on every zone as well"
+    },
+    {
+      "id": "TC-042-the-deploy-uses-only-the-kept-token",
+      "acId": "AC-1201-2",
+      "description": "the deploy uses only the kept token, never a sign-in or a token already on the Mac",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-token-and-preview.test.js::Squire's deploy uses only the token the set-up kept, on the set-up's account: a wrangler sign-in already on the Mac and a Cloudflare token or account in the environment are never used, though either would work"
+    },
+    {
+      "id": "TC-042-a-site-is-previewed-on-the-loopback-from",
+      "acId": "AC-1201-2",
+      "description": "a site is previewed on the loopback from its folder before its deploy is asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-token-and-preview.test.js::a site is previewed on this Mac, on the loopback from its own folder, before its deploy is asked: what the session loads says so, the floor does not ask for the deploy until the owner has previewed the site, and a site changed since its last preview waits for a new one, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-042-a-site-preview-not-bound-to-the-loopback",
+      "acId": "AC-1201-2",
+      "description": "a site preview not bound to the loopback is refused, not asked, even after a yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-token-and-preview.test.js::in a site job the owner said yes to, a site preview by Python's http.server with no loopback bind or bound beyond the loopback is refused, not asked, even after a yes, in the default mode and in auto mode"
+    }
+  ],
   "status": "draft"
 }
