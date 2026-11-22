@@ -1,0 +1,45 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "c1f9c3e6cddd80977f631baafcc0bba5dca5b23c",
+  "fbsIds": [
+    "FBS-006",
+    "FBS-001"
+  ],
+  "touchedAcIds": [
+    "AC-1201-1",
+    "AC-1201-2",
+    "AC-1201-3",
+    "AC-1901-1"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-1201-1",
+      "text": "A browser navigate to the Cloudflare dashboard is asked, and runs on the owner's yes, when its address is written in forms a browser still opens as dash.cloudflare.com, namely the scheme followed by one slash or none before the host, backslashes in place of the two slashes, or a backslash before an at sign followed by another host. A browser's URL parser reads the host of each as dash.cloudflare.com; the floor's dashboard check in core/hooks/pre-tool-use.py at lines 1476 to 1479 adds https and two slashes only when the text has no scheme followed by two slashes, and reads the host with urlsplit, which keeps backslashes as ordinary characters, so it reads the host as https or as the other host and asks. Smallest fix, the builder's, read the host as a browser does (backslashes as slashes, any number of slashes after an http or https scheme) and refuse when it is the dashboard host or a name under it."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-1201-1",
+      "text": "A call to Cloudflare's API that would change what the account pays is asked, and runs on the owner's yes, when curl sends the paid path but its words spell it another way, namely a dot segment before client/v4 (curl removes it), a curl glob around the last segment such as subscriptions in braces, or the path given by curl's request-target option with the API host's root as the address; against a loopback server curl sent a POST to /client/v4/accounts/<id>/subscriptions for each. A slash written as %2F inside the path is asked too, the server's reading of it unverified. The money check in core/hooks/pre-tool-use.py at lines 1494 to 1500 splits the written address on slashes and needs it to begin client/v4. Smallest fix, the builder's, remove dot segments, decode %2F, and read curl globs and the request-target option before matching, or refuse any call other than a plain read that names the API host with a path the check cannot read cleanly."
+    },
+    {
+      "id": "F-3",
+      "locus": "build",
+      "acId": "AC-1201-2",
+      "text": "The set-up keeps a token whose rights it read back as wider than deploy-only, and reports done, when the read-back names Workers Scripts Write on a permission group whose id is another group's. core/tools/website.py at lines 276 and 277 compare the group's id with the one the set-up asked for only when the answer gives no name, so a name alone passes. A stand-in read-back changed only in that group id left the set-up reporting done with the token kept in the Keychain and active on the account. Smallest fix, the builder's, compare the group's id with the id the set-up looked up in every case, and the name as well when one is given."
+    },
+    {
+      "id": "F-4",
+      "locus": "build",
+      "acId": "AC-1201-3",
+      "text": "The set-up reads one page of the account's subscriptions and reports that every subscription reads as free even when the answer says there are more pages. core/tools/website.py at lines 282 and 283 take the answer's result only and never read result_info, so a paid subscription on a later page is not read and counts as free. A stand-in answer of free subscriptions on its first page, with result_info naming a second page holding a paid one, left the set-up reporting done with the deploy token kept, after one read. Smallest fix, the builder's, read every page result_info names, or stop not done, saying Squire could not read every subscription, when result_info shows more than the page held."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-22T00:27:22.320Z"
+}
