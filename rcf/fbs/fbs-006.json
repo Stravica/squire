@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:45.256Z",
-  "updatedAt": "2026-11-24T20:05:07.274Z",
+  "updatedAt": "2026-11-24T21:21:36.509Z",
   "summary": "After the one-off website set-up, everything that could cost the owner money there is off and a spend guard is on, and a site goes live only on the owner's yes.",
   "dependsOnFbsIds": [
     "FBS-005"
@@ -9,7 +9,9 @@
     "AC-1201-1",
     "AC-1901-1",
     "AC-1201-2",
-    "AC-1201-3"
+    "AC-1201-3",
+    "AC-1201-4",
+    "AC-1201-5"
   ],
   "fbsId": "FBS-006",
   "prdId": "PRD-001",
