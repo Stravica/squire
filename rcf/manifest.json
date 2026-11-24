@@ -860,6 +860,33 @@
       "reason": "Squire serves no page of its own under this requirement, so there is no theme to toggle: the site it deploys carries the owner's own design. Re-read if a later round has Squire itself serve a page or an API under this requirement",
       "operatorAckAt": "2026-11-21T19:03:14.112Z",
       "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-24-001",
+      "createdAt": "2026-11-24T22:07:46.761Z",
+      "baselineKey": "notifications.channelIdentification",
+      "scope": "req",
+      "reason": "Squire sends no notification of its own under this requirement: email here is the owner's own mailbox, reached only through the connector he attached, and every send through it waits for his yes to that item. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-24T22:07:46.761Z",
+      "reqId": "REQ-021"
+    },
+    {
+      "id": "boo-2026-11-24-002",
+      "createdAt": "2026-11-24T22:07:49.284Z",
+      "baselineKey": "notifications.deliveryObservability",
+      "scope": "req",
+      "reason": "Squire dispatches no notification under this requirement: a send through the owner's connector is his own act on his yes, and Squire's record holds it as a decision Squire made, not a delivery Squire tracks. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-24T22:07:49.284Z",
+      "reqId": "REQ-021"
+    },
+    {
+      "id": "boo-2026-11-24-003",
+      "createdAt": "2026-11-24T22:07:51.762Z",
+      "baselineKey": "notifications.retryOrDeadLetter",
+      "scope": "req",
+      "reason": "Squire dispatches no notification under this requirement, so it has nothing to retry or set aside: a send through the owner's connector that fails is his to try again, and Squire never sends again without his yes to it. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-24T22:07:51.762Z",
+      "reqId": "REQ-021"
     }
   ]
 }
