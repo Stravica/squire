@@ -52,7 +52,32 @@
 //     about 30 seconds on the test account (seen on a real account, not
 //     documented); the stand-in waits certificateWaitMs (2 seconds unless a
 //     case says otherwise) after a script is first put on workers.dev, and
-//     until then answers its address with 503.
+//     until then answers its address with 503. With notFoundFirstMs set, it
+//     answers 404 for that long first, as a real new address did before it
+//     went live (404 at 0.4, 2.4 and 4.5 seconds, then the page; seen on a
+//     real account, not documented).
+//   A site's address and the client that reads it (seen on a real account,
+//     not documented): the hosting refused a read sent with the default
+//     client signature of Python's own library, a User-Agent beginning
+//     Python-urllib/, with 403 and the body "error code: 1010", and served
+//     the page to any other User-Agent, or none. With siteRefuses
+//     'defaultClient' the stand-in does the same at its sites' addresses;
+//     whether a real address refuses that signature before its site is live
+//     was not seen, and the stand-in refuses it whatever the address would
+//     answer. With siteRefuses 'everyRead' it refuses every read of its
+//     sites' addresses the same way, whatever the client. The record of each
+//     call carries the User-Agent it was sent with (null for none).
+//   A user-owned token, one made under a user's own profile rather than the
+//     account (seen on a real account, not documented): the account's path
+//     answered its verify (GET /accounts/{account}/tokens/verify) 401 with
+//     code 1000, "Invalid API Token", while the user path's verify
+//     (GET /user/tokens/verify) answered 200 with the token active, and a
+//     read of the token's own record on the user path answered 403 with code
+//     9109. A token the stand-in holds with ownedBy 'user' is answered so:
+//     every call on the account's path 401 1000, the user path's verify 200
+//     with { id, status, not_before, expires_on }, any other call on the user
+//     path 403 9109, "Unauthorized to access requested resource". A token
+//     without ownedBy is answered as before.
 //
 // The sites: the stand-in serves each script put on workers.dev at
 // /__sites/<script>.<subdomain>.workers.dev/<path>, the address template a
@@ -145,6 +170,7 @@ function serve(folder) {
         offLoopback: answer.offLoopback || null,
         bodyShape: shapeOf(req, body),
         body: jsonBody(req, body),
+        userAgent: req.headers['user-agent'] === undefined ? null : String(req.headers['user-agent']),
       });
       save();
       res.writeHead(answer.status, { 'content-type': answer.type || 'application/json' });
@@ -236,7 +262,7 @@ function route(state, options, req, body) {
   const url = new URL(req.url, 'http://127.0.0.1');
   const parts = url.pathname.split('/').filter(Boolean);
 
-  if (parts[0] === '__sites') return site(state, options, parts.slice(1));
+  if (parts[0] === '__sites') return site(state, options, parts.slice(1), req);
   if (parts[0] !== 'client' || parts[1] !== 'v4') return notFound();
   const p = parts.slice(2);
   const fail = options.fail || {};
@@ -258,6 +284,14 @@ function route(state, options, req, body) {
 
   const token = tokenOf(state, req);
   if (!token) return invalid();
+
+  if (token.ownedBy === 'user') {
+    if (p[0] !== 'user') return invalid();
+    if (p[1] === 'tokens' && p[2] === 'verify' && p.length === 3 && req.method === 'GET') {
+      return ok({ id: token.id, status: token.status, not_before: null, expires_on: token.expiresOn || null });
+    }
+    return { status: 403, json: envelope(false, null, [{ code: 9109, message: 'Unauthorized to access requested resource' }]) };
+  }
 
   if (p[0] === 'user') return token.scope === 'user' ? notFound() : refused();
   if (p[0] === 'zones') return holdsZone(token) ? ok([]) : refused();
@@ -381,14 +415,24 @@ function widen(made, how, accountId) {
   }
 }
 
-// A site's address: 404 until its script is on workers.dev, 503 while its
-// certificate is not ready, then its files.
-function site(state, options, parts) {
+// A site's address: 404 until its script is on workers.dev (and for
+// notFoundFirstMs after, where a case sets it), 503 while its certificate is
+// not ready, then its files. With siteRefuses set, a read it refuses gets 403
+// and "error code: 1010" first.
+const DEFAULT_CLIENT = /^Python-urllib\//;
+function site(state, options, parts, req) {
+  const agent = req.headers['user-agent'];
+  if (options.siteRefuses === 'everyRead' || (options.siteRefuses === 'defaultClient' && DEFAULT_CLIENT.test(agent || ''))) {
+    return { status: 403, type: 'text/plain', text: 'error code: 1010' };
+  }
   const host = parts[0] || '';
   const suffix = `.${state.subdomain}.workers.dev`;
   const name = host.endsWith(suffix) ? host.slice(0, -suffix.length) : null;
   const script = name ? state.scripts[name] : null;
   if (!script || !script.enabledAt) return { status: 404, type: 'text/plain', text: 'There is nothing here yet.\n' };
+  if (options.notFoundFirstMs && Date.now() - script.enabledAt < options.notFoundFirstMs) {
+    return { status: 404, type: 'text/plain', text: 'There is nothing here yet.\n' };
+  }
   const wait = options.certificateWaitMs === undefined ? 2000 : options.certificateWaitMs;
   if (Date.now() - script.enabledAt < wait) return { status: 503, type: 'text/plain', text: 'The certificate for this address is not ready yet.\n' };
   const file = `/${parts.slice(1).join('/')}`.replace(/\/$/, '/index.html');
@@ -401,7 +445,9 @@ function site(state, options, parts) {
 
 // Starts a stand-in for one case, in a folder of the world's, and stops it
 // when the case ends. options: accountId, subdomain, tokens (each { id,
-// value, name, policies }), subscriptions, certificateWaitMs, fail
+// value, name, policies, and ownedBy 'user' for a user-owned token }),
+// subscriptions, certificateWaitMs, notFoundFirstMs, siteRefuses
+// ('defaultClient' | 'everyRead'), fail
 // ({ createToken, readToken, deleteToken, subdomain, subscriptions }: answer
 // 500; deleteToken, a token's removal, leaving the token on the account),
 // widen ('extraGroup' | 'allAccounts' | 'allZones').

@@ -1,0 +1,36 @@
+{
+  "createdAt": "2026-11-24T22:01:55.449Z",
+  "updatedAt": "2026-11-24T22:02:14.863Z",
+  "purpose": "Runs Squire's one-off set-up and its deploy as their own command lines against a loopback stand-in of Cloudflare's API and its sites' addresses, to check that a site whose address serves its page to an ordinary client is reported live at its address, that an address refusing Squire's own read is never reported not live, and that an address not live yet is still not reported live.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1201-4"
+  ],
+  "id": "TS-043",
+  "usId": "US-1201",
+  "title": "Websites: a live site reported truly",
+  "testCases": [
+    {
+      "id": "TC-043-a-live-site-whose-address-turns-away",
+      "acId": "AC-1201-4",
+      "description": "a live site whose address turns away only the default client signature is reported live at its address",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-live-report.test.js::a deploy on the owner's yes, to an address that turns away the default signature of Python's own library with 403 error code 1010 and serves any other read the page, is reported live at its address, and the address served the page to Squire's own read"
+    },
+    {
+      "id": "TC-043-an-address-that-turns-away-every-read-is",
+      "acId": "AC-1201-4",
+      "description": "an address that turns away every read is never called not live: Squire could not confirm it and names it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-live-report.test.js::when the address turns away every read of Squire's with 403 error code 1010, the deploy never says the site is not live and never advises running the deploy again: it says Squire could not confirm the site, says why in plain words, and names the address for the owner to open"
+    },
+    {
+      "id": "TC-043-an-address-that-answers-404-then-503",
+      "acId": "AC-1201-4",
+      "description": "an address that answers 404 then 503 throughout is not reported live yet",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-live-report.test.js::an address that answers 404 and then 503 throughout the deploy's read-back is still not reported live: the deploy says the site is not reported live yet and names the address, and never says Squire could not confirm it"
+    }
+  ],
+  "status": "draft"
+}
