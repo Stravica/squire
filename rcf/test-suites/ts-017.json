@@ -1,14 +1,72 @@
 {
   "createdAt": "2026-11-07T17:40:43.008Z",
-  "updatedAt": "2026-11-07T17:40:43.008Z",
-  "purpose": "Runs the real one-off set-up against a test Cloudflare account, never a live one, and reads the account's settings to check paid features, the spend guard and the removal of the set-up token.",
+  "updatedAt": "2026-11-21T20:54:23.274Z",
+  "purpose": "Runs Squire's one-off set-up against a loopback stand-in of Cloudflare's API and reads the account back through it, to check paid features, anything the set-up cannot read as free, the spend guard and the removal of the set-up token; the real one-off set-up, against a test Cloudflare account and never a live one, is the test stage's own step.",
   "testLevel": "integration",
   "acIds": [
-    "AC-1201-1"
+    "AC-1201-1",
+    "AC-1201-3"
   ],
   "id": "TS-017",
   "usId": "US-1201",
   "title": "Safe Cloudflare set-up",
-  "testCases": [],
+  "testCases": [
+    {
+      "id": "TC-017-after-set-up-no-paid-subscription-only",
+      "acId": "AC-1201-1",
+      "description": "after set-up no paid subscription, only the deploy-only token left and the set-up token gone",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::after the one-off set-up, the account read back shows no paid subscription, the only token left on it deploys and nothing else, so nothing left there can spend, and the set-up token is gone; a paid subscription found on stops the set-up, which names it and changes no billing; a set-up token without the rights it needs runs nothing"
+    },
+    {
+      "id": "TC-017-the-set-up-token-is-removed-even-when-a",
+      "acId": "AC-1201-1",
+      "description": "the set-up token is removed even when a later step fails, and the owner is told what was left",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::the set-up token is removed from the account even when a later step of the set-up fails, and a set-up that did not finish tells the owner what it left on the account: making the deploy token fails, or its first use fails"
+    },
+    {
+      "id": "TC-017-the-set-up-token-reaches-the-set-up-only",
+      "acId": "AC-1201-1",
+      "description": "the set-up token reaches the set-up only through the secret helper and is never written anywhere",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::the set-up token reaches the set-up only through Squire's secret helper, from the Keychain, and is never written to a file, the chat or the ledger; a set-up token given any other way, or a Cloudflare token already on the Mac, is never used"
+    },
+    {
+      "id": "TC-017-a-call-that-would-upgrade-a-plan-or-buy",
+      "acId": "AC-1201-1",
+      "description": "a call that would upgrade a plan or buy on the account is refused, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::Squire never upgrades a plan or buys on the Cloudflare account: a call to Cloudflare's API that would is refused, not asked, yes or no, in the default mode and in auto mode, by curl or through Squire's secret helper with the deploy token"
+    },
+    {
+      "id": "TC-017-a-subscription-the-set-up-cannot-read-as",
+      "acId": "AC-1201-3",
+      "description": "a subscription the set-up cannot read as free counts as paid and the set-up does not report done",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::a subscription the set-up cannot read as free counts as paid: the set-up does not report done and names it to the owner; when it cannot read the subscriptions at all it does not report done and says so; Squire changes no billing"
+    },
+    {
+      "id": "TC-017-a-set-up-token-whose-removal-fails-is",
+      "acId": "AC-1201-1",
+      "description": "a set-up token whose removal fails is named, and the set-up does not report done",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::when the set-up cannot remove its own set-up token from the account, it does not report done and names the set-up token to the owner as still on the account, names every other token it left there, and keeps nothing in the Keychain"
+    },
+    {
+      "id": "TC-017-a-paid-plan-write-by-a-client-other-than",
+      "acId": "AC-1201-1",
+      "description": "a paid-plan write by a client other than curl is refused, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::Squire never buys on the Cloudflare account by a client other than curl: the same paid-plan write to the account's subscriptions by wget or by a python3 urllib call is refused, not asked, yes or no, the refusal saying it is about money, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-017-a-browser-navigate-to-the-cloudflare",
+      "acId": "AC-1201-1",
+      "description": "a browser navigate to the Cloudflare dashboard is refused, yes or no",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::Squire's browser never opens the Cloudflare dashboard, where a plan could be bought: in a site job, with the owner's profile there to check, a browser navigate to the dashboard's host is refused, not asked, yes or no, the refusal naming the dashboard or money, in the default mode and in auto mode"
+    }
+  ],
   "status": "draft"
 }

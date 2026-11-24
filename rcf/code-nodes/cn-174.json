@@ -1,0 +1,14 @@
+{
+  "cnId": "CN-174",
+  "path": "core/tools/website.py#SetUp",
+  "implementsAcIds": [
+    "AC-1201-1",
+    "AC-1201-2",
+    "AC-1201-3"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-21T22:07:06.983Z",
+  "updatedAt": "2026-11-21T22:07:06.983Z"
+}

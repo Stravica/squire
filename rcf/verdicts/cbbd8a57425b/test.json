@@ -1,0 +1,22 @@
+{
+  "verdictVersion": 1,
+  "stage": "test",
+  "head": "cbbd8a57425ba15fab5b5d56ce82ae530c87870c",
+  "fbsIds": [
+    "FBS-006",
+    "FBS-001"
+  ],
+  "result": "PASS",
+  "suite": {
+    "pass": 532,
+    "fail": 0,
+    "skip": 9,
+    "todo": 0,
+    "cancelled": 0
+  },
+  "runtime": "Mac17,2 Apple M5, macOS 26.3.1 (25D2128); /usr/bin/python3 3.9.6, node v24.14.0, pnpm 10.32.1; rcf-lite 0.42.0 for the verdict, rcf-lite 0.42.3 for the strength record (structural-only); fresh clone served dcd305c (reviewed head cbbd8a5), pnpm install --frozen-lockfile; node --test --test-concurrency=1 --test-reporter=tap 'tests/**/*.test.js': 541 tests, 532 pass, 0 fail, 9 skipped in 2612.1 s; SQUIRE_TARGET_HOST and RCF_TARGET_URL unset, the 9 External and Journey tests skipped; the three real-speech cases ran, the guard's own probe reading speech available on this Mac; Squire's browser cases ran headless against a loopback test site with the Mac's own Chrome in a temporary profile; Squire's one-off website set-up and one deploy ran once against a test hosting account: the set-up reported done with nothing paid found, removed its set-up token and kept one deploy-only token, which could list the account's scripts and was refused the subscriptions, the token list and its own record; the deploy, previewed and asked first, put the site live with its own page, though Squire reported it not yet live because the hosting refused a read of the address made with Squire's own request headers; the site was removed after, and the deploy-only token left for the owner to remove, as no token the run held could; on the same Mac in a scratch Squire home, through Squire's own hooks and tools against a loopback stand-in of the hosting API: a deploy with no preview, from another folder, by a near spelling, or after a change since the preview or since the yes was refused, and the plain deploy, previewed and said yes to, was asked naming the site and its address and went live; a paid-plan write by curl, wget, python and perl was refused; a browser open of the hosting dashboard was refused in each spelling tried; the set-up with a priced subscription and with a failed token removal did not report done, kept nothing for the priced one and named what was left for the other; no token value in a process list; no connection by a Squire tool",
+  "node": "v24.14.0",
+  "reason": null,
+  "recordedBy": "verifier",
+  "recordedAt": "2026-11-24T17:50:49.138Z"
+}

@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:20.500Z",
-  "updatedAt": "2026-11-07T17:40:20.768Z",
+  "updatedAt": "2026-11-21T19:04:01.915Z",
   "asA": "Squire owner",
   "iWant": "Squire to set up my Cloudflare account once so nothing there can cost me money, and to put sites live only when I say yes",
   "soThat": "a website never costs me money or goes live by surprise",
@@ -19,6 +19,24 @@
       "given": "A Cloudflare account set up through Squire's one-off set-up",
       "when": "The account's settings are read after set-up",
       "then": "Every paid feature is off, the spend guard is on, and the short-lived set-up token has been removed.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1201-2",
+      "description": "Squire deploys a site with a deploy-only token and shows the Squire owner a preview first.",
+      "testable": true,
+      "given": "A Cloudflare account set up through Squire's one-off set-up, and a site Squire has built for the Squire owner",
+      "when": "Squire deploys the site",
+      "then": "The token Squire deploys with can deploy and nothing else, and the Squire owner has been shown the site as a preview first.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1201-3",
+      "description": "A feature or subscription on the Cloudflare account that Squire's one-off set-up cannot read as free counts as paid, and the set-up does not report done.",
+      "testable": true,
+      "given": "A Cloudflare account going through Squire's one-off set-up, on which the set-up finds a feature or subscription it cannot read as free",
+      "when": "The set-up reads the account's features and subscriptions",
+      "then": "That feature or subscription counts as paid: the set-up names it to the Squire owner and does not report done.",
       "verification": "testOnly"
     }
   ]

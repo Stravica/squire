@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "head": "cbbd8a57425ba15fab5b5d56ce82ae530c87870c",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-1201-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1201-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1201-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1901-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "fail"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 4,
+    "structuralPassed": 1,
+    "mutants": 0,
+    "killed": 0,
+    "survived": 0,
+    "timeout": 0,
+    "notApplicable": 0,
+    "blocked": 3
+  },
+  "wallMs": 50926,
+  "node": "v24.14.0"
+}

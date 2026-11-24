@@ -734,6 +734,132 @@
       "reason": "Under this requirement Squire serves no page of its own for a person to look at: its browser opens other people's sites, headless or in its own separate window, so there is no Squire page to carry a theme switch. Re-read if a later round has Squire itself render or frame a page under this requirement.",
       "operatorAckAt": "2026-11-19T14:20:44.844Z",
       "reqId": "REQ-018"
+    },
+    {
+      "id": "boo-2026-11-21-001",
+      "createdAt": "2026-11-21T19:03:10.491Z",
+      "baselineKey": "auth.emptyTokenRejection",
+      "scope": "req",
+      "reason": "Under this requirement Squire takes no token from anyone and has no sign-in of its own: it calls Cloudflare's API with the owner's own tokens and deploys the owner's site, so no Squire endpoint is there to reject an empty token. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:10.491Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-002",
+      "createdAt": "2026-11-21T19:03:10.773Z",
+      "baselineKey": "auth.htmlLoginPage",
+      "scope": "req",
+      "reason": "Squire shows no sign-in page under this requirement: the owner makes the set-up token on Cloudflare's own site, and Squire serves no page of its own here. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:10.773Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-003",
+      "createdAt": "2026-11-21T19:03:11.051Z",
+      "baselineKey": "auth.postLogout",
+      "scope": "req",
+      "reason": "Squire keeps no sign-in session under this requirement, so there is nothing to sign out of: it holds the owner's deploy token in the Keychain and calls Cloudflare's API with it. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:11.051Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-004",
+      "createdAt": "2026-11-21T19:03:11.328Z",
+      "baselineKey": "auth.sessionCookieShape",
+      "scope": "req",
+      "reason": "Squire sets no cookie under this requirement: it serves no page and keeps no sign-in session, and the site it deploys is the owner's, served by Cloudflare. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:11.328Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-005",
+      "createdAt": "2026-11-21T19:03:11.603Z",
+      "baselineKey": "httpApi.authBoundary",
+      "scope": "req",
+      "reason": "Squire exposes no HTTP API of its own under this requirement: it is a caller of Cloudflare's API, whose own access rules check the tokens it sends. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:11.603Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-006",
+      "createdAt": "2026-11-21T19:03:11.881Z",
+      "baselineKey": "httpApi.contentType",
+      "scope": "req",
+      "reason": "Squire exposes no HTTP API of its own under this requirement, so it answers no request and sets no content type: it calls Cloudflare's API and deploys the owner's site. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:11.881Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-007",
+      "createdAt": "2026-11-21T19:03:12.157Z",
+      "baselineKey": "httpApi.errorEnvelope",
+      "scope": "req",
+      "reason": "Squire exposes no HTTP API of its own under this requirement, so it returns no error body: it reads Cloudflare's answers and tells the owner what happened in plain words. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:12.157Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-008",
+      "createdAt": "2026-11-21T19:03:12.434Z",
+      "baselineKey": "httpApi.rateLimitDisclosure",
+      "scope": "req",
+      "reason": "Squire exposes no HTTP API of its own under this requirement, so it has no rate limit to disclose: it calls Cloudflare's API, whose limits are Cloudflare's. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:12.434Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-009",
+      "createdAt": "2026-11-21T19:03:12.709Z",
+      "baselineKey": "webUi.contrastFloor",
+      "scope": "req",
+      "reason": "Squire draws no page of its own under this requirement: the site it deploys is the owner's, in the owner's own design, and its preview is that site served on the Mac. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:12.709Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-010",
+      "createdAt": "2026-11-21T19:03:12.990Z",
+      "baselineKey": "webUi.focusRings",
+      "scope": "req",
+      "reason": "Squire draws no page or control of its own under this requirement: the site it deploys and previews is the owner's, in the owner's own design. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:12.990Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-011",
+      "createdAt": "2026-11-21T19:03:13.268Z",
+      "baselineKey": "webUi.oneJourneyOrMore",
+      "scope": "req",
+      "reason": "Squire has no web journey of its own under this requirement: the owner sets up, previews and says yes in the chat, and the pages are the owner's site. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:13.268Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-012",
+      "createdAt": "2026-11-21T19:03:13.548Z",
+      "baselineKey": "webUi.sharedNav",
+      "scope": "req",
+      "reason": "Squire serves no set of pages of its own under this requirement, so there is no shared navigation to render: the site it deploys is the owner's. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:13.548Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-013",
+      "createdAt": "2026-11-21T19:03:13.835Z",
+      "baselineKey": "webUi.signedInAffordance",
+      "scope": "req",
+      "reason": "Squire has no sign-in under this requirement, so no page of its shows a signed-in state: the owner signs in to Cloudflare on Cloudflare's own site. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:13.835Z",
+      "reqId": "REQ-012"
+    },
+    {
+      "id": "boo-2026-11-21-014",
+      "createdAt": "2026-11-21T19:03:14.112Z",
+      "baselineKey": "webUi.themeToggle",
+      "scope": "req",
+      "reason": "Squire serves no page of its own under this requirement, so there is no theme to toggle: the site it deploys carries the owner's own design. Re-read if a later round has Squire itself serve a page or an API under this requirement",
+      "operatorAckAt": "2026-11-21T19:03:14.112Z",
+      "reqId": "REQ-012"
     }
   ]
 }
