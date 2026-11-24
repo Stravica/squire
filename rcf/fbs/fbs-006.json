@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:45.256Z",
-  "updatedAt": "2026-11-21T19:04:09.571Z",
+  "updatedAt": "2026-11-24T19:02:18.984Z",
   "summary": "After the one-off website set-up, everything that could cost the owner money there is off and a spend guard is on, and a site goes live only on the owner's yes.",
   "dependsOnFbsIds": [
     "FBS-005"
@@ -15,6 +15,7 @@
   "prdId": "PRD-001",
   "bsId": "BS-001",
   "buildOrder": 7,
-  "executionStatus": "notStarted",
-  "title": "Websites, set up with spending off and put live only on the owner's yes"
+  "executionStatus": "inProgress",
+  "title": "Websites, set up with spending off and put live only on the owner's yes",
+  "uiBearing": false
 }
