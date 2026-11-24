@@ -531,7 +531,7 @@ test('a retry re-runs the identity check: with the record now naming a different
 test('a wake-up whose text is yes, Yes with the request id, or no, delivered to the session and taken as its prompt, never answers the open request', { timeout: 90000 }, async (t) => {
   const world = wakeWorld(t);
   const sessionId = 'session-asked';
-  const send = tools.gmailSend('someone@example.com', 'Saturday', 'The cake is ready.');
+  const send = tools.mailSend('someone@example.com', 'Saturday', 'The cake is ready.');
   const asked = w.attempt(world, sessionId, send);
   w.assertBlocked(asked, 'a send before any wake-up');
   const requestId = w.requestIdIn(asked.stderr);

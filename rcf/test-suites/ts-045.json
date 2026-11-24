@@ -1,0 +1,50 @@
+{
+  "createdAt": "2026-11-24T22:18:17.277Z",
+  "updatedAt": "2026-11-24T22:18:42.369Z",
+  "purpose": "Runs Squire's safety floor as the session runs it, the owner's answer through the prompt hook, Squire's secret helper and the page server as their own command lines, and a loopback connector stand-in, to check that each decision is written once to the record in the owner's folder with its time, job, decision, tool and target and nothing secret or private in it, that the session cannot change the record, that the owner can open it on his Mac behind the link's secret, and that a call is asked when its decision cannot be recorded.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-2201-1"
+  ],
+  "id": "TS-045",
+  "usId": "US-2201",
+  "title": "The record of what Squire decided and did",
+  "testCases": [
+    {
+      "id": "TC-045-every-ask-answer-use-of-a-yes-refusal",
+      "acId": "AC-2201-1",
+      "description": "every ask, answer, use of a yes, refusal, split and connector call that ran is in the record once",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::every ask with its request, the owner's answer, the use of a yes, a refusal with its reason and a split appear in Squire's record once each, with their time and job, and a connector read, a draft and a send that ran appear by tool name"
+    },
+    {
+      "id": "TC-045-the-record-holds-no-secret-and-no",
+      "acId": "AC-2201-1",
+      "description": "the record holds no secret and no message body",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::Squire's record holds no secret and no message body: a key the secret helper knows, used through the helper on the owner's yes, and the same key carried in a connector call's input appear in it in no form the helper hides, and no sent, drafted or read message's body appears in it"
+    },
+    {
+      "id": "TC-045-the-session-cannot-write-change-or",
+      "acId": "AC-2201-1",
+      "description": "the session cannot write, change or remove the record by any route",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::the session cannot write, change or remove Squire's record by any tool or shell route: a write over it, a write by another spelling of its name, an edit, and a removal, an append, a move, a truncation, a copy over it, a link in its place and a removal of its folder by the shell are each refused, yes or no, and the record keeps every line it held"
+    },
+    {
+      "id": "TC-045-the-record-is-shown-through-the-page",
+      "acId": "AC-2201-1",
+      "description": "the record is shown through the page server behind the link's secret only",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::Squire's record is shown on the Mac through the page server behind the link's secret, and not without it"
+    },
+    {
+      "id": "TC-045-an-unwritable-record-makes-the-call",
+      "acId": "AC-2201-1",
+      "description": "an unwritable record makes the call asked, saying it cannot be recorded",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::when Squire's record cannot be written, a call whose decision it would hold is not done silently: an allowed connector read, a draft and a send are each asked, saying the decision cannot be recorded, and go on the owner's yes, in the default mode and in auto mode"
+    }
+  ],
+  "status": "draft"
+}

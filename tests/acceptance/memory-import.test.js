@@ -59,7 +59,7 @@ const U = require('../fixtures/usage-world.js');
 
 const { tools } = w;
 const importScript = (world) => path.join(world.home, 'core', 'tools', 'import-memory.py');
-const send = tools.gmailSend('someone@example.net', 'Re: Orders', 'Here is the order sheet.');
+const send = tools.mailSend('someone@example.net', 'Re: Orders', 'Here is the order sheet.');
 const mark = (what) => `${what}-${crypto.randomBytes(6).toString('hex')}`;
 
 // What the owner gives Squire: another assistant's memory export (with words

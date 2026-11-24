@@ -40,7 +40,7 @@ test('on a laid-down core the floor holds through a send, a delete, an install, 
 
   // A send waits for the owner's yes, and the yes covers that one send.
   const s = 'session-journey';
-  const send = tools.gmailSend('alice@example.com', 'Saturday', 'The cake is ready.');
+  const send = tools.mailSend('alice@example.com', 'Saturday', 'The cake is ready.');
   w.assertBlocked(w.attempt(world, s, send, on), 'sending an email, with no yes', 'alice@example.com');
   w.ownerSays(world, s, 'Yes', on);
   w.assertAllowed(w.attempt(world, s, send, on), 'sending the email after the owner said yes');
@@ -66,7 +66,7 @@ test('on a laid-down core the floor holds through a send, a delete, an install, 
   w.assertAllowed(w.attempt(world, mixed, tools.webFetch('https://example.com/wholesale-offer'), on), 'reading a web page');
   w.assertAllowed(w.attempt(world, mixed, tools.read(path.join(world.owner, 'operator/profile.md')), on),
     'reading the owner\'s profile');
-  w.assertBlocked(w.attempt(world, mixed, tools.gmailSend('bob@example.com', 'Offer', 'What Ada thinks.'), on),
+  w.assertBlocked(w.attempt(world, mixed, tools.mailSend('bob@example.com', 'Offer', 'What Ada thinks.'), on),
     'sending, in a job that read a web page and the owner\'s profile');
 
   // The installed helper hands a tool its secret and shows none of it.

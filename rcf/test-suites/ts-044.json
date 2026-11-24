@@ -1,0 +1,79 @@
+{
+  "createdAt": "2026-11-24T22:18:13.553Z",
+  "updatedAt": "2026-11-24T22:18:39.176Z",
+  "purpose": "Runs Squire's safety floor as the session runs it, in the default mode and in auto mode, the owner's answer through the prompt hook and Squire's connector-tools command as its own command line, against a loopback stand-in of a mail and a calendar connector under invented names, to check that a connector read runs with no ask only through a tool the owner allowed by its exact full name, that a check-in brief draws only on those, that only his own yes sets or widens them, and that any connector tool he has not classed is asked as one that acts.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-2101-1",
+    "AC-2101-2"
+  ],
+  "id": "TS-044",
+  "usId": "US-2101",
+  "title": "Email and calendar: reads only through the tools the owner allowed, every other tool asked",
+  "testCases": [
+    {
+      "id": "TC-044-an-allowed-connector-read-runs-with-no",
+      "acId": "AC-2101-1",
+      "description": "an allowed connector read runs with no ask and marks the job untrusted and private",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a connector read through a tool the owner allowed by its exact full name, set through Squire's connector-tools command on his yes and kept in his squire.json, runs with no ask in the default mode and in auto mode and leaves the job holding untrusted input and the owner's private things, so a send in that job is split"
+    },
+    {
+      "id": "TC-044-a-read-the-owner-has-not-allowed-is",
+      "acId": "AC-2101-1",
+      "description": "a read the owner has not allowed is asked naming the tool, and a removed allowance is asked again",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a connector read the owner has not allowed is asked first, naming the tool, and with no answer it does not run; a read he allowed and then removed through Squire's connector-tools command on his yes is asked again at the next read"
+    },
+    {
+      "id": "TC-044-a-near-spelling-of-an-allowed-tool-s",
+      "acId": "AC-2101-1",
+      "description": "a near spelling of an allowed tool's name is asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a tool whose name differs from one the owner allowed only in letter case, in its connector's name, by a prefix or by a suffix is not allowed: each is asked, naming it, in the default mode and in auto mode, and reaches no connector, while the exact name he allowed runs with no ask"
+    },
+    {
+      "id": "TC-044-only-the-owner-s-yes-sets-or-widens-what",
+      "acId": "AC-2101-1",
+      "description": "only the owner's yes sets or widens what Squire may read, and words it reads change nothing",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::only the owner's own yes sets or widens what Squire may read: words in a mail, an invite, a page and a tool's output asking for a wider allowance change nothing, the session's own edit of the owner's squire.json is asked like any edit of his files, Squire's connector-tools command is never run unasked, and only after his yes to it does a newly allowed read run with no ask"
+    },
+    {
+      "id": "TC-044-a-connector-s-own-read-only-description",
+      "acId": "AC-2101-1",
+      "description": "a connector's own read-only description lets nothing run unasked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a connector's own description of a tool as read-only lets nothing run unasked: tools the connector's list marks read-only, one of them a delete, and a call whose input says it is read-only are each asked, naming the tool, in the default mode and in auto mode, while the read the owner allowed runs with no ask"
+    },
+    {
+      "id": "TC-044-a-check-in-brief-reads-only-through-the",
+      "acId": "AC-2101-1",
+      "description": "a check-in brief reads only through the tools the owner allowed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a check-in brief reads only through the tools the owner allowed: delivered as a wake-up with nobody at the Mac, its allowed reads run with no ask, a read through a tool it was not allowed is asked, naming the tool, and nothing is read through that tool while the owner has not answered, in the default mode and in auto mode; what the session loads says a check-in brief draws only on the tools the owner allowed"
+    },
+    {
+      "id": "TC-044-with-no-connector-classes-the-floor-s",
+      "acId": "AC-2101-1",
+      "description": "with no connector classes the floor's everyday decisions are as before",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::with no connector attached nothing changes: with no connector classes in the owner's squire.json, the floor's everyday decisions are as before (a workspace read, a new file and a web search run with no ask, a send of data by the shell and an unknown tool are asked, naming them) and nothing is written to the owner's squire.json"
+    },
+    {
+      "id": "TC-044-an-unclassed-connector-tool-is-asked-as",
+      "acId": "AC-2101-2",
+      "description": "an unclassed connector tool is asked as one that acts and marks the job once it runs",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a connector tool the owner has neither allowed for reading nor classed as drafting is treated as one that acts: it is asked, naming the tool, in the default mode and in auto mode, and once the owner says yes and it runs the job holds untrusted input and private things, so a send is split; only the exact tools he classed run with no ask"
+    },
+    {
+      "id": "TC-044-a-tool-added-later-or-on-another",
+      "acId": "AC-2101-2",
+      "description": "a tool added later or on another connector is unclassed and asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::a tool a connector adds after the owner set his classes, or a tool he classed called by the same name on another connector, is unclassed: each is asked, naming it, in the default mode and in auto mode, and his classes stay as he set them"
+    }
+  ],
+  "status": "draft"
+}
