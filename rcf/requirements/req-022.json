@@ -1,0 +1,20 @@
+{
+  "createdAt": "2026-11-24T22:02:29.912Z",
+  "updatedAt": "2026-11-24T22:02:29.933Z",
+  "description": "Squire keeps a record of its decisions and actions in the owner's folder, as a log he can read.",
+  "category": "functional",
+  "domain": "record",
+  "priority": "must",
+  "reqId": "REQ-022",
+  "prdId": "PRD-001",
+  "title": "The record: what Squire decided and did, kept in the owner's folder",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "none"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-24T22:02:29.932Z"
+  }
+}

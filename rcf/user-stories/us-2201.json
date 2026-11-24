@@ -1,0 +1,25 @@
+{
+  "createdAt": "2026-11-24T22:02:37.792Z",
+  "updatedAt": "2026-11-24T22:02:47.621Z",
+  "asA": "Squire owner",
+  "iWant": "a record in my folder of what Squire decided and did, which I can read on my Mac",
+  "soThat": "I can see what happened and why, with nothing secret written down",
+  "description": "Squire's safety floor and hooks write each decision (an ask, the Squire owner's answer, the use of a yes, a refusal, a split, a connector call that ran) to a page in his folder that he can open on his Mac; it holds no secret and no message body.",
+  "usId": "US-2201",
+  "prdId": "PRD-001",
+  "reqId": "REQ-022",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "The record of what Squire decided and did",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-2201-1",
+      "description": "What Squire decided and did is written to a record in the Squire owner's folder that he can read, with nothing secret in it.",
+      "testable": true,
+      "given": "Squire at work: its safety floor asks, the Squire owner answers, a yes is used, a call is refused or split, and connector calls run",
+      "when": "Each decision is made",
+      "then": "It is written once to a Markdown page in workspace/pages in his folder, which only Squire's floor and hooks write, as a line holding its time, job, decision, tool and target, with no message body and no secret; he can open the page on his Mac through the page server; and when it cannot be written, the call is asked, saying it cannot be recorded.",
+      "verification": "testOnly"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "createdAt": "2026-11-24T22:02:35.364Z",
+  "updatedAt": "2026-11-24T22:02:45.317Z",
+  "asA": "Squire owner",
+  "iWant": "Squire to read my email and calendar only through the tools I allowed, keep drafts for me, and send or change nothing without my yes",
+  "soThat": "my mail and calendar stay mine, whatever connector I attached",
+  "description": "Squire works over whatever email or calendar connector the Squire owner has attached to Claude and builds none: it reads only through the tools he allowed for reading, keeps drafts through the tools he classed as drafting, a check-in brief draws only on what he allowed, every other tool of a connector waits for his yes, and what it reads there is untrusted.",
+  "usId": "US-2101",
+  "prdId": "PRD-001",
+  "reqId": "REQ-021",
+  "version": "0.1.0",
+  "status": "draft",
+  "title": "Email and calendar: read only what I allowed, drafts kept, nothing sent without my yes",
+  "acceptanceCriteria": [
+    {
+      "id": "AC-2101-1",
+      "description": "Over any connector the Squire owner has attached, Squire reads only what he allowed, and a check-in brief draws only on that.",
+      "testable": true,
+      "given": "A connector the Squire owner has attached, and the connector tools he has named by exact full tool name as ones Squire may read with or that only draft, through Squire's command run on his yes and kept in his squire.json",
+      "when": "Squire, or a check-in brief run with nobody at the Mac, reads through the connector",
+      "then": "A read through a tool he allowed runs with no ask, and the job then holds untrusted input and his private things; a read through any other tool is asked first, naming the tool, and does not run without his yes; only his own yes sets or widens what Squire may read, and nothing Squire reads sets or widens it.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-2101-2",
+      "description": "A connector tool Squire cannot class as allowed for reading or as one that only drafts is treated as one that acts, and asks first.",
+      "testable": true,
+      "given": "A connector the Squire owner has attached, offering a tool he has neither allowed for reading nor classed as drafting",
+      "when": "Squire, or a tool it calls, calls that tool",
+      "then": "The tool waits for the Squire owner's yes, naming it, and does not run before it; once it runs, the job holds untrusted input and his private things.",
+      "verification": "testOnly"
+    }
+  ]
+}
