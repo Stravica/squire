@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-24T22:18:13.553Z",
-  "updatedAt": "2026-11-25T00:38:24.353Z",
+  "updatedAt": "2026-11-25T05:11:22.651Z",
   "purpose": "Runs Squire's safety floor as the session runs it, in the default mode and in auto mode, the owner's answer through the prompt hook and Squire's connector-tools command as its own command line, against a loopback stand-in of a mail and a calendar connector under invented names, to check that a connector read runs with no ask only through a tool the owner allowed by its exact full name, that a check-in brief draws only on those, that only his own yes sets or widens them, and that any connector tool he has not classed is asked as one that acts.",
   "testLevel": "integration",
   "acIds": [
@@ -51,7 +51,7 @@
       "acId": "AC-2101-1",
       "description": "a check-in brief reads only through the tools the owner allowed",
       "status": "pending",
-      "testPointer": "tests/acceptance/connector-reads.test.js::a check-in brief reads only through the tools the owner allowed: delivered as a wake-up with nobody at the Mac, its allowed reads run with no ask, a read through a tool it was not allowed is asked, naming the tool, and nothing is read through that tool while the owner has not answered, in the default mode and in auto mode; what the session loads says a check-in brief draws only on the tools the owner allowed"
+      "testPointer": "tests/acceptance/connector-reads.test.js::a check-in brief reads only through the tools the owner allowed: delivered as a wake-up with nobody at the Mac, its allowed reads run with no ask; a read through a tool it was not allowed is split in that job, with words that name the tool and say to end this job and start a new one that waits for the owner's yes, and in a check-in job of its own it is asked, naming the tool; a wake-up saying yes lets it run in neither, and nothing is read through that tool, in the default mode and in auto mode; what the session loads says a check-in brief draws only on the tools the owner allowed"
     },
     {
       "id": "TC-044-with-no-connector-classes-the-floor-s",

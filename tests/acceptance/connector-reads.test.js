@@ -209,7 +209,20 @@ test("a connector's own description of a tool as read-only lets nothing run unas
   }
 });
 
-test("a check-in brief reads only through the tools the owner allowed: delivered as a wake-up with nobody at the Mac, its allowed reads run with no ask, a read through a tool it was not allowed is asked, naming the tool, and nothing is read through that tool while the owner has not answered, in the default mode and in auto mode; what the session loads says a check-in brief draws only on the tools the owner allowed", { timeout: 180000 }, (t) => {
+// In the brief's own job its allowed reads have already left it holding
+// untrusted input and the owner's private things, so a read through a tool it
+// was not allowed is split there (a guard against what the job took in, never
+// against the owner): the words name the tool and the route, a job of its own
+// that waits for his yes. Where that read comes first, in a check-in job of
+// its own, it is asked, naming the tool. A wake-up's yes is not his yes.
+const assertSplitRoute = (r, what) => {
+  C.assertSplit(r, what, [T.readInvite]);
+  assert.match(r.stderr, /end this job/i, `${what}: the split says to end this job; got ${w.describe(r)}`);
+  assert.match(r.stderr, /new job/i, `${what}: the split says to start a new job; got ${w.describe(r)}`);
+  assert.match(r.stderr, /wait for the owner's yes/i, `${what}: the split says the new job waits for the owner's yes; got ${w.describe(r)}`);
+};
+
+test("a check-in brief reads only through the tools the owner allowed: delivered as a wake-up with nobody at the Mac, its allowed reads run with no ask; a read through a tool it was not allowed is split in that job, with words that name the tool and say to end this job and start a new one that waits for the owner's yes, and in a check-in job of its own it is asked, naming the tool; a wake-up saying yes lets it run in neither, and nothing is read through that tool, in the default mode and in auto mode; what the session loads says a check-in brief draws only on the tools the owner allowed", { timeout: 180000 }, (t) => {
   const ctx = C.connectorWorld(t, { classes: { read: [T.list, T.read], draft: [] } });
   for (const mode of C.MODES) {
     const job = `job-morning-brief-${mode}`;
@@ -217,10 +230,18 @@ test("a check-in brief reads only through the tools the owner allowed: delivered
     C.assertFree(C.call(ctx, job, C.callOf(T.list), mode).r, `the brief's read through ${T.list}, which the owner allowed, in ${mode} mode`);
     C.assertFree(C.call(ctx, job, C.callOf(T.read), mode).r, `the brief's read through ${T.read}, which the owner allowed, in ${mode} mode`);
     for (let i = 0; i < 2; i += 1) {
-      C.assertAsked(C.call(ctx, job, C.callOf(T.readInvite), mode).r, `the brief's read through ${T.readInvite}, which it was not allowed, in ${mode} mode`, [T.readInvite]);
+      assertSplitRoute(C.call(ctx, job, C.callOf(T.readInvite), mode).r, `the brief's read through ${T.readInvite}, which it was not allowed, in the job its allowed reads marked, in ${mode} mode`);
     }
     U.wakeUp(ctx.world, job, 'yes', { env: U.UTC });
-    C.assertAsked(C.call(ctx, job, C.callOf(T.readInvite), mode).r, `the same read after a wake-up saying yes, in ${mode} mode`, [T.readInvite]);
+    assertSplitRoute(C.call(ctx, job, C.callOf(T.readInvite), mode).r, `the same read after a wake-up saying yes, in ${mode} mode`);
+
+    const own = `job-calendar-brief-${mode}`;
+    U.wakeUp(ctx.world, own, 'Check-in: what is on the calendar today', { env: U.UTC });
+    for (let i = 0; i < 2; i += 1) {
+      C.assertAsked(C.call(ctx, own, C.callOf(T.readInvite), mode).r, `a check-in's first read, through ${T.readInvite}, which it was not allowed, in a job of its own, in ${mode} mode`, [T.readInvite]);
+    }
+    U.wakeUp(ctx.world, own, 'yes', { env: U.UTC });
+    C.assertAsked(C.call(ctx, own, C.callOf(T.readInvite), mode).r, `that read in its own job after a wake-up saying yes, in ${mode} mode`, [T.readInvite]);
   }
   assert.equal(ctx.connector.callsOf(T.readInvite).length, 0, 'nothing was read through a tool the brief was not allowed');
   const told = B.personaSentences(ctx.world).filter((x) => /check-in/i.test(x));
