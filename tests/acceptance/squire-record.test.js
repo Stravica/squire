@@ -71,7 +71,7 @@ test("every ask with its request, the owner's answer, the use of a yes, a refusa
   assert.ok(refusal.includes('settings') && refusal.includes('Write'), `the refusal's line names the tool, its target and the reason; got ${JSON.stringify(refusal)}`);
 
   // A read that ran, a split, and a draft that ran.
-  const split = 'job-record-split';
+  const split = 'job-record-read-then-send';
   C.assertFree(C.call(ctx, split, C.callOf(T.read)).r, `a mail read through ${T.read}, which the owner allowed`);
   w.assertAllowed(ctx.floor.run(split, w.tools.read(path.join(world.owner, 'operator', 'profile.md'))), 'reading the owner\'s profile');
   C.assertSplit(C.call(ctx, split, C.callOf(T.send)).r, 'a send in the job', [RECIPIENT]);
