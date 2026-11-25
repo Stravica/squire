@@ -282,10 +282,12 @@ test("the draft tool the floor once let run with no ask, left out of both of the
   const callIn = w.tools.mcp(FORMER_FREE_DRAFT, { to: RECIPIENT, subject: 'Saturday order', body: 'The cake is ready on Saturday.' });
   for (const mode of C.MODES) {
     const job = `job-former-free-draft-${mode}`;
+    // The calls an earlier mode made on its own yes stay counted.
+    const before = ctx.connector.callsOf(FORMER_FREE_DRAFT).length;
     const first = C.call(ctx, job, callIn, mode);
     C.assertAsked(first.r, `${FORMER_FREE_DRAFT}, which the owner has not classed, in ${mode} mode`, [FORMER_FREE_DRAFT]);
     assert.equal(first.ran, false, `${FORMER_FREE_DRAFT} does not run before the owner's yes, in ${mode} mode`);
-    assert.equal(ctx.connector.callsOf(FORMER_FREE_DRAFT).length, 0, `nothing reached a connector through ${FORMER_FREE_DRAFT} before his yes, in ${mode} mode`);
+    assert.equal(ctx.connector.callsOf(FORMER_FREE_DRAFT).length, before, `nothing reached a connector through ${FORMER_FREE_DRAFT} before his yes, in ${mode} mode`);
     C.yes(ctx, job, first.r);
     w.assertAllowed(C.call(ctx, job, callIn, mode).r, `${FORMER_FREE_DRAFT}, once the owner said yes to it, in ${mode} mode`);
     C.assertSplit(C.call(ctx, job, C.callOf(T.send), mode).r, `a send after ${FORMER_FREE_DRAFT} ran, in ${mode} mode`, [FORMER_FREE_DRAFT, RECIPIENT]);

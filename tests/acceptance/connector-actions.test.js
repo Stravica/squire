@@ -46,10 +46,12 @@ test("a draft through a tool the owner classed as drafting is kept with no ask a
   for (const mode of C.MODES) {
     const job = `job-draft-then-send-${mode}`;
     const before = ctx.connector.callsOf(T.draft).length;
+    // The sends an earlier mode made on its own yes stay counted.
+    const sendsBefore = ctx.connector.callsOf(T.send).length;
     const draft = C.call(ctx, job, C.callOf(T.draft), mode);
     C.assertFree(draft.r, `keeping a draft through ${T.draft}, which the owner classed as drafting, in ${mode} mode`);
     assert.equal(ctx.connector.callsOf(T.draft).length, before + 1, `the draft was kept by the connector, in ${mode} mode`);
-    assert.equal(ctx.connector.callsOf(T.send).length, 0, `nothing left with the draft, in ${mode} mode`);
+    assert.equal(ctx.connector.callsOf(T.send).length, sendsBefore, `nothing left with the draft, in ${mode} mode`);
 
     const send = C.callOf(T.send);
     const asked = C.call(ctx, job, send, mode);
@@ -61,7 +63,7 @@ test("a draft through a tool the owner classed as drafting is kept with no ask a
     const otherId = w.requestIdIn(other.r.stderr);
     C.say(ctx, job, `yes ${otherId}`);
     C.assertAsked(C.call(ctx, job, send, mode).r, `sending the draft after a yes to another request, in ${mode} mode`, [T.send, RECIPIENT]);
-    assert.equal(ctx.connector.callsOf(T.send).length, 0, `the connector recorded no send before the owner's yes to it, in ${mode} mode`);
+    assert.equal(ctx.connector.callsOf(T.send).length, sendsBefore, `the connector recorded no send before the owner's yes to it, in ${mode} mode`);
     C.say(ctx, job, `yes ${id}`);
     const went = C.call(ctx, job, send, mode);
     w.assertAllowed(went.r, `sending the draft once the owner said yes to it, in ${mode} mode`);
