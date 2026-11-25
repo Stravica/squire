@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-24T22:18:17.277Z",
-  "updatedAt": "2026-11-24T22:18:42.369Z",
+  "updatedAt": "2026-11-25T00:37:34.604Z",
   "purpose": "Runs Squire's safety floor as the session runs it, the owner's answer through the prompt hook, Squire's secret helper and the page server as their own command lines, and a loopback connector stand-in, to check that each decision is written once to the record in the owner's folder with its time, job, decision, tool and target and nothing secret or private in it, that the session cannot change the record, that the owner can open it on his Mac behind the link's secret, and that a call is asked when its decision cannot be recorded.",
   "testLevel": "integration",
   "acIds": [
@@ -44,6 +44,20 @@
       "description": "an unwritable record makes the call asked, saying it cannot be recorded",
       "status": "pending",
       "testPointer": "tests/acceptance/squire-record.test.js::when Squire's record cannot be written, a call whose decision it would hold is not done silently: an allowed connector read, a draft and a send are each asked, saying the decision cannot be recorded, and go on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-045-a-key-the-secret-helper-knows-in-an",
+      "acId": "AC-2201-1",
+      "description": "a key the secret helper knows, in an event title the record keeps or in a mail subject, appears in the record in no form, while the jobs' decisions are there",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::Squire's record holds no secret in a target it keeps or in a field that is not a message's body: a key the secret helper knows, in a calendar event's title and in a mail's subject, each sent on the owner's yes, appears in it in no form the helper hides, while the record still holds those jobs' decisions"
+    },
+    {
+      "id": "TC-045-a-target-holding-a-new-line-and-words",
+      "acId": "AC-2201-1",
+      "description": "a target holding a new line and words shaped like a record line gives its decision one line and adds no yes the owner never gave",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::a target holding a new line and words shaped like a line of Squire's record cannot add one: an event whose title holds a new line and a yes to another request gives its ask one line in the record, and the record holds no yes the owner never gave"
     }
   ],
   "status": "draft"
