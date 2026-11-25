@@ -16,7 +16,10 @@
 // of Python's own library (a User-Agent beginning Python-urllib/) gets 403 and
 // "error code: 1010", any other read the page; siteRefuses 'everyRead', every
 // read gets that 403; notFoundFirstMs with a long certificateWaitMs, the
-// address answers 404, then 503, for the whole read-back.
+// address answers 404, then 503, for the whole read-back. And as the
+// stand-in's own setting, not seen on a real account: siteAnswers, every read
+// gets 429, 500, a 200 whose page is not the site's, or a connection taken and
+// never answered.
 //
 // What the cases pin, decided on the fail-closed reading and named here (no
 // record settles them):
@@ -24,14 +27,21 @@
 //     that turns away only Python's default signature serves it the page; a
 //     read-back that special-cases the stand-in (its path, its port, a header
 //     only it would honour) is not that;
-//   "not live yet" is an address that answers 404 or 503, or does not answer,
-//     through the read-back: the deploy says the site "is not reported live
-//     yet" and names its address, and may advise running the deploy again;
+//   "not live yet" is an address that answers 404 or 503 through the
+//     read-back, or whose name does not resolve, whose connection is refused
+//     or whose TLS handshake fails: the deploy says the site "is not reported
+//     live yet" and names its address, and never advises another deploy;
 //   an address that refuses Squire's read (403 above all) is not "not live
 //     yet": the deploy says Squire "could not confirm" the site, says in plain
 //     words that the address refused Squire's own check, names the address and
 //     tells the owner to open it; it never says the site is not live and never
 //     advises another deploy;
+//   so is an address that answers 429, a 5xx or a 200 whose page is not the
+//     site's, or that takes the connection and never answers within the read's
+//     own wait: the deploy says Squire "could not confirm" the site and names
+//     the address for the owner to open, never that it is not live and never
+//     to deploy again (no reason's wording and no exit status is pinned for
+//     these);
 //   live: "The site <name> is live at <address>", exit 0, as today.
 //
 // Usage model (assumptions, none measured): typical, one small site deployed
@@ -43,7 +53,8 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { spawnSync } = require('node:child_process');
+const path = require('node:path');
+const { spawn, spawnSync } = require('node:child_process');
 const w = require('../fixtures/squire-world.js');
 const W = require('../fixtures/website-world.js');
 
@@ -125,7 +136,65 @@ test("an address that answers 404 and then 503 throughout the deploy's read-back
   assert.ok(words.includes(W.address(NAME)), `the report names the address, ${W.address(NAME)}; got ${w.describe(d)}`);
   assert.equal(words.includes(`is live at ${W.address(NAME)}`), false, `a site whose address never served it is not reported live; got ${w.describe(d)}`);
   assert.doesNotMatch(words, /could not confirm/i, `an address not live yet is not one Squire could not confirm; got ${w.describe(d)}`);
+  assert.doesNotMatch(words, DEPLOY_AGAIN, `a site not reported live yet never gets advice to run the deploy again; got ${w.describe(d)}`);
   const statuses = new Set(reads.map((c) => c.status));
   assert.ok(statuses.has(404) && statuses.has(503) && !statuses.has(200), `the address answered 404, then 503, and never the page; got ${JSON.stringify([...statuses])}`);
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+// The deploy through its own command line, as runDeploy runs it, but as a
+// process the case waits on beside others, so several deploys, each in its
+// own world against its own stand-in, wait out their read-backs together.
+function deployBeside(ctx, folder, name) {
+  return new Promise((resolve) => {
+    const child = spawn(w.PYTHON, [path.join(ctx.world.home, 'core', 'tools', 'website.py'), 'deploy', folder, name], {
+      cwd: ctx.world.owner,
+      env: w.productEnv(ctx.world, ctx.standIn.proxyEnv),
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (c) => { stdout += c; });
+    child.stderr.on('data', (c) => { stderr += c; });
+    child.stdin.end();
+    const timer = setTimeout(() => child.kill('SIGKILL'), 150000);
+    child.on('error', (e) => { clearTimeout(timer); resolve({ status: null, signal: null, stdout, stderr, error: String(e.message || e) }); });
+    child.on('close', (status, signal) => { clearTimeout(timer); resolve({ status, signal, stdout, stderr, error: '' }); });
+  });
+}
+
+// Each answer below is the stand-in's own setting (siteAnswers), given to
+// every read of the address, whatever the client, while the site is live.
+const OTHER_ANSWERS = [
+  { answer: 'tooManyRequests', what: 'answers 429', premise: (reads) => reads.every((c) => c.status === 429) },
+  { answer: 'serverError', what: 'answers 500', premise: (reads) => reads.every((c) => c.status === 500) },
+  { answer: 'notThePage', what: 'answers 200 with a page that is not the site\'s', premise: (reads) => reads.every((c) => c.status === 200) },
+  { answer: 'heldOpen', what: 'takes the connection and never answers', premise: (reads) => reads.every((c) => c.status === null) },
+];
+
+test("an address that answers every read of Squire's with 429, with 500 or with a page that is not the site's, or that takes the connection and never answers, is never reported not live and never gets advice to deploy again: the deploy says Squire could not confirm the site and names the address for the owner to open", { timeout: 420000 }, async (t) => {
+  const runs = OTHER_ANSWERS.map((o) => {
+    const ctx = W.websiteWorld(t, { siteAnswers: o.answer });
+    const s = W.runSetUp(ctx);
+    W.assertRan(s, `the set-up (an address that ${o.what})`);
+    assert.equal(s.status, 0, `the set-up reports done (an address that ${o.what}); got ${w.describe(s)}`);
+    const folder = W.makeSite(ctx.world, NAME, PAGE);
+    return { ...o, ctx, folder, from: ctx.standIn.calls().length };
+  });
+  const started = Date.now();
+  const done = await Promise.all(runs.map((r) => deployBeside(r.ctx, r.folder, NAME)));
+  t.diagnostic(`the four deploys, side by side, took ${((Date.now() - started) / 1000).toFixed(1)} seconds`);
+  runs.forEach((r, i) => {
+    const d = done[i];
+    W.assertRan(d, `the deploy (an address that ${r.what})`);
+    const words = W.said(d);
+    assert.match(words, /could not confirm/i, `an address that ${r.what}: the deploy says Squire could not confirm the site; got ${w.describe(d)}`);
+    assert.ok(words.includes(W.address(NAME)), `an address that ${r.what}: the report names the address, ${W.address(NAME)}; got ${w.describe(d)}`);
+    assert.match(words, /\bopen\b/i, `an address that ${r.what}: the report tells the owner to open the address; got ${w.describe(d)}`);
+    assert.doesNotMatch(words, NOT_LIVE, `an address that ${r.what}: a site Squire could not confirm is never reported not live; got ${w.describe(d)}`);
+    assert.doesNotMatch(words, DEPLOY_AGAIN, `an address that ${r.what}: the report never advises running the deploy again; got ${w.describe(d)}`);
+    assert.equal(words.includes(`is live at ${W.address(NAME)}`), false, `an address that ${r.what}: a site Squire could not confirm is not reported live either; got ${w.describe(d)}`);
+    const reads = siteReads(r.ctx, NAME, r.from);
+    assert.ok(reads.length > 0 && r.premise(reads), `the address ${r.what} to every read; got ${JSON.stringify(reads.map((c) => c.status))}`);
+    assert.deepEqual(r.ctx.standIn.offLoopback(), [], `an address that ${r.what}: no call left the loopback`);
+  });
 });

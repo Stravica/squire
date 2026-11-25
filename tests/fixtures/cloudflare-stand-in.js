@@ -78,6 +78,19 @@
 //     with { id, status, not_before, expires_on }, any other call on the user
 //     path 403 9109, "Unauthorized to access requested resource". A token
 //     without ownedBy is answered as before.
+//   Other answers at a site's address (the stand-in's own setting, not seen
+//     on a real account): with siteAnswers set, every read of its sites'
+//     addresses, whatever the client and whether or not the site is live,
+//     gets one of 'tooManyRequests' (429), 'serverError' (500), 'heldOpen'
+//     (the connection is taken and the request read, and no answer is ever
+//     sent; the call is recorded with status null) or 'notThePage' (200 with
+//     a page that is not the site's own).
+//   Other refusals of a user-owned token (the stand-in's own setting, not
+//     seen on a real account): with userOwnedRefusals { account, userVerify },
+//     each a { status, code, message }, every call on the account's path
+//     answers the account refusal in place of 401 1000, and the user path's
+//     verify answers the userVerify refusal in place of 200. Either may be
+//     left out, and is then answered as above.
 //
 // The sites: the stand-in serves each script put on workers.dev at
 // /__sites/<script>.<subdomain>.workers.dev/<path>, the address template a
@@ -173,6 +186,8 @@ function serve(folder) {
         userAgent: req.headers['user-agent'] === undefined ? null : String(req.headers['user-agent']),
       });
       save();
+      // siteAnswers 'heldOpen': the request is taken and never answered.
+      if (answer.held) return;
       res.writeHead(answer.status, { 'content-type': answer.type || 'application/json' });
       res.end(answer.text !== undefined ? answer.text : JSON.stringify(answer.json));
     });
@@ -286,8 +301,11 @@ function route(state, options, req, body) {
   if (!token) return invalid();
 
   if (token.ownedBy === 'user') {
-    if (p[0] !== 'user') return invalid();
+    const other = options.userOwnedRefusals || {};
+    const refusal = (r) => ({ status: r.status, json: envelope(false, null, [{ code: r.code, message: r.message }]) });
+    if (p[0] !== 'user') return other.account ? refusal(other.account) : invalid();
     if (p[1] === 'tokens' && p[2] === 'verify' && p.length === 3 && req.method === 'GET') {
+      if (other.userVerify) return refusal(other.userVerify);
       return ok({ id: token.id, status: token.status, not_before: null, expires_on: token.expiresOn || null });
     }
     return { status: 403, json: envelope(false, null, [{ code: 9109, message: 'Unauthorized to access requested resource' }]) };
@@ -418,12 +436,24 @@ function widen(made, how, accountId) {
 // A site's address: 404 until its script is on workers.dev (and for
 // notFoundFirstMs after, where a case sets it), 503 while its certificate is
 // not ready, then its files. With siteRefuses set, a read it refuses gets 403
-// and "error code: 1010" first.
+// and "error code: 1010" first; with siteAnswers set, every read gets that
+// answer instead (the stand-in's own setting).
 const DEFAULT_CLIENT = /^Python-urllib\//;
+const NOT_THE_PAGE = '<!doctype html><title>Please wait</title><p>This page is not the site that was put live.</p>\n';
+const SITE_ANSWERS = {
+  tooManyRequests: { status: 429, type: 'text/plain', text: 'Too many requests.\n' },
+  serverError: { status: 500, type: 'text/plain', text: 'Internal server error.\n' },
+  heldOpen: { status: null, held: true },
+  notThePage: { status: 200, type: 'text/html', text: NOT_THE_PAGE },
+};
 function site(state, options, parts, req) {
   const agent = req.headers['user-agent'];
   if (options.siteRefuses === 'everyRead' || (options.siteRefuses === 'defaultClient' && DEFAULT_CLIENT.test(agent || ''))) {
     return { status: 403, type: 'text/plain', text: 'error code: 1010' };
+  }
+  if (options.siteAnswers) {
+    if (!SITE_ANSWERS[options.siteAnswers]) throw new Error(`no such siteAnswers: ${options.siteAnswers}`);
+    return { ...SITE_ANSWERS[options.siteAnswers] };
   }
   const host = parts[0] || '';
   const suffix = `.${state.subdomain}.workers.dev`;
@@ -447,7 +477,9 @@ function site(state, options, parts, req) {
 // when the case ends. options: accountId, subdomain, tokens (each { id,
 // value, name, policies, and ownedBy 'user' for a user-owned token }),
 // subscriptions, certificateWaitMs, notFoundFirstMs, siteRefuses
-// ('defaultClient' | 'everyRead'), fail
+// ('defaultClient' | 'everyRead'), siteAnswers ('tooManyRequests' |
+// 'serverError' | 'heldOpen' | 'notThePage'), userOwnedRefusals ({ account,
+// userVerify }, each { status, code, message }, for a user-owned token), fail
 // ({ createToken, readToken, deleteToken, subdomain, subscriptions }: answer
 // 500; deleteToken, a token's removal, leaving the token on the account),
 // widen ('extraGroup' | 'allAccounts' | 'allZones').

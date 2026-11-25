@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-24T22:01:55.449Z",
-  "updatedAt": "2026-11-24T22:02:14.863Z",
+  "updatedAt": "2026-11-25T00:30:37.684Z",
   "purpose": "Runs Squire's one-off set-up and its deploy as their own command lines against a loopback stand-in of Cloudflare's API and its sites' addresses, to check that a site whose address serves its page to an ordinary client is reported live at its address, that an address refusing Squire's own read is never reported not live, and that an address not live yet is still not reported live.",
   "testLevel": "integration",
   "acIds": [
@@ -30,6 +30,13 @@
       "description": "an address that answers 404 then 503 throughout is not reported live yet",
       "status": "pending",
       "testPointer": "tests/acceptance/website-live-report.test.js::an address that answers 404 and then 503 throughout the deploy's read-back is still not reported live: the deploy says the site is not reported live yet and names the address, and never says Squire could not confirm it"
+    },
+    {
+      "id": "TC-043-an-address-that-answers-429-500-or-a",
+      "acId": "AC-1201-4",
+      "description": "an address that answers 429, 500 or a page that is not the site's, or never answers, is never called not live and gets no deploy advice: Squire could not confirm it and names it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-live-report.test.js::an address that answers every read of Squire's with 429, with 500 or with a page that is not the site's, or that takes the connection and never answers, is never reported not live and never gets advice to deploy again: the deploy says Squire could not confirm the site and names the address for the owner to open"
     }
   ],
   "status": "draft"
