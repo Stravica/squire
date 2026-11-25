@@ -43,6 +43,7 @@ Standard library only; run by /usr/bin/python3.
 
 import base64
 import hashlib
+import http.client
 import importlib.util
 import json
 import mimetypes
@@ -570,6 +571,8 @@ class Deploy:
             return self.verdict_of(None, e.reason, None, page)
         except (OSError, ValueError) as e:
             return self.verdict_of(None, e, None, page)
+        except http.client.HTTPException:
+            return self.UNCONFIRMED, 'the address\'s answer stopped part way through or could not be read'
 
     @classmethod
     def verdict_of(cls, status, failure, body, page):
