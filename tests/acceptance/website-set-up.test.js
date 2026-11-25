@@ -380,3 +380,55 @@ test("a set-up token Cloudflare refuses on both the account's path and the user 
   assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `nothing is kept in the Keychain as ${W.KEPT_SECRET}`);
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
+
+// The account's path refusing a user-owned token in another way than 401 with
+// code 1000: the stand-in's own setting (userOwnedRefusals), not seen on a
+// real account. Pinned here, on the same fail-closed reading as above: the
+// kind of refusal on the account's path does not decide the words; an active
+// verify on the user path does, and a token the user path refuses too keeps
+// today's words.
+const OTHER_REFUSAL = { status: 403, code: 10000, message: 'Authentication error' };
+const USER_REFUSAL = { status: 401, code: 1000, message: 'Invalid API Token' };
+
+test("a set-up token Cloudflare refuses on the account's path with another refusal than an invalid token, and accepts on the user path, gets words that say the set-up token must be an account-owned token, made under Manage account, then Account API Tokens; the set-up makes nothing on the account and keeps nothing in the Keychain", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { setUpOwnedBy: 'user', userOwnedRefusals: { account: OTHER_REFUSAL } });
+  // The premise, read by the case itself on the stand-in.
+  const onAccountPath = ctx.standIn.call('GET', `/accounts/${W.ACCOUNT}/tokens/verify`, ctx.setUp.value);
+  assert.equal(onAccountPath.status, 403, 'the account\'s path refuses the token with 403');
+  assert.equal(JSON.parse(onAccountPath.body).errors[0].code, 10000, 'with a code other than 1000');
+  assert.equal(ctx.standIn.call('GET', '/user/tokens/verify', ctx.setUp.value).status, 200, 'the user path accepts it');
+  const from = ctx.standIn.calls().length;
+  const r = W.runSetUp(ctx);
+  W.assertRan(r, 'the set-up with a user-owned set-up token refused another way');
+  const words = W.said(r);
+  assert.match(words, /account-owned/i, `the set-up says the set-up token must be an account-owned token; got ${w.describe(r)}`);
+  assert.ok(words.includes('Manage account, then Account API Tokens'), `the set-up says where to make it: Manage account, then Account API Tokens; got ${w.describe(r)}`);
+  assert.notEqual(r.status, 0, `the set-up does not report done; got ${w.describe(r)}`);
+  const calls = ctx.standIn.calls().slice(from);
+  const onAccount = calls.findIndex((c) => c.method === 'GET' && c.path === accountVerify);
+  const onUser = calls.findIndex((c) => c.method === 'GET' && c.path === userVerify);
+  assert.ok(onAccount >= 0 && onUser > onAccount, `the set-up checks the token on the user path only after the account's path refused it; its calls: ${JSON.stringify(calls.map((c) => `${c.method} ${c.path} ${c.status}`))}`);
+  assert.deepEqual(calls.filter((c) => c.method !== 'GET').map((c) => `${c.method} ${c.path}`), [], 'the set-up writes nothing to the account');
+  assert.deepEqual(W.activeTokens(ctx.standIn).map((x) => x.id), [ctx.setUp.id], 'no token is made on the account');
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `nothing is kept in the Keychain as ${W.KEPT_SECRET}`);
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+test("a set-up token Cloudflare refuses on the account's path with another refusal than an invalid token, and refuses on the user path too, keeps today's words, to check the account id and the token, and is never called user-owned or sent to make an account-owned one; the set-up makes nothing and keeps nothing", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { setUpOwnedBy: 'user', userOwnedRefusals: { account: OTHER_REFUSAL, userVerify: USER_REFUSAL } });
+  assert.equal(ctx.standIn.call('GET', `/accounts/${W.ACCOUNT}/tokens/verify`, ctx.setUp.value).status, 403, 'the account\'s path refuses the token with 403');
+  assert.equal(ctx.standIn.call('GET', '/user/tokens/verify', ctx.setUp.value).status, 401, 'the user path refuses it too');
+  const from = ctx.standIn.calls().length;
+  const r = W.runSetUp(ctx);
+  W.assertRan(r, 'the set-up with a token Cloudflare refuses on both paths');
+  const words = W.said(r);
+  assert.notEqual(r.status, 0, `the set-up does not report done; got ${w.describe(r)}`);
+  assert.ok(words.includes(`Cloudflare did not accept the set-up token on account ${W.ACCOUNT}`), `the set-up says Cloudflare did not accept the set-up token; got ${w.describe(r)}`);
+  assert.match(words, /check the account id and the token/i, `it keeps today's advice, to check the account id and the token; got ${w.describe(r)}`);
+  assert.doesNotMatch(words, /account-owned|user-owned|own profile|Manage account/i, `a token refused on both paths is never called user-owned or sent to be made again elsewhere; got ${w.describe(r)}`);
+  const calls = ctx.standIn.calls().slice(from);
+  assert.deepEqual(calls.filter((c) => c.method !== 'GET').map((c) => `${c.method} ${c.path}`), [], 'the set-up writes nothing to the account');
+  assert.deepEqual(W.activeTokens(ctx.standIn).map((x) => x.id), [ctx.setUp.id], 'no token is made on the account');
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `nothing is kept in the Keychain as ${W.KEPT_SECRET}`);
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
