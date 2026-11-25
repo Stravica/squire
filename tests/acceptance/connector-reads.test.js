@@ -241,6 +241,32 @@ test("a connector tool the owner has neither allowed for reading nor classed as 
   }
 });
 
+// The floor's former free entry: the one draft tool the floor let run with no
+// ask before the owner's classes, a real vendor's tool and the only one this
+// file names, named here to prove Squire favours no vendor: once the owner
+// has set his classes and left it out of both, it is one more connector tool
+// he has not classed.
+const FORMER_FREE_DRAFT = 'mcp__claude_ai_Gmail__create_draft';
+
+test("the draft tool the floor once let run with no ask, left out of both of the owner's classes, is treated as one that acts: it is asked, naming it, in the default mode and in auto mode, it does not run before his yes, and once it runs on his yes the job holds untrusted input and private things, so a send is split", { timeout: 180000 }, (t) => {
+  const ctx = C.connectorWorld(t, { classes: { read: [T.read], draft: [T.draft] } });
+  const kept = C.classesKept(ctx.world);
+  assert.ok(![...((kept && kept.read) || []), ...((kept && kept.draft) || [])].includes(FORMER_FREE_DRAFT), `premise: the owner classed ${FORMER_FREE_DRAFT} in neither class; got ${JSON.stringify(kept)}`);
+  const callIn = w.tools.mcp(FORMER_FREE_DRAFT, { to: RECIPIENT, subject: 'Saturday order', body: 'The cake is ready on Saturday.' });
+  for (const mode of C.MODES) {
+    const job = `job-former-free-draft-${mode}`;
+    const first = C.call(ctx, job, callIn, mode);
+    C.assertAsked(first.r, `${FORMER_FREE_DRAFT}, which the owner has not classed, in ${mode} mode`, [FORMER_FREE_DRAFT]);
+    assert.equal(first.ran, false, `${FORMER_FREE_DRAFT} does not run before the owner's yes, in ${mode} mode`);
+    assert.equal(ctx.connector.callsOf(FORMER_FREE_DRAFT).length, 0, `nothing reached a connector through ${FORMER_FREE_DRAFT} before his yes, in ${mode} mode`);
+    C.yes(ctx, job, first.r);
+    w.assertAllowed(C.call(ctx, job, callIn, mode).r, `${FORMER_FREE_DRAFT}, once the owner said yes to it, in ${mode} mode`);
+    C.assertSplit(C.call(ctx, job, C.callOf(T.send), mode).r, `a send after ${FORMER_FREE_DRAFT} ran, in ${mode} mode`, [FORMER_FREE_DRAFT, RECIPIENT]);
+  }
+  assert.equal(sent(ctx), 0, 'no send reached the connector');
+  assert.deepEqual(ctx.connector.offLoopback(), [], 'no call left the loopback');
+});
+
 test("a tool a connector adds after the owner set his classes, or a tool he classed called by the same name on another connector, is unclassed: each is asked, naming it, in the default mode and in auto mode, and his classes stay as he set them", { timeout: 180000 }, (t) => {
   const ctx = C.connectorWorld(t, { classes: { read: [T.read], draft: [T.draft] } });
   const kept = JSON.stringify(C.classesKept(ctx.world));

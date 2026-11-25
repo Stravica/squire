@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-24T22:18:13.553Z",
-  "updatedAt": "2026-11-24T22:18:39.176Z",
+  "updatedAt": "2026-11-25T00:34:33.661Z",
   "purpose": "Runs Squire's safety floor as the session runs it, in the default mode and in auto mode, the owner's answer through the prompt hook and Squire's connector-tools command as its own command line, against a loopback stand-in of a mail and a calendar connector under invented names, to check that a connector read runs with no ask only through a tool the owner allowed by its exact full name, that a check-in brief draws only on those, that only his own yes sets or widens them, and that any connector tool he has not classed is asked as one that acts.",
   "testLevel": "integration",
   "acIds": [
@@ -73,6 +73,13 @@
       "description": "a tool added later or on another connector is unclassed and asked",
       "status": "pending",
       "testPointer": "tests/acceptance/connector-reads.test.js::a tool a connector adds after the owner set his classes, or a tool he classed called by the same name on another connector, is unclassed: each is asked, naming it, in the default mode and in auto mode, and his classes stay as he set them"
+    },
+    {
+      "id": "TC-044-the-draft-tool-the-floor-once-let-run",
+      "acId": "AC-2101-2",
+      "description": "the draft tool the floor once let run with no ask, in neither of the owner's classes, is asked naming it, runs only on his yes and then marks its job",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::the draft tool the floor once let run with no ask, left out of both of the owner's classes, is treated as one that acts: it is asked, naming it, in the default mode and in auto mode, it does not run before his yes, and once it runs on his yes the job holds untrusted input and private things, so a send is split"
     }
   ],
   "status": "draft"
