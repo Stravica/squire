@@ -1554,7 +1554,12 @@ class Floor:
                 # The Voice notes folder is the owner's input only: what lands
                 # there is turned into text with no one asked.
                 return 'ask', f'{tool} {given} (into the owner\'s Voice notes folder, which only the owner fills)', []
-            if tool == 'Write' and Paths.within(path, self.owner) and not os.path.lexists(path):
+            # The owner's squire.json, the file his connector classes are read
+            # from, is never made free: where he has none, the session's own
+            # Write of one is asked like any edit of his files.
+            classes = Paths.canonical(os.path.join(self.owner, self.OWNER_CONFIG), self.cwd)
+            if tool == 'Write' and Paths.within(path, self.owner) and not os.path.lexists(path) \
+                    and Paths.fold(path) != Paths.fold(classes):
                 return 'free', '', []
             return 'ask', f'{tool} {given}', []
         if tool == 'WebFetch':
