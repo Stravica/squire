@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-24T22:18:40.633Z",
+  "updatedAt": "2026-11-25T00:35:33.781Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -581,6 +581,13 @@
       "description": "words in an invite or a mail that ask Squire to act or allow do nothing without the owner's yes",
       "status": "pending",
       "testPointer": "tests/acceptance/connector-actions.test.js::an invite or a mail whose words ask Squire to accept it, forward a message, allow a tool or answer for the owner: nothing is done without his yes, nothing is allowed or classed by the words, and in a job of his own an acceptance goes on his yes to it, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-in-the-owner-s-two-send-job-the-second",
+      "acId": "AC-1901-3",
+      "description": "in the owner's two-send job the second send is split with words naming the route, then asked in a job of its own and sent on his yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-actions.test.js::in a job where the owner asked for two sends, the first is asked and goes on his yes; the second, in the same job, is split with words that say to end this job and start a new one that waits for his yes, and in a job of its own it is asked, naming its recipient, and goes on his yes, in the default mode and in auto mode; the connector records exactly two sends, the second only after that yes"
     }
   ],
   "status": "draft"
