@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-24T22:18:13.553Z",
-  "updatedAt": "2026-11-25T05:11:22.651Z",
+  "updatedAt": "2026-11-25T05:19:36.412Z",
   "purpose": "Runs Squire's safety floor as the session runs it, in the default mode and in auto mode, the owner's answer through the prompt hook and Squire's connector-tools command as its own command line, against a loopback stand-in of a mail and a calendar connector under invented names, to check that a connector read runs with no ask only through a tool the owner allowed by its exact full name, that a check-in brief draws only on those, that only his own yes sets or widens them, and that any connector tool he has not classed is asked as one that acts.",
   "testLevel": "integration",
   "acIds": [
@@ -87,6 +87,13 @@
       "description": "a name that looks like an allowed one but differs by another script's letter, a zero-width character or a separate accent mark is asked, naming it, and reaches no connector",
       "status": "pending",
       "testPointer": "tests/acceptance/connector-reads.test.js::a tool whose name looks like one the owner allowed but differs by a letter from another script, a zero-width character or an accent written as a separate mark is not allowed: each is asked, naming it, in the default mode and in auto mode, and reaches no connector"
+    },
+    {
+      "id": "TC-044-with-no-squire-json-of-the-owner-s-the",
+      "acId": "AC-2101-1",
+      "description": "with no squire.json of the owner's, the session's Write of one is asked, and a send it would class as drafting stays asked, naming the tool and its recipient, and goes only on his yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-reads.test.js::with no squire.json of the owner's in his folder, the session's own Write of one that would class a send tool as drafting is asked like any edit of his files, and a send through that tool stays asked, naming the tool and its recipient, and goes only on his yes, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

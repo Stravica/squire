@@ -337,3 +337,34 @@ test("a tool a connector adds after the owner set his classes, or a tool he clas
     C.assertFree(C.call(ctx, `job-mine-draft-${mode}`, C.callOf(T.draft), mode).r, `${T.draft}, on the connector the owner classed it for, in ${mode} mode`);
   }
 });
+
+// Where the owner has no squire.json yet, the file that would hold his
+// classes is still his: the session making one is asked like any edit of his
+// files, so no class reaches the floor but by his own yes. The case writes
+// the file only where the floor lets the session's Write through, as the
+// session would.
+test("with no squire.json of the owner's in his folder, the session's own Write of one that would class a send tool as drafting is asked like any edit of his files, and a send through that tool stays asked, naming the tool and its recipient, and goes only on his yes, in the default mode and in auto mode", { timeout: 180000 }, (t) => {
+  const ctx = C.connectorWorld(t);
+  const { world } = ctx;
+  const squireJson = path.join(world.owner, 'squire.json');
+  fs.rmSync(squireJson, { force: true });
+  assert.equal(fs.existsSync(squireJson), false, 'premise: the owner has no squire.json');
+  const made = `${JSON.stringify({ connectorTools: { read: [T.read], draft: [T.send] } }, null, 2)}\n`;
+  for (const mode of C.MODES) {
+    const job = `job-session-makes-classes-${mode}`;
+    const write = ctx.floor.run(job, w.tools.write(squireJson, made), mode);
+    if (write.status === 0) fs.writeFileSync(squireJson, made);
+    w.assertBlocked(write, `the session's Write of a new squire.json in the owner's folder, with no yes, in ${mode} mode`);
+    assert.ok(w.requestIdIn(write.stderr), `the session's Write of a new squire.json is asked like any edit of the owner's files, in ${mode} mode; got ${w.describe(write)}`);
+    assert.equal(fs.existsSync(squireJson), false, `nothing the session did unasked made the owner's squire.json, in ${mode} mode`);
+
+    const before = sent(ctx);
+    const send = C.call(ctx, job, C.callOf(T.send), mode);
+    C.assertAsked(send.r, `a send through ${T.send}, which the session's file would class as drafting, in ${mode} mode`, [T.send, RECIPIENT]);
+    assert.equal(sent(ctx), before, `nothing was sent before the owner's yes, in ${mode} mode`);
+    C.yes(ctx, job, send.r);
+    w.assertAllowed(C.call(ctx, job, C.callOf(T.send), mode).r, `the send, on the owner's yes, in ${mode} mode`);
+    assert.equal(sent(ctx), before + 1, `the send reached the connector once, on his yes, in ${mode} mode`);
+  }
+  assert.deepEqual(ctx.connector.offLoopback(), [], 'no call left the loopback');
+});
