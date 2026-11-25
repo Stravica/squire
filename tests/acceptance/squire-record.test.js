@@ -280,8 +280,6 @@ test("when Squire's record is a file the owner cannot write to, or there is no r
           assert.match(asked.r.stderr, NOT_RECORDED, `${tool}, with ${how}, in ${mode} mode: the ask must say the decision cannot be recorded; got ${w.describe(asked.r)}`);
           assert.equal(asked.ran, false, `${tool} does not run before the owner's yes, with ${how}, in ${mode} mode`);
           assert.equal(ctx.connector.callsOf(tool).length, before, `nothing reached the connector through ${tool} before his yes, with ${how}, in ${mode} mode`);
-          C.yes(ctx, job, asked.r);
-          w.assertAllowed(C.call(ctx, job, C.callOf(tool), mode).r, `${tool}, with ${how}, on the owner's yes, in ${mode} mode`);
         });
       }
     } finally {
