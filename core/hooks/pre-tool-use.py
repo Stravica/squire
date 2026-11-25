@@ -1059,7 +1059,12 @@ class Floor:
 
     FREE_COMMANDS = {'ls', 'cat', 'head', 'tail', 'wc', 'grep', 'stat', 'file', 'pwd', 'date', 'find', 'echo', 'printf'}
     FIND_ACTIONS = {'-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls'}
-    FREE_TOOLS = {'mcp__claude_ai_Gmail__create_draft'}
+    # A connector's tools, as Claude Code names them: mcp__<connector>__<tool>.
+    # The owner classes them himself, by exact full name, in connectorTools
+    # { read, draft } in his squire.json; every other one is a tool that acts.
+    CONNECTOR = 'mcp__'
+    OWNER_CONFIG = 'squire.json'
+    CONNECTOR_CLASSES = 'connectorTools'
     # A subagent is free on the session's own model (none named, or inherit)
     # or one in the plan's set, exactly as written; any other model may need
     # usage credits, so it is asked.
@@ -1073,7 +1078,6 @@ class Floor:
                                  r'=(.*)\Z', re.S)
     CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
     SPENDING = re.compile(r'(?:^|[\s\'"`(=;&|])/(?:upgrade|usage-credits)', re.IGNORECASE)
-    SEND_TOOLS = {'mcp__claude_ai_Gmail__send_message'}
     # Squire's browser: the tools of its one browser server, keyed playwright,
     # whatever they are called (a page can add tools of its own to it). The
     # floor checks a call only of a tool it lists here: one whose whole input
@@ -1417,11 +1421,23 @@ class Floor:
         if tool == 'WebSearch':
             searched = f'WebSearch {self.field(data, "query")}'
             return 'search', searched, [('untrusted', searched)]
-        if tool in self.FREE_TOOLS:
-            return 'free', '', []
         if tool.startswith(self.BROWSER):
             return self.judge_browser(tool, data)
         what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
+        if tool.startswith(self.CONNECTOR):
+            # An allowed read runs with no ask and leaves its job holding
+            # untrusted input and the owner's private things; a draft tool
+            # runs with no ask and no mark; every other connector tool, a near
+            # or look-alike name, a later tool or the same name on another
+            # connector among them, is one that acts: asked, naming it and its
+            # input, and once it runs its job holds both.
+            marks = [('untrusted', tool), ('private', tool)]
+            kind = self.connector_class(tool)
+            if kind == 'read':
+                return 'free', '', marks
+            if kind == 'draft':
+                return 'free', '', []
+            return 'ask', what, marks
         if tool in self.AGENT_TOOLS:
             if 'model' in data:
                 if isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS:
@@ -1432,10 +1448,36 @@ class Floor:
             return 'ask', self.CREDITS.format(what=what), []
         if tool == 'SlashCommand' and isinstance(data.get('command'), str) and self.SPENDING.search(data['command']):
             return 'never', self.NEVER_SPEND, []
-        if tool in self.SEND_TOOLS:
-            return 'ask', what, []
         # A tool the floor does not know: it cannot tell what the tool reads.
         return 'ask', what, [('untrusted', tool), ('private', tool)]
+
+    def connector_class(self, tool):
+        """'read' or 'draft' when the owner's own squire.json, read now, names
+        this connector tool in that class by its whole name, byte for byte
+        (no trim, no fold, no normalising, no split of its parts); None for
+        every other tool. A file that cannot be read whole, or classes of
+        another shape, are no classes; a name in both classes is in neither.
+        Nothing in a call, a connector's word on its tools or anything Squire
+        reads is a class."""
+        try:
+            with open(os.path.join(self.owner, self.OWNER_CONFIG), 'rb') as f:
+                data = json.loads(f.read().decode('utf-8'))
+        except (OSError, ValueError, UnicodeDecodeError):
+            return None
+        classes = data.get(self.CONNECTOR_CLASSES) if isinstance(data, dict) else None
+        if not isinstance(classes, dict):
+            return None
+        read, draft = classes.get('read', []), classes.get('draft', [])
+        if not isinstance(read, list) or not isinstance(draft, list) \
+                or not all(isinstance(name, str) for name in read + draft):
+            return None
+        in_read = any(name == tool for name in read)
+        in_draft = any(name == tool for name in draft)
+        if in_read and not in_draft:
+            return 'read'
+        if in_draft and not in_read:
+            return 'draft'
+        return None
 
     def judge_browser(self, tool, data):
         """A call of Squire's browser. Refused, yes or no, when the floor

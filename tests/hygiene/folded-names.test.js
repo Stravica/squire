@@ -32,7 +32,7 @@ test('a Read of a private file by the other Unicode form of an accented owner fo
   const s = 'session-hygiene-folded-accent';
   w.assertAllowed(w.attempt(it, s, w.tools.webSearch('wholesale flour prices')), 'a web search, the job\'s first call');
   w.assertAllowed(w.attempt(it, s, w.tools.read(decomposed)), `a Read of ${decomposed}`);
-  const r = w.attempt(it, s, w.tools.gmailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.'));
+  const r = w.attempt(it, s, w.tools.mailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.'));
   w.assertBlocked(r, 'a send after a web search and a Read of the owner state by the decomposed accent');
   assert.match(r.stderr, /split/i, `the Read must leave the job holding private things, so the send is refused as one job; got ${w.describe(r)}`);
 });
