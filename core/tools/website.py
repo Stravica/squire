@@ -23,10 +23,12 @@ deploy puts one site live from its own folder (workspace/sites/<site name>
 in the owner's folder) as a Worker with static assets on the account's
 workers.dev address, https://<site name>.<subdomain>.workers.dev, with the
 token the set-up kept and nothing else: no wrangler sign-in, no token or
-account in the environment. It reads the site back at its address until it
-answers with the site, waiting out a new address's certificate, and only
-then reports it live. The safety floor lets it run only as the owner
-previewed it and on the owner's yes to that deploy.
+account in the environment. It reads the site back at its address as an
+ordinary browser does until it answers with the site, waiting out a new
+address's certificate, and only then reports it live; an address that is
+not live yet is said so, and one that answers any other way is one Squire
+could not confirm, named for the owner to open. The safety floor lets it run
+only as the owner previewed it and on the owner's yes to that deploy.
 
 Cloudflare's API is called directly over https, never through wrangler, and
 no token is ever put on a command line: each goes in one call's
@@ -47,6 +49,8 @@ import mimetypes
 import os
 import re
 import secrets
+import socket
+import ssl
 import stat
 import subprocess
 import sys
@@ -479,29 +483,94 @@ class Deploy:
         if self.api.result('POST', f'{script}/subdomain', token, body={'enabled': True}) is None:
             return False, (f'Cloudflare took {self.name} but did not put it on its workers.dev address, '
                            f'{self.address}. It is not live yet; run the deploy again.')
-        if not self.live(files.get('/index.html')):
+        verdict, reason = self.live(files.get('/index.html'))
+        if verdict == self.NOT_YET:
             return False, (f'Squire put {self.name} on Cloudflare, but its address, {self.address}, did not answer '
                            f'with the site within {self.LIVE_WITHIN} seconds, so it is not reported live yet. A new '
-                           'address can take a few minutes; run the deploy again to check.')
+                           'address can take a few minutes to answer.')
+        if verdict != self.LIVE:
+            return False, (f'Squire put {self.name} on Cloudflare, but could not confirm the site at its address, '
+                           f'{self.address}: {reason}. Open {self.address} yourself to see whether the site is there.')
         return True, (f'The site {self.name} is live at {self.address}, from its folder {self.folder}, deployed with '
                       'Squire\'s deploy-only token.')
 
+    LIVE = 'live'
+    NOT_YET = 'not live yet'
+    UNCONFIRMED = 'could not confirm'
+    READ_WAIT = 10
+    # Squire's read-back reads the address as an ordinary browser does: some
+    # hosting turns away the default signature of Python's own library.
+    CLIENT = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) '
+                      'Version/17.0 Safari/605.1.15 Squire',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en',
+        'Cache-Control': 'no-cache',
+    }
+
     def live(self, page):
-        """True once the site's address answers with the site (its index
-        page, where it has one), read again through every failure until the
-        time is up: a new address answers only once its certificate is ready."""
+        """(verdict, reason): LIVE once the site's address serves the site
+        (its index page, where it has one) to an ordinary client's read, read
+        again until the time is up, since a new address answers only once its
+        certificate is ready. NOT_YET only when every read answered one of
+        the five answers of an address not live yet (verdict_of); any other
+        answer, at any read, leaves the site one Squire could not confirm,
+        with that answer's reason in plain words."""
         end = time.monotonic() + self.LIVE_WITHIN
+        unconfirmed = None
         while True:
-            try:
-                request = urllib.request.Request(self.read_at, headers={'Cache-Control': 'no-cache'})
-                with urllib.request.urlopen(request, timeout=10) as answer:
-                    if answer.status == 200 and (page is None or answer.read() == page):
-                        return True
-            except (urllib.error.URLError, OSError, ValueError):
-                pass
+            verdict, reason = self.read_once(page)
+            if verdict == self.LIVE:
+                return self.LIVE, None
+            if verdict != self.NOT_YET:
+                unconfirmed = reason
             if time.monotonic() >= end:
-                return False
+                return (self.UNCONFIRMED, unconfirmed) if unconfirmed is not None else (self.NOT_YET, None)
             time.sleep(1)
+
+    def read_once(self, page):
+        """One read of the address as an ordinary client, through the web
+        proxy this Mac's environment names, if any: its verdict and reason."""
+        try:
+            request = urllib.request.Request(self.read_at, headers=dict(self.CLIENT))
+            with urllib.request.urlopen(request, timeout=self.READ_WAIT) as answer:
+                status = answer.status
+                body = answer.read() if status == 200 and page is not None else None
+            return self.verdict_of(status, None, body, page)
+        except urllib.error.HTTPError as e:
+            return self.verdict_of(e.code, None, None, page)
+        except urllib.error.URLError as e:
+            return self.verdict_of(None, e.reason, None, page)
+        except (OSError, ValueError) as e:
+            return self.verdict_of(None, e, None, page)
+
+    @classmethod
+    def verdict_of(cls, status, failure, body, page):
+        """A read's verdict, by a positive match only: LIVE for a 200 that
+        serves the site's page byte for byte; NOT_YET for exactly 404, 503, a
+        name that does not resolve, a refused connection or a failed TLS
+        handshake; every other answer is UNCONFIRMED, with its reason."""
+        if status == 200:
+            if page is None or body == page:
+                return cls.LIVE, None
+            return cls.UNCONFIRMED, 'the address served a page that is not the site\'s own'
+        if status in (404, 503):
+            return cls.NOT_YET, None
+        if status == 403:
+            return cls.UNCONFIRMED, 'the address refused Squire\'s own check of it (it answered 403)'
+        if status == 429:
+            return cls.UNCONFIRMED, 'the address answered that it had too many reads (429)'
+        if isinstance(status, int) and 500 <= status <= 599:
+            return cls.UNCONFIRMED, f'the address answered with a server error ({status})'
+        if isinstance(status, int):
+            return cls.UNCONFIRMED, f'the address answered {status}, which Squire cannot read as the site'
+        if isinstance(failure, (socket.gaierror, ConnectionRefusedError, ssl.SSLError)):
+            return cls.NOT_YET, None
+        if isinstance(failure, (socket.timeout, TimeoutError)):
+            return cls.UNCONFIRMED, (f'the address took Squire\'s read and gave no answer within {cls.READ_WAIT} '
+                                     'seconds')
+        name = type(failure).__name__ if isinstance(failure, BaseException) else 'no answer'
+        return cls.UNCONFIRMED, f'Squire\'s read of the address failed ({name})'
 
 
 class Keychain:
