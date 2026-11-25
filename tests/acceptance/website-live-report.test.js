@@ -183,6 +183,7 @@ test("an address that answers every read of Squire's with 429, with 500 or with 
   const started = Date.now();
   const done = await Promise.all(runs.map((r) => deployBeside(r.ctx, r.folder, NAME)));
   t.diagnostic(`the four deploys, side by side, took ${((Date.now() - started) / 1000).toFixed(1)} seconds`);
+  runs.forEach((r, i) => t.diagnostic(`an address that ${r.what}: exit ${done[i].status}; its reads answered ${JSON.stringify([...new Set(siteReads(r.ctx, NAME, r.from).map((c) => c.status))])}; the deploy said: ${W.said(done[i]).trim().slice(0, 240)}`));
   runs.forEach((r, i) => {
     const d = done[i];
     W.assertRan(d, `the deploy (an address that ${r.what})`);
