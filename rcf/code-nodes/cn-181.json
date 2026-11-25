@@ -1,0 +1,13 @@
+{
+  "cnId": "CN-181",
+  "path": "core/tools/connector-tools.py#main",
+  "implementsAcIds": [
+    "AC-2101-1",
+    "AC-2101-2"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-25T02:47:46.581Z",
+  "updatedAt": "2026-11-25T02:47:46.581Z"
+}

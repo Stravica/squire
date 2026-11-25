@@ -724,6 +724,43 @@ class VersionsCommand:
         return 2, cls.NEVER.format(what=data.get('command'))
 
 
+class ConnectorToolsCommand:
+    """Squire's connector-tools command as the session runs it, in its one
+    plain spelling: /usr/bin/python3 '<Squire home>/core/tools/connector-tools.py'
+    read|draft|remove <tool name> [...]. It changes which connector tools
+    Squire reads or keeps drafts with and no ask, so it is never free: each
+    run is asked, naming every tool it names, exactly as written, and runs on
+    the owner's own yes to that run. Spelt any other way it stays as any
+    program naming Squire's home is (Floor.judge_argv)."""
+
+    SCRIPT = 'connector-tools.py'
+    SAYS = {
+        'read': 'let Squire read with no ask through {names}, each by its exact full name, so a job that reads '
+                'through it then holds untrusted input and the owner\'s private things',
+        'draft': 'let Squire keep drafts with no ask through {names}, each by its exact full name',
+        'remove': 'take {names} out of the connector tools Squire reads or keeps drafts with, so each is asked again',
+    }
+    RUN = ' (Squire\'s connector-tools command, which changes the owner\'s connector classes in his squire.json: {what})'
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """None when the call is not the connector-tools command as one plain
+        command; else what its ask says, naming every word after the verb."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        words = [str(word) for word in argv[2:]]
+        command = data.get('command')
+        if len(words) > 1 and words[0] in cls.SAYS:
+            return cls.SAYS[words[0]].format(names=', '.join(words[1:])) + cls.RUN.format(what=command)
+        return f'run Squire\'s connector-tools command as written: {command}'
+
+    @classmethod
+    def settle(cls, floor, session, tool, data, what):
+        with Ledger(floor.config.ledger_path) as ledger:
+            return floor.settle(ledger, session, tool, data, 'ask', what, [])
+
+
 class WebsiteCommand:
     """Squire's website command as the session runs it, in its one plain
     spelling: /usr/bin/python3 '<Squire home>/core/tools/website.py' set-up
@@ -1259,6 +1296,12 @@ class Floor:
         versions = VersionsCommand.of(self, tool, data)
         if versions:
             return versions
+        classes = ConnectorToolsCommand.of(self, tool, data)
+        if classes:
+            try:
+                return ConnectorToolsCommand.settle(self, session, tool, data, classes)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
