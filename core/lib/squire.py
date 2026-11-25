@@ -336,20 +336,26 @@ class Record:
     def writable(cls, owner_folder):
         """True when a line can be added: the owner's workspace/pages, where
         it is, is a folder of its own, and the record is a plain file or not
-        there yet."""
+        there yet; and this account can append to the record, or, with no
+        record, can make it in the nearest folder there on the way to it.
+        Asked of the Mac with no side effect: nothing is made or opened."""
         folder = os.path.join(os.path.realpath(owner_folder), cls.FOLDER)
+        record = os.path.join(folder, cls.NAME)
         try:
             if os.path.lexists(folder):
                 if os.path.islink(folder) or not os.path.isdir(folder) or os.path.realpath(folder) != folder:
                     return False
             elif os.path.realpath(os.path.dirname(folder)) != os.path.dirname(folder):
                 return False
-            found = os.lstat(os.path.join(folder, cls.NAME))
+            found = os.lstat(record)
         except FileNotFoundError:
-            return True
+            there = folder
+            while not os.path.lexists(there) and os.path.dirname(there) != there:
+                there = os.path.dirname(there)
+            return os.path.isdir(there) and os.access(there, os.W_OK | os.X_OK)
         except OSError:
             return False
-        return stat.S_ISREG(found.st_mode) and found.st_nlink == 1
+        return stat.S_ISREG(found.st_mode) and found.st_nlink == 1 and os.access(record, os.W_OK)
 
     @staticmethod
     def one(value):
