@@ -195,10 +195,11 @@ class SetUp:
 
     def steps(self):
         """The set-up in order, each step's failure a NotDone."""
-        verified = self.api.result('GET', f'/accounts/{self.account}/tokens/verify', self.token)
+        status, answer = self.api.call('GET', f'/accounts/{self.account}/tokens/verify', self.token)
+        verified = answer.get('result') if isinstance(answer, dict) and answer.get('success') is True \
+            and status is not None and 200 <= status < 300 else None
         if not isinstance(verified, dict) or not isinstance(verified.get('id'), str) or verified.get('status') != 'active':
-            raise NotDone(f'Cloudflare did not accept the set-up token on account {self.account}: check the account '
-                          'id and the token, store the token again if it changed, and nothing was made')
+            raise NotDone(self.not_accepted(status))
         self.mine = {'id': verified['id'], 'name': None}
         record = self.api.result('GET', f'/accounts/{self.account}/tokens/{self.mine["id"]}', self.token)
         rights = self.rights(record) if isinstance(record, dict) else []
@@ -252,6 +253,32 @@ class SetUp:
                 f'Keychain as {self.KEPT_SECRET}, the free plan fails rather than bills, and the set-up token has been '
                 f'removed from the account and the Keychain. Sites go live at '
                 f'https://<site name>.{sub}.workers.dev, each on the owner\'s yes.')
+
+    def not_accepted(self, status):
+        """What the set-up says when the account's path did not accept the
+        set-up token, by what that path answered. Only a refusal that speaks
+        about the token (401 or 403, whatever its code) leads to the user
+        path's verify, a GET that makes and keeps nothing, and only an active
+        answer there makes the token one made under the owner's own profile.
+        A 429, a 5xx or no answer is Cloudflare not answering. Anything else
+        keeps the words for any token Cloudflare does not accept."""
+        if status in (401, 403) and self.user_owned():
+            return (f'Cloudflare did not accept the set-up token on account {self.account}, and accepts it only as a '
+                    'token made under your own profile: the set-up token must be an account-owned token. Make it on '
+                    'Cloudflare\'s dashboard under Manage account, then Account API Tokens, with '
+                    f'{" and ".join(self.NEEDS)}, store it as {self.SET_UP_SECRET}, check the account id too, and run '
+                    'the set-up again; nothing was made')
+        if status is None or status == 429 or 500 <= status <= 599:
+            return (f'Cloudflare did not answer the set-up\'s check of the set-up token on account {self.account}, '
+                    'so the set-up could not tell whether it accepts it: run the set-up again later; nothing was made')
+        return (f'Cloudflare did not accept the set-up token on account {self.account}: check the account id and the '
+                'token, store the token again if it changed, and nothing was made')
+
+    def user_owned(self):
+        """True only when Cloudflare's user path verifies the set-up token
+        as active: a token made under the owner's own profile."""
+        verified = self.api.result('GET', '/user/tokens/verify', self.token)
+        return isinstance(verified, dict) and isinstance(verified.get('id'), str) and verified.get('status') == 'active'
 
     def rights(self, record):
         """The rights a token's record holds on this account, by name."""
