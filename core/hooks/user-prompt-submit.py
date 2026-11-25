@@ -27,7 +27,7 @@ class OwnerAnswer:
     @classmethod
     def handle(cls, raw):
         sys.path.insert(0, os.path.join(CORE, 'lib'))
-        from squire import Config, Ledger
+        from squire import Config, Ledger, Record
 
         event = json.loads(raw.decode('utf-8'))
         if not isinstance(event, dict) or event.get('hook_event_name') != 'UserPromptSubmit':
@@ -41,12 +41,18 @@ class OwnerAnswer:
         answer, named = match.group(1).lower(), match.group(2)
         config = Config()
         now = time.time()
+        answered = None
         with Ledger(config.ledger_path) as ledger:
             pending = ledger.open_requests(session, now, config.timeout)
             if named:
                 pending = [r for r in pending if str(r.get('id')).lower() == named.lower()]
             if len(pending) == 1:
                 ledger.append({'type': 'answer', 'request': pending[0]['id'], 'session': session, 'answer': answer, 'at': now})
+                answered = pending[0]['id']
+        if answered:
+            # Squire's record holds the owner's answer; a record that cannot
+            # be written leaves the answer standing in the ledger.
+            Record.add(config, [(session, f'answered {answer} {answered}', '', '', '')], now)
 
 
 class ReleaseNote:

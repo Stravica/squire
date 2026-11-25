@@ -124,6 +124,9 @@ class Ledger:
     """
 
     KINDS = {'request', 'answer', 'use', 'taint', 'model', 'job'}
+    # Every record this process has added, in order: what Squire's record
+    # names of the call the process decides (Record).
+    added = []
 
     def __init__(self, path):
         self.path = path
@@ -163,6 +166,7 @@ class Ledger:
         self.file.write(json.dumps(record, sort_keys=True) + '\n')
         self.file.flush()
         self.records.append(record)
+        Ledger.added.append(record)
 
     def _of(self, kind, **match):
         return [r for r in self.records if r.get('type') == kind and all(r.get(k) == v for k, v in match.items())]
@@ -295,6 +299,162 @@ class Ledger:
 
     def used(self, request_id):
         return bool(self._of('use', request=request_id))
+
+
+class Record:
+    """Squire's record of what it decided and did, for the owner to read:
+    workspace/pages/squire-record.md in his folder, a Markdown page the page
+    server shows like any page, written only by Squire's safety floor and
+    hooks (the floor refuses the session's own write, change, move or removal
+    of it, yes or no). Each decision is one list line: its time (UTC),
+    "job <job>", the decision (asked <request>, answered yes|no <request>,
+    used <request>, refused with its reason, split, or ran), the tool and the
+    target the floor names (a recipient, an id, a file, a program, a host or a
+    secret's name). A line never holds a message's words, an ask's text or a
+    secret: every field is put on one line, no secret the owner's Keychain
+    keeps for Squire is left in it in any form the secret helper hides, and
+    it is cut short; when those secrets cannot be read with no prompt, the
+    target and the reason are left out. Lines are added under a lock, as the
+    ledger's are. With anything but a plain file at its path (a link, a
+    folder), or its folder anywhere but the owner's own workspace/pages, it
+    cannot be written."""
+
+    NAME = 'squire-record.md'
+    FOLDER = os.path.join('workspace', 'pages')
+    HEAD = ('# Squire\'s record\n\nWhat Squire\'s safety floor and hooks decided and did, one line each, oldest '
+            'first. Only Squire writes this page, and it holds no message\'s words and no secret.\n\n')
+    LONGEST = 160
+    WITHHELD = '(left out: Squire could not read its Keychain to keep secrets out of this line)'
+    SECURITY = '/usr/bin/security'
+    SERVICE = 'squire'
+
+    @classmethod
+    def path(cls, owner_folder):
+        return os.path.join(owner_folder, cls.FOLDER, cls.NAME)
+
+    @classmethod
+    def writable(cls, owner_folder):
+        """True when a line can be added: the owner's workspace/pages, where
+        it is, is a folder of its own, and the record is a plain file or not
+        there yet."""
+        folder = os.path.join(os.path.realpath(owner_folder), cls.FOLDER)
+        try:
+            if os.path.lexists(folder):
+                if os.path.islink(folder) or not os.path.isdir(folder) or os.path.realpath(folder) != folder:
+                    return False
+            elif os.path.realpath(os.path.dirname(folder)) != os.path.dirname(folder):
+                return False
+            found = os.lstat(os.path.join(folder, cls.NAME))
+        except FileNotFoundError:
+            return True
+        except OSError:
+            return False
+        return stat.S_ISREG(found.st_mode) and found.st_nlink == 1
+
+    @staticmethod
+    def one(value):
+        """A field on one line: control and format characters and line or
+        paragraph separators become spaces."""
+        return ' '.join(''.join(' ' if unicodedata.category(c) in ('Cc', 'Cf', 'Zl', 'Zp') else c
+                                for c in str(value)).split())
+
+    @classmethod
+    def short(cls, text):
+        return text if len(text) <= cls.LONGEST else text[:cls.LONGEST - 3] + '...'
+
+    @staticmethod
+    def helper():
+        """Squire's secret helper's class, from this core."""
+        import importlib.util
+        script = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'tools', 'secret.py')
+        spec = importlib.util.spec_from_file_location('squire_secret_helper', script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.SecretHelper
+
+    @classmethod
+    def secrets(cls, config):
+        """(the values of every secret the owner's Keychain keeps for Squire,
+        the helper that hides them); ([], None) with no Keychain set up; None
+        when they cannot all be read with no prompt (a Keychain locked or not
+        there, or a listing that cannot be read)."""
+        if not config.keychain:
+            return [], None
+        try:
+            helper = cls.helper()
+            keeper = helper(config)
+            keeper.check('')
+            listed = subprocess.run([cls.SECURITY, 'dump-keychain', config.keychain], stdin=subprocess.DEVNULL,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+            if listed.returncode != 0:
+                return None
+            values = []
+            for item in re.split(rb'\nkeychain: ', b'\n' + listed.stdout):
+                if b'class: "genp"' not in item or b'"svce"<blob>="' + cls.SERVICE.encode() + b'"' not in item:
+                    continue
+                name = re.search(rb'"acct"<blob>="([^"\\]*)"', item)
+                if not name:
+                    return None
+                values.append(keeper.fetch(name.group(1).decode('utf-8')))
+            return values, helper
+        except Exception:  # noqa: BLE001 - any failure leaves the targets out
+            return None
+
+    @classmethod
+    def line(cls, now, job, decision, tool='', target='', why='', hide=None):
+        """One decision's line."""
+        clean = (lambda text: cls.short(hide(cls.one(text)) if hide else cls.one(text)))  # noqa: E731
+        stamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(now))
+        words = [stamp, f'job {clean(job)}', decision, clean(tool), clean(target)]
+        why = clean(why)
+        return '- ' + ' '.join(word for word in words if word) + (f' (why: {why})' if why else '')
+
+    @staticmethod
+    def hidden(text, values, helper):
+        data = text.encode('utf-8')
+        for value in values:
+            if value:
+                data = helper.hide(data, value)
+        return data.decode('utf-8', 'replace')
+
+    @classmethod
+    def add(cls, config, entries, now=None):
+        """Adds one line for each (job, decision, tool, target, why); True
+        when they were added."""
+        if not entries:
+            return True
+        now = time.time() if now is None else now
+        owner = os.path.realpath(config.owner_folder)
+        if not cls.writable(owner):
+            return False
+        hide = None
+        if any(target or why for _, _, _, target, why in entries):
+            found = cls.secrets(config)
+            if found is None:
+                entries = [(job, decision, tool, cls.WITHHELD if target or why else '', '')
+                           for job, decision, tool, target, why in entries]
+            elif found[0]:
+                hide = lambda text: cls.hidden(text, found[0], found[1])  # noqa: E731
+        lines = [cls.line(now, *entry, hide=hide) for entry in entries]
+        folder = os.path.join(owner, cls.FOLDER)
+        try:
+            os.makedirs(folder, mode=0o700, exist_ok=True)
+            fd = os.open(os.path.join(folder, cls.NAME), os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        except OSError:
+            return False
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                return False
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            text = (cls.HEAD if os.fstat(fd).st_size == 0 else '') + ''.join(line + '\n' for line in lines)
+            data = text.encode('utf-8')
+            while data:
+                data = data[os.write(fd, data):]
+            return True
+        except OSError:
+            return False
+        finally:
+            os.close(fd)
 
 
 class Process:

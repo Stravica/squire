@@ -45,7 +45,7 @@ PYTHON = '/usr/bin/python3'
 
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
-    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, Runtime, SquireError, paced_windows,
+    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, Record, Runtime, SquireError, paced_windows,
                         percent_words, read_usage, reset_words, second_yes_needed, youtube_link)
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
@@ -1102,6 +1102,15 @@ class Floor:
     CONNECTOR = 'mcp__'
     OWNER_CONFIG = 'squire.json'
     CONNECTOR_CLASSES = 'connectorTools'
+    # Squire's record names a connector call by the recipients it names, or
+    # else by its ids; never by a message's words (Record).
+    RECIPIENTS = re.compile(r'to|cc|bcc|recipients?|guests|attendees|\w*recipient\w*', re.IGNORECASE)
+    IDS = re.compile(r'id|\w+_id', re.IGNORECASE)
+    REMOVERS = {'rm', 'rmdir', 'mv', 'unlink'}
+    NOT_RECORDED = ('\nSquire\'s record (workspace/pages/squire-record.md in the owner\'s folder) cannot be written, so '
+                    'this decision cannot be recorded there; it goes ahead only on the owner\'s yes.')
+    DONE_ELSEWHERE = re.compile(r'The owner said yes to request r-\d+:')
+    SPLIT_HEAD = 'Squire will not do this as one job:'
     # A subagent is free on the session's own model (none named, or inherit)
     # or one in the plan's set, exactly as written; any other model may need
     # usage credits, so it is asked.
@@ -1163,7 +1172,7 @@ class Floor:
     WALK = 1.0
 
     NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
-                   'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
+                   'the approvals ledger, Squire\'s record or Claude Code\'s settings, yes or no: {what}')
     NEVER_PAGES = ('Squire\'s safety floor: the session never runs Squire\'s page server itself, yes or no; it only asks '
                    'the page server for the link, with the one link command Squire\'s instructions name, exactly as '
                    'written there. Nothing ran: {what}')
@@ -1241,7 +1250,7 @@ class Floor:
         self.cwd = cwd
         self.owner = config.owner_folder
         self.cores = [CORE, Paths.canonical(os.path.join(config.home, 'core'), cwd)]
-        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path,
+        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path, Record.path(config.owner_folder),
                             os.path.realpath(os.path.join(os.path.expanduser('~'), 'Applications', self.UPDATE_APP))]
         self.keychain = Paths.canonical(config.keychain, cwd) if config.keychain else None
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
@@ -1269,6 +1278,95 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        """The floor's answer to a call, kept in Squire's record."""
+        Ledger.added = []
+        answer = self.decide_call(session, tool, data)
+        try:
+            return self.recorded(session, tool, data, answer)
+        except Exception:  # noqa: BLE001 - keeping the record never turns a refusal or an ask into a yes
+            return answer
+
+    def recorded(self, session, tool, data, answer):
+        """Adds the call's decisions to Squire's record: an ask with its new
+        request, the use of a yes, a refusal with its reason, a split, and a
+        connector call that ran with no ask; a free local call adds nothing.
+        When the record cannot be written, an ask says so (settle has made a
+        connector call that would run with no ask into one)."""
+        code, reason = answer
+        asked = [r['id'] for r in Ledger.added if r.get('type') == 'request' and r.get('session') == session]
+        used = [r['request'] for r in Ledger.added if r.get('type') == 'use']
+        entries = [(f'asked {r}', '') for r in asked] + [(f'used {r}', '') for r in used]
+        if code == 0 and self.records_run(tool) and not used:
+            entries.append(('ran', ''))
+        again = code == 2 and not asked and reason.startswith('Request r-')
+        if code == 2 and not asked and not again and not self.DONE_ELSEWHERE.match(reason):
+            if reason.startswith(self.SPLIT_HEAD):
+                entries.append(('split', ''))
+            else:
+                entries.append(('refused', self.reason_of(reason, tool, data)))
+        if not entries and not again:
+            return answer
+        target = self.target(tool, data)
+        kept = Record.add(self.config, [(session, decision, tool, target, why) for decision, why in entries])
+        if (not kept or (again and not Record.writable(self.owner))) and code == 2 and (asked or again):
+            return code, reason + self.NOT_RECORDED
+        return answer
+
+    def records_run(self, tool):
+        """True for a connector's tool, whose run with no ask the record holds."""
+        return tool.startswith(self.CONNECTOR) and not tool.startswith(self.BROWSER)
+
+    @staticmethod
+    def reason_of(reason, tool, data):
+        """A refusal's own words, without the call they quote."""
+        cut = len(reason)
+        for quoted in (data.get('command'), f'{tool} '):
+            if isinstance(quoted, str) and quoted:
+                at = reason.find(quoted)
+                if at >= 0:
+                    cut = min(cut, at)
+        return reason[:cut].rstrip(' :.\n')
+
+    def target(self, tool, data):
+        """What a call is aimed at, as Squire's record names it: the
+        recipients a connector call names, or else its ids; a file's path; the
+        program a command runs, or the secret a secret helper run hands it; a
+        host. Never a message's words."""
+        if tool == 'Bash':
+            command = data.get('command')
+            argv = self.one_command(tool, data)
+            if argv and len(argv) >= 4 and argv[2] == 'run' \
+                    and self.is_core_tool(self.path(argv[1], strict=False), 'secret.py'):
+                return f'the secret {argv[3]}'
+            try:
+                segments = ShellCommand(command).segments if isinstance(command, str) else []
+            except Exception:  # noqa: BLE001 - a command the parser cannot read is named by nothing
+                segments = []
+            words = [str(word) for word in (segments[0] if segments else []) if '=' not in str(word)]
+            if words[:1] == [PYTHON] and len(words) > 1:
+                return os.path.basename(words[1])
+            return os.path.basename(words[0]) if words else ''
+        if tool in ('Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit'):
+            given = data.get('notebook_path' if tool == 'NotebookEdit' else 'file_path')
+            return given if isinstance(given, str) else ''
+        if tool == 'WebFetch':
+            url = data.get('url')
+            try:
+                return (urlsplit(url).hostname or '') if isinstance(url, str) else ''
+            except ValueError:
+                return ''
+        if self.records_run(tool):
+            def strings(value):
+                if isinstance(value, str):
+                    return [value]
+                return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+            for names in (self.RECIPIENTS, self.IDS):
+                found = [s for k, v in data.items() if isinstance(k, str) and names.fullmatch(k) for s in strings(v)]
+                if found:
+                    return ', '.join(found)
+        return ''
+
+    def decide_call(self, session, tool, data):
         self.session = session
         job = HeavyJob.of(self, tool, data)
         if job:
@@ -1367,11 +1465,15 @@ class Floor:
             verdict = 'ask' if held['private'] else 'free'
         if verdict == 'search':
             verdict = 'ask' if held['untrusted'] and held['private'] else 'free'
-        if verdict == 'free':
+        if verdict == 'free' and not (self.records_run(tool) and not Record.writable(self.owner)):
             for kind, source in taints:
                 ledger.taint(session, kind, source, now)
             return 0, ''
-        if held['untrusted'] and held['private']:
+        if verdict == 'free':
+            # A connector call that would run with no ask, when Squire's record
+            # cannot hold it: asked, and it goes on the owner's yes.
+            what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
+        elif held['untrusted'] and held['private']:
             return 2, self.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']), what=what)
         item = item or self.item(tool, data)
         approved = ledger.approval(session, item, now, self.config.timeout)
@@ -1740,6 +1842,10 @@ class Floor:
             return 'free', '', taints
         if Paths.fold(os.path.basename(self.config.ledger_path)) in Paths.fold(command):
             return 'never', self.NEVER_FLOOR.format(what=command), []
+        # Squire's record, named in any word of a command that is not a plain
+        # read, or the folder holding it removed or moved.
+        if Paths.fold(Record.NAME) in Paths.fold(command) or self.removes_record(shell):
+            return 'never', self.NEVER_FLOOR.format(what=command), []
         credits = self.picks_credits(shell)
         if shell.plain and kinds <= {'free', 'model'} and not credits:
             return 'model', command, taints
@@ -1748,6 +1854,17 @@ class Floor:
         if self.target_unread(shell):
             what += '\n' + self.CANNOT_TELL
         return 'ask', what, taints + run
+
+    def removes_record(self, shell):
+        """True when a program that removes or moves names Squire's record or
+        a folder holding it."""
+        record = Record.path(self.owner)
+        for argv in shell.segments:
+            name = os.path.basename(argv[0])
+            if name in self.REMOVERS or (name == 'find' and any(word in self.FIND_ACTIONS for word in argv)):
+                if any(p and Paths.within(record, p) for p in (self.path(word, strict=False) for word in argv[1:])):
+                    return True
+        return False
 
     def names_website(self, shell):
         """True when a command names Squire's website command outside its
