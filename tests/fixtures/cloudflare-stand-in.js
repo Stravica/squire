@@ -83,8 +83,10 @@
 //     addresses, whatever the client and whether or not the site is live,
 //     gets one of 'tooManyRequests' (429), 'serverError' (500), 'heldOpen'
 //     (the connection is taken and the request read, and no answer is ever
-//     sent; the call is recorded with status null) or 'notThePage' (200 with
-//     a page that is not the site's own).
+//     sent; the call is recorded with status null), 'notThePage' (200 with
+//     a page that is not the site's own) or 'cutOff' (200 whose length header
+//     promises a whole page and whose body stops part way through it, the
+//     connection then closed; added beside the others, which are unchanged).
 //   Other refusals of a user-owned token (the stand-in's own setting, not
 //     seen on a real account): with userOwnedRefusals { account, userVerify },
 //     each a { status, code, message }, every call on the account's path
@@ -188,6 +190,13 @@ function serve(folder) {
       save();
       // siteAnswers 'heldOpen': the request is taken and never answered.
       if (answer.held) return;
+      // siteAnswers 'cutOff': the length header promises more than is sent,
+      // then the connection closes.
+      if (answer.promised) {
+        res.writeHead(answer.status, { 'content-type': answer.type, 'content-length': String(answer.promised) });
+        res.write(answer.text, () => res.socket && res.socket.end());
+        return;
+      }
       res.writeHead(answer.status, { 'content-type': answer.type || 'application/json' });
       res.end(answer.text !== undefined ? answer.text : JSON.stringify(answer.json));
     });
@@ -440,11 +449,13 @@ function widen(made, how, accountId) {
 // answer instead (the stand-in's own setting).
 const DEFAULT_CLIENT = /^Python-urllib\//;
 const NOT_THE_PAGE = '<!doctype html><title>Please wait</title><p>This page is not the site that was put live.</p>\n';
+const WHOLE_PAGE = '<!doctype html><title>A page</title><p>This page is longer than the part of it that is sent.</p>\n';
 const SITE_ANSWERS = {
   tooManyRequests: { status: 429, type: 'text/plain', text: 'Too many requests.\n' },
   serverError: { status: 500, type: 'text/plain', text: 'Internal server error.\n' },
   heldOpen: { status: null, held: true },
   notThePage: { status: 200, type: 'text/html', text: NOT_THE_PAGE },
+  cutOff: { status: 200, type: 'text/html', text: WHOLE_PAGE.slice(0, 48), promised: Buffer.byteLength(WHOLE_PAGE) },
 };
 function site(state, options, parts, req) {
   const agent = req.headers['user-agent'];

@@ -18,8 +18,8 @@
 // read gets that 403; notFoundFirstMs with a long certificateWaitMs, the
 // address answers 404, then 503, for the whole read-back. And as the
 // stand-in's own setting, not seen on a real account: siteAnswers, every read
-// gets 429, 500, a 200 whose page is not the site's, or a connection taken and
-// never answered.
+// gets 429, 500, a 200 whose page is not the site's, a 200 whose page is cut
+// off part way through, or a connection taken and never answered.
 //
 // What the cases pin, decided on the fail-closed reading and named here (no
 // record settles them):
@@ -41,7 +41,8 @@
 //     own wait: the deploy says Squire "could not confirm" the site and names
 //     the address for the owner to open, never that it is not live and never
 //     to deploy again (no reason's wording and no exit status is pinned for
-//     these);
+//     these); and so is a 200 whose page is cut off part way through, with
+//     exit 1 and never a crash or a command that failed;
 //   live: "The site <name> is live at <address>", exit 0, as today.
 //
 // Usage model (assumptions, none measured): typical, one small site deployed
@@ -198,4 +199,29 @@ test("an address that answers every read of Squire's with 429, with 500 or with 
     assert.ok(reads.length > 0 && r.premise(reads), `the address ${r.what} to every read; got ${JSON.stringify(reads.map((c) => c.status))}`);
     assert.deepEqual(r.ctx.standIn.offLoopback(), [], `an address that ${r.what}: no call left the loopback`);
   });
+});
+
+// A 200 whose page is cut off part way through: the stand-in's own setting
+// (siteAnswers 'cutOff'), given to every read of the address, whatever the
+// client: its length header promises the whole page, the body stops short and
+// the connection closes.
+test("an address that answers every read of Squire's with a 200 whose page is cut off part way through is one Squire could not confirm: the deploy says so, names the address for the owner to open and exits 1, and never crashes, never says its command failed and never reports the site live or not live yet", { timeout: 300000 }, (t) => {
+  const ctx = W.websiteWorld(t, { siteAnswers: 'cutOff' });
+  const { d, reads } = setUpAndDeploy(ctx);
+  const words = W.said(d);
+  assert.doesNotMatch(words, /\bfailed\b|Traceback|IncompleteRead/, `a page cut off part way is answered in Squire's plain words, never as a command that failed or a crash; got ${w.describe(d)}`);
+  assert.match(words, /could not confirm/i, `the deploy says Squire could not confirm the site; got ${w.describe(d)}`);
+  assert.ok(words.includes(W.address(NAME)), `the report names the address, ${W.address(NAME)}; got ${w.describe(d)}`);
+  assert.match(words, /\bopen\b/i, `the report tells the owner to open the address; got ${w.describe(d)}`);
+  assert.equal(d.status, 1, `a site Squire could not confirm exits 1; got ${w.describe(d)}`);
+  assert.doesNotMatch(words, NOT_LIVE, `a site Squire could not confirm is never reported not live, nor not live yet; got ${w.describe(d)}`);
+  assert.doesNotMatch(words, DEPLOY_AGAIN, `the report never advises running the deploy again; got ${w.describe(d)}`);
+  assert.equal(words.includes(`is live at ${W.address(NAME)}`), false, `a site Squire could not confirm is not reported live either; got ${w.describe(d)}`);
+  assert.ok(reads.length > 0 && reads.every((c) => c.status === 200), `the address answered every read with a 200; got ${JSON.stringify(reads.map((c) => c.status))}`);
+  // The premise, read by the case itself: the page sent is shorter than the
+  // length its header promised.
+  const r = spawnSync('/usr/bin/curl', ['-s', '-o', '/dev/null', '-w', '%{http_code} %{size_download}', '--noproxy', '*',
+    `${ctx.standIn.origin}/__sites/${NAME}.${W.SUBDOMAIN}.workers.dev/`], { encoding: 'utf8', timeout: 15000 });
+  assert.equal(r.status, 18, `the stand-in cuts the page off part way (curl exit 18, a partial transfer); got exit ${r.status}, ${JSON.stringify(r.stdout)}`);
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
