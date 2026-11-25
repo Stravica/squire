@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-24T22:18:17.277Z",
-  "updatedAt": "2026-11-25T00:37:34.604Z",
+  "updatedAt": "2026-11-25T05:19:15.244Z",
   "purpose": "Runs Squire's safety floor as the session runs it, the owner's answer through the prompt hook, Squire's secret helper and the page server as their own command lines, and a loopback connector stand-in, to check that each decision is written once to the record in the owner's folder with its time, job, decision, tool and target and nothing secret or private in it, that the session cannot change the record, that the owner can open it on his Mac behind the link's secret, and that a call is asked when its decision cannot be recorded.",
   "testLevel": "integration",
   "acIds": [
@@ -58,6 +58,13 @@
       "description": "a target holding a new line and words shaped like a record line gives its decision one line and adds no yes the owner never gave",
       "status": "pending",
       "testPointer": "tests/acceptance/squire-record.test.js::a target holding a new line and words shaped like a line of Squire's record cannot add one: an event whose title holds a new line and a yes to another request gives its ask one line in the record, and the record holds no yes the owner never gave"
+    },
+    {
+      "id": "TC-045-a-record-the-owner-cannot-write-to-or-no",
+      "acId": "AC-2201-1",
+      "description": "a record the owner cannot write to, or no record in a folder that cannot be written into: an allowed read and a classed draft are each asked, saying the decision cannot be recorded, and reach the connector only on his yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/squire-record.test.js::when Squire's record is a file the owner cannot write to, or there is no record and its folder cannot be written into, an allowed connector read and a draft through a tool he classed as drafting are each asked, saying the decision cannot be recorded, and neither reaches the connector before his yes, in the default mode and in auto mode"
     }
   ],
   "status": "draft"

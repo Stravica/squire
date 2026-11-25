@@ -243,6 +243,54 @@ test("when Squire's record cannot be written, a call whose decision it would hol
   }
 });
 
+// Two more ways the record cannot be written: the page is a file the owner's
+// account cannot write to, and there is no page and the folder that would hold
+// it cannot be written into. The case makes each writable again as it ends,
+// pass or fail, so the world's clean-up can remove it.
+test("when Squire's record is a file the owner cannot write to, or there is no record and its folder cannot be written into, an allowed connector read and a draft through a tool he classed as drafting are each asked, saying the decision cannot be recorded, and neither reaches the connector before his yes, in the default mode and in auto mode", { timeout: 240000 }, (t) => {
+  const ctx = C.connectorWorld(t, { classes: { read: [T.read], draft: [T.draft] } });
+  const file = C.recordFile(ctx.world);
+  const pages = path.dirname(file);
+  fs.mkdirSync(pages, { recursive: true });
+  const writable = () => {
+    try { fs.chmodSync(pages, 0o755); } catch (e) { /* gone */ }
+    try { fs.chmodSync(file, 0o644); } catch (e) { /* none */ }
+  };
+  t.after(writable);
+  const NOT_RECORDED = /\b(cannot|can't|could not|couldn't) be recorded\b/i;
+  const ways = [
+    ['the record a file the owner cannot write to', () => {
+      fs.writeFileSync(file, '# What Squire decided and did\n');
+      fs.chmodSync(file, 0o444);
+    }],
+    ['no record and a folder that cannot be written into', () => {
+      fs.rmSync(file, { force: true });
+      fs.chmodSync(pages, 0o555);
+    }],
+  ];
+  ways.forEach(([how, make], k) => {
+    make();
+    try {
+      for (const mode of C.MODES) {
+        [[T.read, T.read], [T.draft, T.draft]].forEach(([tool, named], i) => {
+          const job = `job-unwritable-${k}-${mode}-${i}`;
+          const before = ctx.connector.callsOf(tool).length;
+          const asked = C.call(ctx, job, C.callOf(tool), mode);
+          C.assertAsked(asked.r, `${tool}, with ${how}, in ${mode} mode`, [named]);
+          assert.match(asked.r.stderr, NOT_RECORDED, `${tool}, with ${how}, in ${mode} mode: the ask must say the decision cannot be recorded; got ${w.describe(asked.r)}`);
+          assert.equal(asked.ran, false, `${tool} does not run before the owner's yes, with ${how}, in ${mode} mode`);
+          assert.equal(ctx.connector.callsOf(tool).length, before, `nothing reached the connector through ${tool} before his yes, with ${how}, in ${mode} mode`);
+          C.yes(ctx, job, asked.r);
+          w.assertAllowed(C.call(ctx, job, C.callOf(tool), mode).r, `${tool}, with ${how}, on the owner's yes, in ${mode} mode`);
+        });
+      }
+    } finally {
+      writable();
+    }
+  });
+  assert.deepEqual(ctx.connector.offLoopback(), [], 'no call left the loopback');
+});
+
 // The page server as Squire runs it, in a process group of its own the case
 // ends; resolves with the port its first line names.
 function startPageServer(t, world) {
