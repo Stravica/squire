@@ -1,0 +1,69 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "91c2aef02b81e4f133b5a24f09e21308f6545a3c",
+  "fbsIds": [
+    "FBS-012",
+    "FBS-006",
+    "FBS-001",
+    "FBS-008"
+  ],
+  "touchedAcIds": [
+    "AC-1201-4",
+    "AC-1201-5",
+    "AC-2101-1",
+    "AC-2101-2",
+    "AC-2201-1",
+    "AC-1901-1",
+    "AC-1901-3",
+    "AC-1902-1"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "PASS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-2201-1",
+      "text": "When Squire's record is a file the owner's account cannot write (a read-only file), or there is no record and the pages folder, or the workspace folder above it, cannot be written into, an allowed connector read and a draft through a tool the owner classed as drafting each run with no ask and leave no line, in the default mode and in auto mode; and a send asked while the record could be written, then answered yes after it became read-only, runs on the yes with no line for the use and no word that it cannot be recorded. The criterion says that when the record cannot be written, the call is asked, saying it cannot be recorded. Record.writable in core/lib/squire.py (from line 336, its answer at 352) checks only that the path is one regular file with one link, or absent, never that it can be written; the floor's settle in core/hooks/pre-tool-use.py at line 1468 frees a connector call when Record.writable says yes, and recorded at lines 1310 to 1313 adds the cannot-be-recorded words only to a call already asked, so a free call whose line Record.add could not write stays free. A red test would make the record read-only (and, apart, leave no record in a pages folder that cannot be written into), then assert that an allowed read and a classed draft are each asked, saying the decision cannot be recorded, in both modes, and run only on the owner's yes. Smallest fix, the builder's: Record.writable checks that the file, or with no file the folder that would hold it, can be written, and recorded turns a call that would run with no ask into that ask whenever Record.add cannot write its line."
+    },
+    {
+      "id": "F-2",
+      "locus": "build",
+      "acId": "AC-2101-1",
+      "text": "With no squire.json in the owner's folder, the session's own Write of a new squire.json naming connector classes runs with no ask, and from then on the floor takes its classes as the owner's: a send tool named in it as a draft tool then runs with no ask. The criterion says only the owner's own yes sets or widens what Squire may read, and nothing is sent without his yes for that item. The floor's judge in core/hooks/pre-tool-use.py at line 1557 frees a Write of a file in the owner's folder that does not exist yet, and connector_class at lines 1599 to 1626 reads the classes from that same file on every call; an edit or a Write over an existing squire.json is asked, so only the missing file is open. A red test would remove the owner's squire.json, have the session Write one naming a send tool as a draft tool, and assert that the Write is asked and that the send stays asked, naming the tool and its recipient, and does not run before his yes. Smallest fix, the builder's: the floor never frees a Write that creates the owner's squire.json; it is asked as an edit of it is."
+    },
+    {
+      "id": "F-3",
+      "locus": "build",
+      "acId": "AC-1201-4",
+      "text": "When the site's address answers the deploy's read-back with a 200 whose page is cut off part way through, the deploy ends with only the line \"Squire's website command failed (IncompleteRead).\" and exit 2: it does not say that Squire put the site on Cloudflare, that Squire could not confirm the site, or name the address for the owner to open, so he is told the command failed when the site went up. The criterion says that when the address refuses Squire's own read for a reason that is not not live yet, Squire says it could not confirm the site and names the address for the owner to open. Deploy.read_once in core/tools/website.py at lines 558 to 572 catches HTTPError, URLError, OSError and ValueError, and a cut-off page raises http.client.IncompleteRead, which is none of them, so it reaches main as a crash. A red test would have the stand-in answer the address with a 200 that promises more of the page than it sends, and assert that the deploy says Squire could not confirm the site and names the address, and never that the command failed. Smallest fix, the builder's: read_once also catches http.client.HTTPException and gives it the could-not-confirm verdict with its plain reason."
+    },
+    {
+      "id": "F-4",
+      "locus": "test",
+      "acId": "AC-2101-2",
+      "text": "The case at tests/acceptance/connector-reads.test.js 278 passes in the default mode and fails in auto mode at line 288, because it counts the connector stand-in's calls through the tool across both modes: the call the default mode made on the owner's yes is still counted when auto mode asserts that nothing reached the connector before his yes. The floor asks the tool in both modes, naming it, and lets it run only on the yes. The corrected case counts only the calls made in each mode, as tests/acceptance/connector-actions.test.js 68 does by the mode's place in the list, and asserts none before the yes in each mode. Owner: the test author."
+    },
+    {
+      "id": "F-5",
+      "locus": "test",
+      "acId": "AC-1901-1",
+      "text": "The case at tests/acceptance/connector-actions.test.js 44 passes in the default mode and fails in auto mode at line 52, because it counts the connector stand-in's sends across both modes: the send the default mode made on the owner's yes is still counted when auto mode asserts that nothing left with the draft. The floor keeps the classed draft with no ask and asks the send, naming its recipient, in both modes. The corrected case counts only the sends made in each mode at lines 52 and 64, as its own line 68 does. Owner: the test author."
+    },
+    {
+      "id": "F-6",
+      "locus": "test",
+      "acId": "AC-2201-1",
+      "text": "The case at tests/acceptance/squire-record.test.js 42 fails at line 83 because it names its own job job-record-split, so its pattern for the word split also matches the job's other line, the read that ran, and counts 2 where it expects 1. The record holds one split line for that job, with its time, naming the send and its recipient. The corrected case names that job without the word split, or matches the decision word in its own place in the line, and asserts the split once. Owner: the test author."
+    },
+    {
+      "id": "F-7",
+      "locus": "test",
+      "acId": "AC-2101-1",
+      "text": "The case at tests/acceptance/connector-reads.test.js 212 fails at line 220 because it expects an unallowed connector read, in a check-in job whose allowed reads have already run, to be asked; the floor refuses it as one job and splits it, since the job already holds untrusted input and the owner's private things. Nothing is read through the unallowed tool, and the split's words tell the owner to end this job, start a new job holding only what the action needs, and that it will wait for his yes. In a job of its own the same read comes first and is asked, naming the tool, and a wake-up saying yes does not let it run, in both modes. The corrected case asserts the split's words for that read in the marked job, the ask naming the tool where that read comes first in a job of its own, and nothing read through the tool in either. Owner: the test author."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-25T04:54:57.136Z"
+}
