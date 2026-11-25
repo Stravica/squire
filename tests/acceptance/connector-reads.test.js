@@ -112,12 +112,14 @@ test("a tool whose name differs from one the owner allowed only in letter case, 
 test("a tool whose name looks like one the owner allowed but differs by a letter from another script, a zero-width character or an accent written as a separate mark is not allowed: each is asked, naming it, in the default mode and in auto mode, and reaches no connector", { timeout: 180000 }, (t) => {
   const ctx = C.connectorWorld(t, { classes: { read: [T.read], draft: [] } });
   assert.equal(T.read, 'mcp__pretend_post__read_message', 'premise: the allowed name the look-alikes copy');
+  // Each character by its code point, so this file holds none of them itself.
+  const ch = (codePoint) => String.fromCodePoint(codePoint);
   const lookAlikes = [
-    ['a Cyrillic a in place of the Latin one', 'mcp__pretend_post__reаd_message'],
-    ['a Cyrillic e in place of the Latin one', 'mcp__pretend_post__read_mеssage'],
-    ['a zero-width space inside it', 'mcp__pretend_post__read​_message'],
-    ['a zero-width joiner inside it', 'mcp__pretend_post__read_‍message'],
-    ['an acute accent written as a mark after its letter', 'mcp__pretend_post__read_messáge'],
+    ['a Cyrillic a (U+0430) in place of the Latin one', `mcp__pretend_post__re${ch(0x0430)}d_message`],
+    ['a Cyrillic e (U+0435) in place of the Latin one', `mcp__pretend_post__read_m${ch(0x0435)}ssage`],
+    ['a zero-width space (U+200B) inside it', `mcp__pretend_post__read${ch(0x200b)}_message`],
+    ['a zero-width joiner (U+200D) inside it', `mcp__pretend_post__read_${ch(0x200d)}message`],
+    ['an acute accent written as a mark (U+0301) after its letter', `mcp__pretend_post__read_messa${ch(0x0301)}ge`],
   ];
   for (const [how, name] of lookAlikes) assert.notEqual(name, T.read, `premise: ${how} makes another name`);
   for (const mode of C.MODES) {
