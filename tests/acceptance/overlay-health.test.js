@@ -57,7 +57,7 @@ test('the health check names every overlay at a core path, one line each, and th
 
   // Ignored: the floor behaves as core's.
   const s = 'session-overlaid';
-  const send = w.tools.gmailSend('alice@example.com', 'Saturday', 'The cake is ready.');
+  const send = w.tools.mailSend('alice@example.com', 'Saturday', 'The cake is ready.');
   w.assertBlocked(w.attempt(world, s, send), 'sending an email with overlays at every core path, with no yes', 'alice@example.com');
   w.ownerSays(world, s, 'yes');
   w.assertAllowed(w.attempt(world, s, send), 'sending the email after the owner said yes');

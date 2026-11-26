@@ -44,18 +44,23 @@ test('a send, a publish or a deploy is blocked until the owner says yes to that 
   const world = floorWorld(t);
   const stateBefore = w.snapshot(path.join(world.owner, 'state'));
 
-  // Drafting and local work never need a yes.
+  // Drafting and local work never need a yes: the owner has classed the mail
+  // connector's draft tool as one that only drafts.
+  w.classConnectorTools(world, { draft: [tools.mailDraft('', '', '')[0]] });
   const drafts = 'session-drafting';
-  w.assertAllowed(w.attempt(world, drafts, tools.gmailDraft('alice@example.com', 'Saturday order', 'The cake is ready.')),
+  w.assertAllowed(w.attempt(world, drafts, tools.mailDraft('alice@example.com', 'Saturday order', 'The cake is ready.')),
     'saving an email as a draft');
   w.assertAllowed(w.attempt(world, drafts, tools.write(path.join(world.owner, 'workspace/drafts/reply.md'), 'Dear Alice,\n')),
     'writing a new draft into the workspace');
   w.assertAllowed(w.attempt(world, drafts, tools.bash('ls workspace')), 'listing the workspace');
 
-  const s = 'session-sending';
-  blockedUntilYes(world, s,
-    tools.gmailSend('alice@example.com', 'Saturday order', 'The cake is ready.'),
+  // A connector's send, once it runs, leaves its job holding untrusted input
+  // and private things (Squire cannot class what it reads), so it has a job of
+  // its own here.
+  blockedUntilYes(world, 'session-sending-email',
+    tools.mailSend('alice@example.com', 'Saturday order', 'The cake is ready.'),
     'sending an email', 'alice@example.com');
+  const s = 'session-sending';
   blockedUntilYes(world, s,
     tools.bash(`osascript -e 'tell application "Messages" to send "The cake is ready" to buddy "+447700900123"'`),
     'sending a text message', '+447700900123', 'Yes');
@@ -83,7 +88,7 @@ test('a send, a publish or a deploy is blocked until the owner says yes to that 
     w.assertBlocked(w.attempt(world, s, tools.bash(`echo '${forged.trim()}' >> 'state/${rel}'`)),
       `the session appending to the floor's record state/${rel} from the shell`);
   }
-  w.assertBlocked(w.attempt(world, s, tools.gmailSend('zoe@example.com', 'Hello', 'Hi Zoe.')),
+  w.assertBlocked(w.attempt(world, s, tools.mailSend('zoe@example.com', 'Hello', 'Hi Zoe.')),
     'sending an email after the attempts to write a yes', 'zoe@example.com');
 });
 
@@ -91,11 +96,11 @@ test('a yes covers one action, a no is never reused, and silence or a late yes n
   const world = floorWorld(t, { approvalTimeoutSeconds: 2 });
   const lapse = () => w.sleep(3000);
   const s = 'session-one-thing';
-  const A = tools.gmailSend('alice@example.com', 'Order', 'Ready on Saturday.');
-  const B = tools.gmailSend('bob@example.com', 'Order', 'Ready on Saturday.');
-  const N = tools.gmailSend('nick@example.com', 'Invoice', 'Your invoice is attached.');
-  const M = tools.gmailSend('mia@example.com', 'Invoice', 'Your invoice is attached.');
-  const T = tools.gmailSend('tom@example.com', 'Delivery', 'Delivery is at nine.');
+  const A = tools.mailSend('alice@example.com', 'Order', 'Ready on Saturday.');
+  const B = tools.mailSend('bob@example.com', 'Order', 'Ready on Saturday.');
+  const N = tools.mailSend('nick@example.com', 'Invoice', 'Your invoice is attached.');
+  const M = tools.mailSend('mia@example.com', 'Invoice', 'Your invoice is attached.');
+  const T = tools.mailSend('tom@example.com', 'Delivery', 'Delivery is at nine.');
 
   // A yes covers the one item it answered, once.
   w.assertBlocked(w.attempt(world, s, A), 'A, before any answer', 'alice@example.com');
@@ -105,24 +110,31 @@ test('a yes covers one action, a no is never reused, and silence or a late yes n
   w.assertBlocked(w.attempt(world, s, A), 'A a second time on one yes', 'alice@example.com');
   await lapse();
 
-  // A no keeps its item blocked and answers only that one request.
-  w.assertBlocked(w.attempt(world, s, N), 'N, before any answer', 'nick@example.com');
-  w.ownerSays(world, s, 'No');
-  w.assertBlocked(w.attempt(world, s, N), 'N, after the owner said no', 'nick@example.com');
-  w.ownerSays(world, s, 'Yes');
-  w.assertAllowed(w.attempt(world, s, N), 'N tried again and asked again: the earlier no is not the answer to the new attempt');
-  w.assertBlocked(w.attempt(world, s, M), 'M, another item after a no', 'mia@example.com');
-  w.ownerSays(world, s, 'yes');
-  w.assertAllowed(w.attempt(world, s, M), 'M, answered yes: the earlier no is not the answer for another item');
+  // A no keeps its item blocked and answers only that one request. A
+  // connector's send, once it runs, leaves its job holding untrusted input and
+  // private things, so each item that runs after a no has a job of its own.
+  const sn = 'session-one-thing-after-a-no';
+  w.assertBlocked(w.attempt(world, sn, N), 'N, before any answer', 'nick@example.com');
+  w.ownerSays(world, sn, 'No');
+  w.assertBlocked(w.attempt(world, sn, N), 'N, after the owner said no', 'nick@example.com');
+  w.ownerSays(world, sn, 'Yes');
+  w.assertAllowed(w.attempt(world, sn, N), 'N tried again and asked again: the earlier no is not the answer to the new attempt');
+  const sm = 'session-another-item-after-a-no';
+  w.assertBlocked(w.attempt(world, sm, N), 'N, before any answer, in the job of another item', 'nick@example.com');
+  w.ownerSays(world, sm, 'No');
+  w.assertBlocked(w.attempt(world, sm, M), 'M, another item after a no', 'mia@example.com');
+  w.ownerSays(world, sm, 'yes');
+  w.assertAllowed(w.attempt(world, sm, M), 'M, answered yes: the earlier no is not the answer for another item');
 
   // Silence, talk about something else, or a yes after the request timed out
   // never approve.
-  w.assertBlocked(w.attempt(world, s, T), 'T, before any answer', 'tom@example.com');
-  w.ownerSays(world, s, 'What is on my calendar today?');
-  w.assertBlocked(w.attempt(world, s, T), 'T, after the owner talked about something else', 'tom@example.com');
+  const st = 'session-one-thing-unanswered';
+  w.assertBlocked(w.attempt(world, st, T), 'T, before any answer', 'tom@example.com');
+  w.ownerSays(world, st, 'What is on my calendar today?');
+  w.assertBlocked(w.attempt(world, st, T), 'T, after the owner talked about something else', 'tom@example.com');
   await lapse();
-  w.ownerSays(world, s, 'yes');
-  w.assertBlocked(w.attempt(world, s, T), 'T, whose request timed out before the owner said yes', 'tom@example.com');
+  w.ownerSays(world, st, 'yes');
+  w.assertBlocked(w.attempt(world, st, T), 'T, whose request timed out before the owner said yes', 'tom@example.com');
 });
 
 test('a job holding untrusted input, private things and an outside action is refused as one job and the split part waits for a yes', { timeout: 120000 }, async (t) => {
@@ -134,7 +146,7 @@ test('a job holding untrusted input, private things and an outside action is ref
   const one = 'session-all-three';
   w.assertAllowed(w.attempt(world, one, web), 'reading a web page');
   w.assertAllowed(w.attempt(world, one, profile), 'reading the owner\'s profile');
-  const send = tools.gmailSend('alice@example.com', 'Wholesale', 'Here is what Ada thinks of the offer.');
+  const send = tools.mailSend('alice@example.com', 'Wholesale', 'Here is what Ada thinks of the offer.');
   w.assertBlocked(w.attempt(world, one, send), 'sending, in a job that read a web page and the owner\'s profile');
   w.ownerSays(world, one, 'yes');
   w.assertBlocked(w.attempt(world, one, send), 'sending in the same job after a yes: the job is refused as one job');
@@ -147,11 +159,11 @@ test('a job holding untrusted input, private things and an outside action is ref
   // Two of the three are not refused as one job: each waits only for its yes.
   const webAndSend = 'session-web-and-send';
   w.assertAllowed(w.attempt(world, webAndSend, web), 'reading a web page');
-  blockedUntilYes(world, webAndSend, tools.gmailSend('bob@example.com', 'Offer', 'A link you may like.'),
+  blockedUntilYes(world, webAndSend, tools.mailSend('bob@example.com', 'Offer', 'A link you may like.'),
     'sending, in a job that read only a web page', 'bob@example.com');
   const privateAndSend = 'session-private-and-send';
   w.assertAllowed(w.attempt(world, privateAndSend, profile), 'reading the owner\'s profile');
-  blockedUntilYes(world, privateAndSend, tools.gmailSend('carol@example.com', 'Hello', 'Ada says hello.'),
+  blockedUntilYes(world, privateAndSend, tools.mailSend('carol@example.com', 'Hello', 'Ada says hello.'),
     'sending, in a job that read only the owner\'s profile', 'carol@example.com');
 });
 
@@ -233,7 +245,8 @@ test('installing software or running a downloaded program is refused until the o
 // further web fetch is an outside action, refused as one job; a Write that
 // creates a new file inside the owner's folder, other than Claude Code's
 // settings (.claude/settings*.json), which the session never writes, yes or
-// no; saving a Gmail draft; a Bash command whose every segment is a
+// no; saving a draft through a connector tool the owner classed as one that
+// only drafts; a Bash command whose every segment is a
 // read-only command (ls, cat, head, tail, wc, grep, stat, file, pwd, date,
 // find without -delete or -exec, echo and printf with no redirection, brew
 // list|info|search, pip3 show|list) with no write redirection, no command
@@ -397,7 +410,7 @@ test('the Claude Code settings in core run the installed floor with /usr/bin/pyt
     tools.write(path.join(world.owner, 'workspace/drafts/wired.md'), 'x\n'),
     tools.edit(path.join(world.owner, 'state/now.md'), 'Saturday', 'Sunday'),
     tools.webFetch('https://example.com/wholesale-offer'),
-    tools.gmailSend('alice@example.com', 'Saturday', 'The cake is ready.'),
+    tools.mailSend('alice@example.com', 'Saturday', 'The cake is ready.'),
     tools.mcp('mcp__acme_crm__update_contact', { email: 'alice@example.com', notes: 'Wedding cake.' }),
   ];
   for (const call of calls) {
@@ -437,7 +450,7 @@ test('the Claude Code settings in core run the installed floor with /usr/bin/pyt
   put(installedPre, realPre);
   put(installedPrompt, realPrompt);
   const s = 'session-wired';
-  const send = tools.gmailSend('alice@example.com', 'Saturday', 'The cake is ready.');
+  const send = tools.mailSend('alice@example.com', 'Saturday', 'The cake is ready.');
   out = runConfigured(settings, 'PreToolUse', w.preToolUseEvent(world, s, send), ctx);
   assert.ok(out.blocked && out.stderr.includes('alice@example.com'),
     `a send through core's settings must be blocked, naming its recipient; ${out.describe}`);
@@ -530,7 +543,7 @@ test('a send by any route is asked, naming its target: unknown and browser tools
 
 test('the floor reads its config from the default Squire home when SQUIRE_HOME is unset, and blocks every send when the config is missing or wrong', { timeout: 300000 }, (t) => {
   const world = floorWorld(t);
-  const send = (to) => tools.gmailSend(to, 'Saturday', 'The cake is ready.');
+  const send = (to) => tools.mailSend(to, 'Saturday', 'The cake is ready.');
 
   // SQUIRE_HOME unset: the config is found in the default Squire home under HOME.
   const unset = { env: { SQUIRE_HOME: undefined } };
@@ -583,7 +596,7 @@ test('an event the floor cannot read, or a ledger it cannot read or trust, block
 
   // A corrupt ledger: the send stays blocked, before and after a yes.
   const s = 'session-corrupt-ledger';
-  const send = tools.gmailSend('alice@example.com', 'Saturday', 'The cake is ready.');
+  const send = tools.mailSend('alice@example.com', 'Saturday', 'The cake is ready.');
   w.assertBlocked(w.attempt(world, s, send), 'sending an email, with no yes', 'alice@example.com');
   const ledger = w.ledgerOf(world);
   assert.ok(fs.existsSync(ledger), 'the approvals ledger is state/approvals.jsonl in the owner\'s folder');
@@ -610,11 +623,13 @@ test('the session can never write the installed core, the Squire home or its con
   // The floor keeps its records: a request and its answer, and a job holding
   // untrusted input and private things.
   const stateBefore = w.snapshot(o('state'));
+  // A connector's send, once it runs, leaves its job holding untrusted input
+  // and private things, so the send has a job of its own.
+  blockedUntilYes(world, 'session-records-send', tools.mailSend('alice@example.com', 'Order', 'Ready.'), 'sending an email', 'alice@example.com');
   const rec = 'session-records';
-  blockedUntilYes(world, rec, tools.gmailSend('alice@example.com', 'Order', 'Ready.'), 'sending an email', 'alice@example.com');
   w.assertAllowed(w.attempt(world, rec, tools.webFetch('https://example.com/wholesale-offer')), 'reading a web page');
   w.assertAllowed(w.attempt(world, rec, tools.read(o('operator/profile.md'))), 'reading the owner\'s profile');
-  w.assertBlocked(w.attempt(world, rec, tools.gmailSend('bob@example.com', 'Offer', 'What Ada thinks.')),
+  w.assertBlocked(w.attempt(world, rec, tools.mailSend('bob@example.com', 'Offer', 'What Ada thinks.')),
     'sending in a job that read a web page and the owner\'s profile');
   assert.ok(fs.existsSync(w.ledgerOf(world)), 'the approvals ledger is state/approvals.jsonl in the owner\'s folder');
   const stateAfter = w.snapshot(o('state'));
@@ -675,7 +690,7 @@ test('the session can never write the installed core, the Squire home or its con
 test('the session can never write the approvals ledger by a spelling the disk folds, the long s in state, by Write or Edit, yes or no, and the refusal names the safety floor and asks nothing', { timeout: 120000 }, (t) => {
   const world = floorWorld(t);
   // The floor keeps its ledger once a request is raised.
-  w.assertBlocked(w.attempt(world, 'session-ledger-records', tools.gmailSend('alice@example.com', 'Order', 'Ready.')),
+  w.assertBlocked(w.attempt(world, 'session-ledger-records', tools.mailSend('alice@example.com', 'Order', 'Ready.')),
     'sending an email', 'alice@example.com');
   const ledger = w.ledgerOf(world);
   assert.ok(fs.existsSync(ledger), 'the approvals ledger is state/approvals.jsonl in the owner folder');
@@ -760,7 +775,7 @@ test('the session can never write Claude Code settings in the owner folder by a 
 test('the session can never write the approvals ledger from the shell by a name the disk folds, the long s in approvals, where the floor cannot resolve its folder, yes or no, and the refusal names the safety floor and asks nothing', { timeout: 120000 }, (t) => {
   const world = floorWorld(t);
   // The floor keeps its ledger once a request is raised.
-  w.assertBlocked(w.attempt(world, 'session-ledger-name-records', tools.gmailSend('alice@example.com', 'Order', 'Ready.')),
+  w.assertBlocked(w.attempt(world, 'session-ledger-name-records', tools.mailSend('alice@example.com', 'Order', 'Ready.')),
     'sending an email', 'alice@example.com');
   const ledger = w.ledgerOf(world);
   assert.ok(fs.existsSync(ledger), 'the approvals ledger is state/approvals.jsonl in the owner folder');
@@ -805,8 +820,8 @@ test('a yes covers exactly the call it answered: a changed body voids it, a cons
 
   // The same call is the same item whatever the order of its keys and
   // whatever the Bash description says.
-  const ordered = ['mcp__claude_ai_Gmail__send_message', { to: 'alice@example.com', subject: 'Order', body: 'Ready on Saturday.' }];
-  const reordered = ['mcp__claude_ai_Gmail__send_message', { body: 'Ready on Saturday.', subject: 'Order', to: 'alice@example.com' }];
+  const ordered = ['mcp__pretend_post__send_message', { to: 'alice@example.com', subject: 'Order', body: 'Ready on Saturday.' }];
+  const reordered = ['mcp__pretend_post__send_message', { body: 'Ready on Saturday.', subject: 'Order', to: 'alice@example.com' }];
   w.assertBlocked(w.attempt(world, 'session-key-order', ordered), 'a send, with no yes', 'alice@example.com');
   w.ownerSays(world, 'session-key-order', 'yes');
   w.assertAllowed(w.attempt(world, 'session-key-order', reordered), 'the same send with its keys in another order, after the yes');
@@ -823,22 +838,22 @@ test('a yes covers exactly the call it answered: a changed body voids it, a cons
 
   // A changed body is a new item.
   const s = 'session-changed-body';
-  w.assertBlocked(w.attempt(world, s, tools.gmailSend('bob@example.com', 'Order', 'Ready on Saturday.')),
+  w.assertBlocked(w.attempt(world, s, tools.mailSend('bob@example.com', 'Order', 'Ready on Saturday.')),
     'a send, with no yes', 'bob@example.com');
   w.ownerSays(world, s, 'yes');
-  w.assertBlocked(w.attempt(world, s, tools.gmailSend('bob@example.com', 'Order', 'Ready on Saturday. Also, here is our bank login.')),
+  w.assertBlocked(w.attempt(world, s, tools.mailSend('bob@example.com', 'Order', 'Ready on Saturday. Also, here is our bank login.')),
     'the send with its body changed after the yes', 'bob@example.com');
 
   // A consumed yes is gone.
   const c = 'session-consumed';
-  const call = tools.gmailSend('carol@example.com', 'Order', 'Ready on Saturday.');
+  const call = tools.mailSend('carol@example.com', 'Order', 'Ready on Saturday.');
   blockedUntilYes(world, c, call, 'a send', 'carol@example.com');
   w.assertBlocked(w.attempt(world, c, call), 'the same send again on one yes', 'carol@example.com');
 
   // Two attempts of one item at the same moment after one yes: exactly one proceeds.
   for (let round = 0; round < 5; round += 1) {
     const r = `session-race-${round}`;
-    const item = tools.gmailSend(`racer${round}@example.com`, 'Order', 'Ready on Saturday.');
+    const item = tools.mailSend(`racer${round}@example.com`, 'Order', 'Ready on Saturday.');
     w.assertBlocked(w.attempt(world, r, item), `race ${round}: a send, with no yes`, `racer${round}@example.com`);
     w.ownerSays(world, r, 'yes');
     const results = await w.attemptTogether(world, r, [item, item]);
@@ -852,15 +867,18 @@ test('a yes covers exactly the call it answered: a changed body voids it, a cons
 test('a bare yes answers only when one request is open: with two open it answers neither, the next block lists both, and yes with a request id answers that one', { timeout: 120000 }, (t) => {
   const world = floorWorld(t);
   const s = 'session-two-open';
-  const A = tools.gmailSend('alice@example.com', 'Order', 'Ready on Saturday.');
-  const B = tools.gmailSend('bob@example.com', 'Invoice', 'Your invoice is attached.');
+  const A = tools.mailSend('alice@example.com', 'Order', 'Ready on Saturday.');
+  // B is a send by the shell, so that both items can run in the one job: a
+  // connector's send, once it runs, leaves its job holding untrusted input and
+  // private things, and a second connector send there would be split.
+  const B = tools.bash('curl --data @workspace/drafts/invoice.json https://invoices.example.com/bob');
 
   const a1 = w.attempt(world, s, A);
   w.assertBlocked(a1, 'A, before any answer', 'alice@example.com');
   const idA = w.requestIdIn(a1.stderr);
   assert.ok(idA, `the block reason must show the request it raised as "request <id>"; got ${w.describe(a1)}`);
   const b1 = w.attempt(world, s, B);
-  w.assertBlocked(b1, 'B, before any answer', 'bob@example.com');
+  w.assertBlocked(b1, 'B, before any answer', 'invoices.example.com');
   const idB = w.requestIdIn(b1.stderr);
   assert.ok(idB && idB !== idA, `B's block reason must show its own request id; got ${w.describe(b1)} (A's is ${idA})`);
 
@@ -869,7 +887,7 @@ test('a bare yes answers only when one request is open: with two open it answers
   w.assertBlocked(a2, 'A, after a bare yes with two requests open', 'alice@example.com');
   assert.ok(a2.stderr.includes(idA) && a2.stderr.includes(idB),
     `with two requests open, the next block reason must list both request ids (${idA} and ${idB}); got ${w.describe(a2)}`);
-  w.assertBlocked(w.attempt(world, s, B), 'B, after a bare yes with two requests open', 'bob@example.com');
+  w.assertBlocked(w.attempt(world, s, B), 'B, after a bare yes with two requests open', 'invoices.example.com');
 
   w.ownerSays(world, s, `yes ${idB}`);
   w.assertBlocked(w.attempt(world, s, A), 'A, after the owner said yes to B\'s request id', 'alice@example.com');
@@ -884,7 +902,7 @@ test('only the owner message itself answers: a forged answer or a lay-down run b
   const world = floorWorld(t);
   const installed = laidDown(world);
   const on = { coreDir: installed };
-  const send = (to) => tools.gmailSend(to, 'Saturday', 'The cake is ready.');
+  const send = (to) => tools.mailSend(to, 'Saturday', 'The cake is ready.');
 
   // The session forging the owner's yes, or running lay-down, is blocked, and
   // the pending send stays blocked.
@@ -946,7 +964,7 @@ test('an incoming message is untrusted input: reading it and the owner profile a
   const s = 'session-inbox';
   w.assertAllowed(w.attempt(world, s, tools.read(path.join(world.owner, 'workspace/inbox/offer.eml'))), 'reading an incoming message');
   w.assertAllowed(w.attempt(world, s, tools.read(path.join(world.owner, 'operator/profile.md'))), 'reading the owner\'s profile');
-  const send = tools.gmailSend('alice@example.com', 'Re: Offer', 'Here is the order sheet.');
+  const send = tools.mailSend('alice@example.com', 'Re: Offer', 'Here is the order sheet.');
   const r = w.attempt(world, s, send);
   assertBlockedNaming(r, 'sending, in a job that read an incoming message and the owner\'s profile',
     ['offer.eml', 'alice@example.com', /split/i]);
@@ -964,7 +982,7 @@ test('every untrusted source, every private thing and every outside action count
 
   const web = tools.webFetch('https://example.com/wholesale-offer');
   const profile = tools.read(o('operator/profile.md'));
-  const send = tools.gmailSend('alice@example.com', 'Wholesale', 'Here is what Ada thinks.');
+  const send = tools.mailSend('alice@example.com', 'Wholesale', 'Here is what Ada thinks.');
   const refusedAsOneJob = (s, call, what, sources, action) => {
     const r = w.attempt(world, s, call);
     w.assertBlocked(r, what);
@@ -979,7 +997,7 @@ test('every untrusted source, every private thing and every outside action count
   const untrusted = [
     ['a web page', web, ['example.com/wholesale-offer', 'WebFetch'], false],
     ['a web search', tools.webSearch('wholesale flour prices'), ['WebSearch', 'wholesale flour prices'], false],
-    ['an email read from the mailbox', tools.gmailRead('thread-17'), ['mcp__claude_ai_Gmail__get_thread'], true],
+    ['an email read from the mailbox', tools.mailRead('message-17'), ['mcp__pretend_post__read_message'], true],
     ['an incoming message', tools.read(o('workspace/inbox/offer.eml')), ['offer.eml'], false],
     ['a downloaded file', tools.read(o('workspace/downloads/price-list.txt')), ['price-list.txt'], false],
     ['an unknown tool\'s result', tools.mcp('mcp__acme_crm__lookup_customer', { email: 'alice@example.com' }), ['mcp__acme_crm__lookup_customer'], true],
@@ -1176,7 +1194,7 @@ test('a read whose scope takes in the inbox, through a parent folder, a recursiv
   const world = floorWorld(t);
   const o = (rel) => path.join(world.owner, rel);
   const profile = tools.read(o('operator/profile.md'));
-  const send = tools.gmailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.');
+  const send = tools.mailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.');
   const reads = [
     ['a recursive grep over the owner\'s folder', tools.bash('grep -ri "order" .'), ['inbox', 'offer.eml', 'grep -ri']],
     ['the Grep tool over workspace in content mode', tools.grep('order', { path: o('workspace'), output_mode: 'content' }),

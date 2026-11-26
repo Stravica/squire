@@ -721,7 +721,7 @@ test("a comment the panel keeps is read as untrusted: a job that has read the ow
 
   const { tools } = w;
   const profile = tools.read(path.join(world.owner, 'operator', 'profile.md'));
-  const send = tools.gmailSend('someone@example.net', 'Re: Orders', 'Here is the order sheet.');
+  const send = tools.mailSend('someone@example.net', 'Re: Orders', 'Here is the order sheet.');
   let n = 0;
   for (const [how, call] of [['by Read', tools.read(kept[0])], ['by the shell', tools.bash(`cat '${kept[0]}'`)]]) {
     n += 1;

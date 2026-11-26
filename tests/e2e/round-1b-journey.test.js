@@ -30,7 +30,7 @@ test('on a laid-down core a read the small model clears runs free and a later se
   w.plantOverlays(world.owner, [installed]);
   const fake = w.installFakeClaude(world, { answer: 'no\n' });
   const on = { coreDir: installed, env: fake.env };
-  const send = tools.gmailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.');
+  const send = tools.mailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.');
 
   // A read of the drafts the floor cannot resolve: the model says no, the
   // read runs, and a later send waits only for its own yes.

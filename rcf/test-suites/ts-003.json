@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:39.251Z",
-  "updatedAt": "2026-11-07T20:43:34.969Z",
+  "updatedAt": "2026-11-24T22:18:40.922Z",
   "purpose": "Plants secrets through the real secret helper, exercises the helper and a consuming tool, and scans every place a secret could leak for any trace of it.",
   "testLevel": "integration",
   "acIds": [
@@ -66,6 +66,13 @@
       "description": "With the secret in TZ and date +%Z run through the helper, and with a tool that prints the start, the end and a middle piece of its key, the helper's stdout and stderr hold no four characters in a row from the secret; the tool still gets the secret and its own output comes through.",
       "status": "pending",
       "testPointer": "tests/acceptance/secrets.test.js::the helper output holds no piece of the secret, whatever variable the session names and whatever the command prints"
+    },
+    {
+      "id": "TC-003-a-connector-s-key-set-through-the-helper",
+      "acId": "AC-1902-1",
+      "description": "a connector's key set through the helper is in the Keychain and nowhere else",
+      "status": "pending",
+      "testPointer": "tests/acceptance/connector-actions.test.js::a connector's key the owner sets through Squire's secret helper reaches the connector only through the helper, on his yes, and is in the Keychain and nowhere else: not in his folder, its pages and backups, Squire's record, the history, Squire's home or anywhere else scanned; what the session loads tells it a connector's key goes through the secret helper"
     }
   ],
   "status": "draft"

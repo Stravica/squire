@@ -88,6 +88,19 @@ function writeConfig(world, changes = {}) {
   fs.writeFileSync(path.join(world.home, 'squire.json'), JSON.stringify(world.config, null, 2) + '\n');
 }
 
+// The connector tools the owner has classed, as Squire's connector-tools
+// command keeps them on the owner's yes: connectorTools in the owner's
+// squire.json, { read: [exact full tool names Squire may read with], draft:
+// [exact full tool names that only draft] }. A case plants them here as the
+// owner's own earlier choice; every other setting of the file stays.
+function classConnectorTools(world, { read = [], draft = [] } = {}) {
+  const file = path.join(world.owner, 'squire.json');
+  let data = {};
+  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { data = {}; }
+  data.connectorTools = { read: [...read], draft: [...draft] };
+  fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
+}
+
 // Writes a Squire home's squire.json exactly as given: an object as JSON, a
 // string as it stands.
 function writeConfigFile(homeDir, content) {
@@ -329,9 +342,17 @@ const tools = {
   webFetch: (url) => ['WebFetch', { url, prompt: 'What does this page say?' }],
   webSearch: (query) => ['WebSearch', { query }],
   grep: (pattern, options = {}) => ['Grep', { pattern, ...options }],
+  // A mail connector's tools, by the invented names of the loopback connector
+  // stand-in (tests/fixtures/connector-stand-in.js): no vendor's connector is
+  // named or favoured. Unless a case classes them for the owner (connectorTools
+  // in the owner's squire.json), Squire cannot class them: each is
+  // asked, and once it runs the job holds untrusted input and private things.
+  mailSend: (to, subject, body) => ['mcp__pretend_post__send_message', { to, subject, body }],
+  mailDraft: (to, subject, body) => ['mcp__pretend_post__save_draft', { to, subject, body }],
+  mailRead: (messageId) => ['mcp__pretend_post__read_message', { message_id: messageId }],
+  // Kept only because a hygiene test, the builder's file, still calls it; no
+  // acceptance or end-to-end case calls it.
   gmailSend: (to, subject, body) => ['mcp__claude_ai_Gmail__send_message', { to, subject, body }],
-  gmailDraft: (to, subject, body) => ['mcp__claude_ai_Gmail__create_draft', { to, subject, body }],
-  gmailRead: (threadId) => ['mcp__claude_ai_Gmail__get_thread', { thread_id: threadId }],
   mcp: (name, input) => [name, input],
 };
 
@@ -730,6 +751,7 @@ module.exports = {
   defaultSquireHome,
   makeWorld,
   writeConfig,
+  classConnectorTools,
   writeConfigFile,
   ledgerOf,
   cleanUp,

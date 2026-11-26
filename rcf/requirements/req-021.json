@@ -1,0 +1,32 @@
+{
+  "createdAt": "2026-11-24T22:02:26.914Z",
+  "updatedAt": "2026-11-24T22:02:26.935Z",
+  "description": "Email and calendar as rules and guards over whatever connector the owner has attached: what Squire may read, that it drafts and never sends without a yes, what a check-in brief may draw on, and what is untrusted. Squire builds no connector and favours none; the guided set-up stays as how one is attached.",
+  "category": "functional",
+  "domain": "email-and-calendar",
+  "priority": "must",
+  "reqId": "REQ-021",
+  "prdId": "PRD-001",
+  "title": "Email and calendar: rules and guards over whatever connector the owner has attached",
+  "version": "0.1.0",
+  "status": "draft",
+  "shapeClassification": {
+    "shapes": [
+      "notifications"
+    ],
+    "reason": "keyword-scan",
+    "classifiedAt": "2026-11-24T22:02:26.934Z",
+    "signals": [
+      {
+        "source": "title",
+        "shape": "notifications",
+        "match": "Email"
+      },
+      {
+        "source": "description",
+        "shape": "notifications",
+        "match": "Email"
+      }
+    ]
+  }
+}

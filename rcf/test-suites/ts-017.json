@@ -1,11 +1,12 @@
 {
   "createdAt": "2026-11-07T17:40:43.008Z",
-  "updatedAt": "2026-11-21T20:54:23.274Z",
+  "updatedAt": "2026-11-25T00:32:35.203Z",
   "purpose": "Runs Squire's one-off set-up against a loopback stand-in of Cloudflare's API and reads the account back through it, to check paid features, anything the set-up cannot read as free, the spend guard and the removal of the set-up token; the real one-off set-up, against a test Cloudflare account and never a live one, is the test stage's own step.",
   "testLevel": "integration",
   "acIds": [
     "AC-1201-1",
-    "AC-1201-3"
+    "AC-1201-3",
+    "AC-1201-5"
   ],
   "id": "TS-017",
   "usId": "US-1201",
@@ -66,6 +67,34 @@
       "description": "a browser navigate to the Cloudflare dashboard is refused, yes or no",
       "status": "pending",
       "testPointer": "tests/acceptance/website-set-up.test.js::Squire's browser never opens the Cloudflare dashboard, where a plan could be bought: in a site job, with the owner's profile there to check, a browser navigate to the dashboard's host is refused, not asked, yes or no, the refusal naming the dashboard or money, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-017-a-user-owned-set-up-token-gets-words",
+      "acId": "AC-1201-5",
+      "description": "a user-owned set-up token gets words that it must be account-owned and where to make it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::a set-up token the owner made under their own profile, which Cloudflare refuses on the account's path and accepts on the user path, gets words that say the set-up token must be an account-owned token, made under Manage account, then Account API Tokens; the set-up makes nothing on the account and keeps nothing in the Keychain"
+    },
+    {
+      "id": "TC-017-a-token-refused-on-both-paths-keeps",
+      "acId": "AC-1201-5",
+      "description": "a token refused on both paths keeps today's words and is never called user-owned",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::a set-up token Cloudflare refuses on both the account's path and the user path keeps today's words, to check the account id and the token, and is never called user-owned or sent to make an account-owned one; the set-up makes nothing and keeps nothing"
+    },
+    {
+      "id": "TC-017-a-user-owned-set-up-token-the-account-s",
+      "acId": "AC-1201-5",
+      "description": "a user-owned set-up token the account's path refuses another way, and the user path accepts, gets the account-owned words and where to make one; nothing made, nothing kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::a set-up token Cloudflare refuses on the account's path with another refusal than an invalid token, and accepts on the user path, gets words that say the set-up token must be an account-owned token, made under Manage account, then Account API Tokens; the set-up makes nothing on the account and keeps nothing in the Keychain"
+    },
+    {
+      "id": "TC-017-a-set-up-token-refused-another-way-on",
+      "acId": "AC-1201-5",
+      "description": "a set-up token refused another way on the account's path and refused on the user path too keeps today's words and is never called user-owned; nothing made, nothing kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::a set-up token Cloudflare refuses on the account's path with another refusal than an invalid token, and refuses on the user path too, keeps today's words, to check the account id and the token, and is never called user-owned or sent to make an account-owned one; the set-up makes nothing and keeps nothing"
     }
   ],
   "status": "draft"

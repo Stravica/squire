@@ -46,7 +46,7 @@ function marksWorld(t, options) {
 }
 
 const o = (world, rel) => path.join(world.owner, rel);
-const send = tools.gmailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.');
+const send = tools.mailSend('someone@example.net', 'Re: Offer', 'Here is the order sheet.');
 const RECIPIENT = 'someone@example.net';
 const search = () => tools.webSearch('wholesale flour prices');
 const profileRead = (world) => tools.read(o(world, 'operator/profile.md'));

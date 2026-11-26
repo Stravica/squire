@@ -376,7 +376,7 @@ test('a change to Claude Code settings during a session is refused by the floor 
 test('a resumed session the floor has never seen starts its job holding untrusted input and private things, while a resumed job it knows keeps what it had and a fresh start or a clear starts clean', { timeout: 60000 }, (t) => {
   const world = w.makeWorld();
   t.after(() => w.cleanUp(world));
-  const send = (n) => tools.gmailSend(`someone${n}@example.com`, 'Saturday', 'The cake is ready.');
+  const send = (n) => tools.mailSend(`someone${n}@example.com`, 'Saturday', 'The cake is ready.');
   const startSession = (sessionId, source) => {
     const r = s.recordSessionByHook(world, { sessionId, source });
     assert.equal(r.status, 0, `the SessionStart hook must let the session start (exit 0) for source ${source}; got ${w.describe(r)}`);
@@ -417,7 +417,7 @@ test('the SessionStart hook never removes the marks of a job: one holding untrus
   const world = w.makeWorld();
   t.after(() => w.cleanUp(world));
   const sessionId = 'session-marked';
-  const send = tools.gmailSend('someone@example.com', 'Saturday', 'The cake is ready.');
+  const send = tools.mailSend('someone@example.com', 'Saturday', 'The cake is ready.');
   // Both marks, as round 1b gives them: the owner's profile read (private
   // things), then a web search (untrusted input).
   w.assertAllowed(w.attempt(world, sessionId, tools.read(path.join(world.owner, 'operator', 'profile.md'))), 'reading the owner profile');
@@ -442,7 +442,7 @@ test('a session started and then resumed under the same id with nothing done is 
     const h = s.recordSessionByHook(world, { sessionId, source });
     assert.equal(h.status, 0, `the SessionStart hook must let the session start (exit 0) for source ${source}; got ${w.describe(h)}`);
   }
-  const r = w.attempt(world, sessionId, tools.gmailSend('someone@example.com', 'Saturday', 'The cake is ready.'));
+  const r = w.attempt(world, sessionId, tools.mailSend('someone@example.com', 'Saturday', 'The cake is ready.'));
   w.assertBlocked(r, 'a send in a quiet session after it resumed');
   assert.ok(w.requestIdIn(r.stderr), `a send in a session the floor saw start must be asked, with a request id; got ${w.describe(r)}`);
   assert.doesNotMatch(r.stderr, /split/i, `startup writes the job record, so the resumed job is one the floor has seen and must not be refused as one job; got ${w.describe(r)}`);

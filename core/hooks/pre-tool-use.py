@@ -45,7 +45,7 @@ PYTHON = '/usr/bin/python3'
 
 try:
     sys.path.insert(0, os.path.join(CORE, 'lib'))
-    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, Runtime, SquireError, paced_windows,
+    from squire import (HEAVY_JOBS, WINDOWS, Config, Ledger, Paths, Record, Runtime, SquireError, paced_windows,
                         percent_words, read_usage, reset_words, second_yes_needed, youtube_link)
 except Exception:
     sys.stderr.write("Squire's safety floor cannot load its core library, so this tool call is blocked.\n")
@@ -724,6 +724,43 @@ class VersionsCommand:
         return 2, cls.NEVER.format(what=data.get('command'))
 
 
+class ConnectorToolsCommand:
+    """Squire's connector-tools command as the session runs it, in its one
+    plain spelling: /usr/bin/python3 '<Squire home>/core/tools/connector-tools.py'
+    read|draft|remove <tool name> [...]. It changes which connector tools
+    Squire reads or keeps drafts with and no ask, so it is never free: each
+    run is asked, naming every tool it names, exactly as written, and runs on
+    the owner's own yes to that run. Spelt any other way it stays as any
+    program naming Squire's home is (Floor.judge_argv)."""
+
+    SCRIPT = 'connector-tools.py'
+    SAYS = {
+        'read': 'let Squire read with no ask through {names}, each by its exact full name, so a job that reads '
+                'through it then holds untrusted input and the owner\'s private things',
+        'draft': 'let Squire keep drafts with no ask through {names}, each by its exact full name',
+        'remove': 'take {names} out of the connector tools Squire reads or keeps drafts with, so each is asked again',
+    }
+    RUN = ' (Squire\'s connector-tools command, which changes the owner\'s connector classes in his squire.json: {what})'
+
+    @classmethod
+    def of(cls, floor, tool, data):
+        """None when the call is not the connector-tools command as one plain
+        command; else what its ask says, naming every word after the verb."""
+        argv = Floor.one_command(tool, data)
+        if argv is None or not floor.is_core_tool(floor.path(argv[1], strict=False), cls.SCRIPT):
+            return None
+        words = [str(word) for word in argv[2:]]
+        command = data.get('command')
+        if len(words) > 1 and words[0] in cls.SAYS:
+            return cls.SAYS[words[0]].format(names=', '.join(words[1:])) + cls.RUN.format(what=command)
+        return f'run Squire\'s connector-tools command as written: {command}'
+
+    @classmethod
+    def settle(cls, floor, session, tool, data, what):
+        with Ledger(floor.config.ledger_path) as ledger:
+            return floor.settle(ledger, session, tool, data, 'ask', what, [])
+
+
 class WebsiteCommand:
     """Squire's website command as the session runs it, in its one plain
     spelling: /usr/bin/python3 '<Squire home>/core/tools/website.py' set-up
@@ -1059,7 +1096,21 @@ class Floor:
 
     FREE_COMMANDS = {'ls', 'cat', 'head', 'tail', 'wc', 'grep', 'stat', 'file', 'pwd', 'date', 'find', 'echo', 'printf'}
     FIND_ACTIONS = {'-delete', '-exec', '-execdir', '-ok', '-okdir', '-fprint', '-fprint0', '-fprintf', '-fls'}
-    FREE_TOOLS = {'mcp__claude_ai_Gmail__create_draft'}
+    # A connector's tools, as Claude Code names them: mcp__<connector>__<tool>.
+    # The owner classes them himself, by exact full name, in connectorTools
+    # { read, draft } in his squire.json; every other one is a tool that acts.
+    CONNECTOR = 'mcp__'
+    OWNER_CONFIG = 'squire.json'
+    CONNECTOR_CLASSES = 'connectorTools'
+    # Squire's record names a connector call by the recipients it names, or
+    # else by its ids; never by a message's words (Record).
+    RECIPIENTS = re.compile(r'to|cc|bcc|recipients?|guests|attendees|\w*recipient\w*', re.IGNORECASE)
+    IDS = re.compile(r'id|\w+_id', re.IGNORECASE)
+    REMOVERS = {'rm', 'rmdir', 'mv', 'unlink'}
+    NOT_RECORDED = ('\nSquire\'s record (workspace/pages/squire-record.md in the owner\'s folder) cannot be written, so '
+                    'this decision cannot be recorded there; it goes ahead only on the owner\'s yes.')
+    DONE_ELSEWHERE = re.compile(r'The owner said yes to request r-\d+:')
+    SPLIT_HEAD = 'Squire will not do this as one job:'
     # A subagent is free on the session's own model (none named, or inherit)
     # or one in the plan's set, exactly as written; any other model may need
     # usage credits, so it is asked.
@@ -1073,7 +1124,6 @@ class Floor:
                                  r'=(.*)\Z', re.S)
     CLAUDE = re.compile(r'(?:^|[\s/\'"`(=;&|])claude(?:$|[\s\'"`);&|])', re.IGNORECASE)
     SPENDING = re.compile(r'(?:^|[\s\'"`(=;&|])/(?:upgrade|usage-credits)', re.IGNORECASE)
-    SEND_TOOLS = {'mcp__claude_ai_Gmail__send_message'}
     # Squire's browser: the tools of its one browser server, keyed playwright,
     # whatever they are called (a page can add tools of its own to it). The
     # floor checks a call only of a tool it lists here: one whose whole input
@@ -1122,7 +1172,7 @@ class Floor:
     WALK = 1.0
 
     NEVER_FLOOR = ('Squire\'s safety floor: the session may never change Squire\'s core, Squire\'s home and config, '
-                   'the approvals ledger or Claude Code\'s settings, yes or no: {what}')
+                   'the approvals ledger, Squire\'s record or Claude Code\'s settings, yes or no: {what}')
     NEVER_PAGES = ('Squire\'s safety floor: the session never runs Squire\'s page server itself, yes or no; it only asks '
                    'the page server for the link, with the one link command Squire\'s instructions name, exactly as '
                    'written there. Nothing ran: {what}')
@@ -1200,7 +1250,7 @@ class Floor:
         self.cwd = cwd
         self.owner = config.owner_folder
         self.cores = [CORE, Paths.canonical(os.path.join(config.home, 'core'), cwd)]
-        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path,
+        self.floor_paths = [os.path.realpath(config.home), CORE, config.ledger_path, Record.path(config.owner_folder),
                             os.path.realpath(os.path.join(os.path.expanduser('~'), 'Applications', self.UPDATE_APP))]
         self.keychain = Paths.canonical(config.keychain, cwd) if config.keychain else None
         self.private = [os.path.join(self.owner, p) for p in self.PRIVATE]
@@ -1228,6 +1278,95 @@ class Floor:
         return floor.decide(session, tool, data)
 
     def decide(self, session, tool, data):
+        """The floor's answer to a call, kept in Squire's record."""
+        Ledger.added = []
+        answer = self.decide_call(session, tool, data)
+        try:
+            return self.recorded(session, tool, data, answer)
+        except Exception:  # noqa: BLE001 - keeping the record never turns a refusal or an ask into a yes
+            return answer
+
+    def recorded(self, session, tool, data, answer):
+        """Adds the call's decisions to Squire's record: an ask with its new
+        request, the use of a yes, a refusal with its reason, a split, and a
+        connector call that ran with no ask; a free local call adds nothing.
+        When the record cannot be written, an ask says so (settle has made a
+        connector call that would run with no ask into one)."""
+        code, reason = answer
+        asked = [r['id'] for r in Ledger.added if r.get('type') == 'request' and r.get('session') == session]
+        used = [r['request'] for r in Ledger.added if r.get('type') == 'use']
+        entries = [(f'asked {r}', '') for r in asked] + [(f'used {r}', '') for r in used]
+        if code == 0 and self.records_run(tool) and not used:
+            entries.append(('ran', ''))
+        again = code == 2 and not asked and reason.startswith('Request r-')
+        if code == 2 and not asked and not again and not self.DONE_ELSEWHERE.match(reason):
+            if reason.startswith(self.SPLIT_HEAD):
+                entries.append(('split', ''))
+            else:
+                entries.append(('refused', self.reason_of(reason, tool, data)))
+        if not entries and not again:
+            return answer
+        target = self.target(tool, data)
+        kept = Record.add(self.config, [(session, decision, tool, target, why) for decision, why in entries])
+        if (not kept or (again and not Record.writable(self.owner))) and code == 2 and (asked or again):
+            return code, reason + self.NOT_RECORDED
+        return answer
+
+    def records_run(self, tool):
+        """True for a connector's tool, whose run with no ask the record holds."""
+        return tool.startswith(self.CONNECTOR) and not tool.startswith(self.BROWSER)
+
+    @staticmethod
+    def reason_of(reason, tool, data):
+        """A refusal's own words, without the call they quote."""
+        cut = len(reason)
+        for quoted in (data.get('command'), f'{tool} '):
+            if isinstance(quoted, str) and quoted:
+                at = reason.find(quoted)
+                if at >= 0:
+                    cut = min(cut, at)
+        return reason[:cut].rstrip(' :.\n')
+
+    def target(self, tool, data):
+        """What a call is aimed at, as Squire's record names it: the
+        recipients a connector call names, or else its ids; a file's path; the
+        program a command runs, or the secret a secret helper run hands it; a
+        host. Never a message's words."""
+        if tool == 'Bash':
+            command = data.get('command')
+            argv = self.one_command(tool, data)
+            if argv and len(argv) >= 4 and argv[2] == 'run' \
+                    and self.is_core_tool(self.path(argv[1], strict=False), 'secret.py'):
+                return f'the secret {argv[3]}'
+            try:
+                segments = ShellCommand(command).segments if isinstance(command, str) else []
+            except Exception:  # noqa: BLE001 - a command the parser cannot read is named by nothing
+                segments = []
+            words = [str(word) for word in (segments[0] if segments else []) if '=' not in str(word)]
+            if words[:1] == [PYTHON] and len(words) > 1:
+                return os.path.basename(words[1])
+            return os.path.basename(words[0]) if words else ''
+        if tool in ('Read', 'Write', 'Edit', 'MultiEdit', 'NotebookEdit'):
+            given = data.get('notebook_path' if tool == 'NotebookEdit' else 'file_path')
+            return given if isinstance(given, str) else ''
+        if tool == 'WebFetch':
+            url = data.get('url')
+            try:
+                return (urlsplit(url).hostname or '') if isinstance(url, str) else ''
+            except ValueError:
+                return ''
+        if self.records_run(tool):
+            def strings(value):
+                if isinstance(value, str):
+                    return [value]
+                return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+            for names in (self.RECIPIENTS, self.IDS):
+                found = [s for k, v in data.items() if isinstance(k, str) and names.fullmatch(k) for s in strings(v)]
+                if found:
+                    return ', '.join(found)
+        return ''
+
+    def decide_call(self, session, tool, data):
         self.session = session
         job = HeavyJob.of(self, tool, data)
         if job:
@@ -1255,6 +1394,12 @@ class Floor:
         versions = VersionsCommand.of(self, tool, data)
         if versions:
             return versions
+        classes = ConnectorToolsCommand.of(self, tool, data)
+        if classes:
+            try:
+                return ConnectorToolsCommand.settle(self, session, tool, data, classes)
+            except SquireError as e:
+                return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked.'
         shown = ShownRequest.of(self, tool, data)
         if shown:
             try:
@@ -1320,11 +1465,15 @@ class Floor:
             verdict = 'ask' if held['private'] else 'free'
         if verdict == 'search':
             verdict = 'ask' if held['untrusted'] and held['private'] else 'free'
-        if verdict == 'free':
+        if verdict == 'free' and not (self.records_run(tool) and not Record.writable(self.owner)):
             for kind, source in taints:
                 ledger.taint(session, kind, source, now)
             return 0, ''
-        if held['untrusted'] and held['private']:
+        if verdict == 'free':
+            # A connector call that would run with no ask, when Squire's record
+            # cannot hold it: asked, and it goes on the owner's yes.
+            what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
+        elif held['untrusted'] and held['private']:
             return 2, self.SPLIT.format(untrusted='; '.join(held['untrusted']), private='; '.join(held['private']), what=what)
         item = item or self.item(tool, data)
         approved = ledger.approval(session, item, now, self.config.timeout)
@@ -1405,7 +1554,12 @@ class Floor:
                 # The Voice notes folder is the owner's input only: what lands
                 # there is turned into text with no one asked.
                 return 'ask', f'{tool} {given} (into the owner\'s Voice notes folder, which only the owner fills)', []
-            if tool == 'Write' and Paths.within(path, self.owner) and not os.path.lexists(path):
+            # The owner's squire.json, the file his connector classes are read
+            # from, is never made free: where he has none, the session's own
+            # Write of one is asked like any edit of his files.
+            classes = Paths.canonical(os.path.join(self.owner, self.OWNER_CONFIG), self.cwd)
+            if tool == 'Write' and Paths.within(path, self.owner) and not os.path.lexists(path) \
+                    and Paths.fold(path) != Paths.fold(classes):
                 return 'free', '', []
             return 'ask', f'{tool} {given}', []
         if tool == 'WebFetch':
@@ -1417,11 +1571,23 @@ class Floor:
         if tool == 'WebSearch':
             searched = f'WebSearch {self.field(data, "query")}'
             return 'search', searched, [('untrusted', searched)]
-        if tool in self.FREE_TOOLS:
-            return 'free', '', []
         if tool.startswith(self.BROWSER):
             return self.judge_browser(tool, data)
         what = f'{tool} {json.dumps(data, sort_keys=True, ensure_ascii=False)}'
+        if tool.startswith(self.CONNECTOR):
+            # An allowed read runs with no ask and leaves its job holding
+            # untrusted input and the owner's private things; a draft tool
+            # runs with no ask and no mark; every other connector tool, a near
+            # or look-alike name, a later tool or the same name on another
+            # connector among them, is one that acts: asked, naming it and its
+            # input, and once it runs its job holds both.
+            marks = [('untrusted', tool), ('private', tool)]
+            kind = self.connector_class(tool)
+            if kind == 'read':
+                return 'free', '', marks
+            if kind == 'draft':
+                return 'free', '', []
+            return 'ask', what, marks
         if tool in self.AGENT_TOOLS:
             if 'model' in data:
                 if isinstance(data['model'], str) and data['model'] in self.AGENT_FREE_MODELS:
@@ -1432,10 +1598,36 @@ class Floor:
             return 'ask', self.CREDITS.format(what=what), []
         if tool == 'SlashCommand' and isinstance(data.get('command'), str) and self.SPENDING.search(data['command']):
             return 'never', self.NEVER_SPEND, []
-        if tool in self.SEND_TOOLS:
-            return 'ask', what, []
         # A tool the floor does not know: it cannot tell what the tool reads.
         return 'ask', what, [('untrusted', tool), ('private', tool)]
+
+    def connector_class(self, tool):
+        """'read' or 'draft' when the owner's own squire.json, read now, names
+        this connector tool in that class by its whole name, byte for byte
+        (no trim, no fold, no normalising, no split of its parts); None for
+        every other tool. A file that cannot be read whole, or classes of
+        another shape, are no classes; a name in both classes is in neither.
+        Nothing in a call, a connector's word on its tools or anything Squire
+        reads is a class."""
+        try:
+            with open(os.path.join(self.owner, self.OWNER_CONFIG), 'rb') as f:
+                data = json.loads(f.read().decode('utf-8'))
+        except (OSError, ValueError, UnicodeDecodeError):
+            return None
+        classes = data.get(self.CONNECTOR_CLASSES) if isinstance(data, dict) else None
+        if not isinstance(classes, dict):
+            return None
+        read, draft = classes.get('read', []), classes.get('draft', [])
+        if not isinstance(read, list) or not isinstance(draft, list) \
+                or not all(isinstance(name, str) for name in read + draft):
+            return None
+        in_read = any(name == tool for name in read)
+        in_draft = any(name == tool for name in draft)
+        if in_read and not in_draft:
+            return 'read'
+        if in_draft and not in_read:
+            return 'draft'
+        return None
 
     def judge_browser(self, tool, data):
         """A call of Squire's browser. Refused, yes or no, when the floor
@@ -1655,6 +1847,10 @@ class Floor:
             return 'free', '', taints
         if Paths.fold(os.path.basename(self.config.ledger_path)) in Paths.fold(command):
             return 'never', self.NEVER_FLOOR.format(what=command), []
+        # Squire's record, named in any word of a command that is not a plain
+        # read, or the folder holding it removed or moved.
+        if Paths.fold(Record.NAME) in Paths.fold(command) or self.removes_record(shell):
+            return 'never', self.NEVER_FLOOR.format(what=command), []
         credits = self.picks_credits(shell)
         if shell.plain and kinds <= {'free', 'model'} and not credits:
             return 'model', command, taints
@@ -1663,6 +1859,17 @@ class Floor:
         if self.target_unread(shell):
             what += '\n' + self.CANNOT_TELL
         return 'ask', what, taints + run
+
+    def removes_record(self, shell):
+        """True when a program that removes or moves names Squire's record or
+        a folder holding it."""
+        record = Record.path(self.owner)
+        for argv in shell.segments:
+            name = os.path.basename(argv[0])
+            if name in self.REMOVERS or (name == 'find' and any(word in self.FIND_ACTIONS for word in argv)):
+                if any(p and Paths.within(record, p) for p in (self.path(word, strict=False) for word in argv[1:])):
+                    return True
+        return False
 
     def names_website(self, shell):
         """True when a command names Squire's website command outside its

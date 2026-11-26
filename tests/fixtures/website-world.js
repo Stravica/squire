@@ -71,8 +71,10 @@ const FREE = [{
 // A world with a temporary keychain holding the owner's set-up token, a
 // stand-in that knows that token, and Squire's home pointed at the stand-in.
 // laid: core laid down, as the session runs it (for cases through the floor);
-// else the home's core is a link to this repository's core.
-function websiteWorld(t, { laid = false, rights = SET_UP_RIGHTS, subscriptions = FREE, inKeychain = true, extraTokens = [], ...options } = {}) {
+// else the home's core is a link to this repository's core. setUpOwnedBy
+// 'user': the owner made the set-up token under their own profile, not the
+// account (the stand-in answers it as a user-owned token).
+function websiteWorld(t, { laid = false, rights = SET_UP_RIGHTS, subscriptions = FREE, inKeychain = true, extraTokens = [], setUpOwnedBy = null, ...options } = {}) {
   const world = U.usageWorld(t, { core: !laid });
   if (laid) {
     const done = w.layDown(world, w.CORE);
@@ -84,6 +86,7 @@ function websiteWorld(t, { laid = false, rights = SET_UP_RIGHTS, subscriptions =
   }
   const keychain = w.makeKeychain(world);
   const setUp = { id: 'standin-token-set-up-0001', value: fakeToken('set-up'), name: 'Set-up token the owner made (invented)', policies: [CF.policyFor(ACCOUNT, rights)] };
+  if (setUpOwnedBy) setUp.ownedBy = setUpOwnedBy;
   const standIn = CF.startStandIn(t, world, { accountId: ACCOUNT, subdomain: SUBDOMAIN, tokens: [setUp, ...extraTokens], subscriptions, ...options });
   if (inKeychain) w.storeSecret(keychain, SET_UP_SECRET, setUp.value);
   w.writeConfig(world, { cloudflareApi: standIn.api, cloudflareSites: standIn.sites });

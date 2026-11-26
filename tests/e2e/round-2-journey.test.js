@@ -47,7 +47,7 @@ test('on a laid-down core the runner starts a session that runs the floor, a wak
   assert.ok(record, `the session must be recorded in the Squire home; records: ${JSON.stringify(s.sessionRecords(world))}`);
 
   // The floor is on in that session: a send is asked.
-  const send = tools.gmailSend('someone@example.com', 'Saturday', 'The cake is ready.');
+  const send = tools.mailSend('someone@example.com', 'Saturday', 'The cake is ready.');
   const asked = w.attempt(world, record.sessionId, send, on);
   w.assertBlocked(asked, 'a send in the session the runner started');
   assert.ok(w.requestIdIn(asked.stderr), `the send must be asked with a request id; got ${w.describe(asked)}`);

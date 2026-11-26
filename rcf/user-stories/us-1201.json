@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:20.500Z",
-  "updatedAt": "2026-11-21T19:04:01.915Z",
+  "updatedAt": "2026-11-24T21:21:29.577Z",
   "asA": "Squire owner",
   "iWant": "Squire to set up my Cloudflare account once so nothing there can cost me money, and to put sites live only when I say yes",
   "soThat": "a website never costs me money or goes live by surprise",
@@ -37,6 +37,24 @@
       "given": "A Cloudflare account going through Squire's one-off set-up, on which the set-up finds a feature or subscription it cannot read as free",
       "when": "The set-up reads the account's features and subscriptions",
       "then": "That feature or subscription counts as paid: the set-up names it to the Squire owner and does not report done.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1201-4",
+      "description": "When Squire's deploy has put a site live, Squire reports it live at its address once the address serves the site's page to an ordinary client, and never tells the Squire owner that a live site is not live.",
+      "testable": true,
+      "given": "A site Squire has deployed on the Squire owner's yes, through the set-up's account",
+      "when": "Squire reads the site's address back after the deploy",
+      "then": "Once the address serves the site's page to an ordinary client, Squire reports the site live at its address. When the address refuses Squire's own read for a reason that is not \"not live yet\", Squire says it could not confirm the site and names the address for the Squire owner to open. Squire never tells the Squire owner that a live site is not live, and never advises a new deploy for a site that is live.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1201-5",
+      "description": "When Cloudflare does not accept the set-up token on the account's path but accepts it on the user path, Squire's one-off set-up tells the Squire owner that the set-up token must be an account-owned token and where to make it.",
+      "testable": true,
+      "given": "A set-up token the Squire owner made under their own profile, not the account",
+      "when": "The set-up checks the token",
+      "then": "The set-up tells the Squire owner that the set-up token must be an account-owned token and where to make it: Manage account, then Account API Tokens. It makes nothing on the account and keeps nothing, as for any set-up token Cloudflare does not accept.",
       "verification": "testOnly"
     }
   ]
