@@ -3,15 +3,21 @@ Cloudflare account, and Squire's own deploy of one site. The session runs
 each as one command, on the owner's yes to that run:
 
     /usr/bin/python3 '<Squire home>/core/tools/website.py' set-up <account id>
+    /usr/bin/python3 '<Squire home>/core/tools/website.py' set-up <account id> --keep-paid
     /usr/bin/python3 '<Squire home>/core/tools/website.py' deploy '<site folder>' <site name>
 
 set-up takes the owner's short-lived set-up token from the Keychain only
 (the secret cloudflare-set-up, through Squire's secret helper), checks that
-it holds Account API Tokens Write and Billing Read, reads the account's
-subscriptions once and counts any it cannot read as free (a price of exactly
-0) as paid, naming each to the owner and changing no billing, ever. Then it
-makes the one token Squire keeps (Workers Scripts Write alone, on this
-account alone), reads its rights back from the account, keeps it in the
+it holds Account API Tokens Write and Billing Read, reads every page of the
+account's subscriptions and counts any it cannot read as free (a price of
+exactly 0) as paid, naming each with its price to the owner, warning that it
+costs money and changing no billing, ever. Paging it cannot read whole is
+not read as free. A set-up that finds a paid item does not finish: it keeps
+what it named in a runtime record, and the owner's yes to keeping exactly
+those is the set-up run again with --keep-paid, which the safety floor asks
+for naming each. Then it makes the one token Squire keeps (Workers Scripts
+Write alone, on this account alone), reads its rights back from the account
+by name and by permission group id, keeps it in the
 Keychain as cloudflare-deploy through the secret helper, and removes the
 set-up token from the account and from the Keychain. That kept token cannot
 spend, and the free plan fails rather than bills: that is the spend guard,
@@ -68,8 +74,10 @@ from squire import Config, Paths, Runtime, SquireError  # noqa: E402
 
 PYTHON = '/usr/bin/python3'
 SECURITY = '/usr/bin/security'
-USAGE = 'Squire\'s website command takes: set-up <account id>, or deploy \'<site folder>\' <site name>'
+USAGE = ('Squire\'s website command takes: set-up <account id>, set-up <account id> --keep-paid, or deploy '
+         '\'<site folder>\' <site name>')
 RECORD = 'cloudflare.json'
+KEEP_PAID = '--keep-paid'
 
 
 class Refused(Exception):
@@ -147,9 +155,15 @@ class SetUp:
     KEPT_RIGHT = 'Workers Scripts Write'
     ACCOUNT = re.compile(r'[0-9a-f]{32}')
     SUBDOMAIN = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?')
+    # What the set-up last named as paid on an account, kept in the Squire
+    # home where the session cannot write: the floor's ask for --keep-paid
+    # names each item from it, and a run with --keep-paid keeps only these.
+    PAID = 'cloudflare-paid.json'
+    MOST_PAGES = 100
 
-    def __init__(self, config, account):
+    def __init__(self, config, account, keep_paid=False):
         self.config = config
+        self.keep_paid = keep_paid is True
         account = account.lower() if isinstance(account, str) else ''
         if not self.ACCOUNT.fullmatch(account):
             raise Refused(f'{account or "that"} is not a Cloudflare account id (32 letters and digits, from the '
@@ -213,9 +227,11 @@ class SetUp:
                           f'as {self.SET_UP_SECRET}, and run the set-up again; nothing was made')
         paid = self.paid()
         if paid:
-            raise NotDone('Squire found on the account what it cannot read as free (a price of exactly 0), which it '
-                          'counts as paid: ' + '; '.join(paid) + '. Squire changes no billing: switch each off on '
-                          'Cloudflare yourself, then run the set-up again')
+            covered = self.named() if self.keep_paid else []
+            beyond = [item for item in paid if item not in covered]
+            if not self.keep_paid or beyond:
+                self.name_paid(paid)
+                raise NotDone(self.paid_words(paid, beyond if self.keep_paid else None))
         groups = self.api.result('GET', f'/accounts/{self.account}/tokens/permission_groups', self.token)
         group = next((g for g in groups if isinstance(g, dict) and g.get('name') == self.KEPT_RIGHT
                       and isinstance(g.get('id'), str)), None) if isinstance(groups, list) else None
@@ -233,7 +249,8 @@ class SetUp:
         back = self.api.result('GET', f'/accounts/{self.account}/tokens/{self.made["id"]}', self.token)
         if not self.deploy_only(back, group['id']):
             raise NotDone(f'the deploy token read back from the account holds more than {self.KEPT_RIGHT} on this '
-                          'account alone, so Squire removed it and keeps none')
+                          f'account alone (Squire asked for the permission group {group["id"]} and compares what it '
+                          'reads back by that id as well as by name), so Squire removed it and keeps none')
         subdomain = self.api.result('GET', f'/accounts/{self.account}/workers/subdomain', self.made['value'])
         if not isinstance(subdomain, dict):
             raise NotDone('the deploy token\'s first use, reading the account\'s workers.dev subdomain, failed')
@@ -248,10 +265,18 @@ class SetUp:
             'accountId': self.account, 'subdomain': sub, 'tokenId': self.made['id'], 'tokenName': self.made['name'],
             'setUpAt': time.time(),
         })
+        token = (f'its deploy token ({self.made["name"]}: {self.KEPT_RIGHT} alone, on this account alone), held in the '
+                 f'Keychain as {self.KEPT_SECRET}')
+        if paid:
+            return (f'Squire\'s Cloudflare set-up is done on account {self.account}, on your yes to keeping what your '
+                    f'account pays for: {self.listed(paid)}. That costs you money, and Squire changes no billing: it '
+                    f'stays as you keep it, and switching it off is yours to do on Cloudflare. The only token Squire '
+                    f'keeps is {token}; it can spend nothing, and the set-up token has been removed from the account '
+                    f'and the Keychain. Sites go live at https://<site name>.{sub}.workers.dev, each on the owner\'s '
+                    'yes.')
         return (f'Squire\'s Cloudflare set-up is done on account {self.account}. Nothing left on the account can '
                 f'spend the owner\'s money: every subscription there reads as free, the only token Squire keeps is '
-                f'its deploy token ({self.made["name"]}: {self.KEPT_RIGHT} alone, on this account alone), held in the '
-                f'Keychain as {self.KEPT_SECRET}, the free plan fails rather than bills, and the set-up token has been '
+                f'{token}, the free plan fails rather than bills, and the set-up token has been '
                 f'removed from the account and the Keychain. Sites go live at '
                 f'https://<site name>.{sub}.workers.dev, each on the owner\'s yes.')
 
@@ -295,8 +320,10 @@ class SetUp:
 
     def deploy_only(self, record, group_id):
         """True when a token's record holds exactly one right, Workers Scripts
-        Write, allowed on this account alone (by name, or by id where the
-        account gives no name)."""
+        Write, allowed on this account alone: its group's id is the one the
+        set-up asked for, read from the account's own list, and its name,
+        where the account gives one, is that right's. A right named Workers
+        Scripts Write under another group's id is not it."""
         if not isinstance(record, dict) or not isinstance(record.get('policies'), list) or len(record['policies']) != 1:
             return False
         policy = record['policies'][0]
@@ -306,27 +333,116 @@ class SetUp:
         if not isinstance(groups, list) or len(groups) != 1 or not isinstance(groups[0], dict):
             return False
         name = groups[0].get('name')
-        return name == self.KEPT_RIGHT if name is not None else groups[0].get('id') == group_id
+        if not isinstance(group_id, str) or groups[0].get('id') != group_id:
+            return False
+        return name is None or name == self.KEPT_RIGHT
 
     def paid(self):
-        """Each subscription on the account Squire cannot read as free, named;
-        none when all read as free. A read that fails is not done."""
-        subscriptions = self.api.result('GET', f'/accounts/{self.account}/subscriptions', self.token)
-        if not isinstance(subscriptions, list):
-            raise NotDone('Squire could not read the account\'s subscriptions (its billing, read only), so it cannot '
-                          'tell whether anything there costs money')
+        """Each subscription on the account Squire cannot read as free, on
+        every page, as {'id', 'name', 'price'} (the price as read, or words
+        saying it cannot be read); none when all read as free. A first read
+        that fails, or paging that cannot be read whole, is not done."""
+        subscriptions, whole = self.subscriptions()
         named = []
         for sub in subscriptions:
             price = sub.get('price') if isinstance(sub, dict) else None
             if isinstance(price, (int, float)) and not isinstance(price, bool) and price == 0:
                 continue
-            plan = sub.get('rate_plan') if isinstance(sub, dict) and isinstance(sub.get('rate_plan'), dict) else {}
-            name = next((v for v in (plan.get('public_name'), plan.get('id'), sub.get('id') if isinstance(sub, dict)
-                                     else None) if isinstance(v, str) and v), 'a subscription with no name')
-            shown = f'{price} {sub.get("currency", "")}'.strip() if isinstance(price, (int, float)) \
-                and not isinstance(price, bool) else 'a price Squire cannot read'
-            named.append(f'{name} ({shown})')
+            sub = sub if isinstance(sub, dict) else {}
+            plan = sub.get('rate_plan') if isinstance(sub.get('rate_plan'), dict) else {}
+            name = next((v for v in (plan.get('public_name'), plan.get('id'), sub.get('id'))
+                         if isinstance(v, str) and v), 'a subscription with no name')
+            if isinstance(price, (int, float)) and not isinstance(price, bool):
+                shown = ' '.join(str(v) for v in (price, sub.get('currency'), sub.get('frequency'))
+                                 if isinstance(v, (str, int, float)) and not isinstance(v, bool) and str(v))
+            else:
+                shown = 'a price Squire cannot read'
+            named.append({'id': sub.get('id') if isinstance(sub.get('id'), str) else None, 'name': name,
+                          'price': shown})
+        if not whole:
+            found = f' Of what it read, it counts as paid: {self.listed(named)}.' if named else ''
+            raise NotDone('Squire could not read every page of the account\'s subscriptions (its billing, read '
+                          'only), so it cannot tell whether anything there costs money, and it counts what it could '
+                          f'not read as paid.{found} Squire changes no billing; run the set-up again later')
         return named
+
+    def subscriptions(self):
+        """The account's subscriptions on every page: (the list, True) when
+        the answer can be read whole, (what was read, False) when it cannot.
+        An answer with no page counts is one whole answer; one that names
+        pages is read page by page and is whole only when every page reads
+        and the items read are as many as its total count says. Page counts
+        that are missing, not whole numbers, or past what Squire reads, and a
+        later page that fails or is not JSON, leave it not whole. A first read
+        that fails is not done."""
+        path = f'/accounts/{self.account}/subscriptions'
+        first = self.page_of(*self.api.call('GET', path, self.token))
+        if first is None:
+            raise NotDone('Squire could not read the account\'s subscriptions (its billing, read only), so it cannot '
+                          'tell whether anything there costs money')
+        items, info = first
+        if info is None:
+            return items, True
+        pages, total = info.get('total_pages'), info.get('total_count')
+        if not self.whole_number(pages) or not 1 <= pages <= self.MOST_PAGES or not self.whole_number(total):
+            return items, False
+        for page in range(2, pages + 1):
+            later = self.page_of(*self.api.call('GET', f'{path}?page={page}', self.token))
+            if later is None:
+                return items, False
+            items += later[0]
+        return items, len(items) == total
+
+    @staticmethod
+    def page_of(status, answer):
+        """(the page's items, its result_info) for an answer that succeeded
+        with a list; result_info is None where the answer carries none, and
+        an empty object where it carries one Squire cannot read. None for any
+        other answer."""
+        if status is None or not 200 <= status < 300 or not isinstance(answer, dict) \
+                or answer.get('success') is not True or not isinstance(answer.get('result'), list):
+            return None
+        info = answer.get('result_info')
+        return list(answer['result']), (info if isinstance(info, dict) or info is None else {})
+
+    @staticmethod
+    def whole_number(value):
+        return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+    @staticmethod
+    def listed(items):
+        return '; '.join(f'{item["name"]} ({item["price"]})' for item in items)
+
+    def paid_words(self, paid, beyond):
+        """What the set-up says when it stops over paid items: each named
+        with its price, a warning that it costs money and that Squire changes
+        no billing, and how the owner keeps them. beyond is None for a run
+        with no yes to keeping them; else the items the yes did not cover."""
+        how = (f'Squire changes no billing. Switch each off on Cloudflare yourself and run the set-up again; or, to '
+               f'finish the set-up and keep {"it" if len(paid) == 1 else "them"}, store a new set-up token as '
+               f'{self.SET_UP_SECRET} and run the set-up again as set-up {self.account} {KEEP_PAID}, which Squire '
+               'asks you about first, naming each')
+        if beyond is None:
+            return (f'your Cloudflare account pays for {self.listed(paid)}, which Squire cannot read as free (a '
+                    f'price of exactly 0) and counts as paid. That costs you money, and {how}')
+        return (f'your yes to keeping what your account pays for covered only what Squire named before it, and the '
+                f'account also pays for {self.listed(beyond)}. That costs you money, and {how}')
+
+    def named(self):
+        """The paid items the set-up last named on this account, from its
+        record in the Squire home: what the owner's yes to --keep-paid,
+        asked naming them, covers."""
+        record = Runtime.read(self.config.home, self.PAID)
+        items = record.get('items') if record.get('accountId') == self.account else None
+        return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
+
+    def name_paid(self, paid):
+        """Keeps what this run named as paid, for the floor's ask."""
+        try:
+            Runtime.update(self.config.home, self.PAID, lambda old: {
+                'accountId': self.account, 'items': paid, 'namedAt': time.time()})
+        except OSError:
+            pass
 
     def keep(self):
         """The deploy token into the Keychain as cloudflare-deploy, through the
@@ -632,8 +748,8 @@ class Keychain:
 def main(argv):
     try:
         config = Config()
-        if len(argv) == 2 and argv[0] == 'set-up':
-            done, said = SetUp(config, argv[1]).run()
+        if argv[:1] == ['set-up'] and (len(argv) == 2 or (len(argv) == 3 and argv[2] == KEEP_PAID)):
+            done, said = SetUp(config, argv[1], keep_paid=len(argv) == 3).run()
             (sys.stdout if done else sys.stderr).write(said + '\n')
             return 0 if done else 1
         if len(argv) == 3 and argv[0] == 'deploy':

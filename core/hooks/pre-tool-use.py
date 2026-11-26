@@ -806,6 +806,32 @@ class WebsiteCommand:
                    'Squire\'s Cloudflare set-up has not read the account on this Mac')
     SET_UP = ('run Squire\'s one-off Cloudflare set-up on account {account}: it reads the account\'s subscriptions, '
               'makes and keeps a deploy-only token, and removes the owner\'s set-up token')
+    KEEP_PAID = '--keep-paid'
+    PAID = 'cloudflare-paid.json'
+    KEEP_WORDS = ('finish Squire\'s Cloudflare set-up on account {account} and keep what your account pays for: '
+                  '{items}. That costs you money, and Squire changes no billing: it stays as you keep it. The set-up '
+                  'makes and keeps a deploy-only token, and removes the owner\'s set-up token; a yes covers only what '
+                  'is named here')
+    KEEP_NOTHING = ('finish Squire\'s Cloudflare set-up on account {account}, keeping what the account pays for, '
+                    'though Squire has named nothing it pays for on this Mac: the set-up keeps nothing it has not '
+                    'named here, and names anything it finds that costs money; Squire changes no billing')
+
+    @classmethod
+    def keep_paid(cls, floor, account):
+        """The ask for the set-up run again to keep what costs money: the
+        words naming each paid item the set-up last named on this account,
+        from its record in the Squire home, and the item a yes covers, bound
+        to exactly those items."""
+        record = Runtime.read(floor.config.home, cls.PAID)
+        items = record.get('items') if record.get('accountId') == account.lower() else None
+        items = [i for i in items if isinstance(i, dict) and isinstance(i.get('name'), str)
+                 and isinstance(i.get('price'), str)] if isinstance(items, list) else []
+        if items:
+            what = cls.KEEP_WORDS.format(account=account, items='; '.join(f'{i["name"]} ({i["price"]})' for i in items))
+        else:
+            what = cls.KEEP_NOTHING.format(account=account)
+        bound = json.dumps([account.lower(), items], sort_keys=True, ensure_ascii=False)
+        return what, 'keep-paid:' + hashlib.sha256(bound.encode('utf-8')).hexdigest()
 
     @staticmethod
     def quoted(path):
@@ -831,6 +857,8 @@ class WebsiteCommand:
         words = [str(word) for word in argv[2:]]
         if len(words) == 2 and words[0] == 'set-up' and cls.ACCOUNT.fullmatch(words[1]):
             return ('set-up', words[1])
+        if len(words) == 3 and words[0] == 'set-up' and cls.ACCOUNT.fullmatch(words[1]) and words[2] == cls.KEEP_PAID:
+            return ('keep-paid', words[1])
         if len(words) == 3 and words[0] == 'deploy' and not words[1].startswith('-'):
             return ('deploy', words[1], words[2])
         return ('never', cls.never(floor).format(what=data.get('command')))
@@ -844,6 +872,10 @@ class WebsiteCommand:
         if asked[0] == 'set-up':
             with Ledger(floor.config.ledger_path) as ledger:
                 return floor.settle(ledger, session, tool, data, 'ask', cls.SET_UP.format(account=asked[1]), taints)
+        if asked[0] == 'keep-paid':
+            what, item = cls.keep_paid(floor, asked[1])
+            with Ledger(floor.config.ledger_path) as ledger:
+                return floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
         _, given, name = asked
         folder = floor.path(given, strict=False)
         own = os.path.realpath(os.path.join(floor.owner, cls.SITES, name))
