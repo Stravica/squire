@@ -495,6 +495,9 @@ test('while the health check names a fault, a signed update is still staged and 
   const h = R.health(rw);
   assert.notEqual(h.status, 0, 'the world plants a fault the health check names');
   assert.match(h.stdout, /config-change\.py/, `the health check names the changed file; got ${w.describe(h)}`);
+  // The world lays core with no set-up, as a home an older app laid down has
+  // no current-release.json: whatever the record is, staging leaves it so.
+  const recordBefore = R.currentRelease(rw);
   const sent = stage(rw, release, 'the weekly check while the health check names a fault');
   const told = noticesOf(sent, NEXT);
   assert.equal(told.length, 1, `the owner must be told the release is waiting, naming Squire Update, while the fault is named; sent ${JSON.stringify(sent)}`);
@@ -502,8 +505,20 @@ test('while the health check names a fault, a signed update is still staged and 
   assert.match(told[0], /config-change\.py/, `that notice names the fault the health check names; sent ${JSON.stringify(sent)}`);
   assert.doesNotMatch(told[0], NOT_IN_A_NOTICE, `that notice carries no command, path or terminal; sent ${JSON.stringify(sent)}`);
   assert.ok(fs.readFileSync(floorFile, 'utf8').endsWith('# one line more\n'), 'the planted fault is left as it was: staging installs nothing');
-  assert.equal((R.currentRelease(rw) || {}).current, R.INSTALLED, 'current-release.json still names the installed release');
+  assert.deepEqual(R.currentRelease(rw), recordBefore, 'staging leaves current-release.json as it was');
+  assert.equal((R.currentRelease(rw) || {}).current || R.INSTALLED, R.INSTALLED, 'Squire is still on the installed release, never the staged one');
 });
+
+// A health check that cannot run however it is started: from the command
+// line (its main block) and read in Squire Update's own process alike. The
+// raise goes before the file's main block, so neither route gets past it.
+function plantCannotRun(rw) {
+  const file = path.join(R.installedCore(rw), 'tools', 'health.py');
+  const text = fs.readFileSync(file, 'utf8');
+  const main = "\nif __name__ == '__main__':";
+  assert.ok(text.includes(main), 'the premise: the health check has a main block to plant the fault before');
+  fs.writeFileSync(file, text.replace(main, `\nraise RuntimeError('planted: the health check cannot run')\n${main}`));
+}
 
 // Squire Update over a fault the health check names, or with a health check
 // that cannot run: the install is the owner's to choose, after a warning. The
@@ -519,7 +534,7 @@ const MAY_NOT_UNDO = /undone|undo/i;
 test("Squire Update opened while the health check names a fault, or cannot run, warns first, naming the fault or saying the check could not run and that updating now may not be undone: closing the warning, or Not now after the owner's yes to it, leaves core unchanged; the owner's yes and then Install installs that release", { timeout: 1500000 }, async (t) => {
   for (const [what, plant, named] of [
     ['a fault the health check names', (rw) => fs.appendFileSync(path.join(R.installedCore(rw), 'hooks', 'config-change.py'), '# one line more\n'), /config-change\.py/],
-    ['a health check that cannot run', (rw) => fs.appendFileSync(path.join(R.installedCore(rw), 'tools', 'health.py'), "\nraise RuntimeError('planted: the health check cannot run')\n"), /could not run|cannot run|can't run|did not run|could not be run/i],
+    ['a health check that cannot run', plantCannotRun, /could not run|cannot run|can't run|did not run|could not be run/i],
   ]) {
     const rw = await healthyWorld(t);
     const release = R.buildRelease(rw, { version: NEXT });
