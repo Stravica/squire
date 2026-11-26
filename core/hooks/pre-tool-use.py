@@ -785,6 +785,9 @@ class WebsiteCommand:
     SCRIPT = 'website.py'
     SITES = os.path.join('workspace', 'sites')
     PREVIEWS = 'site-previews.json'
+    DEPLOY_YESES = 'site-deploys.json'
+    NOT_KEPT = ('Squire\'s safety floor could not keep the record of your yes to this deploy, which the deploy checks '
+                'the site\'s folder against before it puts anything live, so nothing ran. Say yes to it again: {what}')
     RECORD = 'cloudflare.json'
     KEEP = 200
     NAME = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?')
@@ -896,7 +899,25 @@ class WebsiteCommand:
             what = cls.CANNOT_TELL.format(name=name, folder=folder)
         item = 'site:' + hashlib.sha256(json.dumps([folder, name, digest, account, subdomain]).encode('utf-8')).hexdigest()
         with Ledger(floor.config.ledger_path) as ledger:
-            return floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
+            answer = floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
+        if answer[0] == 0 and not cls.said_yes(floor, folder, name, digest):
+            return 2, cls.NOT_KEPT.format(what=command)
+        return answer
+
+    @classmethod
+    def said_yes(cls, floor, folder, name, digest):
+        """The deploy the floor lets run on the owner's yes, kept with the
+        digest of the folder's content that yes covered, in a runtime record
+        the session cannot write: the deploy compares the folder as it reads
+        it against it before the upload. False when it cannot be kept."""
+        seen = {'folder': Paths.fold(folder), 'name': name, 'digest': digest, 'at': time.time()}
+        try:
+            Runtime.update(floor.config.home, cls.DEPLOY_YESES,
+                           lambda old: {'yeses': ([y for y in old.get('yeses', []) if isinstance(y, dict)]
+                                                  + [seen])[-cls.KEEP:]})
+        except OSError:
+            return False
+        return True
 
     @classmethod
     def preview_of(cls, floor, tool, data):

@@ -514,6 +514,9 @@ class Deploy:
     MOST_FILES = 20000
     MOST_BYTES = 25 * 1024 * 1024
     LIVE_WITHIN = 100
+    # The safety floor's record of each deploy it let run on the owner's yes,
+    # with the digest of the folder's content that yes covered.
+    DEPLOY_YESES = 'site-deploys.json'
 
     def __init__(self, config, folder, name):
         self.config = config
@@ -543,14 +546,19 @@ class Deploy:
 
     def files(self):
         """The site's files by their path in the site: {'/<path>': bytes}.
-        A link or anything but a file or folder is refused."""
-        found, total = {}, 0
+        A link or anything but a file or folder is refused. self.digest is
+        the digest of exactly what was read, in the form the safety floor
+        gives the folder's content when the owner previews it and says yes
+        to its deploy (WebsiteCommand.digest): each entry's path and kind
+        and each file's bytes, in the walk's order."""
+        found, total, entries = {}, 0, []
         for root, folders, names in os.walk(self.folder):
             folders.sort()
             for entry in sorted(folders + names):
                 path = os.path.join(root, entry)
                 mode = os.lstat(path).st_mode
                 if stat.S_ISDIR(mode):
+                    entries.append(['folder', os.path.relpath(path, self.folder)])
                     continue
                 if not stat.S_ISREG(mode):
                     raise Refused(f'the site\'s folder holds {os.path.relpath(path, self.folder)}, which is not a '
@@ -561,12 +569,33 @@ class Deploy:
                     raise Refused(f'{os.path.relpath(path, self.folder)} is larger than Cloudflare takes for one file '
                                   '(25 MB). Nothing was deployed')
                 found['/' + os.path.relpath(path, self.folder).replace(os.sep, '/')] = data
+                entries.append(['file', os.path.relpath(path, self.folder), hashlib.sha256(data).hexdigest()])
                 total += 1
                 if total > self.MOST_FILES:
                     raise Refused('the site has more files than Cloudflare takes (20,000). Nothing was deployed')
         if not found:
             raise Refused('the site\'s folder holds no file to put live. Nothing was deployed')
+        self.digest = hashlib.sha256(json.dumps(entries).encode('utf-8')).hexdigest()
         return found
+
+    def said_yes_to(self):
+        """The digest of the folder's content the owner said yes to deploy,
+        as the safety floor kept it when it let this deploy run, taken from
+        its runtime record so one yes serves one run; None when the floor
+        kept none for this site (a run that did not come through the floor)."""
+        folder = Paths.fold(self.folder)
+        taken = []
+
+        def take(old):
+            yeses = [y for y in old.get('yeses', []) if isinstance(y, dict)]
+            mine = [i for i, y in enumerate(yeses) if y.get('folder') == folder and y.get('name') == self.name]
+            if not mine:
+                return None
+            taken.append(yeses.pop(mine[-1]))
+            return {'yeses': yeses}
+        Runtime.update(self.config.home, self.DEPLOY_YESES, take)
+        digest = taken[0].get('digest') if taken else None
+        return digest if isinstance(digest, str) or not taken else ''
 
     @staticmethod
     def multipart(parts):
@@ -590,6 +619,13 @@ class Deploy:
             raise Refused(f'Squire\'s deploy token is not in the Keychain as {SetUp.KEPT_SECRET} ({e}): run the '
                           'set-up again. Nothing was deployed')
         files = self.files()
+        # The folder as read here, the bytes that go up, against what the
+        # owner said yes to: a change after the yes is not put live.
+        yes = self.said_yes_to()
+        if yes is not None and yes != self.digest:
+            return False, (f'The site\'s folder, {self.folder}, changed after your yes to its deploy, so Squire put '
+                           f'nothing of {self.name} live and nothing of the changed folder on Cloudflare. Preview the '
+                           'site again and look it over; then its deploy is asked again.')
         script = f'/accounts/{self.account}/workers/scripts/{self.name}'
         by_hash, manifest = {}, {}
         for path, data in files.items():
