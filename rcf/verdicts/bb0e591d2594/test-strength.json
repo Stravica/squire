@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "head": "bb0e591d2594b63ba019895fdd7b0d46c36567f6",
+  "scope": "acs",
+  "criteria": [
+    {
+      "acId": "AC-1901-14",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1901-15",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1201-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1201-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1201-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1401-2",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1401-8",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_STRUCTURAL_ONLY",
+      "detail": "--structural-only: judged on the structural layer and the unmutated bound tests; no mutant was run"
+    },
+    {
+      "acId": "AC-1901-1",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1901-3",
+      "structural": {
+        "result": "pass",
+        "findings": []
+      },
+      "mutants": [],
+      "result": "fail"
+    },
+    {
+      "acId": "AC-1901-5",
+      "structural": {
+        "checked": false
+      },
+      "mutants": [],
+      "result": "blocked",
+      "blocked": true,
+      "reason": "TEST_STRENGTH_UNSUPPORTED",
+      "detail": "installer/Squire.app/Contents/MacOS/Squire:1:1: unsupported file type (none)"
+    }
+  ],
+  "result": "fail",
+  "totals": {
+    "criteria": 10,
+    "structuralPassed": 2,
+    "mutants": 0,
+    "killed": 0,
+    "survived": 0,
+    "timeout": 0,
+    "notApplicable": 0,
+    "blocked": 8
+  },
+  "wallMs": 328712,
+  "node": "v24.14.0"
+}
