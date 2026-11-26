@@ -8,7 +8,7 @@
 // (Deploy.files, Deploy.said_yes_to) against the floor's own digest of the
 // folder it lets the deploy run over (WebsiteCommand.digest,
 // WebsiteCommand.said_yes). Bound to no criterion. Nothing is called: the API
-// here is a stand-in handed to the set-up in-process, and every folder is
+// here is a fake of the test's own handed to the set-up in-process, and every folder is
 // made in the test's own temporary folder.
 
 const { test } = require('node:test');
@@ -118,7 +118,7 @@ test('the set-up names a paid item with its price, currency and frequency as rea
     'print(json.dumps(out))',
   ], [WEBSITE, JSON.stringify([
     ['priced', { success: true, result: [{ id: 's1', price: 0 }, { id: 's2', rate_plan: { public_name: 'Plan A' }, price: 12, currency: 'GBP', frequency: 'yearly' }] }],
-    ['unpriced', { success: true, result: [{ id: 's3', rate_plan: { id: 'plan-b' }, price: 'nothing' }, { id: 's4', price: false }] }],
+    ['no-price', { success: true, result: [{ id: 's3', rate_plan: { id: 'plan-two' }, price: 'nothing' }, { id: 's4', price: false }] }],
     ['not whole', { success: true, result: [{ id: 's5', rate_plan: { public_name: 'Plan C' }, price: 3 }], result_info: { total_pages: 1, total_count: 9 } }],
   ])]);
   assert.deepEqual(got.priced.paid, [{ id: 's2', name: 'Plan A', price: '12 GBP yearly' }]);
@@ -127,7 +127,7 @@ test('the set-up names a paid item with its price, currency and frequency as rea
   assert.match(got.priced.said, /Squire changes no billing/);
   assert.match(got.priced.said, /--keep-paid/);
   assert.match(got.priced.beyond, /covered only what Squire named before it/);
-  assert.deepEqual(got.unpriced.paid.map((x) => [x.name, x.price]), [['plan-b', 'a price Squire cannot read'], ['s4', 'a price Squire cannot read']]);
+  assert.deepEqual(got['no-price'].paid.map((x) => [x.name, x.price]), [['plan-two', 'a price Squire cannot read'], ['s4', 'a price Squire cannot read']]);
   assert.match(got['not whole'].notDone, /could not read every page/);
   assert.match(got['not whole'].notDone, /Plan C \(3\)/);
   assert.doesNotMatch(got['not whole'].notDone, /reads as free/);
