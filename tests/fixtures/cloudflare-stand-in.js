@@ -93,6 +93,34 @@
 //     answers the account refusal in place of 401 1000, and the user path's
 //     verify answers the userVerify refusal in place of 200. Either may be
 //     left out, and is then answered as above.
+//   A priced item among the subscriptions (the stand-in's own setting, an
+//     invented name and price, not seen on a real account): with pricedItem
+//     set, the subscriptions answer is options.subscriptions with PRICED_ITEM
+//     after them, a subscription in the reference's shape whose price is
+//     above 0 (added beside the others, which are unchanged).
+//   Subscriptions over more than one page (not documented for this route in
+//     the pages read: the shape is the list envelope's result_info { page,
+//     per_page, count, total_count, total_pages } that other list routes of
+//     the API carry, read with ?page=<n>): with subscriptionPages set, a list
+//     of pages each a list of subscriptions, GET .../subscriptions answers
+//     the page its page query names (the first when none is named) with
+//     result_info naming every page; per_page is ignored, the pages being the
+//     case's own; a page past the last answers an empty list. Without it the
+//     answer is as before, with no result_info.
+//   Paging that fails (the stand-in's own faults, not seen on a real
+//     account), with subscriptionPages and pagingFault set: 'noPageCounts'
+//     leaves total_pages and total_count out of result_info; 'shortTotalPages'
+//     says total_pages 1 while total_count counts the later page's items;
+//     'malformedTotalPages' says total_pages "two"; 'laterPageFails' answers
+//     every page after the first with the API's 500 fault; 'laterPageNotJson'
+//     answers every page after the first 200 with a short HTML page.
+//   A deploy token read back naming the deploy right under another
+//     permission group's id (the stand-in's own setting, not seen on a real
+//     account; round 17's review read the shape as one the set-up must
+//     catch): with widen 'keptNameOtherId', the token the set-up makes holds,
+//     as the account enforces it, both the group it asked for and Billing
+//     Write, and its record read back (by id or in the list) shows one policy
+//     with one group named Workers Scripts Write under Billing Write's id.
 //
 // The sites: the stand-in serves each script put on workers.dev at
 // /__sites/<script>.<subdomain>.workers.dev/<path>, the address template a
@@ -275,8 +303,10 @@ function holds(token, accountId, names) {
     && (p.permission_groups || []).some((g) => names.includes((GROUPS.find((x) => x.id === g.id) || {}).name)));
 }
 
+// A token's record as the account shows it: its read-back policies where a
+// case set them apart from what the account enforces, else its policies.
 const publicToken = (t) => ({
-  id: t.id, name: t.name, status: t.status, policies: t.policies,
+  id: t.id, name: t.name, status: t.status, policies: t.readBack || t.policies,
   issued_on: t.issuedOn || '2026-01-01T00:00:00Z', expires_on: t.expiresOn || null, not_before: null,
 });
 
@@ -376,7 +406,20 @@ function route(state, options, req, body) {
     if (req.method === 'GET') {
       if (!holds(token, account, ['Billing Read', 'Billing Write'])) return refused();
       if (fail.subscriptions) return fault();
-      return ok(options.subscriptions || []);
+      if (Array.isArray(options.subscriptionPages)) {
+        const pages = options.subscriptionPages;
+        const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10) || 1);
+        const items = page <= pages.length ? pages[page - 1] : [];
+        const info = { page, per_page: (pages[0] || []).length, count: items.length, total_count: pages.reduce((n, p) => n + p.length, 0), total_pages: pages.length };
+        const pf = options.pagingFault;
+        if (pf === 'laterPageFails' && page > 1) return fault();
+        if (pf === 'laterPageNotJson' && page > 1) return { status: 200, type: 'text/html', text: '<html><body>Please try again later.</body></html>\n' };
+        if (pf === 'noPageCounts') { delete info.total_pages; delete info.total_count; }
+        if (pf === 'shortTotalPages') info.total_pages = 1;
+        if (pf === 'malformedTotalPages') info.total_pages = 'two';
+        return { status: 200, json: { ...envelope(true, items), result_info: info } };
+      }
+      return ok([...(options.subscriptions || []), ...(options.pricedItem ? [PRICED_ITEM] : [])]);
     }
     return holds(token, account, ['Billing Write']) ? ok({}) : refused();
   }
@@ -440,7 +483,30 @@ function widen(made, how, accountId) {
   if (how === 'allZones') {
     made.policies.push({ ...policyFor(accountId, ['DNS Write']), resources: { [`${ACCOUNT_SCOPE}.zone.*`]: '*' } });
   }
+  if (how === 'keptNameOtherId') {
+    const other = groupNamed('Billing Write');
+    made.policies.push(policyFor(accountId, ['Billing Write']));
+    made.readBack = [{
+      id: `standin-policy-${crypto.randomBytes(4).toString('hex')}`,
+      effect: 'allow',
+      resources: { [`${ACCOUNT_SCOPE}.${accountId}`]: '*' },
+      permission_groups: [{ id: other.id, name: 'Workers Scripts Write' }],
+    }];
+  }
 }
+
+// The priced item pricedItem adds to the subscriptions answer: invented, and
+// plainly fake.
+const PRICED_ITEM = {
+  id: 'standin-sub-priced-0007',
+  rate_plan: { id: 'standin-plan-pretend-storage', public_name: 'Pretend Storage Plus (invented)', currency: 'USD', scope: 'account', externally_managed: false, is_contract: false },
+  price: 7.5,
+  currency: 'USD',
+  frequency: 'monthly',
+  state: 'Paid',
+  current_period_start: '2026-11-01T00:00:00Z',
+  current_period_end: '2026-12-01T00:00:00Z',
+};
 
 // A site's address: 404 until its script is on workers.dev (and for
 // notFoundFirstMs after, where a case sets it), 503 while its certificate is
@@ -487,13 +553,15 @@ function site(state, options, parts, req) {
 // Starts a stand-in for one case, in a folder of the world's, and stops it
 // when the case ends. options: accountId, subdomain, tokens (each { id,
 // value, name, policies, and ownedBy 'user' for a user-owned token }),
-// subscriptions, certificateWaitMs, notFoundFirstMs, siteRefuses
-// ('defaultClient' | 'everyRead'), siteAnswers ('tooManyRequests' |
-// 'serverError' | 'heldOpen' | 'notThePage'), userOwnedRefusals ({ account,
-// userVerify }, each { status, code, message }, for a user-owned token), fail
-// ({ createToken, readToken, deleteToken, subdomain, subscriptions }: answer
-// 500; deleteToken, a token's removal, leaving the token on the account),
-// widen ('extraGroup' | 'allAccounts' | 'allZones').
+// subscriptions, pricedItem (true: PRICED_ITEM after them), subscriptionPages
+// (a list of pages, each a list of subscriptions), certificateWaitMs,
+// notFoundFirstMs, siteRefuses ('defaultClient' | 'everyRead'), siteAnswers
+// ('tooManyRequests' | 'serverError' | 'heldOpen' | 'notThePage' | 'cutOff'),
+// userOwnedRefusals ({ account, userVerify }, each { status, code, message },
+// for a user-owned token), fail ({ createToken, readToken, deleteToken,
+// subdomain, subscriptions }: answer 500; deleteToken, a token's removal,
+// leaving the token on the account), widen ('extraGroup' | 'allAccounts' |
+// 'allZones' | 'keptNameOtherId').
 function startStandIn(t, world, options) {
   const folder = path.join(world.root, `cloudflare-stand-in-${crypto.randomBytes(3).toString('hex')}`);
   fs.mkdirSync(folder, { recursive: true });
@@ -543,6 +611,6 @@ function startStandIn(t, world, options) {
   };
 }
 
-module.exports = { GROUPS, groupNamed, policyFor, startStandIn, ACCOUNT_SCOPE };
+module.exports = { GROUPS, groupNamed, policyFor, startStandIn, ACCOUNT_SCOPE, PRICED_ITEM };
 
 if (require.main === module) serve(process.argv[2]);

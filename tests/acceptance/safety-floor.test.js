@@ -203,8 +203,6 @@ test('installing software or running a downloaded program is refused until the o
   const world = floorWorld(t);
 
   const free = 'session-looking';
-  w.assertAllowed(w.attempt(world, free, tools.bash('brew list')), 'listing installed software');
-  w.assertAllowed(w.attempt(world, free, tools.bash('pip3 show requests')), 'asking about a package');
   // A tool Squire built for the owner is code the session can write: running
   // it is asked like any program outside the free set, naming the tool.
   blockedUntilYes(world, free, tools.bash('python3 add-ons/invoice-helper/run.py'),
@@ -231,6 +229,53 @@ test('installing software or running a downloaded program is refused until the o
   }
 });
 
+// Homebrew and pip3 are programs like any other: with any arguments they can
+// run code (a formula's file is Ruby that brew loads) or send words out (a
+// search that opens a page, an index address), so each is asked, naming the
+// command, and goes ahead on the owner's yes to exactly that command. Each
+// mode in jobs of its own, its asks counted from zero.
+function askedNamingCommand(world, commands, what) {
+  for (const mode of ['default', 'auto']) {
+    let asked = 0;
+    commands.forEach((command, i) => {
+      const job = `session-asking-${mode}-${i}`;
+      const opts = { permissionMode: mode };
+      const r = w.attempt(world, job, tools.bash(command), opts);
+      w.assertBlocked(r, `${what}: ${command}, in ${mode} mode, before any yes`, command);
+      const id = w.requestIdIn(r.stderr);
+      assert.notEqual(id, null, `${what}: ${command} is asked, a request the owner can answer, in ${mode} mode; got ${w.describe(r)}`);
+      asked += 1;
+      w.ownerSays(world, job, `yes ${id}`, opts);
+      w.assertAllowed(w.attempt(world, job, tools.bash(command), opts), `${what}: ${command}, in ${mode} mode, on the owner's yes to ${id}`);
+    });
+    assert.equal(asked, commands.length, `${what}: in ${mode} mode each of the ${commands.length} commands is asked once`);
+  }
+}
+
+test('brew and pip3 with any arguments, a formula file\'s path among them, are asked, naming the command, like every other program, and go ahead on the owner\'s yes to exactly that command, in the default mode and in auto mode', { timeout: 120000 }, (t) => {
+  const world = floorWorld(t);
+  fs.mkdirSync(path.join(world.owner, 'workspace'), { recursive: true });
+  fs.writeFileSync(path.join(world.owner, 'workspace', 'pretend-tool.rb'), 'class PretendTool < Formula\nend\n');
+  askedNamingCommand(world, [
+    'brew info ./workspace/pretend-tool.rb',
+    'brew install ./workspace/pretend-tool.rb',
+    'brew list',
+    'brew info wget',
+    'pip3 show requests',
+    'pip3 list',
+  ], 'running Homebrew or pip3');
+});
+
+test('a brew search that opens a page and a pip3 listing that asks an index address are asked, naming the command, so nothing is sent before the owner\'s yes to exactly that command, in the default mode and in auto mode', { timeout: 120000 }, (t) => {
+  const world = floorWorld(t);
+  askedNamingCommand(world, [
+    'brew search --pull-request pretend-words',
+    'brew search --open pretend-words',
+    'brew search pretend-words',
+    'pip3 list --outdated --index-url http://127.0.0.1:9/simple/',
+  ], 'Homebrew or pip3 sending words out');
+});
+
 // ------------------------------------------------------------ more of the floor
 //
 // The rule the cases below hold the floor to: a tool or command the floor
@@ -248,9 +293,9 @@ test('installing software or running a downloaded program is refused until the o
 // no; saving a draft through a connector tool the owner classed as one that
 // only drafts; a Bash command whose every segment is a
 // read-only command (ls, cat, head, tail, wc, grep, stat, file, pwd, date,
-// find without -delete or -exec, echo and printf with no redirection, brew
-// list|info|search, pip3 show|list) with no write redirection, no command
-// substitution and no background job; the installed health check. A run
+// find without -delete or -exec, echo and printf with no redirection) with no
+// write redirection, no command substitution and no background job; the
+// installed health check (brew and pip3 are asked like any program). A run
 // through the secret helper is never free, whatever the command it wraps: a
 // tool handed a secret is not read-only, so it is asked, naming the secret
 // and the command. Every path is judged after it is made canonical: links

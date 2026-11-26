@@ -46,6 +46,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
 import time
 import unicodedata
 import zlib
@@ -419,6 +420,33 @@ class HealthLines:
             return None
 
     @classmethod
+    def read_within(cls, config, seconds=None):
+        """read, waited on for at most WITHIN seconds: the lines, or None when
+        the check could not run or did not finish in that time. A check that
+        cannot finish is a problem reported, never a pass."""
+        done = []
+        worker = threading.Thread(target=lambda: done.append(cls.read(config)), daemon=True)
+        worker.start()
+        worker.join(cls.WITHIN if seconds is None else seconds)
+        return done[0] if done else None
+
+    @classmethod
+    def problem(cls, lines):
+        """The problem the health check reports, in its own plain words (each
+        fault line up to its first semicolon), or that it could not run;
+        None when it ran and names no fault."""
+        if lines is None:
+            return 'Squire\'s health check could not run'
+        named = []
+        for line in lines:
+            code = next((c for prefix, c in cls.FAULTS if line.startswith(prefix)), None)
+            if code is None and not line.startswith(cls.OTHERS):
+                code = 'unknown'
+            if code:
+                named.append(line.split(';', 1)[0].strip())
+        return '; '.join(named) if named else None
+
+    @classmethod
     def faults(cls, lines):
         codes = []
         for line in lines:
@@ -432,13 +460,16 @@ class HealthLines:
 
 class WeeklyCheck:
     """The scheduler's weekly check: when update.json records no check in the
-    last 7 days and the health check names no fault, latest.json is fetched
-    from the release host; a newer release, other than one a rollback holds
-    out, is downloaded into staging/, checked and staged, and one wake-up at
-    the staging tells the owner it is waiting, in the notice's words: its
-    version from the signed manifest, Squire Update named, no command, path
-    or terminal. A release already staged is not told again here (the note
-    on the owner's next message comes at most once a week)."""
+    last 7 days, latest.json is fetched from the release host; a newer
+    release, other than one a rollback holds out, is downloaded into staging/,
+    checked and staged, and one wake-up at the staging tells the owner it is
+    waiting, in the notice's words: its version from the signed manifest,
+    Squire Update named, no command, path or terminal. A fault the health
+    check names, or a health check that cannot run or finish, does not hold
+    the release back (an update may be what fixes it): the notice names it
+    too, and Squire Update warns before it installs. A release already staged
+    is not told again here (the note on the owner's next message comes at
+    most once a week)."""
 
     WEEK = 7 * 86400
     ARCHIVE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*\Z')
@@ -447,6 +478,9 @@ class WeeklyCheck:
               'Applications folder in your home folder, or press Command and Space and type Squire Update. It shows '
               'you what\'s new before it changes anything. You can\'t install it from your phone; it will wait until '
               'you\'re at your Mac." Do not run anything for it, and never give the owner anything to type or run.')
+    PROBLEM = (' Squire\'s health check also reports a problem: {problem}. Tell the owner that too, in plain words: '
+               'the update may fix it or may not, and Squire Update warns before it installs anything while Squire '
+               'reports a problem.')
 
     def __init__(self, config, send):
         self.config = config
@@ -463,10 +497,10 @@ class WeeklyCheck:
         now = int(now)
         if not self.releases.installed() or not self.due(now):
             return
-        lines = HealthLines.read(self.config)
-        if lines is None or HealthLines.faults(lines):
-            return
+        self.problem = HealthLines.problem(HealthLines.read_within(self.config))
         self.check(now)
+
+    problem = None
 
     def check(self, now):
         releases = self.releases
@@ -529,8 +563,10 @@ class WeeklyCheck:
 
     def offer(self, version, now):
         """The wake-up at the staging: the notice, the version the signed
-        manifest names (the check has made it the one latest.json names)."""
-        self.send(self.NOTICE.format(version=version), f'update-{version}-{now}')
+        manifest names (the check has made it the one latest.json names), and
+        the problem the health check reports, when it reports one."""
+        problem = self.PROBLEM.format(problem=self.problem) if self.problem else ''
+        self.send(self.NOTICE.format(version=version) + problem, f'update-{version}-{now}')
 
 
 class Install:
@@ -1076,6 +1112,10 @@ class SquireUpdate:
     TITLE = 'Squire Update'
     WINDOW_WITHIN = 3600
     POLL = 1.0
+    ANYWAY = 'Update anyway'
+    WARNING = ('Squire must fix a problem before it can update safely. Squire reports a problem: {problem}. Ask Squire '
+               'about it in the chat. Updating now may fix it or may not, and updating now may not be undone. Update '
+               'to Squire {version} anyway? Not now changes nothing.')
     # The engine's exit: installed, not installed (rolled back, or nothing
     # changed), the release changed since it was shown, refused when checked
     # again, another install holding install.lock.
@@ -1193,11 +1233,14 @@ class SquireUpdate:
         mark = self.releases.record().get('rollbackFailed')
         if not Version.of(on):
             return
-        if on == record.get('next'):
-            self.window(f'Squire is on {on}. The interrupted update finished and all checks passed.')
-        elif isinstance(mark, dict) and mark.get('on') == on:
+        # "All checks passed" only where no failed check is marked for the
+        # version Squire is on: a failed return to the previous release is
+        # said as it is, naming the version, with a support ticket offered.
+        if isinstance(mark, dict) and mark.get('on') == on:
             self.window(f'Squire is on {on}, and it did not pass its checks. Ask Squire in the chat to send a support '
                         'ticket.')
+        elif on == record.get('next'):
+            self.window(f'Squire is on {on}. The interrupted update finished and all checks passed.')
         elif on == record.get('previous'):
             self.window(f'Squire is back on {on}. The interrupted update did not finish, so Squire Update put the '
                         'previous version back.')
@@ -1211,14 +1254,18 @@ class SquireUpdate:
             self.window(f'Squire is up to date ({installed}). There is nothing to install.' if installed
                         else 'Squire is up to date. There is nothing to install.')
             return 0
-        lines = HealthLines.read(self.config)
+        lines = HealthLines.read_within(self.config)
         faults = None if lines is None else HealthLines.faults(lines)
         if lines is None or faults:
+            # The install is the owner's to choose over a problem, after a
+            # warning whose default installs nothing.
             self.log('Squire must fix a problem before it can update '
                      f'({"the health check could not run" if lines is None else ", ".join(faults)})')
-            self.window('Squire must fix a problem before it can update. Ask Squire about it in the chat, then open '
-                        'Squire Update again.')
-            return 0
+            choice = self.window(self.WARNING.format(problem=HealthLines.problem(lines) or 'a fault it cannot name',
+                                                     version=version), buttons=(self.ANYWAY, 'Not now'))
+            if choice != self.ANYWAY:
+                return 0
+            self.log(f'Updating anyway chosen over the problem, for release {version}')
         folder = os.path.join(releases.staging, version)
         try:
             manifest, data = releases.check(folder, releases.key, version, work=releases.staging)

@@ -785,6 +785,9 @@ class WebsiteCommand:
     SCRIPT = 'website.py'
     SITES = os.path.join('workspace', 'sites')
     PREVIEWS = 'site-previews.json'
+    DEPLOY_YESES = 'site-deploys.json'
+    NOT_KEPT = ('Squire\'s safety floor could not keep the record of your yes to this deploy, which the deploy checks '
+                'the site\'s folder against before it puts anything live, so nothing ran. Say yes to it again: {what}')
     RECORD = 'cloudflare.json'
     KEEP = 200
     NAME = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?')
@@ -806,6 +809,32 @@ class WebsiteCommand:
                    'Squire\'s Cloudflare set-up has not read the account on this Mac')
     SET_UP = ('run Squire\'s one-off Cloudflare set-up on account {account}: it reads the account\'s subscriptions, '
               'makes and keeps a deploy-only token, and removes the owner\'s set-up token')
+    KEEP_PAID = '--keep-paid'
+    PAID = 'cloudflare-paid.json'
+    KEEP_WORDS = ('finish Squire\'s Cloudflare set-up on account {account} and keep what your account pays for: '
+                  '{items}. That costs you money, and Squire changes no billing: it stays as you keep it. The set-up '
+                  'makes and keeps a deploy-only token, and removes the owner\'s set-up token; a yes covers only what '
+                  'is named here')
+    KEEP_NOTHING = ('finish Squire\'s Cloudflare set-up on account {account}, keeping what the account pays for, '
+                    'though Squire has named nothing it pays for on this Mac: the set-up keeps nothing it has not '
+                    'named here, and names anything it finds that costs money; Squire changes no billing')
+
+    @classmethod
+    def keep_paid(cls, floor, account):
+        """The ask for the set-up run again to keep what costs money: the
+        words naming each paid item the set-up last named on this account,
+        from its record in the Squire home, and the item a yes covers, bound
+        to exactly those items."""
+        record = Runtime.read(floor.config.home, cls.PAID)
+        items = record.get('items') if record.get('accountId') == account.lower() else None
+        items = [i for i in items if isinstance(i, dict) and isinstance(i.get('name'), str)
+                 and isinstance(i.get('price'), str)] if isinstance(items, list) else []
+        if items:
+            what = cls.KEEP_WORDS.format(account=account, items='; '.join(f'{i["name"]} ({i["price"]})' for i in items))
+        else:
+            what = cls.KEEP_NOTHING.format(account=account)
+        bound = json.dumps([account.lower(), items], sort_keys=True, ensure_ascii=False)
+        return what, 'keep-paid:' + hashlib.sha256(bound.encode('utf-8')).hexdigest()
 
     @staticmethod
     def quoted(path):
@@ -831,6 +860,8 @@ class WebsiteCommand:
         words = [str(word) for word in argv[2:]]
         if len(words) == 2 and words[0] == 'set-up' and cls.ACCOUNT.fullmatch(words[1]):
             return ('set-up', words[1])
+        if len(words) == 3 and words[0] == 'set-up' and cls.ACCOUNT.fullmatch(words[1]) and words[2] == cls.KEEP_PAID:
+            return ('keep-paid', words[1])
         if len(words) == 3 and words[0] == 'deploy' and not words[1].startswith('-'):
             return ('deploy', words[1], words[2])
         return ('never', cls.never(floor).format(what=data.get('command')))
@@ -844,6 +875,10 @@ class WebsiteCommand:
         if asked[0] == 'set-up':
             with Ledger(floor.config.ledger_path) as ledger:
                 return floor.settle(ledger, session, tool, data, 'ask', cls.SET_UP.format(account=asked[1]), taints)
+        if asked[0] == 'keep-paid':
+            what, item = cls.keep_paid(floor, asked[1])
+            with Ledger(floor.config.ledger_path) as ledger:
+                return floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
         _, given, name = asked
         folder = floor.path(given, strict=False)
         own = os.path.realpath(os.path.join(floor.owner, cls.SITES, name))
@@ -864,7 +899,25 @@ class WebsiteCommand:
             what = cls.CANNOT_TELL.format(name=name, folder=folder)
         item = 'site:' + hashlib.sha256(json.dumps([folder, name, digest, account, subdomain]).encode('utf-8')).hexdigest()
         with Ledger(floor.config.ledger_path) as ledger:
-            return floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
+            answer = floor.settle(ledger, session, tool, data, 'ask', what, taints, item=item)
+        if answer[0] == 0 and not cls.said_yes(floor, folder, name, digest):
+            return 2, cls.NOT_KEPT.format(what=command)
+        return answer
+
+    @classmethod
+    def said_yes(cls, floor, folder, name, digest):
+        """The deploy the floor lets run on the owner's yes, kept with the
+        digest of the folder's content that yes covered, in a runtime record
+        the session cannot write: the deploy compares the folder as it reads
+        it against it before the upload. False when it cannot be kept."""
+        seen = {'folder': Paths.fold(folder), 'name': name, 'digest': digest, 'at': time.time()}
+        try:
+            Runtime.update(floor.config.home, cls.DEPLOY_YESES,
+                           lambda old: {'yeses': ([y for y in old.get('yeses', []) if isinstance(y, dict)]
+                                                  + [seen])[-cls.KEEP:]})
+        except OSError:
+            return False
+        return True
 
     @classmethod
     def preview_of(cls, floor, tool, data):
@@ -1088,6 +1141,66 @@ class OwnerDetails:
         carried = {what for what, words in self.words if words in said}
         carried |= {what for what, number in self.digits if any(number in d for d in digits)}
         return [what for what in self.ORDER if what in carried]
+
+
+class LoadedFiles:
+    """The files Claude Code itself loads from the owner's folder, where
+    Squire's sessions start: its instructions and memory (CLAUDE.md,
+    CLAUDE.local.md and AGENTS.md) and its MCP servers (.mcp.json), in the
+    folder or any folder under it, and everything under a .claude folder at
+    any depth (agents, rules, skills, commands, output styles and its own
+    CLAUDE.md). Names are compared as the Mac's volume compares them
+    (Paths.fold), each part of the path below the owner's folder.
+
+    A new file is outside them only by a positive match: neither its path as
+    given (a tilde read as the home it names, . and .. and doubled slashes
+    read as the Mac reads them, links not followed) nor the path the Mac
+    resolves is one of them, neither is there yet, and the nearest folder
+    there on the way to the resolved path is a real folder, not a link. Any
+    other new file (a link at the path itself, a link that leads nowhere or
+    round in a loop) is one the floor cannot place, asked as one of them."""
+
+    NAMES = ('CLAUDE.md', 'CLAUDE.local.md', 'AGENTS.md', '.mcp.json')
+    FOLDER = '.claude'
+    LOADS = (' (a file Claude Code itself loads when a session starts in the owner\'s folder: its instructions, memory, '
+             'MCP servers, agents, rules, skills, commands or styles{resolved}; it is made only on the owner\'s yes)')
+    UNPLACED = (' (a new file the safety floor cannot place in or out of the files Claude Code itself loads from the '
+                'owner\'s folder{resolved}, so it is asked as one of them)')
+    RESOLVED = ', which the Mac opens as {path}'
+
+    @classmethod
+    def named(cls, path, owner):
+        """True when a part of path below the owner's folder (or of the whole
+        path, when it is not below it) is one of the class by its name."""
+        folded, base = Paths.fold(path), Paths.fold(owner).rstrip('/')
+        rest = folded[len(base):] if folded.startswith(base + '/') else folded
+        parts = [part for part in rest.split('/') if part]
+        names = {Paths.fold(name) for name in cls.NAMES}
+        return bool(parts) and (parts[-1] in names or Paths.fold(cls.FOLDER) in parts)
+
+    @staticmethod
+    def placed(path):
+        """True when the nearest path there on the way to path is a real
+        folder, not a link."""
+        above = os.path.dirname(path)
+        while not os.path.lexists(above):
+            if os.path.dirname(above) == above:
+                return False
+            above = os.path.dirname(above)
+        return os.path.isdir(above) and not os.path.islink(above)
+
+    @classmethod
+    def why(cls, given, resolved, owner, cwd):
+        """None for a new file at given (resolved is the path the Mac
+        resolves) placed outside the class; else the words the ask adds,
+        naming the resolved path where it differs from the path given."""
+        lexical = os.path.normpath(os.path.join(cwd, os.path.expanduser(given)))
+        shown = cls.RESOLVED.format(path=resolved) if Paths.fold(resolved) != Paths.fold(lexical) else ''
+        if cls.named(lexical, owner) or cls.named(resolved, owner):
+            return cls.LOADS.format(resolved=shown)
+        if os.path.lexists(lexical) or os.path.lexists(resolved) or not cls.placed(resolved):
+            return cls.UNPLACED.format(resolved=shown)
+        return None
 
 
 class Floor:
@@ -1422,12 +1535,57 @@ class Floor:
             if verdict == 'model':
                 verdict, taints = self.consult(session, self.item(tool, data), what, taints)
             with Ledger(self.config.ledger_path) as ledger:
+                if tool == 'Read' and isinstance(data.get('file_path'), str):
+                    taints = self.picked_up_read(ledger, session, self.path(data['file_path'], strict=False), taints)
                 answer = self.settle(ledger, session, tool, data, verdict, what, taints)
+                if answer[0] == 0:
+                    self.note_saved(ledger, session, tool, data)
             if preview and answer[0] == 0:
                 WebsiteCommand.keep(self, session, preview)
             return answer
         except SquireError as e:
             return 2, f'Squire\'s safety floor is closed: {e}, so this is blocked' + (f': {what}' if what else '.')
+
+    def note_saved(self, ledger, session, tool, data):
+        """A Write the floor lets run to a handover note (a .md file in
+        state/handover in the owner's folder) leaves the ledger's line for it:
+        its path as the volume folds it, the digest of the text written and
+        the untrusted input the job holds, so the job that picks it up at
+        /clear holds what it was written from (session-start.py). A note it
+        cannot digest leaves no line, and its pickup reads it as unseen."""
+        given = data.get('file_path')
+        content = data.get('content')
+        if tool != 'Write' or not isinstance(given, str) or not isinstance(content, str):
+            return
+        path = self.path(given, strict=False)
+        folder = os.path.join(self.owner, 'state', 'handover')
+        if not path or not Paths.within(path, folder) or Paths.fold(path) == Paths.fold(folder) \
+                or not Paths.fold(path).endswith('.md'):
+            return
+        try:
+            digest = hashlib.sha256(content.encode('utf-8')).hexdigest()
+        except UnicodeError:
+            return
+        ledger.note(session, Paths.fold(path), digest, ledger.taints(session)['untrusted'], time.time())
+
+    @staticmethod
+    def picked_up_read(ledger, session, path, taints):
+        """The marks a Read of path leaves: taints, except that a read of the
+        handover note this job picked up at /clear, its text unchanged since,
+        leaves no mark of the owner's private things. The job already holds
+        that text, brought with the marks the pickup gave it
+        (session-start.py), so the read brings it nothing new."""
+        line = ledger.picked_up(session, Paths.fold(path)) if path else None
+        if line is None:
+            return taints
+        try:
+            with open(path, 'rb') as f:
+                digest = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            return taints
+        if digest != line.get('digest'):
+            return taints
+        return [(kind, source) for kind, source in taints if kind != 'private']
 
     def consult(self, session, item, command, taints):
         """A plain read the floor cannot resolve. A bare no from the small
@@ -1560,7 +1718,13 @@ class Floor:
             classes = Paths.canonical(os.path.join(self.owner, self.OWNER_CONFIG), self.cwd)
             if tool == 'Write' and Paths.within(path, self.owner) and not os.path.lexists(path) \
                     and Paths.fold(path) != Paths.fold(classes):
-                return 'free', '', []
+                # A new file Claude Code itself loads from the owner's folder,
+                # or one the floor cannot place in or out of them, is asked
+                # first, naming the file (LoadedFiles).
+                loads = LoadedFiles.why(given, path, self.owner, self.cwd)
+                if loads is None:
+                    return 'free', '', []
+                return 'ask', f'{tool} {given}{loads}', []
             return 'ask', f'{tool} {given}', []
         if tool == 'WebFetch':
             url = self.field(data, 'url')
@@ -2092,8 +2256,6 @@ class Floor:
         clear = all(getattr(word, 'literal', True) for word in argv)
         if command in self.TEXT:
             return ('free' if clear and self.text_known(command, args) else 'model'), [], False
-        if command in ('brew', 'pip3'):
-            return 'free', [], False
         if command == 'find':
             return self.reach_find(args, clear)
         flags, valued, tree = self.READS[command]
@@ -2177,10 +2339,9 @@ class Floor:
         command, args = argv[0], argv[1:]
         if command in self.FREE_COMMANDS:
             return command != 'find' or not self.FIND_ACTIONS.intersection(args)
-        if command == 'brew':
-            return args[:1] in (['list'], ['info'], ['search'])
-        if command == 'pip3':
-            return args[:1] in (['show'], ['list'])
+        # Homebrew and pip3 are programs like any other, with any arguments:
+        # a formula is code brew runs, and a search or an index address sends
+        # words out. Each is asked, naming the command.
         return False
 
     def is_core_tool(self, path, name):

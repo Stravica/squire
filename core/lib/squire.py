@@ -118,12 +118,16 @@ class Ledger:
     the owner's answer ({type: answer, request, session, answer, at}); a yes
     used up ({type: use, request, at}); what a job has taken in
     ({type: taint, session, kind, source, at}); a small-model call the
-    floor made for a job ({type: model, session, at}); and a job the floor
-    saw start ({type: job, session, source, at}). A record that cannot be
-    read makes the whole ledger untrusted.
+    floor made for a job ({type: model, session, at}); a job the floor
+    saw start ({type: job, session, source, at}); a handover note the
+    floor let a job save ({type: note, session, path, digest, untrusted,
+    at}: the note's path as the volume folds it, the digest of the text
+    saved and the untrusted input the job held then); and a handover note a
+    job picked up at /clear ({type: pickup, session, path, digest, at}). A
+    record that cannot be read makes the whole ledger untrusted.
     """
 
-    KINDS = {'request', 'answer', 'use', 'taint', 'model', 'job'}
+    KINDS = {'request', 'answer', 'use', 'taint', 'model', 'job', 'note', 'pickup'}
     # Every record this process has added, in order: what Squire's record
     # names of the call the process decides (Record).
     added = []
@@ -221,6 +225,30 @@ class Ledger:
         """Records a job the floor saw start, keeping one it already holds."""
         if not self.seen(session):
             self.append({'type': 'job', 'session': session, 'source': source, 'at': now})
+
+    def note(self, session, path, digest, untrusted, now):
+        """Records a handover note the floor let this job save: its folded
+        path, the digest of the text saved and the untrusted input the job
+        held then."""
+        self.append({'type': 'note', 'session': session, 'path': path, 'digest': digest,
+                     'untrusted': list(untrusted), 'at': now})
+
+    def note_for(self, path):
+        """The newest record of a handover note saved at this folded path, or
+        None."""
+        found = self._of('note', path=path)
+        return found[-1] if found else None
+
+    def pickup(self, session, path, digest, now):
+        """Records the handover note this job picked up at /clear: its folded
+        path and the digest of the text brought."""
+        self.append({'type': 'pickup', 'session': session, 'path': path, 'digest': digest, 'at': now})
+
+    def picked_up(self, session, path):
+        """The newest record of this job picking up the note at this folded
+        path, or None."""
+        found = self._of('pickup', session=session, path=path)
+        return found[-1] if found else None
 
     def fix_yeses(self):
         """The owner's yeses to known fixes not yet used, oldest first: each

@@ -97,10 +97,18 @@ const websiteTool = (world) => path.join(world.home, 'core', 'tools', 'website.p
 
 // The set-up and the deploy through their own command line, as the session
 // runs them once the floor lets them, with the stand-in as every process's
-// web proxy.
-function runSetUp(ctx, { env = {}, account = ACCOUNT } = {}) {
-  return w.runPython(ctx.world, websiteTool(ctx.world), ['set-up', account], { env: { ...ctx.standIn.proxyEnv, ...env }, timeout: 90000 });
+// web proxy. extra: words after set-up <account id>, as KEEP_PAID.
+function runSetUp(ctx, { env = {}, account = ACCOUNT, extra = [] } = {}) {
+  return w.runPython(ctx.world, websiteTool(ctx.world), ['set-up', account, ...extra], { env: { ...ctx.standIn.proxyEnv, ...env }, timeout: 90000 });
 }
+
+// The owner's yes to keeping what the set-up named as costing money, as the
+// cases pin it (decided on the fail-closed reading, no record settles it):
+// the set-up run again with this one word after the account id. Without it
+// a set-up that finds a paid item names it and does not report done; with
+// it, run on the owner's yes, the set-up finishes keeping only the paid items
+// it named before that yes.
+const KEEP_PAID = '--keep-paid';
 
 function runDeploy(ctx, folder, name, { env = {} } = {}) {
   return w.runPython(ctx.world, websiteTool(ctx.world), ['deploy', folder, name], { env: { ...ctx.standIn.proxyEnv, ...env }, timeout: 120000 });
@@ -108,6 +116,7 @@ function runDeploy(ctx, folder, name, { env = {} } = {}) {
 
 // The commands as the session spells them for the floor.
 const deployCommand = (world, folder, name) => `/usr/bin/python3 '${websiteTool(world)}' deploy '${folder}' ${name}`;
+const setUpCommand = (world, account = ACCOUNT, extra = []) => [`/usr/bin/python3 '${websiteTool(world)}' set-up ${account}`, ...extra].join(' ');
 const previewCommand = (folder) => `/usr/bin/python3 -m http.server 0 --bind 127.0.0.1 --directory '${folder}'`;
 
 // A small site in its own folder in the owner's folder.
@@ -223,7 +232,9 @@ module.exports = {
   websiteTool,
   runSetUp,
   runDeploy,
+  KEEP_PAID,
   deployCommand,
+  setUpCommand,
   previewCommand,
   makeSite,
   assertRan,

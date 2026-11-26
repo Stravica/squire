@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:20.500Z",
-  "updatedAt": "2026-11-24T21:21:29.577Z",
+  "updatedAt": "2026-11-26T13:43:18.733Z",
   "asA": "Squire owner",
   "iWant": "Squire to set up my Cloudflare account once so nothing there can cost me money, and to put sites live only when I say yes",
   "soThat": "a website never costs me money or goes live by surprise",
@@ -18,7 +18,7 @@
       "testable": true,
       "given": "A Cloudflare account set up through Squire's one-off set-up",
       "when": "The account's settings are read after set-up",
-      "then": "Every paid feature is off, the spend guard is on, and the short-lived set-up token has been removed.",
+      "then": "Every paid feature is off, or is one the Squire owner was warned of by name and said yes to keeping; the spend guard is on, and the short-lived set-up token has been removed.",
       "verification": "testOnly"
     },
     {
@@ -32,11 +32,11 @@
     },
     {
       "id": "AC-1201-3",
-      "description": "A feature or subscription on the Cloudflare account that Squire's one-off set-up cannot read as free counts as paid, and the set-up does not report done.",
+      "description": "A feature or subscription on the Cloudflare account that Squire's one-off set-up cannot read as free counts as paid, and the set-up reports done only on the owner's yes after naming it.",
       "testable": true,
       "given": "A Cloudflare account going through Squire's one-off set-up, on which the set-up finds a feature or subscription it cannot read as free",
       "when": "The set-up reads the account's features and subscriptions",
-      "then": "That feature or subscription counts as paid: the set-up names it to the Squire owner and does not report done.",
+      "then": "That feature or subscription counts as paid: the set-up names it to the Squire owner, warns that it costs money and that Squire changes no billing, and reports done only on the owner's yes; with no yes it does not report done.",
       "verification": "testOnly"
     },
     {

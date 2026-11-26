@@ -23,7 +23,14 @@ The job: at startup and at clear it writes the job's record in the approvals
 ledger, keeping one the ledger already holds for that id, so the floor knows
 it saw the job start. It never removes a job's marks: any other start under
 an id the floor has never seen (a resume, say) is a job it cannot place, and
-the job starts holding untrusted input and the owner's private things.
+the job starts holding untrusted input and the owner's private things. A
+handover note brought at clear carries what it was written from: the job
+starts clean of it only when the ledger holds the floor's line for that note
+with the digest of the note as it now reads and no untrusted input held by
+the job that saved it. Any other note (one the floor did not see saved, one
+changed since, one saved in a job holding untrusted input, one that cannot
+be read) marks the job as holding untrusted input, the note named as its
+source; so does a handover that fails at clear.
 
 The session: with CLAUDE_CODE_MESSAGING_SOCKET and CLAUDE_CODE_MESSAGING_TOKEN
 set, it waits up to 10 seconds for the socket, then writes
@@ -36,6 +43,7 @@ own session process. Once the session process that ran it is gone, it
 writes nothing more.
 """
 
+import hashlib
 import json
 import os
 import stat
@@ -52,6 +60,12 @@ class SessionStart:
     # The starts that may begin or pick up the guided first conversation.
     FIRST = ('startup', 'resume', 'clear')
     UNPLACED = 'a job the floor did not see start'
+    # What a handover note brought at clear marks the job with, the note named.
+    NOTE_TAINTED = 'the handover note {path}, saved in a job holding untrusted input'
+    NOTE_CHANGED = 'the handover note {path}, changed since the floor saw it saved'
+    NOTE_UNSEEN = 'the handover note {path}, which the floor did not see saved'
+    NOTE_UNREAD = 'the handover note {path}, which Squire could not read'
+    HANDOVER_FAILED = 'a handover note Squire could not bring whole at /clear'
     SOCKET_WAIT = 10.0
     PICKUP = ('Squire note from Squire\'s own code (not a message from anyone): this is the handover note from the last '
               'conversation, saved at {path}. Pick up the work in progress from it; it follows whole.')
@@ -78,10 +92,12 @@ class SessionStart:
         if not isinstance(session, str) or not session:
             return
         config = Config()
+        picked, failed = [], False
         try:
-            cls.handover(config, session, source)
+            picked = cls.handover(config, session, source)
         except Exception:
-            pass
+            # A handover that fails is never a clean pickup (the job below).
+            failed = source == 'clear'
         if source in cls.FIRST:
             try:
                 cls.voice_notes(config.home)
@@ -99,6 +115,13 @@ class SessionStart:
         with Ledger(config.ledger_path) as ledger:
             if source in cls.CLEAN:
                 ledger.job(session, source, now)
+                for path in picked:
+                    mark = cls.pickup_mark(ledger, path)
+                    if mark:
+                        ledger.taint(session, 'untrusted', mark, now)
+                    cls.picked_up(ledger, session, path, now)
+                if failed:
+                    ledger.taint(session, 'untrusted', cls.HANDOVER_FAILED, now)
             elif not ledger.seen(session):
                 for kind in ('untrusted', 'private'):
                     ledger.taint(session, kind, cls.UNPLACED, now)
@@ -139,6 +162,45 @@ class SessionStart:
             print(text.rstrip('\n'))
         if older:
             print(cls.OLDER)
+        return [path for path, _ in shown]
+
+    @classmethod
+    def pickup_mark(cls, ledger, path):
+        """None when the handover note at path is clean to pick up: the
+        ledger's newest line for it, by its folded path, holds the digest of
+        the note as it now reads and no untrusted input held by the job that
+        saved it. Otherwise the source to mark the job with, naming the note."""
+        from squire import Paths
+
+        try:
+            with open(path, 'rb') as f:
+                data = f.read()
+            line = ledger.note_for(Paths.fold(os.path.realpath(path)))
+        except (OSError, ValueError):
+            return cls.NOTE_UNREAD.format(path=path)
+        if line is None:
+            return cls.NOTE_UNSEEN.format(path=path)
+        if line.get('digest') != hashlib.sha256(data).hexdigest():
+            return cls.NOTE_CHANGED.format(path=path)
+        if line.get('untrusted') != []:
+            return cls.NOTE_TAINTED.format(path=path)
+        return None
+
+    @staticmethod
+    def picked_up(ledger, session, path, now):
+        """Records the note this job picked up, with the digest of its text,
+        so the floor knows a later read of it, unchanged, brings nothing the
+        job does not hold already (Floor.picked_up_read). A note that cannot
+        be read is recorded as nothing."""
+        from squire import Paths
+
+        try:
+            with open(path, 'rb') as f:
+                digest = hashlib.sha256(f.read()).hexdigest()
+            folded = Paths.fold(os.path.realpath(path))
+        except (OSError, ValueError):
+            return
+        ledger.pickup(session, folded, digest, now)
 
     @classmethod
     def voice_notes(cls, home):

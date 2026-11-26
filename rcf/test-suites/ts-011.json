@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-16T03:59:42.220Z",
+  "updatedAt": "2026-11-26T13:45:04.083Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -192,9 +192,9 @@
     {
       "id": "TC-011-while-health-check-names-fault-no-update-staged-offered",
       "acId": "AC-1401-2",
-      "description": "while the health check names a fault no update is staged or told to the owner, and once it is gone the next run stages it and tells the owner",
+      "description": "while the health check names a fault a signed update is still staged and told to the owner, the notice naming the fault",
       "status": "pending",
-      "testPointer": "tests/acceptance/updates.test.js::while the health check names a fault no update is staged or told to the owner, and once it is gone the next run stages it and tells the owner"
+      "testPointer": "tests/acceptance/updates.test.js::while the health check names a fault, a signed update is still staged and told to the owner in one wake-up naming its version and Squire Update, with no command, path or terminal, and that notice names the fault"
     },
     {
       "id": "TC-011-signed-release-whose-runner-exits-once-installs-yes-rolled",
@@ -692,6 +692,20 @@
       "description": "under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all of Squire's agents loaded",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::under a launchd that ends a stopped agent's process group, a rollback from Squire Update whose lay-down fails for a reason of its own (Squire's Claude Code config folder, where every lay-down writes the session's settings and instructions, cannot be written) runs to its end and leaves all of Squire's agents loaded"
+    },
+    {
+      "id": "TC-011-squire-update-over-a-fault-or-a-health",
+      "acId": "AC-1401-2",
+      "description": "Squire Update over a fault or a health check that cannot run warns first and installs only on the owner's yes",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::Squire Update opened while the health check names a fault, or cannot run, warns first, naming the fault or saying the check could not run and that updating now may not be undone: closing the warning, or Not now after the owner's yes to it, leaves core unchanged; the owner's yes and then Install installs that release"
+    },
+    {
+      "id": "TC-011-finishing-an-interrupted-install-whose",
+      "acId": "AC-1401-8",
+      "description": "finishing an interrupted install whose return cannot be checked never says all checks passed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates.test.js::Squire Update finishing an interrupted install whose return to the previous release cannot be checked never says all checks passed: it names the version Squire is on, says it did not pass its checks and sends the owner to the chat for a support ticket"
     }
   ],
   "status": "draft"

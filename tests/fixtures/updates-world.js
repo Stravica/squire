@@ -142,11 +142,13 @@ process.exit(r.status === null ? 1 : r.status);
 // names Squire Update (and no set-up window's title) is answered and recorded
 // in <log>, one JSON line each ({ args, stdin, text, main, buttons, answer }).
 // The main window is the one with an Install button; it is answered from
-// <answers> ({ main }): a button's name, 'close' (the window closed: osascript
+// <answers> ({ main, warning }): a button's name, 'close' (the window closed: osascript
 // exits 1, User canceled), 'hang' (left open), { waitFor, then } (the answer
 // held until the file appears) or { sequence: [...] } (the nth main window gets
 // the nth answer, the last after that). Every other window is answered with
-// its default button. A window that is not Squire Update's goes to delegate
+// its default button, but a warning (two or more buttons, no Install) when
+// <answers> names warning: 'yes' (its button that is not its default),
+// 'close' or a button's name. A window that is not Squire Update's goes to delegate
 // (set-up's own answering osascript, in a world set up by its app) or is
 // refused.
 function updateWindowsScript({ log, answers, delegate = null }) {
@@ -186,7 +188,14 @@ if (main) {
   }
 } else {
   const d = /default button\\s+"([^"]*)"/.exec(text);
-  a = d ? d[1] : (buttons.length ? buttons[buttons.length - 1] : 'OK');
+  const byDefault = d ? d[1] : (buttons.length ? buttons[buttons.length - 1] : 'OK');
+  // A warning: a window of Squire Update's own with two or more buttons and
+  // no Install. With <answers> warning set it is answered so: 'yes', its
+  // button that is not its default; 'close'; or a button's name. Unset, it
+  // gets its default button, as every other window does.
+  if (how.warning !== undefined && buttons.length >= 2) {
+    a = how.warning === 'yes' ? (buttons.find((b) => b !== byDefault) || byDefault) : how.warning;
+  } else a = byDefault;
 }
 log({ args: argv, stdin, text, main, buttons, answer: a });
 const answer = (b) => { process.stdout.write('button returned:' + b + '\\n'); process.exit(0); };
@@ -967,8 +976,8 @@ const squireUpdateApp = (rw) => path.join(rw.world.userHome, 'Applications', 'Sq
 // Spotlight): the installed core's update.py --app, in a process group of its
 // own, in the world's environment, its main window answered with answer.
 // Does not wait.
-function openSquireUpdate(rw, { answer = 'Install', args = [] } = {}) {
-  fs.writeFileSync(path.join(rw.root, 'update-answers.json'), JSON.stringify({ main: answer }));
+function openSquireUpdate(rw, { answer = 'Install', args = [], warning } = {}) {
+  fs.writeFileSync(path.join(rw.root, 'update-answers.json'), JSON.stringify(warning === undefined ? { main: answer } : { main: answer, warning }));
   rw.uiRuns = (rw.uiRuns || 0) + 1;
   const errFile = path.join(rw.root, `update-app-${rw.uiRuns}.out`);
   const out = fs.openSync(errFile, 'w');
@@ -998,10 +1007,10 @@ function engineDone(rw, within = 600000) {
 // { waitFor, then }); waits for it to end, and for the install its engine
 // runs, in a session of its own, to end. Squire Update must open and show at
 // least one window. Returns what it showed and the wake-ups sent meanwhile.
-async function installAtMac(rw, release, answer = 'Install', { args = [], within = 600000 } = {}) {
+async function installAtMac(rw, release, answer = 'Install', { args = [], within = 600000, warning } = {}) {
   const before = wakeUpIds(rw);
   const shown = updateWindows(rw).length;
-  const ui = openSquireUpdate(rw, { answer, args });
+  const ui = openSquireUpdate(rw, { answer, args, warning });
   await s.waitFor(() => ui.exited(), within, 250);
   const windows = updateWindows(rw).slice(shown);
   assert.ok(windows.length >= 1, `Squire Update must open (the installed core's update.py --app) and show its window` +

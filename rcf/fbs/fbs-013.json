@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-11-26T13:43:36.734Z",
+  "updatedAt": "2026-11-26T22:35:26.143Z",
+  "summary": "Squire asks before it finishes the Cloudflare set-up over something the owner's account pays for, naming each paid item with its price, reads every page of the account's subscriptions and keeps only a token that reads back as deploy-only; Squire Update still stages a signed update while Squire reports a problem, warns before installing it and never says an update passed checks it did not; a handover note carries what its job took in across /clear; a new file Claude Code itself loads from the owner's folder is asked first, naming the file; brew and pip3 are asked like any program; and a site's folder changed after the owner's yes is not put live.",
+  "dependsOnFbsIds": [
+    "FBS-004",
+    "FBS-006",
+    "FBS-008",
+    "FBS-012"
+  ],
+  "acIds": [
+    "AC-1901-14",
+    "AC-1901-15",
+    "AC-1201-1",
+    "AC-1201-2",
+    "AC-1201-3",
+    "AC-1401-2",
+    "AC-1401-8",
+    "AC-1901-1",
+    "AC-1901-3",
+    "AC-1901-5"
+  ],
+  "fbsId": "FBS-013",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 13,
+  "executionStatus": "complete",
+  "title": "Paid items kept only on the owner's yes, updates while Squire reports a problem, and files Claude Code loads asked first",
+  "uiBearing": false
+}
