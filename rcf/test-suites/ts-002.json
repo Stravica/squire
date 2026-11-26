@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-26T13:45:07.373Z",
+  "updatedAt": "2026-11-26T16:15:49.408Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -630,6 +630,13 @@
       "description": "a site's folder changed after the owner's yes and before the upload is not put live",
       "status": "pending",
       "testPointer": "tests/acceptance/website-deploy.test.js::a file that changes in the site's folder after the owner's yes to its deploy and before the upload is not put live: the deploy does not report done, puts nothing of the changed folder on the account and says the folder changed; the deploy is asked again once the site has a new preview, and goes live on that yes, in the default mode and in auto mode (content)"
+    },
+    {
+      "id": "TC-002-a-handover-note-the-floor-did-not-see",
+      "acId": "AC-1901-3",
+      "description": "a handover note the floor did not see saved, or changed after saving, marks the job that picks it up",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-pickup-marks.test.js::a handover note the floor did not see saved, or one changed after a clean job saved it, marks the job that picks it up at /clear: there, a web search after a read of the owner's private things is refused as one job, naming the note as the untrusted input and saying the work must be split, in the default mode and in auto mode (content)"
     }
   ],
   "status": "draft"

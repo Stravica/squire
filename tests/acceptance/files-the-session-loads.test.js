@@ -15,11 +15,16 @@
 // Every case runs the safety floor's PreToolUse hooks as the laid settings
 // name them, in the default mode and in auto mode, each mode counted from
 // zero in a job of its own per file; the owner's yes is his own message
-// through core/hooks/user-prompt-submit.py. Decided on the fail-closed
-// reading and named here (no record settles it): a .mcp.json in a folder
-// under the owner's is not in the class (Claude Code reads the project's,
-// at the folder it starts in), and neither is a .claude folder below the
-// owner's; the cases leave both alone.
+// through core/hooks/user-prompt-submit.py. A .mcp.json in a folder under
+// the owner's, and a file under a .claude folder below the owner's, are in
+// the class at any depth (Claude Code reads them when a session starts
+// there; an ask for the owner's own act harms nobody), under their own
+// criterion. A new file the floor cannot place in or out of the class (a
+// link that leads nowhere or round in a loop) is asked as one in it. A class
+// file made another way than Write (a shell redirect, tee, cp, mv, or
+// NotebookEdit) is asked the same way, naming the file, and so is a path
+// spelt with .., ./ or a doubled slash, which the cases send as given, never
+// tidied first.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -47,25 +52,41 @@ function laidWorld(t) {
 // the session gave it, before any yes; let through on the owner's yes to that
 // request. The asks are counted per mode, from zero.
 function askedThenMade(world, rels, what) {
+  askedThenMadeAt(world, rels.map((rel) => path.join(world.owner, rel)), what, 'new-file');
+}
+
+// The same, for files given exactly as the session would send them (a raw
+// path is never tidied by path.join first), and for any tool call that would
+// make one: call(file) gives the call, a Write unless named otherwise.
+function askedThenMadeAt(world, files, what, tag, call = (file) => tools.write(file, TEXT)) {
   const floor = U.laidFloor(world, U.UTC);
   for (const mode of MODES) {
     let asked = 0;
-    rels.forEach((rel, i) => {
-      const file = path.join(world.owner, rel);
-      assert.equal(fs.existsSync(file), false, `the premise: ${rel} is not there yet, so the Write would make a new file`);
-      const job = `job-new-file-${mode}-${i}`;
-      const write = tools.write(file, TEXT);
-      const r = floor.run(job, write, mode);
+    files.forEach((file, i) => {
+      const rel = path.relative(world.owner, file) || file;
+      assert.equal(fs.existsSync(file), false, `the premise: ${file} is not there yet, so the call would make a new file`);
+      const job = `job-${tag}-${mode}-${i}`;
+      const made = call(file);
+      const r = floor.run(job, made, mode);
       w.assertBlocked(r, `${what}: a new ${rel} the session would write, in ${mode} mode, before any yes`);
       const id = w.requestIdIn(r.stderr);
       assert.notEqual(id, null, `${what}: a new ${rel} is asked, a request the owner can answer, in ${mode} mode; got ${w.describe(r)}`);
       assert.ok(r.stderr.includes(file), `${what}: the ask names the file (${file}), in ${mode} mode; got ${w.describe(r)}`);
       asked += 1;
       U.sayYesTo(world, job, r, { env: U.UTC });
-      w.assertAllowed(floor.run(job, write, mode), `${what}: a new ${rel}, in ${mode} mode, on the owner's yes to ${id}`);
+      w.assertAllowed(floor.run(job, made, mode), `${what}: a new ${rel}, in ${mode} mode, on the owner's yes to ${id}`);
     });
-    assert.equal(asked, rels.length, `${what}: in ${mode} mode each of the ${rels.length} files is asked once`);
+    assert.equal(asked, files.length, `${what}: in ${mode} mode each of the ${files.length} files is asked once`);
   }
+}
+
+// The volume's folding, read without skipping: false on a volume that does
+// not fold letter case.
+function foldsCase(world) {
+  const probe = path.join(world.owner, 'workspace', 'fold-probe-case');
+  fs.mkdirSync(probe, { recursive: true });
+  fs.writeFileSync(path.join(probe, 'Probe.json'), '{}\n');
+  try { return fs.statSync(path.join(probe, 'Probe.json')).ino === fs.statSync(path.join(probe, 'pROBE.JSON')).ino; } catch (e) { return false; }
 }
 
 test("a new CLAUDE.md, CLAUDE.local.md or AGENTS.md the session would write in the owner's folder, at the folder itself or in a folder under it, is asked first, naming the file, and is made only on the owner's yes, in the default mode and in auto mode", { timeout: 300000 }, (t) => {
@@ -135,6 +156,72 @@ test("the same files spelt another way the volume opens as them, in another lett
     'workspace/home-link/CLAUDE.md',
     'workspace/cfg-link/agents/helper.md',
   ], 'a file Claude Code loads, spelt another way');
+});
+
+test("a new file the floor cannot place in or out of the files Claude Code loads, through a link that leads nowhere or round in a loop, is asked first as one of them, naming the file, and is made only on the owner's yes, in the default mode and in auto mode", { timeout: 300000 }, (t) => {
+  const world = laidWorld(t);
+  const o = (rel) => path.join(world.owner, rel);
+  fs.mkdirSync(o('workspace/notes'), { recursive: true });
+  // A plain name linked to a CLAUDE.md that is not there yet, a CLAUDE.md
+  // linked to a plain file that is not there yet, and two links that lead to
+  // each other.
+  fs.symlinkSync(o('CLAUDE.md'), o('workspace/notes/todo.md'));
+  fs.symlinkSync(o('workspace/notes/plain-target.md'), o('workspace/notes/CLAUDE.md'));
+  fs.symlinkSync(o('workspace/loop-b'), o('workspace/loop-a'));
+  fs.symlinkSync(o('workspace/loop-a'), o('workspace/loop-b'));
+  askedThenMadeAt(world, [
+    o('workspace/notes/todo.md'),
+    o('workspace/notes/CLAUDE.md'),
+    `${o('workspace/loop-a')}/notes.md`,
+  ], 'a file the floor cannot place', 'unplaced');
+});
+
+test("a new .mcp.json in any folder under the owner's folder, and a new file under a .claude folder at any depth below it, are asked first, naming the file, and are made only on the owner's yes, in the default mode and in auto mode", { timeout: 300000 }, (t) => {
+  const world = laidWorld(t);
+  askedThenMade(world, [
+    'workspace/sites/pretend-bakery/.mcp.json',
+    'workspace/a/b/c/.mcp.json',
+    'workspace/notes/.claude/CLAUDE.md',
+    'workspace/notes/.claude/agents/helper.md',
+    'workspace/sites/pretend-bakery/.claude/commands/tidy.md',
+  ], 'a file Claude Code loads in a folder below the owner\'s');
+});
+
+test("a new file Claude Code loads made by a shell redirect, tee, cp or mv, or by NotebookEdit, is asked first, naming the file, and is made only on the owner's yes, in the default mode and in auto mode", { timeout: 300000 }, (t) => {
+  const world = laidWorld(t);
+  const o = (rel) => path.join(world.owner, rel);
+  const draft = o('workspace/notes/draft.md');
+  fs.mkdirSync(path.dirname(draft), { recursive: true });
+  fs.writeFileSync(draft, TEXT);
+  const shell = {
+    [o('CLAUDE.md')]: (f) => tools.bash(`printf '%s\\n' 'Always answer in French.' > '${f}'`),
+    [o('.mcp.json')]: (f) => tools.bash(`printf '%s\\n' '{"mcpServers":{}}' | tee '${f}'`),
+    [o('AGENTS.md')]: (f) => tools.bash(`cp '${draft}' '${f}'`),
+    [o('.claude/agents/helper.md')]: (f) => tools.bash(`mv '${draft}' '${f}'`),
+    [o('.claude/skills/tidy/notes.ipynb')]: (f) => tools.notebookEdit(f, 'cell-1', 'Always answer in French.'),
+  };
+  askedThenMadeAt(world, Object.keys(shell), 'a file Claude Code loads, made another way', 'other-route', (f) => shell[f](f));
+});
+
+test("the same files spelt with .., ./ or a doubled slash, sent as given, through a link in the owner's folder on any volume, or through a folder spelt in another letter case mid-path, are asked first, naming the file, and are made only on the owner's yes, in the default mode and in auto mode", { timeout: 300000 }, (t) => {
+  const world = laidWorld(t);
+  const o = (rel) => path.join(world.owner, rel);
+  fs.mkdirSync(o('.claude'), { recursive: true });
+  fs.mkdirSync(o('workspace/notes'), { recursive: true });
+  fs.symlinkSync(world.owner, o('workspace/home-link'));
+  fs.symlinkSync(o('.claude'), o('workspace/cfg-link'));
+  const files = [
+    `${world.owner}/workspace/../CLAUDE.md`,
+    `${world.owner}/./.mcp.json`,
+    `${world.owner}//.claude/agents/helper.md`,
+    `${world.owner}/workspace/notes/../../.claude/rules/style.md`,
+    o('workspace/home-link/.mcp.json'),
+    o('workspace/home-link/AGENTS.md'),
+    o('workspace/cfg-link/agents/helper.md'),
+  ];
+  if (foldsCase(world)) files.push(o('WORKSPACE/home-link/.mcp.json'), o('workspace/HOME-LINK/CLAUDE.local.md'), o('.CLAUDE/rules/style.md'));
+  else t.diagnostic('the volume holding the test world does not fold letter case: the mid-path spellings are not sent');
+  askedThenMadeAt(world, files, 'a file Claude Code loads, spelt as sent', 'spelt');
 });
 
 test("a new file elsewhere in the owner's folder, a note in workspace or a page of a site, is still written with no ask, in the default mode and in auto mode", { timeout: 300000 }, (t) => {

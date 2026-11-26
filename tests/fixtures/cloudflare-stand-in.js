@@ -107,6 +107,13 @@
 //     result_info naming every page; per_page is ignored, the pages being the
 //     case's own; a page past the last answers an empty list. Without it the
 //     answer is as before, with no result_info.
+//   Paging that fails (the stand-in's own faults, not seen on a real
+//     account), with subscriptionPages and pagingFault set: 'noPageCounts'
+//     leaves total_pages and total_count out of result_info; 'shortTotalPages'
+//     says total_pages 1 while total_count counts the later page's items;
+//     'malformedTotalPages' says total_pages "two"; 'laterPageFails' answers
+//     every page after the first with the API's 500 fault; 'laterPageNotJson'
+//     answers every page after the first 200 with a short HTML page.
 //   A deploy token read back naming the deploy right under another
 //     permission group's id (the stand-in's own setting, not seen on a real
 //     account; round 17's review read the shape as one the set-up must
@@ -403,13 +410,14 @@ function route(state, options, req, body) {
         const pages = options.subscriptionPages;
         const page = Math.max(1, Number.parseInt(url.searchParams.get('page') || '1', 10) || 1);
         const items = page <= pages.length ? pages[page - 1] : [];
-        return {
-          status: 200,
-          json: {
-            ...envelope(true, items),
-            result_info: { page, per_page: (pages[0] || []).length, count: items.length, total_count: pages.reduce((n, p) => n + p.length, 0), total_pages: pages.length },
-          },
-        };
+        const info = { page, per_page: (pages[0] || []).length, count: items.length, total_count: pages.reduce((n, p) => n + p.length, 0), total_pages: pages.length };
+        const pf = options.pagingFault;
+        if (pf === 'laterPageFails' && page > 1) return fault();
+        if (pf === 'laterPageNotJson' && page > 1) return { status: 200, type: 'text/html', text: '<html><body>Please try again later.</body></html>\n' };
+        if (pf === 'noPageCounts') { delete info.total_pages; delete info.total_count; }
+        if (pf === 'shortTotalPages') info.total_pages = 1;
+        if (pf === 'malformedTotalPages') info.total_pages = 'two';
+        return { status: 200, json: { ...envelope(true, items), result_info: info } };
       }
       return ok([...(options.subscriptions || []), ...(options.pricedItem ? [PRICED_ITEM] : [])]);
     }

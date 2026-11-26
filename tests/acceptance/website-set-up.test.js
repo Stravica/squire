@@ -627,3 +627,30 @@ test("a paid item on the second page of the account's subscriptions is found, na
   assert.deepEqual(billingWrites(ctx.standIn), [], 'Squire changes no billing');
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
+
+// Paging the set-up cannot read whole is not read as free: each fault in a
+// world of its own, the first page free and a paid item on the second.
+const PAGING_FAULTS = {
+  noPageCounts: 'the page counts left out of the answer',
+  shortTotalPages: 'a page count of 1 while the item count names more',
+  malformedTotalPages: 'a page count that is not a number',
+  laterPageFails: 'the second page answering with a fault',
+  laterPageNotJson: 'the second page answering with a page that is not JSON',
+};
+
+test("subscription paging the set-up cannot read whole, with the page counts missing, short or not a number, or a later page failing or not JSON, is not read as free: the set-up does not report done, names the paid item it found or says it could not read the subscriptions, keeps nothing and removes the set-up token", { timeout: 600000 }, (t) => {
+  const named = CF.PRICED_ITEM.rate_plan.public_name;
+  for (const [pagingFault, what] of Object.entries(PAGING_FAULTS)) {
+    const ctx = W.websiteWorld(t, { laid: true, subscriptionPages: [W.FREE, [CF.PRICED_ITEM]], pagingFault });
+    const r = W.runSetUp(ctx);
+    W.assertRan(r, `the set-up with ${what}`);
+    assert.notEqual(r.status, 0, `with ${what}, the set-up does not report done; got ${w.describe(r)}`);
+    assert.doesNotMatch(W.said(r), /reads as free/i, `with ${what}, it never says the subscriptions read as free; got ${w.describe(r)}`);
+    assert.ok(W.said(r).includes(named) || /(could not|cannot|can't) read/i.test(W.said(r)),
+      `with ${what}, it names the paid item (${named}) or says it could not read the subscriptions; got ${w.describe(r)}`);
+    assertSetUpTokenRemoved(ctx, `a set-up with ${what}`);
+    assertNothingKept(ctx, `a set-up with ${what}`);
+    assert.deepEqual(billingWrites(ctx.standIn), [], `with ${what}, Squire changes no billing`);
+    assert.deepEqual(ctx.standIn.offLoopback(), [], `with ${what}, no call left the loopback`);
+  }
+});

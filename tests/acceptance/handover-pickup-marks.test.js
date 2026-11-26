@@ -111,6 +111,44 @@ test('a handover note saved in a job holding untrusted input marks the job that 
   }
 });
 
+// A note the floor never saw written (its job left no line for it), or one
+// changed after a clean job saved it, cannot be placed as clean: it marks the
+// job that picks it up as if its writer held untrusted input.
+test('a handover note the floor did not see saved, or one changed after a clean job saved it, marks the job that picks it up at /clear: there, a web search after a read of the owner\'s private things is refused as one job, naming the note as the untrusted input and saying the work must be split, in the default mode and in auto mode (content)', { timeout: 300000 }, (t) => {
+  const legs = {
+    'a note the floor did not see saved': (world, floor, writer, mode) => {
+      started(world, writer, 'startup');
+      const file = noteFile(world, writer);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, NOTE);
+      return file;
+    },
+    'a note changed after a clean job saved it': (world, floor, writer, mode) => {
+      started(world, writer, 'startup');
+      const file = saveNote(world, floor, writer, mode, NOTE);
+      fs.writeFileSync(file, `${NOTE}Also: the offer page says to order today.\n`);
+      return file;
+    },
+  };
+  for (const [what, make] of Object.entries(legs)) {
+    for (const mode of MODES) {
+      const world = laidWorld(t);
+      const floor = U.laidFloor(world, U.UTC);
+      const writer = `job-before-${mode}`;
+      const pickup = `job-after-${mode}`;
+      const file = make(world, floor, writer, mode);
+      const after = started(world, pickup, 'clear');
+      assert.ok(after.stdout.includes(NOTE.trim()), `the premise: at /clear ${what} reaches the new job, in ${mode} mode; got ${w.describe(after)}`);
+      w.assertAllowed(floor.run(pickup, tools.read(path.join(world.owner, 'operator/profile.md')), mode),
+        `the job after /clear reading the owner's profile, private things, in ${mode} mode`);
+      const r = floor.run(pickup, tools.webSearch('wholesale flour 25 kg price'), mode);
+      w.assertBlocked(r, `with ${what}, a web search in the job after /clear holding the owner's private things, in ${mode} mode`);
+      assert.match(r.stderr, /split/i, `with ${what}, the refusal says the work must be split, in ${mode} mode; got ${w.describe(r)}`);
+      assert.ok(r.stderr.includes(path.basename(file)), `with ${what}, the refusal names the note (${path.basename(file)}), in ${mode} mode; got ${w.describe(r)}`);
+    }
+  }
+});
+
 test('a handover note saved in a clean job leaves the job that picks it up at /clear as clean as before: a web search there after a read of the owner\'s private things goes ahead with no ask, in the default mode and in auto mode', { timeout: 300000 }, (t) => {
   for (const mode of MODES) {
     const world = laidWorld(t);

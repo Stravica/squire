@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.008Z",
-  "updatedAt": "2026-11-26T13:45:03.166Z",
+  "updatedAt": "2026-11-26T16:15:49.688Z",
   "purpose": "Runs Squire's one-off set-up against a loopback stand-in of Cloudflare's API and reads the account back through it, to check paid features, anything the set-up cannot read as free, the spend guard and the removal of the set-up token; the real one-off set-up, against a test Cloudflare account and never a live one, is the test stage's own step.",
   "testLevel": "integration",
   "acIds": [
@@ -109,6 +109,13 @@
       "description": "a paid item on the second page of subscriptions is found, named with its price and asked",
       "status": "pending",
       "testPointer": "tests/acceptance/website-set-up.test.js::a paid item on the second page of the account's subscriptions is found, named with its price and asked: with the first page free and the answer naming a second, the set-up reads every page, does not report done before the owner's yes, and on his yes to keeping it, asked naming it in the default mode and in auto mode, finishes naming it"
+    },
+    {
+      "id": "TC-017-subscription-paging-the-set-up-cannot",
+      "acId": "AC-1201-3",
+      "description": "subscription paging the set-up cannot read whole is not read as free and the set-up does not report done",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::subscription paging the set-up cannot read whole, with the page counts missing, short or not a number, or a later page failing or not JSON, is not read as free: the set-up does not report done, names the paid item it found or says it could not read the subscriptions, keeps nothing and removes the set-up token"
     }
   ],
   "status": "draft"

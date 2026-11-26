@@ -1,10 +1,11 @@
 {
   "createdAt": "2026-11-26T13:44:23.441Z",
-  "updatedAt": "2026-11-26T13:45:06.453Z",
+  "updatedAt": "2026-11-26T16:15:49.128Z",
   "purpose": "Runs the safety floor's PreToolUse hooks as the laid settings name them, in the default mode and in auto mode, to check that a new file the session would write in the owner's folder that Claude Code itself loads (CLAUDE.md, CLAUDE.local.md, AGENTS.md, .mcp.json, anything under .claude) is asked first, naming the file, however it is spelt, and is made only on the owner's yes, while any other new file in his folder is still written with no ask.",
   "testLevel": "integration",
   "acIds": [
-    "AC-1901-14"
+    "AC-1901-14",
+    "AC-1901-15"
   ],
   "id": "TS-046",
   "usId": "US-1901",
@@ -44,6 +45,34 @@
       "description": "a new file elsewhere in the owner's folder is still written with no ask",
       "status": "pending",
       "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new file elsewhere in the owner's folder, a note in workspace or a page of a site, is still written with no ask, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-new-file-the-floor-cannot-place-in-or",
+      "acId": "AC-1901-14",
+      "description": "a new file the floor cannot place in or out of the class, through a link that leads nowhere or in a loop, is asked first naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new file the floor cannot place in or out of the files Claude Code loads, through a link that leads nowhere or round in a loop, is asked first as one of them, naming the file, and is made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-new-mcp-json-or-claude-file-in-a",
+      "acId": "AC-1901-15",
+      "description": "a new .mcp.json or .claude file in a folder below the owner's folder is asked first naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new .mcp.json in any folder under the owner's folder, and a new file under a .claude folder at any depth below it, are asked first, naming the file, and are made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-class-file-made-by-a-shell-redirect",
+      "acId": "AC-1901-14",
+      "description": "a class file made by a shell redirect, tee, cp, mv or NotebookEdit is asked first naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new file Claude Code loads made by a shell redirect, tee, cp or mv, or by NotebookEdit, is asked first, naming the file, and is made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-class-file-spelt-with-a-doubled-slash",
+      "acId": "AC-1901-14",
+      "description": "a class file spelt with .., ./, a doubled slash, a link or a folded folder mid-path is asked first naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::the same files spelt with .., ./ or a doubled slash, sent as given, through a link in the owner's folder on any volume, or through a folder spelt in another letter case mid-path, are asked first, naming the file, and are made only on the owner's yes, in the default mode and in auto mode"
     }
   ],
   "status": "draft"
