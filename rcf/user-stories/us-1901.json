@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:09.636Z",
-  "updatedAt": "2026-11-08T13:56:55.633Z",
+  "updatedAt": "2026-11-26T13:43:08.196Z",
   "asA": "Squire owner",
   "iWant": "Squire to draft and ask, and to send, publish, delete, overwrite or install only when I have said yes to that one thing",
   "soThat": "nothing happens in my name, to my things or on my Mac that I did not agree to",
@@ -127,6 +127,15 @@
       "given": "An unresolved plain read on a Mac where the claude command line can be found, and a small model that Squire cannot show answered within its deadline, whatever the reason: it hangs, it answers and does not exit, or it starts a process that leaves the model's process group and holds its output open. This is the Squire owner's ruling for the delays Squire cannot decide. The floor's hook runs with the time limit core's Claude Code settings give it.",
       "when": "Squire tries the read",
       "then": "Within 12 seconds of the call the read waits for the Squire owner's yes, as when no model is asked, and the small model's own process is gone; a process the model started that left its group does not hold the read up.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-1901-14",
+      "description": "A file the session would create in the Squire owner's folder that Claude Code itself loads (its instructions, memory, rules, MCP servers, agents, skills, commands or styles) is asked first, naming the file, and is made only on the owner's yes; nothing Squire reads can make one.",
+      "testable": true,
+      "given": "The session would write a new file in the Squire owner's folder that Claude Code itself loads: CLAUDE.md, CLAUDE.local.md or AGENTS.md in the owner's folder or any folder under it, .mcp.json in the owner's folder, or any file under .claude/ in the owner's folder, however it is spelt that the Mac's volume opens as that file (another letter case, a character the volume folds to the same name, a path through a link). Core's safety rules apply whatever the Squire owner's folder holds; an overlay there cannot change them.",
+      "when": "Squire, or a tool it calls, would make that file",
+      "then": "The Write waits for the Squire owner's yes, the ask naming the file; on his yes the file is made, and with no yes nothing is made, whatever Squire has read.",
       "verification": "testOnly"
     }
   ]
