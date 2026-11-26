@@ -1,0 +1,29 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "40e7671e291a1918d4c86c9aa42319cf65b407a4",
+  "fbsIds": [
+    "FBS-004"
+  ],
+  "touchedAcIds": [
+    "AC-1401-2"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "test",
+      "acId": "AC-1401-2",
+      "text": "The case at tests/acceptance/updates.test.js line 490 (a signed update staged while the health check names a fault) passes every assertion to line 504 and fails at line 505, \"current-release.json still names the installed release\", actual undefined, expected 0.1.0. The release world (tests/fixtures/updates-world.js makeReleaseWorld, from line 680) lays core with s.layDownCore and writes set-up.json itself, so no current-release.json is ever written in it. In the product only set-up run from the app (core/tools/set-up.py lines 440 to 445), an install and a rollback write that record; with none, the installed version is read from core/release.json (core/tools/update.py, Releases.installed, lines 101 to 108). Staging installs nothing and rightly writes no record, and no build line writes or reads current-release.json. The case is wrong for what the code rightly does: it must read an absent record as the installed release, as the case at line 799 does, or compare the record before and after staging. A fault of the case, not of the build."
+    },
+    {
+      "id": "F-2",
+      "locus": "test",
+      "acId": "AC-1401-2",
+      "text": "The case at tests/acceptance/updates.test.js line 519 (Squire Update over a fault, or over a health check that cannot run) passes its first leg (the fault named, the warning, close, Not now, then the owner's yes and Install) and fails its second leg's own premise at line 528, \"the world plants a health check that cannot run\", with the health check exiting 0. The plant appends a raise to core/tools/health.py after the file's main block, which ends in sys.exit(code) (lines 606 to 612, unchanged since base f13e868). Run from the command line, as R.health runs it (tests/fixtures/updates-world.js line 1095), the check leaves at sys.exit before the appended line, so it never fails; loaded in Squire Update's own process (HealthLines.read, core/tools/update.py from line 408) the raise does run, as a probe of a copy confirmed (RuntimeError on load). No production change can make a line after sys.exit run from the command line, so the plant must go before the main block. A fault of the case, not of the build."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-26T17:43:37.553Z"
+}
