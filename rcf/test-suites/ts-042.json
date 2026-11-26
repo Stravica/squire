@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-21T19:04:20.638Z",
-  "updatedAt": "2026-11-21T20:52:30.986Z",
+  "updatedAt": "2026-11-26T13:45:03.484Z",
   "purpose": "Runs Squire's one-off set-up and its deploy against a loopback stand-in of Cloudflare's API, and the safety floor as the session runs it, to check that the token Squire keeps can deploy and nothing else and that a site is previewed on this Mac before its deploy is asked.",
   "testLevel": "integration",
   "acIds": [
@@ -65,6 +65,13 @@
       "description": "content changed after the preview or after the yes does not go live",
       "status": "pending",
       "testPointer": "tests/acceptance/website-token-and-preview.test.js::what goes live is what the owner previewed and said yes to: a page of the site rewritten after its preview, under the same name, leaves the deploy refused, not asked, naming the preview, and a change after the owner's yes to the deploy leaves that deploy refused, the yes not spent on other content, and the site's deploy asked again once it is previewed again, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-042-a-deploy-token-read-back-naming-the",
+      "acId": "AC-1201-2",
+      "description": "a deploy token read back naming the deploy right under another group's id is not kept",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-token-and-preview.test.js::a deploy token read back naming the deploy right under another permission group's id is not kept: the set-up does not report done, leaves no token it made on the account, keeps nothing in the Keychain, removes the set-up token and says the token read back holds more than deploying (content)"
     }
   ],
   "status": "draft"

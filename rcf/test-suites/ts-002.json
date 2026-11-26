@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:38.981Z",
-  "updatedAt": "2026-11-25T00:35:33.781Z",
+  "updatedAt": "2026-11-26T13:45:07.373Z",
   "purpose": "Drives send, publish, deploy, destructive and install actions through the session's real tool path, with and without a recorded yes and with an overlay planted at each safety rule's path, and asserts what is blocked and what proceeds.",
   "testLevel": "integration",
   "acIds": [
@@ -588,6 +588,48 @@
       "description": "in the owner's two-send job the second send is split with words naming the route, then asked in a job of its own and sent on his yes",
       "status": "pending",
       "testPointer": "tests/acceptance/connector-actions.test.js::in a job where the owner asked for two sends, the first is asked and goes on his yes; the second, in the same job, is split with words that say to end this job and start a new one that waits for his yes, and in a job of its own it is asked, naming its recipient, and goes on his yes, in the default mode and in auto mode; the connector records exactly two sends, the second only after that yes"
+    },
+    {
+      "id": "TC-002-a-note-saved-in-a-job-holding-untrusted",
+      "acId": "AC-1901-3",
+      "description": "a note saved in a job holding untrusted input marks the job that picks it up at clear",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-pickup-marks.test.js::a handover note saved in a job holding untrusted input marks the job that picks it up at /clear: there, a web search after a read of the owner's private things is refused as one job, naming the note as the untrusted input and saying the work must be split, and a yes does not make it one job, in the default mode and in auto mode (content)"
+    },
+    {
+      "id": "TC-002-a-note-saved-in-a-clean-job-leaves-the",
+      "acId": "AC-1901-3",
+      "description": "a note saved in a clean job leaves the job that picks it up as clean as before",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-pickup-marks.test.js::a handover note saved in a clean job leaves the job that picks it up at /clear as clean as before: a web search there after a read of the owner's private things goes ahead with no ask, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-a-yes-inside-a-handover-note-is-never",
+      "acId": "AC-1901-3",
+      "description": "a yes inside a handover note is never the owner's answer",
+      "status": "pending",
+      "testPointer": "tests/acceptance/handover-pickup-marks.test.js::a \"yes\" inside a handover note is never the owner's answer: in the job that picks the note up at /clear, an edit of the owner's file the floor asks for stays blocked, the note read again or not, until the owner says yes to that request himself, in the default mode and in auto mode (content)"
+    },
+    {
+      "id": "TC-002-brew-and-pip3-with-any-arguments-a",
+      "acId": "AC-1901-5",
+      "description": "brew and pip3 with any arguments, a formula file's path among them, are asked naming the command",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::brew and pip3 with any arguments, a formula file's path among them, are asked, naming the command, like every other program, and go ahead on the owner's yes to exactly that command, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-a-brew-search-that-opens-a-page-and-a",
+      "acId": "AC-1901-1",
+      "description": "a brew search that opens a page and a pip3 listing that asks an index address are asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/safety-floor.test.js::a brew search that opens a page and a pip3 listing that asks an index address are asked, naming the command, so nothing is sent before the owner's yes to exactly that command, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-002-a-site-s-folder-changed-after-the-owner",
+      "acId": "AC-1901-1",
+      "description": "a site's folder changed after the owner's yes and before the upload is not put live",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-deploy.test.js::a file that changes in the site's folder after the owner's yes to its deploy and before the upload is not put live: the deploy does not report done, puts nothing of the changed folder on the account and says the folder changed; the deploy is asked again once the site has a new preview, and goes live on that yes, in the default mode and in auto mode (content)"
     }
   ],
   "status": "draft"

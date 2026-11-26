@@ -54,6 +54,7 @@ const w = require('../fixtures/squire-world.js');
 const U = require('../fixtures/usage-world.js');
 const B = require('../fixtures/browser-world.js');
 const W = require('../fixtures/website-world.js');
+const CF = require('../fixtures/cloudflare-stand-in.js');
 
 const MODES = ['default', 'auto'];
 
@@ -136,6 +137,34 @@ test('a set-up that would keep a token wider than deploy-only does not finish an
     assert.equal((W.tokensOn(ctx.standIn).find((x) => x.id === ctx.setUp.id) || {}).status, 'deleted', `with ${what}, the set-up token is removed too`);
     assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
   }
+});
+
+// The account's read-back is what Cloudflare says the token holds, and a
+// right is its permission group's id, whatever name rides with it. Pinned
+// here on the fail-closed reading (no record settles it): a read-back whose
+// one group carries the kept right's name under another group's id is not
+// deploy-only, so that token is not kept; the set-up is not refused, it says
+// why and can be run again. The stand-in's shape is widen 'keptNameOtherId'
+// (its header names the assumption).
+test("a deploy token read back naming the deploy right under another permission group's id is not kept: the set-up does not report done, leaves no token it made on the account, keeps nothing in the Keychain, removes the set-up token and says the token read back holds more than deploying (content)", { timeout: 180000 }, (t) => {
+  const ctx = W.websiteWorld(t, { widen: 'keptNameOtherId' });
+  const r = W.runSetUp(ctx);
+  W.assertRan(r, 'the set-up when the token it made reads back with the deploy right\'s name under another group\'s id');
+  const made = W.tokensOn(ctx.standIn).filter((x) => x.id !== ctx.setUp.id);
+  assert.equal(made.length, 1, `the set-up made the token it would keep; got ${w.describe(r)}`);
+  // The premise, read by the case itself on the stand-in: the read-back
+  // names the kept right, under another group's id.
+  const shown = (made[0].readBack || [])[0] || {};
+  const group = (shown.permission_groups || [])[0] || {};
+  assert.equal(group.name, W.KEPT_RIGHT, 'the read-back names the kept right');
+  assert.notEqual(group.id, CF.groupNamed(W.KEPT_RIGHT).id, 'under another permission group\'s id');
+  assert.notEqual(r.status, 0, `a set-up whose token reads back with the kept right's name under another group's id does not report done; got ${w.describe(r)}`);
+  assert.deepEqual(made.filter((x) => x.status === 'active').map((x) => x.name), [], 'no token the set-up made is left on the account');
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `nothing is kept in the Keychain as ${W.KEPT_SECRET}`);
+  assert.equal((W.tokensOn(ctx.standIn).find((x) => x.id === ctx.setUp.id) || {}).status, 'deleted', 'the set-up token is removed too');
+  assert.match(W.said(r), new RegExp(W.KEPT_RIGHT), `the set-up names the one right it keeps; got ${w.describe(r)}`);
+  assert.match(W.said(r), /more than|wider than|another (right|group)|other (right|group)|not deploy-only|not only/i, `the set-up says the token read back holds more than deploying; got ${w.describe(r)}`);
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
 
 test("Squire's deploy uses only the token the set-up kept, on the set-up's account: a wrangler sign-in already on the Mac and a Cloudflare token or account in the environment are never used, though either would work", { timeout: 180000 }, (t) => {

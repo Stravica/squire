@@ -482,20 +482,94 @@ async function stagedChanged(t, how, what) {
 test("a staged file changed while Squire Update's window shows the release is found when the staged release is checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'file', 'a staged file changed while the window was open'));
 test("a staged file and the staged manifest's digest for it, changed together while Squire Update's window shows the release, are found by the signature checked again before the install: on Install nothing is installed, nothing moves, and the refusal is named on the health check", LONG, (t) => stagedChanged(t, 'manifest', 'a staged file and its digest in the staged manifest changed while the window was open'));
 
-test('while the health check names a fault no update is staged or told to the owner, and once it is gone the next run stages it and tells the owner', LONG, async (t) => {
+// An update may be the one that fixes a fault, so a fault named by the health
+// check no longer stops the weekly check: the release is staged and told to
+// the owner as always, and the notice names the fault too (its words are the
+// product's; the changed file's name is what the cases read). The install
+// itself stays the owner's, at Squire Update, after a warning (below).
+test('while the health check names a fault, a signed update is still staged and told to the owner in one wake-up naming its version and Squire Update, with no command, path or terminal, and that notice names the fault', LONG, async (t) => {
   const rw = await healthyWorld(t);
   const release = R.buildRelease(rw, { version: NEXT });
   const floorFile = path.join(R.installedCore(rw), 'hooks', 'config-change.py');
-  const kept = fs.readFileSync(floorFile);
   fs.appendFileSync(floorFile, '# one line more\n');
-  assert.notEqual(R.health(rw).status, 0, 'the world plants a fault the health check names');
-  const before = R.wakeUpIds(rw);
-  R.tick(rw);
-  assert.deepEqual(R.staged(rw), [], 'no update may be staged over a fault');
-  assert.deepEqual(notices(R.newWakeUps(rw, before)), [], 'the owner may not be told of an update over a fault');
-  fs.writeFileSync(floorFile, kept);
-  const sent = stage(rw, release, 'the first run after the fault is gone');
-  assert.equal(noticesOf(sent, NEXT).length, 1, `the owner must be told the release is waiting, naming Squire Update, once the fault is gone; sent ${JSON.stringify(sent)}`);
+  const h = R.health(rw);
+  assert.notEqual(h.status, 0, 'the world plants a fault the health check names');
+  assert.match(h.stdout, /config-change\.py/, `the health check names the changed file; got ${w.describe(h)}`);
+  const sent = stage(rw, release, 'the weekly check while the health check names a fault');
+  const told = noticesOf(sent, NEXT);
+  assert.equal(told.length, 1, `the owner must be told the release is waiting, naming Squire Update, while the fault is named; sent ${JSON.stringify(sent)}`);
+  assert.equal(notices(sent).length, 1, `one wake-up tells of it; sent ${JSON.stringify(sent)}`);
+  assert.match(told[0], /config-change\.py/, `that notice names the fault the health check names; sent ${JSON.stringify(sent)}`);
+  assert.doesNotMatch(told[0], NOT_IN_A_NOTICE, `that notice carries no command, path or terminal; sent ${JSON.stringify(sent)}`);
+  assert.ok(fs.readFileSync(floorFile, 'utf8').endsWith('# one line more\n'), 'the planted fault is left as it was: staging installs nothing');
+  assert.equal((R.currentRelease(rw) || {}).current, R.INSTALLED, 'current-release.json still names the installed release');
+});
+
+// Squire Update over a fault the health check names, or with a health check
+// that cannot run: the install is the owner's to choose, after a warning. The
+// cases pin the shape, decided on the fail-closed reading (no record settles
+// it): a window of Squire Update's own before the release's window, naming
+// the fault (or saying the check could not run) and that updating now may not
+// be undone, whose default button (its last) installs nothing; its other
+// button is the owner's yes, which leads to the release's window as always,
+// where only Install installs. The warning's words are the product's.
+const warnings = (windows) => windows.filter((x) => !x.main && Array.isArray(x.buttons) && x.buttons.length >= 2);
+const MAY_NOT_UNDO = /undone|undo/i;
+
+test("Squire Update opened while the health check names a fault, or cannot run, warns first, naming the fault or saying the check could not run and that updating now may not be undone: closing the warning, or Not now after the owner's yes to it, leaves core unchanged; the owner's yes and then Install installs that release", { timeout: 1500000 }, async (t) => {
+  for (const [what, plant, named] of [
+    ['a fault the health check names', (rw) => fs.appendFileSync(path.join(R.installedCore(rw), 'hooks', 'config-change.py'), '# one line more\n'), /config-change\.py/],
+    ['a health check that cannot run', (rw) => fs.appendFileSync(path.join(R.installedCore(rw), 'tools', 'health.py'), "\nraise RuntimeError('planted: the health check cannot run')\n"), /could not run|cannot run|can't run|did not run|could not be run/i],
+  ]) {
+    const rw = await healthyWorld(t);
+    const release = R.buildRelease(rw, { version: NEXT });
+    stage(rw, release);
+    plant(rw);
+    assert.notEqual(R.health(rw).status, 0, `the world plants ${what}`);
+    // The warning closed: nothing is installed.
+    const before = R.untouched(rw);
+    const closed = await R.installAtMac(rw, release, 'Install', { warning: 'close' });
+    const shown = warnings(closed.windows);
+    assert.ok(shown.some((x) => named.test(x.text || '')),
+      `with ${what}, Squire Update warns, naming it, with a choice for the owner; windows: ${JSON.stringify(closed.windows.map((x) => [x.text, x.buttons]))}`);
+    assert.ok(shown.some((x) => MAY_NOT_UNDO.test(x.text || '')), `with ${what}, the warning says updating now may not be undone; windows: ${JSON.stringify(closed.windows.map((x) => x.text))}`);
+    assert.deepEqual(updated(closed.sent, NEXT), [], `with ${what} and the warning closed, nothing is installed; sent ${JSON.stringify(closed.sent)}`);
+    assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], `with ${what} and the warning closed, nothing changes`);
+    assert.ok(R.staged(rw).includes(NEXT), 'the staged release stays staged');
+    // The owner's yes, then Not now at the release's window: core unchanged.
+    const declined = await R.installAtMac(rw, release, 'Not now', { warning: 'yes' });
+    assert.equal(mainWindows(declined.windows, NEXT).length, 1,
+      `with ${what}, the owner's yes to the warning leads to the release's window naming ${NEXT}; windows: ${JSON.stringify(declined.windows.map((x) => [x.text, x.buttons]))}`);
+    assert.deepEqual(updated(declined.sent, NEXT), [], `with ${what}, Not now installs nothing; sent ${JSON.stringify(declined.sent)}`);
+    assert.deepEqual(R.untouchedDifferences(before, R.untouched(rw)), [], `with ${what}, Not now changes nothing`);
+    // The owner's yes, then Install: that release installs and its check passes.
+    const yes = await R.installAtMac(rw, release, 'Install', { warning: 'yes' });
+    assert.equal(updated(yes.sent, NEXT).length, 1, `with ${what}, the owner's yes and Install install ${NEXT}; sent ${JSON.stringify(yes.sent)}; windows: ${JSON.stringify(yes.windows.map((x) => x.text))}`);
+    assert.ok(R.coreIs(rw, release), `with ${what}, the installed core is the release's, file for file`);
+  }
+});
+
+test("Squire Update finishing an interrupted install whose return to the previous release cannot be checked never says all checks passed: it names the version Squire is on, says it did not pass its checks and sends the owner to the chat for a support ticket", { timeout: 1200000 }, async (t) => {
+  const rw = await healthyWorld(t);
+  const good = R.buildRelease(rw, { version: NEXT });
+  stage(rw, good);
+  const first = await R.installAtMac(rw, good);
+  assert.equal(updated(first.sent, NEXT).length, 1, `the first signed update must install; sent ${JSON.stringify(first.sent)}`);
+  const bad = R.buildRelease(rw, { version: LATER, shape: 'runnerExits' });
+  R.moveRecordTimes(path.join(rw.home, 'update.json'), -8 * 86400, ['lastCheck']);
+  stage(rw, bad, 'the next weekly check');
+  const seen = await R.killInstallAt(rw, 'check');
+  assert.equal(seen, 'check', `the install must be killed at its check; the record named ${JSON.stringify(seen)}`);
+  const kept = path.join(rw.home, 'releases', NEXT, 'core', 'tools', 'backup.py');
+  assert.ok(fs.existsSync(kept), 'the world changes a file of the kept previous release, which must be there');
+  fs.appendFileSync(kept, '# changed while kept\n');
+  const r = await R.installAtMac(rw, bad, 'Not now');
+  const texts = r.windows.map((x) => x.text || '');
+  assert.deepEqual(texts.filter((x) => /all checks passed/i.test(x)), [], `Squire Update never says all checks passed for an install whose check failed; windows: ${JSON.stringify(texts)}`);
+  assert.ok(texts.some((x) => x.includes(LATER) && /did not pass its checks/i.test(x) && /in the chat/i.test(x) && /support ticket/i.test(x)),
+    `Squire Update names the version Squire is on (${LATER}), says it did not pass its checks and sends the owner to the chat for a support ticket; windows: ${JSON.stringify(texts)}`);
+  const h = R.health(rw);
+  assert.ok(R.ticketLines(h.stdout).length >= 1, `the health check offers a support ticket on its own line; got ${w.describe(h)}`);
 });
 
 // ------------------------------------------------------- the rollback

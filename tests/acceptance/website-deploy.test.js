@@ -211,3 +211,59 @@ test("a site never goes live through the Cloudflare dashboard in Squire's browse
   assert.deepEqual(W.uploads(ctx.standIn), [], 'nothing was deployed');
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
+
+// The owner's yes covers the site as he saw it in its preview. A file that
+// changes in the site's folder after that yes and before the upload (another
+// of the session's own tool calls running while the deploy runs, say) is
+// content he never saw: the deploy puts nothing of it live, says the folder
+// changed, and the deploy is asked again once the site has a new preview.
+// What the stand-in holds live is read from its own record of each Worker's
+// files, whatever the upload's route.
+const liveTexts = (standIn) => Object.values(standIn.state().scripts || {})
+  .flatMap((s) => Object.values(s.files || {})).filter(Boolean).map((b) => Buffer.from(b, 'base64').toString('utf8'));
+const blobTexts = (standIn) => Object.values(standIn.state().blobs || {}).map((b) => Buffer.from(b, 'base64').toString('utf8'));
+
+test("a file that changes in the site's folder after the owner's yes to its deploy and before the upload is not put live: the deploy does not report done, puts nothing of the changed folder on the account and says the folder changed; the deploy is asked again once the site has a new preview, and goes live on that yes, in the default mode and in auto mode (content)", { timeout: 360000 }, (t) => {
+  const ctx = W.websiteWorld(t, { laid: true });
+  const { world } = ctx;
+  const set = W.runSetUp(ctx);
+  W.assertRan(set, 'the set-up');
+  assert.equal(set.status, 0, `the set-up reports done; got ${w.describe(set)}`);
+  const floor = U.laidFloor(world, U.UTC);
+  for (const mode of MODES) {
+    const job = `job-site-timing-${mode}`;
+    const name = `ada-bakes-${mode}`;
+    const later = `Ordered for collection only, from a page seen after the yes (${mode}).`;
+    W.startSite(world, floor, job, mode);
+    const folder = W.writeSite(world, floor, job, name, mode);
+    W.previewSite(world, floor, job, folder, mode);
+    const deploy = w.tools.bash(W.deployCommand(world, folder, name));
+    const first = floor.run(job, deploy, mode);
+    w.assertBlocked(first, `Squire's deploy of the site, in ${mode} mode, before the yes`, name);
+    U.sayYesTo(world, job, first, { env: U.UTC });
+    w.assertAllowed(floor.run(job, deploy, mode), `Squire's deploy, in ${mode} mode, on the owner's yes to it`);
+    // The folder changes after the yes and before the deploy reads it.
+    fs.writeFileSync(path.join(folder, 'index.html'), `<!doctype html><title>Ada Bakes</title><p>${later}</p>\n`);
+    fs.writeFileSync(path.join(folder, 'extra.html'), `<!doctype html><title>Extra</title><p>${later}</p>\n`);
+    const d = W.runDeploy(ctx, folder, name);
+    W.assertRan(d, `the deploy over a folder changed after the yes, in ${mode} mode`);
+    assert.notEqual(d.status, 0, `a deploy over a folder changed after the owner's yes does not report done, in ${mode} mode; got ${w.describe(d)}`);
+    assert.match(W.said(d), /changed/i, `the deploy says the site's folder changed, in ${mode} mode; got ${w.describe(d)}`);
+    assert.deepEqual(liveTexts(ctx.standIn).filter((x) => x.includes(later)), [], `nothing of the changed folder is live on the account, in ${mode} mode`);
+    assert.deepEqual(blobTexts(ctx.standIn).filter((x) => x.includes(later)), [], `nothing of the changed folder is uploaded to the account, in ${mode} mode`);
+    // Before a new preview the deploy is not let through.
+    w.assertBlocked(floor.run(job, deploy, mode), `the deploy again over the changed folder, in ${mode} mode, before a new preview`);
+    // A new preview, then the deploy asked again and live on that yes.
+    W.previewSite(world, floor, job, folder, mode);
+    const again = floor.run(job, deploy, mode);
+    w.assertBlocked(again, `the deploy after the new preview, in ${mode} mode, before its yes`, name);
+    assert.notEqual(w.requestIdIn(again.stderr), null, `the deploy after the new preview is asked, in ${mode} mode; got ${w.describe(again)}`);
+    U.sayYesTo(world, job, again, { env: U.UTC });
+    w.assertAllowed(floor.run(job, deploy, mode), `the deploy, in ${mode} mode, on the owner's yes after the new preview`);
+    const e = W.runDeploy(ctx, folder, name);
+    W.assertRan(e, `the deploy on the owner's yes after the new preview, in ${mode} mode`);
+    assert.equal(e.status, 0, `the deploy the owner said yes to after the new preview goes live, in ${mode} mode; got ${w.describe(e)}`);
+    assert.ok(liveTexts(ctx.standIn).some((x) => x.includes(later)), `the site he previewed again is live, in ${mode} mode`);
+  }
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});

@@ -19,12 +19,13 @@
 //     and never writes it to a file, the chat or the ledger; it checks the
 //     token holds Account API Tokens Write and Billing Read and, if not, runs
 //     nothing and names the rights it needs;
-//   it reads the account's subscriptions once with that token (Billing Read,
-//     read only) and reports done only when every one reads as free: a price
-//     of exactly 0. A subscription with a price is paid; one whose price it
-//     cannot read as a number counts as paid; a read that fails is not done.
-//     Either way it names what it found to the owner and changes no billing,
-//     ever (a paid feature is the owner's to switch off);
+//   it reads the account's subscriptions, every page of them, with that
+//     token (Billing Read, read only) and reports done only when every one
+//     reads as free (a price of exactly 0), or on the owner's yes to keeping
+//     each paid item it named. A subscription with a price is paid; one whose
+//     price it cannot read as a number counts as paid; a read that fails is
+//     not done. Either way it names what it found to the owner and changes no
+//     billing, ever (a paid feature is the owner's to switch off or keep);
 //   the spend guard, as the owner ruled it: the only access the set-up leaves
 //     on the account is the deploy token it keeps, which cannot spend (Workers
 //     Scripts Write alone, read back from the account), the free plan fails
@@ -39,6 +40,24 @@
 // account and keeps nothing in the Keychain, so Squire's own deploy after it
 // is asked saying it cannot tell where the site goes, as before any set-up.
 //
+// What costs money on the account is the owner's to keep (his account, his
+// money): a set-up that finds a paid item, or one it cannot read as free,
+// names each with its price (or says it cannot read the price), warns that it
+// costs money and that Squire changes no billing, and does not report done;
+// the owner's yes to keeping what it named is the set-up run again as
+// website.py set-up <account id> --keep-paid (website-world.js KEEP_PAID),
+// which the floor asks for, naming each paid item, in the default mode and in
+// auto mode, and which then finishes on that yes, keeps the one deploy-only
+// token and names the kept paid items in its done words. Pinned here, on the
+// fail-closed reading: a yes covers only the paid items the set-up named
+// before it (a paid item it had not named is named and the set-up does not
+// report done); a yes to an ordinary set-up run is not a yes to keeping what
+// costs money; a no keeps the set-up from finishing. Every not-done run
+// removes its set-up token, as before, so the run on his yes takes a new
+// set-up token the owner makes and stores (the cases store a second invented
+// one). Every page of subscriptions is read: a paid item on a later page is
+// named and asked as one on the first.
+//
 // Usage model (assumptions, none measured): typical, one account on the free
 // plans with one free subscription, set up once; heavy, an account with a
 // paid or unreadable subscription, or a step that fails part-way, set up again
@@ -52,8 +71,48 @@ const w = require('../fixtures/squire-world.js');
 const U = require('../fixtures/usage-world.js');
 const B = require('../fixtures/browser-world.js');
 const W = require('../fixtures/website-world.js');
+const CF = require('../fixtures/cloudflare-stand-in.js');
 
 const MODES = ['default', 'auto'];
+
+// The set-up's warning over what costs money: that it costs money, and that
+// Squire changes no billing (its words are the builder's, these the meaning).
+const COSTS = /\b(costs?|money|charged?|pays?)\b/i;
+const NO_BILLING = /\bno billing\b|billing (is |stays |was )?(untouched|unchanged)|(does not|doesn't|never|did not) change[sd]? (any |the |your )?billing/i;
+
+// Another short-lived set-up token the owner makes and stores after a set-up
+// that stopped over a paid item: invented, held by the stand-in.
+const anotherSetUp = (n) => ({
+  id: `standin-token-set-up-000${n}`, value: W.fakeToken(`set-up-${n}`), name: `Set-up token ${n} the owner made (invented)`,
+  policies: [CF.policyFor(W.ACCOUNT, W.SET_UP_RIGHTS)],
+});
+
+// The owner's yes to keeping what the set-up named, as the session runs it:
+// asked through the floor in this mode, in a job of its own, the ask naming
+// each paid item beyond the command it echoes; answered yes, then let
+// through. Returns the request id.
+function keepAskedThenYes(ctx, floor, job, mode, named, what) {
+  const keep = w.tools.bash(W.setUpCommand(ctx.world, W.ACCOUNT, [W.KEEP_PAID]));
+  const asked = floor.run(job, keep, mode);
+  w.assertBlocked(asked, `${what}: the set-up run again to keep what it named, in ${mode} mode, before any yes`);
+  const id = w.requestIdIn(asked.stderr);
+  assert.notEqual(id, null, `${what}: keeping what costs money is asked, in ${mode} mode; got ${w.describe(asked)}`);
+  const beyond = asked.stderr.split(keep[1].command).join(' ');
+  for (const item of named) {
+    assert.ok(beyond.includes(item), `${what}: the ask names ${item}, in ${mode} mode; got ${w.describe(asked)}`);
+  }
+  U.sayYesTo(ctx.world, job, asked, { env: U.UTC });
+  w.assertAllowed(floor.run(job, keep, mode), `${what}: keeping what the set-up named, in ${mode} mode, on the owner's yes`);
+  return id;
+}
+
+// A finished set-up that kept the one deploy-only token and nothing else.
+function assertKeptDeployOnly(ctx, what) {
+  const kept = W.keptToken(ctx);
+  assert.deepEqual(W.activeTokens(ctx.standIn).map((x) => x.id), [kept.record.id], `${what}: the only token left on the account is the deploy token the set-up keeps`);
+  assert.deepEqual(W.rightsOf(kept.record), [{ effect: 'allow', resources: [`com.cloudflare.api.account.${W.ACCOUNT}`], groups: [W.KEPT_RIGHT] }],
+    `${what}: the kept token can deploy a Worker on the owner's account and nothing else`);
+}
 
 const billingWrites = (standIn) => standIn.calls().filter((c) => /\/subscriptions?(\/|\?|$)/.test(c.path) && c.method !== 'GET');
 const setUpGone = (ctx) => (W.tokensOn(ctx.standIn).find((x) => x.id === ctx.setUp.id) || {}).status === 'deleted';
@@ -295,23 +354,49 @@ test("Squire's browser never opens the Cloudflare dashboard, where a plan could 
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });
 
-test('a subscription the set-up cannot read as free counts as paid: the set-up does not report done and names it to the owner; when it cannot read the subscriptions at all it does not report done and says so; Squire changes no billing', { timeout: 300000 }, (t) => {
+test("a subscription the set-up cannot read as free counts as paid: the set-up names it with its price, or says it cannot read the price, warns that it costs money and that Squire changes no billing, and does not report done; on the owner's yes to keeping it, asked naming it in the default mode and in auto mode, the set-up finishes, keeps one deploy-only token and names it in its done words; when it cannot read the subscriptions at all it does not report done and says so", { timeout: 900000 }, (t) => {
   const base = W.FREE[0];
-  for (const [what, extra, named] of [
-    ['a subscription with no price', { id: 'standin-sub-0003', rate_plan: { ...base.rate_plan, id: 'standin-plan-x', public_name: 'Mystery Add-on' }, state: 'Provisioned', price: undefined }, 'Mystery Add-on'],
-    ['a subscription priced as nothing it can read', { ...base, id: 'standin-sub-0004', rate_plan: { ...base.rate_plan, id: 'standin-plan-y', public_name: 'Unpriced Add-on' }, price: null }, 'Unpriced Add-on'],
-    ['a subscription priced in words', { ...base, id: 'standin-sub-0005', rate_plan: { ...base.rate_plan, id: 'standin-plan-z', public_name: 'Wordy Add-on' }, price: 'free' }, 'Wordy Add-on'],
+  for (const [what, options, named, price, onToYes] of [
+    ['a subscription priced above 0', { pricedItem: true }, CF.PRICED_ITEM.rate_plan.public_name, String(CF.PRICED_ITEM.price), true],
+    ['a subscription with no price', { extra: { id: 'standin-sub-0003', rate_plan: { ...base.rate_plan, id: 'standin-plan-x', public_name: 'Mystery Add-on' }, state: 'Provisioned', price: undefined } }, 'Mystery Add-on', null, true],
+    ['a subscription priced as nothing it can read', { extra: { ...base, id: 'standin-sub-0004', rate_plan: { ...base.rate_plan, id: 'standin-plan-y', public_name: 'Unpriced Add-on' }, price: null } }, 'Unpriced Add-on', null, false],
+    ['a subscription priced in words', { extra: { ...base, id: 'standin-sub-0005', rate_plan: { ...base.rate_plan, id: 'standin-plan-z', public_name: 'Wordy Add-on' }, price: 'free' } }, 'Wordy Add-on', null, false],
   ]) {
-    const sub = { ...base, ...extra };
-    if (extra.price === undefined) delete sub.price;
-    const ctx = W.websiteWorld(t, { laid: true, subscriptions: [...W.FREE, sub] });
+    const { extra, ...rest } = options;
+    const shape = { laid: true, ...rest };
+    if (extra) {
+      const sub = { ...base, ...extra };
+      if (extra.price === undefined) delete sub.price;
+      shape.subscriptions = [...W.FREE, sub];
+    }
+    const second = anotherSetUp(2);
+    const ctx = W.websiteWorld(t, { ...shape, extraTokens: [second] });
     const r = W.runSetUp(ctx);
     W.assertRan(r, `the set-up with ${what}`);
     assertSetUpTokenRemoved(ctx, `a set-up that found ${what}`);
-    assert.notEqual(r.status, 0, `with ${what}, the set-up does not report done: it counts as paid; got ${w.describe(r)}`);
+    assert.notEqual(r.status, 0, `with ${what} and no yes, the set-up does not report done: it counts as paid; got ${w.describe(r)}`);
     assert.ok(W.said(r).includes(named), `with ${what}, the set-up names it to the owner (${named}); got ${w.describe(r)}`);
+    if (price) assert.ok(W.said(r).includes(price), `with ${what}, the set-up names its price (${price}); got ${w.describe(r)}`);
+    else assert.match(W.said(r), /price/i, `with ${what}, the set-up says what of its price it cannot read; got ${w.describe(r)}`);
+    assert.match(W.said(r), COSTS, `with ${what}, the set-up warns that it costs money; got ${w.describe(r)}`);
+    assert.match(W.said(r), NO_BILLING, `with ${what}, the set-up says Squire changes no billing; got ${w.describe(r)}`);
     assert.deepEqual(billingWrites(ctx.standIn), [], `with ${what}, Squire changes no billing`);
-    assertNothingKept(ctx, `a set-up that found ${what}`);
+    assertNothingKept(ctx, `a set-up that found ${what}, before any yes`);
+    if (onToYes) {
+      const floor = U.laidFloor(ctx.world, U.UTC);
+      for (const mode of MODES) keepAskedThenYes(ctx, floor, `job-keep-what-it-found-${mode}`, mode, [named], `with ${what}`);
+      // The owner makes a new set-up token, as the run on his yes needs one.
+      w.storeSecret(ctx.keychain, W.SET_UP_SECRET, second.value);
+      const from = ctx.standIn.calls().length;
+      const k = W.runSetUp(ctx, { extra: [W.KEEP_PAID] });
+      W.assertRan(k, `the set-up on the owner's yes to keeping ${what}`);
+      assert.equal(k.status, 0, `on the owner's yes to keeping ${what}, the set-up reports done; got ${w.describe(k)}`);
+      assert.ok(W.said(k).includes(named), `its done words name what the owner kept (${named}); got ${w.describe(k)}`);
+      assert.doesNotMatch(W.said(k), /every subscription there reads as free/i, `with ${what} kept, the done words never say every subscription reads as free; got ${w.describe(k)}`);
+      assertKeptDeployOnly(ctx, `the set-up on the owner's yes to keeping ${what}`);
+      assert.equal((W.tokensOn(ctx.standIn).find((x) => x.id === second.id) || {}).status, 'deleted', `the set-up token of the run on his yes is removed too; its calls: ${JSON.stringify(ctx.standIn.calls().slice(from).map((c) => `${c.method} ${c.path} ${c.status}`))}`);
+      assert.deepEqual(billingWrites(ctx.standIn), [], `with ${what} kept, Squire changes no billing: it stays as the owner keeps it`);
+    }
     assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
   }
 
@@ -430,5 +515,115 @@ test("a set-up token Cloudflare refuses on the account's path with another refus
   assert.deepEqual(calls.filter((c) => c.method !== 'GET').map((c) => `${c.method} ${c.path}`), [], 'the set-up writes nothing to the account');
   assert.deepEqual(W.activeTokens(ctx.standIn).map((x) => x.id), [ctx.setUp.id], 'no token is made on the account');
   assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `nothing is kept in the Keychain as ${W.KEPT_SECRET}`);
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+// What costs money is the owner's to keep, and only on his own yes. Each run
+// below is counted from its own first call on the stand-in, so a run is
+// judged by what it did, never by an earlier run's calls.
+const madeSince = (standIn, from) => standIn.calls().slice(from).filter((c) => c.method === 'POST' && /\/accounts\/[^/]+\/tokens$/.test(c.path.split('?')[0]));
+const LATER_ITEM = {
+  ...CF.PRICED_ITEM,
+  id: 'standin-sub-priced-0008',
+  rate_plan: { ...CF.PRICED_ITEM.rate_plan, id: 'standin-plan-pretend-backup', public_name: 'Pretend Backup Plus (invented)' },
+  price: 3.25,
+};
+
+test("with a paid item named and no yes, or a no, the set-up does not report done and keeps nothing: the owner's no to keeping it, asked in the default mode and in auto mode, keeps that run from going ahead; a yes to an ordinary run of the set-up is not a yes to keeping it; and a yes covers only the paid items named before it, so one found after it is named and the set-up does not report done", { timeout: 900000 }, (t) => {
+  const second = anotherSetUp(2);
+  const third = anotherSetUp(3);
+  const ctx = W.websiteWorld(t, { laid: true, pricedItem: true, extraTokens: [second, third] });
+  const named = CF.PRICED_ITEM.rate_plan.public_name;
+
+  // No answer at all: the set-up names it and stops, as it always has.
+  const r = W.runSetUp(ctx);
+  W.assertRan(r, 'the set-up with a paid item and no answer');
+  assert.notEqual(r.status, 0, `with a paid item and no answer, the set-up does not report done; got ${w.describe(r)}`);
+  assert.ok(W.said(r).includes(named), `it names the paid item (${named}); got ${w.describe(r)}`);
+  assert.deepEqual(madeSince(ctx.standIn, 0).map((c) => c.path), [], 'with no answer, the set-up makes no token');
+  assertSetUpTokenRemoved(ctx, 'a set-up with a paid item and no answer');
+  assertNothingKept(ctx, 'a set-up with a paid item and no answer');
+
+  // A no, in each mode, in a job of its own: the run on that ask does not go ahead.
+  const floor = U.laidFloor(ctx.world, U.UTC);
+  const keep = w.tools.bash(W.setUpCommand(ctx.world, W.ACCOUNT, [W.KEEP_PAID]));
+  for (const mode of MODES) {
+    const job = `job-keep-declined-${mode}`;
+    const asked = floor.run(job, keep, mode);
+    w.assertBlocked(asked, `keeping the paid item, in ${mode} mode, before any answer`);
+    const id = w.requestIdIn(asked.stderr);
+    assert.notEqual(id, null, `keeping the paid item is asked, in ${mode} mode; got ${w.describe(asked)}`);
+    assert.ok(asked.stderr.split(keep[1].command).join(' ').includes(named), `the ask names the paid item (${named}), in ${mode} mode; got ${w.describe(asked)}`);
+    w.ownerSays(ctx.world, job, `no ${id}`, { env: U.UTC });
+    const after = floor.run(job, keep, mode);
+    w.assertBlocked(after, `keeping the paid item, in ${mode} mode, after the owner said no`);
+  }
+
+  // A yes to an ordinary run of the set-up, with a new set-up token: it
+  // names the paid item again and does not report done.
+  w.storeSecret(ctx.keychain, W.SET_UP_SECRET, second.value);
+  const plain = w.tools.bash(W.setUpCommand(ctx.world));
+  const askedPlain = floor.run('job-set-up-again', plain, 'default');
+  w.assertBlocked(askedPlain, 'an ordinary run of the set-up, before the yes');
+  assert.notEqual(w.requestIdIn(askedPlain.stderr), null, `an ordinary run of the set-up is asked; got ${w.describe(askedPlain)}`);
+  U.sayYesTo(ctx.world, 'job-set-up-again', askedPlain, { env: U.UTC });
+  w.assertAllowed(floor.run('job-set-up-again', plain, 'default'), 'an ordinary run of the set-up, on the owner\'s yes to it');
+  const fromPlain = ctx.standIn.calls().length;
+  const p = W.runSetUp(ctx);
+  W.assertRan(p, 'an ordinary run of the set-up on its yes');
+  assert.notEqual(p.status, 0, `a yes to an ordinary run is not a yes to keeping the paid item: the set-up does not report done; got ${w.describe(p)}`);
+  assert.ok(W.said(p).includes(named), `it names the paid item again (${named}); got ${w.describe(p)}`);
+  assert.deepEqual(madeSince(ctx.standIn, fromPlain).map((c) => c.path), [], 'that run makes no token');
+  assert.equal((W.tokensOn(ctx.standIn).find((x) => x.id === second.id) || {}).status, 'deleted', 'that run removes its set-up token');
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `that run keeps nothing in the Keychain as ${W.KEPT_SECRET}`);
+
+  // A yes to keeping the item named, then a second paid item found: the yes
+  // does not cover it.
+  keepAskedThenYes(ctx, floor, 'job-keep-said-yes', 'default', [named], 'a yes to keeping the paid item named');
+  ctx.standIn.set({ subscriptions: [...W.FREE, LATER_ITEM] });
+  w.storeSecret(ctx.keychain, W.SET_UP_SECRET, third.value);
+  const fromLater = ctx.standIn.calls().length;
+  const k = W.runSetUp(ctx, { extra: [W.KEEP_PAID] });
+  W.assertRan(k, 'the set-up on a yes that named one paid item, with a second found after it');
+  assert.notEqual(k.status, 0, `a paid item found after the owner's yes is not covered by it: the set-up does not report done; got ${w.describe(k)}`);
+  assert.ok(W.said(k).includes(LATER_ITEM.rate_plan.public_name), `it names the paid item found after the yes (${LATER_ITEM.rate_plan.public_name}); got ${w.describe(k)}`);
+  assert.deepEqual(madeSince(ctx.standIn, fromLater).map((c) => c.path), [], 'that run makes no token');
+  assert.equal((W.tokensOn(ctx.standIn).find((x) => x.id === third.id) || {}).status, 'deleted', 'that run removes its set-up token');
+  assert.equal(w.hasSecret(ctx.keychain, W.KEPT_SECRET), false, `that run keeps nothing in the Keychain as ${W.KEPT_SECRET}`);
+  const owners = [ctx.setUp.id, second.id, third.id];
+  assert.deepEqual(W.activeTokens(ctx.standIn).filter((x) => !owners.includes(x.id)).map((x) => x.name), [], 'no token the set-up made is left on the account');
+  assert.deepEqual(billingWrites(ctx.standIn), [], 'Squire changes no billing');
+  assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
+});
+
+test("a paid item on the second page of the account's subscriptions is found, named with its price and asked: with the first page free and the answer naming a second, the set-up reads every page, does not report done before the owner's yes, and on his yes to keeping it, asked naming it in the default mode and in auto mode, finishes naming it", { timeout: 600000 }, (t) => {
+  const second = anotherSetUp(2);
+  const ctx = W.websiteWorld(t, { laid: true, subscriptionPages: [W.FREE, [CF.PRICED_ITEM]], extraTokens: [second] });
+  const named = CF.PRICED_ITEM.rate_plan.public_name;
+  // The premise, read by the case itself on the stand-in.
+  const first = JSON.parse(ctx.standIn.call('GET', `/accounts/${W.ACCOUNT}/subscriptions`, ctx.setUp.value).body);
+  assert.equal(first.result_info.total_pages, 2, 'the account\'s answer names a second page');
+  assert.ok(first.result.every((x) => x.price === 0), 'its first page is free');
+  const from = ctx.standIn.calls().length;
+  const r = W.runSetUp(ctx);
+  W.assertRan(r, 'the set-up with a paid item on the second page');
+  assert.notEqual(r.status, 0, `with a paid item on the second page and no yes, the set-up does not report done; got ${w.describe(r)}`);
+  const reads = ctx.standIn.calls().slice(from).filter((c) => c.method === 'GET' && /\/accounts\/[^/]+\/subscriptions(\?|$)/.test(c.path));
+  assert.ok(reads.some((c) => /\/subscriptions\?(.*&)?page=2(&|$)/.test(c.path)),
+    `the set-up reads the second page the answer names; its reads: ${JSON.stringify(reads.map((c) => c.path))}`);
+  assert.ok(W.said(r).includes(named), `it names the paid item on the second page (${named}); got ${w.describe(r)}`);
+  assert.ok(W.said(r).includes(String(CF.PRICED_ITEM.price)), `it names its price (${CF.PRICED_ITEM.price}); got ${w.describe(r)}`);
+  assert.match(W.said(r), COSTS, `it warns that it costs money; got ${w.describe(r)}`);
+  assertSetUpTokenRemoved(ctx, 'a set-up that found a paid item on the second page');
+  assertNothingKept(ctx, 'a set-up that found a paid item on the second page, before any yes');
+  const floor = U.laidFloor(ctx.world, U.UTC);
+  for (const mode of MODES) keepAskedThenYes(ctx, floor, `job-keep-second-page-${mode}`, mode, [named], 'the paid item on the second page');
+  w.storeSecret(ctx.keychain, W.SET_UP_SECRET, second.value);
+  const k = W.runSetUp(ctx, { extra: [W.KEEP_PAID] });
+  W.assertRan(k, 'the set-up on the owner\'s yes to keeping the paid item on the second page');
+  assert.equal(k.status, 0, `on the owner's yes to keeping it, the set-up reports done; got ${w.describe(k)}`);
+  assert.ok(W.said(k).includes(named), `its done words name it (${named}); got ${w.describe(k)}`);
+  assertKeptDeployOnly(ctx, 'the set-up on the owner\'s yes to keeping the paid item on the second page');
+  assert.deepEqual(billingWrites(ctx.standIn), [], 'Squire changes no billing');
   assert.deepEqual(ctx.standIn.offLoopback(), [], 'no call left the loopback');
 });

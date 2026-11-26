@@ -1,0 +1,50 @@
+{
+  "createdAt": "2026-11-26T13:44:23.441Z",
+  "updatedAt": "2026-11-26T13:45:06.453Z",
+  "purpose": "Runs the safety floor's PreToolUse hooks as the laid settings name them, in the default mode and in auto mode, to check that a new file the session would write in the owner's folder that Claude Code itself loads (CLAUDE.md, CLAUDE.local.md, AGENTS.md, .mcp.json, anything under .claude) is asked first, naming the file, however it is spelt, and is made only on the owner's yes, while any other new file in his folder is still written with no ask.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-1901-14"
+  ],
+  "id": "TS-046",
+  "usId": "US-1901",
+  "title": "Safety: files Claude Code loads from the owner's folder are asked first",
+  "testCases": [
+    {
+      "id": "TC-046-a-new-claude-md-claude-local-md-or",
+      "acId": "AC-1901-14",
+      "description": "a new CLAUDE.md, CLAUDE.local.md or AGENTS.md is asked first, naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new CLAUDE.md, CLAUDE.local.md or AGENTS.md the session would write in the owner's folder, at the folder itself or in a folder under it, is asked first, naming the file, and is made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-new-mcp-json-at-the-owner-s-folder-is",
+      "acId": "AC-1901-14",
+      "description": "a new .mcp.json at the owner's folder is asked first, naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new .mcp.json the session would write at the owner's folder, naming MCP servers Claude Code would start, is asked first, naming the file, and is made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-new-file-under-claude-in-the-owner-s",
+      "acId": "AC-1901-14",
+      "description": "a new file under .claude in the owner's folder is asked first, naming the file",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new file the session would write under .claude in the owner's folder (an agent, a rule, a skill, a command, an output style or its CLAUDE.md) is asked first, naming the file, and is made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-the-same-files-spelt-another-way-the",
+      "acId": "AC-1901-14",
+      "description": "the same files spelt another way the volume opens as them are asked first",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::the same files spelt another way the volume opens as them, in another letter case, with the long s for an s, or through a link in the owner's folder, are asked first, naming the file, and are made only on the owner's yes, in the default mode and in auto mode"
+    },
+    {
+      "id": "TC-046-a-new-file-elsewhere-in-the-owner-s",
+      "acId": "AC-1901-14",
+      "description": "a new file elsewhere in the owner's folder is still written with no ask",
+      "status": "pending",
+      "testPointer": "tests/acceptance/files-the-session-loads.test.js::a new file elsewhere in the owner's folder, a note in workspace or a page of a site, is still written with no ask, in the default mode and in auto mode"
+    }
+  ],
+  "status": "draft"
+}

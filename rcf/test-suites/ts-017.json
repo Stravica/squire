@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:43.008Z",
-  "updatedAt": "2026-11-25T00:32:35.203Z",
+  "updatedAt": "2026-11-26T13:45:03.166Z",
   "purpose": "Runs Squire's one-off set-up against a loopback stand-in of Cloudflare's API and reads the account back through it, to check paid features, anything the set-up cannot read as free, the spend guard and the removal of the set-up token; the real one-off set-up, against a test Cloudflare account and never a live one, is the test stage's own step.",
   "testLevel": "integration",
   "acIds": [
@@ -43,9 +43,9 @@
     {
       "id": "TC-017-a-subscription-the-set-up-cannot-read-as",
       "acId": "AC-1201-3",
-      "description": "a subscription the set-up cannot read as free counts as paid and the set-up does not report done",
+      "description": "a subscription the set-up cannot read as free counts as paid: named with its price, warned of, and kept only on the owner's yes",
       "status": "pending",
-      "testPointer": "tests/acceptance/website-set-up.test.js::a subscription the set-up cannot read as free counts as paid: the set-up does not report done and names it to the owner; when it cannot read the subscriptions at all it does not report done and says so; Squire changes no billing"
+      "testPointer": "tests/acceptance/website-set-up.test.js::a subscription the set-up cannot read as free counts as paid: the set-up names it with its price, or says it cannot read the price, warns that it costs money and that Squire changes no billing, and does not report done; on the owner's yes to keeping it, asked naming it in the default mode and in auto mode, the set-up finishes, keeps one deploy-only token and names it in its done words; when it cannot read the subscriptions at all it does not report done and says so"
     },
     {
       "id": "TC-017-a-set-up-token-whose-removal-fails-is",
@@ -95,6 +95,20 @@
       "description": "a set-up token refused another way on the account's path and refused on the user path too keeps today's words and is never called user-owned; nothing made, nothing kept",
       "status": "pending",
       "testPointer": "tests/acceptance/website-set-up.test.js::a set-up token Cloudflare refuses on the account's path with another refusal than an invalid token, and refuses on the user path too, keeps today's words, to check the account id and the token, and is never called user-owned or sent to make an account-owned one; the set-up makes nothing and keeps nothing"
+    },
+    {
+      "id": "TC-017-with-a-paid-item-and-no-yes-or-a-no-the",
+      "acId": "AC-1201-3",
+      "description": "with a paid item and no yes or a no the set-up does not report done; a yes covers only the paid items named before it",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::with a paid item named and no yes, or a no, the set-up does not report done and keeps nothing: the owner's no to keeping it, asked in the default mode and in auto mode, keeps that run from going ahead; a yes to an ordinary run of the set-up is not a yes to keeping it; and a yes covers only the paid items named before it, so one found after it is named and the set-up does not report done"
+    },
+    {
+      "id": "TC-017-a-paid-item-on-the-second-page-of",
+      "acId": "AC-1201-3",
+      "description": "a paid item on the second page of subscriptions is found, named with its price and asked",
+      "status": "pending",
+      "testPointer": "tests/acceptance/website-set-up.test.js::a paid item on the second page of the account's subscriptions is found, named with its price and asked: with the first page free and the answer naming a second, the set-up reads every page, does not report done before the owner's yes, and on his yes to keeping it, asked naming it in the default mode and in auto mode, finishes naming it"
     }
   ],
   "status": "draft"
