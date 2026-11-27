@@ -932,6 +932,8 @@ sq_python() {
   [[ -n ${TMPDIR-} ]] && env+=(TMPDIR=$TMPDIR)
   [[ -n ${SQUIRE_HOME-} ]] && env+=(SQUIRE_HOME=$SQUIRE_HOME)
   [[ -n $SQ_ROOT ]] && env+=(SQUIRE_SYSTEM_ROOT=$SQ_ROOT)
+  # A test setting set-up honours: a shorter wait for the first message.
+  [[ ${SQUIRE_FIRST_MESSAGE_WAIT_SECONDS-} == <1-99999> ]] && env+=(SQUIRE_FIRST_MESSAGE_WAIT_SECONDS=$SQUIRE_FIRST_MESSAGE_WAIT_SECONDS)
   $env $SQ_ROOT/usr/bin/python3 -B $SQ_APP_CORE/tools/set-up.py $SQ_APP_CORE </dev/null 2>>$SQ_ERR
 }
 

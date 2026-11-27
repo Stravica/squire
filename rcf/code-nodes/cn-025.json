@@ -3,11 +3,12 @@
   "path": "core/tools/set-up.py#Windows",
   "implementsAcIds": [
     "AC-201-1",
-    "AC-601-2"
+    "AC-601-2",
+    "AC-201-3"
   ],
   "dependencies": [],
   "version": "0.1.0",
   "status": "draft",
   "createdAt": "2026-11-09T16:41:13.317Z",
-  "updatedAt": "2026-11-09T16:41:13.317Z"
+  "updatedAt": "2026-11-27T20:18:18.417Z"
 }
