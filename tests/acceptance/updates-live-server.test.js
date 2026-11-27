@@ -59,7 +59,7 @@ test('an update from Squire Update under Claude Code 2.1.332 with no client conn
   });
 });
 
-test('an update from Squire Update after the owner\'s session existed passes its check on a live server and a clean health check with no session needed: under 2.1.332 the server started again makes no session until the owner writes again; under 2.1.319 the session comes back', LONG, async (t) => {
+test("an update from Squire Update after the owner's session existed passes its check on a live server and a clean health check with no session needed: under 2.1.332 the server started again makes no session until the owner writes again; under 2.1.319 the session comes back", LONG, async (t) => {
   await both(async (profile) => {
     const rw = await world(t, profile, { client: true });
     const before = s.sessionRecords(rw.world);
@@ -75,7 +75,7 @@ test('an update from Squire Update after the owner\'s session existed passes its
   });
 });
 
-test('after an install that fails its check and a rollback whose check fails too, Squire Update\'s closing window gives a way to support that works with no session (a web address or an email address), never only "ask Squire in the chat"', LONG, async (t) => {
+test(`after an install that fails its check and a rollback whose check fails too, Squire Update's closing window gives a way to support that works with no session (a web address or an email address), never only "ask Squire in the chat"`, LONG, async (t) => {
   await both(async (profile) => {
     const rw = await world(t, profile);
     const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExitsAndSignsOut' });
@@ -104,7 +104,7 @@ test('an install whose lay-down meets launchd still tearing down the agents it b
   });
 });
 
-test('an install whose lay-down meets a launchd teardown longer than the bound fails its lay, and update.log names the agent\'s label and launchd\'s own words', LONG, async (t) => {
+test("an install whose lay-down meets a launchd teardown longer than the bound fails its lay, and update.log names the agent's label and launchd's own words", LONG, async (t) => {
   await both(async (profile) => {
     const rw = await world(t, profile, { launchd: 'model' });
     const release = R.buildRelease(rw, { version: NEXT });

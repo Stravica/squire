@@ -103,7 +103,7 @@ test('a server that has shown, 60 seconds after its start, no bridge pointer nam
 
 // A network drop, not a client leaving (a client leaving prints nothing,
 // measured on 2.1.332): the 2.1.332 leg's words are a HYPOTHESIS, 2.1.319's.
-test('a server whose connection drops, a disconnection line with no connected word after it, is replaced about a minute after the drop, under both profiles (the 2.1.332 words taken to be 2.1.319\'s)', { timeout: 240000 }, async (t) => {
+test("a server whose connection drops, a disconnection line with no connected word after it, is replaced about a minute after the drop, under both profiles (the 2.1.332 words taken to be 2.1.319's)", { timeout: 240000 }, async (t) => {
   const lazy = liveWorld(t, { profile: '2.1.332', disconnectAfterMs: 5000 });
   const eager = liveWorld(t, { profile: '2.1.319', disconnectAfterMs: 5000 });
   await firstServer(lazy, 'the 2.1.332 server');
@@ -124,7 +124,7 @@ test('a server whose connection drops, a disconnection line with no connected wo
   }
 });
 
-test('a 2.1.332 server stopped from outside, as an update\'s install stops it, before any client made a session is not recorded as stopped before any session started and the health check names no fault for it; under 2.1.319 the same; a server that dies before it was ever live is still named', { timeout: 180000 }, async (t) => {
+test("a 2.1.332 server stopped from outside, as an update's install stops it, before any client made a session is not recorded as stopped before any session started and the health check names no fault for it; under 2.1.319 the same; a server that dies before it was ever live is still named", { timeout: 180000 }, async (t) => {
   const stopFromOutside = async (x, what) => {
     const call = await firstServer(x, what);
     if (x.behaviour.profile === '2.1.332') {

@@ -68,7 +68,7 @@ function assertNamesStep(timeline, at, words, what) {
     `${what}: the window on screen must name what set-up is doing (${words}) and show how far it has got (step N of M); on screen: ${show(up)}`);
 }
 
-test('the installer\'s own half of set-up, the yes, Claude Code\'s download and install, the Claude sign-in and the browser\'s parts, keeps a Squire window on screen at every moment, each naming its activity and showing step N of M', LONG, async (t) => {
+test("the installer's own half of set-up, the yes, Claude Code's download and install, the Claude sign-in and the browser's parts, keeps a Squire window on screen at every moment, each naming its activity and showing step N of M", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false } });
   const { run, timeline } = await setUp(iw);
   const naming = titled(timeline, TITLES.name, 0);
@@ -85,7 +85,7 @@ test('the installer\'s own half of set-up, the yes, Claude Code\'s download and 
   assertNamesStep(timeline, tools.at, /Apple|tools/i, 'while Apple\'s tools install');
 });
 
-test('set-up\'s own steps from naming on, the Squire folder, laying Squire down, the speech helper, backup, the health check, the phone and the wait for the session, keep a Squire window on screen at every moment, each naming its activity and showing step N of M', LONG, async (t) => {
+test("set-up's own steps from naming on, the Squire folder, laying Squire down, the speech helper, backup, the health check, the phone and the wait for the session, keep a Squire window on screen at every moment, each naming its activity and showing step N of M", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const { run, timeline } = await setUp(iw);
   const naming = titled(timeline, TITLES.name, 0);
@@ -107,7 +107,7 @@ test('set-up\'s own steps from naming on, the Squire folder, laying Squire down,
   }
 });
 
-test('the moments between set-up\'s steps, after the Claude sign-in returns, at the hand-over from the installer to set-up\'s own steps, after naming and after the phone step, each show a Squire window, and every window is closed or replaced at its step\'s end with none left on screen after set-up ends', LONG, async (t) => {
+test("the moments between set-up's steps, after the Claude sign-in returns, at the hand-over from the installer to set-up's own steps, after naming and after the phone step, each show a Squire window, and every window is closed or replaced at its step's end with none left on screen after set-up ends", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const { run, timeline } = await setUp(iw);
   const login = callsAt(iw, (c) => c.cmd === 'claude' && c.argv[0] === 'auth' && c.argv[1] === 'login')[0];
@@ -132,7 +132,7 @@ test('a Squire window is on screen within about 3 seconds of the first click', L
   assert.ok(timeline[0].opened - clicked <= 3000, `the first Squire window must be on screen within about 3 seconds of the click; it opened after ${timeline[0].opened - clicked} ms`);
 });
 
-test('every window for a step that can run longer than about 10 seconds says how long it usually takes; during the two large downloads the window changes at each part, the browser\'s part N of its parts and Claude Code\'s download then its install; and no window is drawn while the Claude sign-in or Apple\'s own tools window is up', LONG, async (t) => {
+test("every window for a step that can run longer than about 10 seconds says how long it usually takes; during the two large downloads the window changes at each part, the browser's part N of its parts and Claude Code's download then its install; and no window is drawn while the Claude sign-in or Apple's own tools window is up", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false } });
   const { run, timeline } = await setUp(iw);
   const at = (test) => callsAt(iw, test)[0];
@@ -164,7 +164,7 @@ test('every window for a step that can run longer than about 10 seconds says how
   assert.deepEqual(duringTools.map((x) => x.title), [], `no window may be drawn while Apple's own tools window is up; drawn: ${show(duringTools)}`);
 });
 
-test('opening Squire again while set-up runs brings a window to the front naming the current step and starts nothing; and when set-up pauses, the paused window takes the progress window\'s place', LONG, async (t) => {
+test("opening Squire again while set-up runs brings a window to the front naming the current step and starts nothing; and when set-up pauses, the paused window takes the progress window's place", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const go = path.join(iw.root, 'phone-answered');
   iw.set({ answers: { [TITLES.phone]: { waitFor: go, then: 'button returned:Done' } } });
@@ -199,7 +199,7 @@ test('opening Squire again while set-up runs brings a window to the front naming
   assert.deepEqual(I.windowTimeline(paused).filter((x) => x.closed === null).map((x) => x.title), [], 'no progress window is left on screen after the pause');
 });
 
-test('every window set-up shows, from the installer\'s half and from set-up\'s own steps, comes to the front (activate first in its script), and the window before the Claude sign-in tells the owner to come back to Squire afterwards', LONG, async (t) => {
+test("every window set-up shows, from the installer's half and from set-up's own steps, comes to the front (activate first in its script), and the window before the Claude sign-in tells the owner to come back to Squire afterwards", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t);
   const { run, timeline } = await setUp(iw);
   assert.ok(I.doneSteps(iw).includes('phone'), `set-up must run its steps; ${I.describeRun(run)}`);

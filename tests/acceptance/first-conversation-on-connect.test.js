@@ -29,7 +29,7 @@ const opens = (run) => I.callsOf(run, 'open').map((c) => ({ at: c.at, url: c.arg
 const envAddressOf = (iw) => (s.environmentOf(iw.world) ? `environment=${s.environmentOf(iw.world)}` : null);
 const recordsOf = (iw) => s.sessionRecords({ home: iw.squireHome });
 
-test('set-up under Claude Code 2.1.332 opens, once its session server is live, the address of that server\'s own environment, never plain claude.ai/code, says to send a first message there and that Claude may ask to sign in again, and finishes on the session record the first message makes', LONG, async (t) => {
+test("set-up under Claude Code 2.1.332 opens, once its session server is live, the address of that server's own environment, never plain claude.ai/code, says to send a first message there and that Claude may ask to sign in again, and finishes on the session record the first message makes", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t, { profile: '2.1.332' });
   const run = await I.runApp(iw, { timeout: RUN });
   const env = envAddressOf(iw);
@@ -49,7 +49,7 @@ test('set-up under Claude Code 2.1.332 opens, once its session server is live, t
   assert.ok(I.dialogsTitled(run, TITLES.ready).length === 1, `set-up must end with its ready window; ${I.describeRun(run)}`);
 });
 
-test('set-up under Claude Code 2.1.319, whose server makes its session at start, still finishes its first conversation and opens Claude\'s page', LONG, async (t) => {
+test("set-up under Claude Code 2.1.319, whose server makes its session at start, still finishes its first conversation and opens Claude's page", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t, { profile: '2.1.319' });
   const run = await I.runApp(iw, { timeout: RUN });
   assert.ok(I.doneSteps(iw).includes('firstConversation'), `set-up must finish under the eager profile; done ${JSON.stringify(I.doneSteps(iw))}; ${I.describeRun(run)}`);
@@ -58,7 +58,7 @@ test('set-up under Claude Code 2.1.319, whose server makes its session at start,
   assert.equal(I.dialogsTitled(run, TITLES.paused).length, 0, `set-up must not pause; ${I.describeRun(run)}`);
 });
 
-test('set-up whose session server is never live within 2 minutes of its start pauses, and the paused window names the server\'s own last line', LONG, async (t) => {
+test("set-up whose session server is never live within 2 minutes of its start pauses, and the paused window names the server's own last line", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t, { profile: '2.1.332' });
   const LAST = 'The world\'s own last line: this Remote Control server never went live';
   iw.inner.set({ profile: '2.1.332', pointer: false, lastLine: LAST });
@@ -69,7 +69,7 @@ test('set-up whose session server is never live within 2 minutes of its start pa
   assert.ok(!I.doneSteps(iw).includes('firstConversation'), 'the first conversation step is not done');
 });
 
-test('while set-up waits for the owner\'s first message in the page it opened, it keeps its window up naming that page, and does not pause at 2 minutes or 2 and a half', LONG, async (t) => {
+test("while set-up waits for the owner's first message in the page it opened, it keeps its window up naming that page, and does not pause at 2 minutes or 2 and a half", LONG, async (t) => {
   const iw = I.makeInstallerWorld(t, { profile: '2.1.332', mac: { client: { text: null } } });
   let openedAt = null;
   const run = await I.runApp(iw, {
