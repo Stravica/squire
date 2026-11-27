@@ -289,11 +289,13 @@ function makeSystem(root, mac = {}, extra = {}) {
 
 // A core as a release carries it: this repository's core (or from), with the
 // world's release.json and release-key.pub written in.
-function makeCore(rw, dir, { version, key = rw.keys.one.pub, from = w.CORE }) {
+// fields adds to release.json what a release names besides (the world's
+// releaseFields, for example the newest Claude Code it was tested with).
+function makeCore(rw, dir, { version, key = rw.keys.one.pub, from = w.CORE, fields = rw.releaseFields || {} }) {
   fs.rmSync(dir, { recursive: true, force: true });
   w.copyTree(from, dir);
   fs.writeFileSync(path.join(dir, 'release.json'),
-    JSON.stringify({ version, releaseHost: rw.releaseHost, intake: rw.intake }, null, 2) + '\n');
+    JSON.stringify({ version, releaseHost: rw.releaseHost, intake: rw.intake, ...fields }, null, 2) + '\n');
   fs.copyFileSync(key, path.join(dir, 'release-key.pub'));
   return dir;
 }
@@ -607,12 +609,17 @@ const intakePosts = (rw) => readJsonLines(path.join(rw.state, 'posts.jsonl')).ma
 // ({ answer } prints "<answer> (Claude Code)"; { fail: true } exits 1 with
 // nothing; { hang: true } never answers) and hands every other command to the
 // fake.
-function installClaudeCode(rw, { signedIn = true } = {}) {
-  const inner = s.installFakeClaudeCode(rw.world, { signedIn }, { dir: path.join(rw.root, 'claude-code-inner') });
+// profile is the Remote Control profile of the fake (session-world.js):
+// '2.1.319' (the default) or '2.1.332', whose version --version answers too.
+function installClaudeCode(rw, { signedIn = true, profile = '2.1.319' } = {}) {
+  const lazy = profile === '2.1.332';
+  const inner = s.installFakeClaudeCode(rw.world, lazy ? { signedIn, profile } : { signedIn }, { dir: path.join(rw.root, 'claude-code-inner') });
   rw.inner = inner;
+  rw.profile = profile;
+  const version = lazy ? '2.1.332' : CLAUDE_CODE;
   rw.claudeVersionFile = path.join(rw.root, 'claude-version.json');
-  fs.writeFileSync(rw.claudeVersionFile, JSON.stringify({ answer: CLAUDE_CODE }));
-  setLauncherTarget(rw, CLAUDE_CODE);
+  fs.writeFileSync(rw.claudeVersionFile, JSON.stringify({ answer: version }));
+  setLauncherTarget(rw, version);
   return inner;
 }
 
@@ -628,7 +635,8 @@ if (argv[0] === '--version' || argv[0] === '-v') {
   else if (how.fail) process.exit(1);
   else { process.stdout.write(how.answer + ' (Claude Code)\\n'); process.exit(0); }
 } else {
-  const child = spawn(${JSON.stringify(rw.inner.bin)}, argv, { stdio: 'inherit' });
+  // The fake's bridge pointer names this process, the one Squire started.
+  const child = spawn(${JSON.stringify(rw.inner.bin)}, argv, { stdio: 'inherit', env: { ...process.env, FAKE_CLAUDE_CODE_PID: String(process.pid) } });
   const forward = (sig) => () => { try { child.kill(sig); } catch (e) {} };
   process.on('SIGTERM', forward('SIGTERM'));
   process.on('SIGINT', forward('SIGINT'));
@@ -677,14 +685,17 @@ function setVersionAnswer(rw, how) {
 // (tools/launchd.js) instead of the supervisor: startSquire lays core down
 // with the product's lay-down, which loads the agents it writes through the
 // world's launchctl, and the scheduler's tick runs as its agent when fired.
-function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null, intake = null, launchd = 'supervisor' } = {}) {
+// profile: Claude Code's Remote Control profile ('2.1.319', the default, or
+// '2.1.332'); releaseFields: what core/release.json names beside the version
+// and the world's addresses, in every core the world makes.
+function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true, approvalTimeoutSeconds = 600, persona = null, intake = null, launchd = 'supervisor', profile = '2.1.319', releaseFields = null } = {}) {
   const world = w.makeWorld({ approvalTimeoutSeconds });
   // The owner's own wake-ups are left out, so every wake-up a case reads is
   // one an update, a ticket or a recovery sent.
   const ownerConfig = persona || (({ wakeUps, ...rest }) => rest)(JSON.parse(fs.readFileSync(path.join(world.owner, 'squire.json'), 'utf8')));
   fs.writeFileSync(path.join(world.owner, 'squire.json'), JSON.stringify(ownerConfig, null, 2) + '\n');
   const rw = { world, root: world.root, home: world.home, owner: world.owner, state: path.join(world.root, 'stand-ins'),
-    supervisorState: path.join(world.root, 'supervisor') };
+    supervisorState: path.join(world.root, 'supervisor'), releaseFields };
   t.after(() => {
     stopSquire(rw);
     try { if (rw.standInsPid) process.kill(-rw.standInsPid, 'SIGKILL'); } catch (e) { /* gone */ }
@@ -717,7 +728,7 @@ function makeReleaseWorld(t, { installed = INSTALLED, mac = {}, signedIn = true,
   w.copyTree(rw.appCore, world.release);
   fs.writeFileSync(path.join(world.home, 'set-up.json'),
     JSON.stringify({ done: I.STEPS, added: [], release: world.release }, null, 2) + '\n');
-  installClaudeCode(rw, { signedIn });
+  installClaudeCode(rw, { signedIn, profile });
   // The config folder signed in, as a sign-in leaves it.
   const claudeJson = path.join(world.home, 'claude-config', '.claude.json');
   const state = readJson(claudeJson) || {};
@@ -874,7 +885,7 @@ function launchSquire(rw, runnerEnv = null) {
 // Under the launchd model, Squire starts as set-up's lay-down starts it: core
 // laid down by the product's lay-down with the world's system folders, which
 // loads the agents it writes (AGENT_LABELS) through the world's launchd.
-async function startSquire(rw) {
+async function startSquire(rw, { client = false } = {}) {
   if (rw.model) {
     startModel(rw);
     const laid = w.layDown(rw.world, rw.appCore, { env: env(rw) });
@@ -883,11 +894,32 @@ async function startSquire(rw) {
     assert.ok(loaded, `under the launchd model, lay-down must load all of Squire's agents (${AGENT_LABELS.join(', ')}) through the Mac's launchctl in the account's own home; ` +
       `loaded: ${JSON.stringify(agentsLoaded(rw))}; launchctl calls: ${JSON.stringify(launchdCalls(rw))}`);
   } else launchSquire(rw);
+  // Under the 2.1.332 profile no session exists until a client sends a first
+  // message: Squire is up once its server is live (a bridge pointer naming the
+  // server the runner holds), unless the case connects a client (client true).
+  if (rw.profile === '2.1.332') {
+    // What a case asserts after (an install's check, the health check) is the
+    // case's own; here only that the server is up.
+    const live = await s.waitFor(() => liveServer(rw), 30000, 250);
+    assert.ok(live, `the installed Squire must start its server, live by its bridge pointer; runner output: ${runnerOutput(rw).slice(-600) || '(none)'}`);
+    if (!client) return null;
+    s.clientConnects(rw.world);
+  }
   const session = await s.waitFor(() => s.sessionRecords(rw.world).find((r) => !w.processGone(r.pid)), 30000);
   assert.ok(session, `the installed Squire must start its session; runner output: ${runnerOutput(rw).slice(-600) || '(none)'}`);
   const healthy = await s.waitFor(() => health(rw).status === 0, 30000, 500);
   assert.ok(healthy, `the installed Squire must be healthy once started; health: ${w.describe(health(rw))}`);
   return session;
+}
+
+// The server the runner holds (runner.lock's pid), when it is alive and a
+// bridge pointer written after its start names it: { pid, pointer }, or null.
+function liveServer(rw) {
+  let held = null;
+  try { held = JSON.parse(fs.readFileSync(path.join(rw.home, 'runner.lock'), 'utf8') || '{}'); } catch (e) { held = null; }
+  if (!held || !Number.isInteger(held.pid) || w.processGone(held.pid)) return null;
+  const pointer = s.bridgePointers(rw.world).find((p) => p.pid === held.pid);
+  return pointer ? { pid: held.pid, pointer } : null;
 }
 
 function stopSquire(rw) {
@@ -1480,6 +1512,7 @@ module.exports = {
   runAppAgain,
   launchSquire,
   startSquire,
+  liveServer,
   stopSquire,
   askRunnerStart,
   runnerStarts,

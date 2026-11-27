@@ -119,6 +119,72 @@ const ENVIRONMENT_FORBIDDEN = ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN', '
 //                             as Claude Code 2.1.319 was measured to
 //   claude auth login         answers "Login successful.", exit 0
 //
+// Two measured profiles of the Remote Control server (behaviour.profile):
+//
+//   '2.1.319' (the default; every case written before the second profile
+//   runs under it, its answers unchanged): the session at the server's start,
+//   as above. Claude Code 2.1.322 was measured to behave the same way
+//   (Connecting, Connected and a claude.ai/code/session_ address at start,
+//   the session's record about 5 seconds after the start, and at the stop
+//   "Shutting down 1 active session(s)").
+//
+//   '2.1.332': measured on a fresh login on 27 Nov 2026. At start it prints
+//   "·|· Connecting · <folder>", then "·✔︎· Ready · <folder>",
+//   "    Single session · exits when complete", "Code anywhere with the Claude
+//   mobile app or https://claude.ai/code?environment=<environment id>", "Or
+//   ask Claude to work in this folder from your projects on claude.ai" and
+//   "space to show QR code"; about 1 second after its start it writes the
+//   bridge pointer, <CLAUDE_CONFIG_DIR>/projects/<the folder's name>/
+//   bridge-pointer.json, {"sessionId": "", "environmentId", "source":
+//   "standalone", "pid": <its own pid>, "procStart", "dir": <its folder>},
+//   and never fills sessionId, even once a session exists. It makes no
+//   session, no transcript and no record with no client. A session is made
+//   only once a client has opened the server's own environment address and
+//   sends a first message there (here: a line in the world's client record,
+//   claude-client.jsonl, which the world's open writes for a claude.ai
+//   address and which clientConnects adds); in that second the server starts
+//   the session process, prints "·✔︎· Connected · <folder>" and "Continue
+//   coding in the Claude mobile app or https://claude.ai/code/session_<id>",
+//   the session's SessionStart hooks run with source startup, and then the
+//   status word is replaced by the session's title ("·✔︎· <title> ·
+//   <folder>"). At a stop with no session it prints "Environment preserved.
+//   Restart `claude remote-control` to reconnect existing sessions."; that it
+//   prints the same at a stop with a live session is a HYPOTHESIS, not
+//   measured. The last word of each status line was measured as the owner
+//   folder's name, Squire; the world puts its own folder's name there. Every
+//   environment id, session id and address here is invented (FAKE in each).
+//
+//   Also measured on 2.1.332, later the same day: a server stopped and
+//   started again with no client makes no session (it prints Ready and the
+//   environment address again; no session process, the pointer's sessionId
+//   empty, no record) until a client sends a message again; and a client
+//   leaving prints nothing in the server's output and leaves the session
+//   process running until the server stops. So this profile's server, started
+//   again, makes no session until a new client message, and
+//   clientLeaves(world) changes nothing the server prints.
+//
+//   Not measured, a switch, a HYPOTHESIS until measured on a real Mac:
+//   { disconnectAfterMs: n }    n ms after the session is made (2.1.332) or
+//                               after the start (2.1.319), the server prints
+//                               a disconnection line (a network drop, not a
+//                               client leaving) and never recovers. The
+//                               words are 2.1.319's as the design record
+//                               names them (Reconnecting, with "retrying
+//                               in"); that 2.1.332 prints the same words on
+//                               a network drop is a HYPOTHESIS; the line's
+//                               layout is the world's own, not measured
+//   The title is the first message's text with its first letter in capitals
+//   (one sample: "hello" became "Hello"); the rule is a HYPOTHESIS.
+//
+//   Switches of the world's own, for cases that need a server that is not
+//   live: { pointer: false } (2.1.332: no bridge pointer is written), {
+//   neverConnects: true } (2.1.319: "Connecting" alone, no session), {
+//   lastLine: <text> } (the server prints that line after its start lines),
+//   { sessionAtStart: true } (2.1.332: the session made about 1 second after
+//   the start, as if a client had sent "hello"). { version: <v> } makes
+//   claude --version answer "<v> (Claude Code)"; the 2.1.332 profile answers
+//   2.1.332; with neither, --version is not a command this fake knows.
+//
 // Records, in the world:
 //   claude-code-calls.jsonl     one line per invocation: argv, cwd, pid, its
 //                               process group, the environment's names and
@@ -172,8 +238,15 @@ ${common}
 const net = require('net');
 const crypto = require('crypto');
 const serverPid = Number(process.argv[2]);
+// 'new' (a session a client's first message made): a new id, source startup;
+// otherwise the id kept in the world comes back with source resume.
+const made = process.argv[3] || 'keep';
+const firstMessage = process.argv[4] || null;
 let sessionId; let source;
-try { sessionId = fs.readFileSync(${JSON.stringify(sessionIdFile)}, 'utf8').trim(); source = 'resume'; }
+try {
+  if (made === 'new') throw new Error('a new session');
+  sessionId = fs.readFileSync(${JSON.stringify(sessionIdFile)}, 'utf8').trim(); source = 'resume';
+}
 catch (e) { sessionId = crypto.randomUUID(); source = 'startup'; fs.writeFileSync(${JSON.stringify(sessionIdFile)}, sessionId); }
 const socketPath = path.join(${JSON.stringify(socketDir)}, process.pid + '.sock');
 const token = crypto.randomBytes(16).toString('hex');
@@ -202,6 +275,12 @@ const server = net.createServer((conn) => {
 server.listen(socketPath, () => {
   const runs = runHooks('SessionStart', { ...base, hook_event_name: 'SessionStart', source }, hookEnv);
   append(${JSON.stringify(sessionsFile)}, { pid: process.pid, serverPid, pgid: pgidOf(process.pid), sessionId, source, socket: socketPath, hookRuns: runs });
+  // The client's first message, which made this session, is its first prompt.
+  if (firstMessage) {
+    const promptRuns = runHooks('UserPromptSubmit', { ...base, hook_event_name: 'UserPromptSubmit', prompt: firstMessage }, hookEnv);
+    append(${JSON.stringify(promptsFile)}, { pid: process.pid, sessionId, socket: socketPath, lines: [], content: firstMessage,
+      fromClient: true, hookRuns: promptRuns });
+  }
 });
 const stop = () => { try { server.close(); fs.unlinkSync(socketPath); } catch (e) {} process.exit(0); };
 process.on('SIGTERM', stop);
@@ -233,9 +312,91 @@ if (argv[0] === 'auth' && argv[1] === 'login') {
   process.stdout.write('Login successful.\\n');
   process.exit(0);
 }
-if (argv[0] === 'remote-control') {
-  const child = spawn(process.execPath, [${JSON.stringify(sessionScript)}, String(process.pid)], { stdio: 'ignore' });
-  process.stdout.write('Session started: "Session cse_fake" (cse_fake)\\nConnected · ' + path.basename(process.cwd()) + '\\n');
+const version = how.version || (how.profile === '2.1.332' ? '2.1.332' : null);
+if ((argv[0] === '--version' || argv[0] === '-v') && version) {
+  process.stdout.write(version + ' (Claude Code)\\n');
+  process.exit(0);
+}
+const folder = path.basename(process.cwd());
+const say = (text) => { try { fs.writeSync(1, text); } catch (e) { /* no output */ } };
+const disconnectLine = () => say('·|· Reconnecting · retrying in 5s · ' + folder + '\\n');
+const startSession = (mode, message) => spawn(process.execPath,
+  [${JSON.stringify(sessionScript)}, String(process.pid), mode, ...(message ? [message] : [])], { stdio: 'ignore' });
+if (argv[0] === 'remote-control' && how.profile === '2.1.332') {
+  // The 2.1.332 profile (see above): no session until a client's first
+  // message at the server's own environment address.
+  const started = Date.now();
+  let envId;
+  try { envId = fs.readFileSync(${JSON.stringify(path.join(world.root, 'fake-environment-id'))}, 'utf8').trim(); }
+  catch (e) {
+    envId = 'env_FAKE' + Array.from({ length: 12 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
+    fs.writeFileSync(${JSON.stringify(path.join(world.root, 'fake-environment-id'))}, envId);
+  }
+  say('·|· Connecting · ' + folder + '\\n');
+  setTimeout(() => {
+    say('·✔︎· Ready · ' + folder + '\\n    Single session · exits when complete\\n' +
+      'Code anywhere with the Claude mobile app or https://claude.ai/code?environment=' + envId + '\\n' +
+      'Or ask Claude to work in this folder from your projects on claude.ai\\nspace to show QR code\\n');
+    if (how.lastLine) say(how.lastLine + '\\n');
+  }, 200);
+  if (how.pointer !== false) {
+    setTimeout(() => {
+      // The folder's name as Claude Code names it: measured for one path
+      // (each "/" as "-"); every other character not a letter or digit as
+      // "-" too is a HYPOTHESIS.
+      const dir = path.join(process.env.CLAUDE_CONFIG_DIR || '/nonexistent', 'projects', process.cwd().replace(/[^A-Za-z0-9]/g, '-'));
+      // Behind a world's launcher (the release and installer worlds), the
+      // pid the launcher hands on: the process Squire started, as Claude Code
+      // is one process on a real Mac.
+      const self = Number(process.env.FAKE_CLAUDE_CODE_PID) || process.pid;
+      const ps = spawnSync('/bin/ps', ['-o', 'lstart=', '-p', String(self)], { encoding: 'utf8', env: { LC_ALL: 'C', PATH: '/usr/bin:/bin' } });
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'bridge-pointer.json'), JSON.stringify({ sessionId: '', environmentId: envId,
+          source: 'standalone', pid: self, procStart: (ps.stdout || '').trim(), dir: process.cwd() }));
+      } catch (e) { /* the config folder cannot be written */ }
+    }, 1000);
+  }
+  let session = null;
+  const make = (mode, message) => {
+    if (session) return;
+    session = startSession(mode, message);
+    const sid = 'session_FAKE' + String(process.pid).padStart(8, '0');
+    say('·✔︎· Connected · ' + folder + '\\nContinue coding in the Claude mobile app or https://claude.ai/code/' + sid + '\\n');
+    const title = message ? message.trim().replace(/^./, (c) => c.toUpperCase()) : folder;
+    setTimeout(() => say('·✔︎· ' + title + ' · ' + folder + '\\n'), 300);
+    if (how.disconnectAfterMs) setTimeout(disconnectLine, how.disconnectAfterMs);
+  };
+  if (how.sessionAtStart) setTimeout(() => make('new', 'hello'), 1000);
+  // The client: an open of this environment's own address, then a first
+  // message sent after this server started.
+  const clientFile = ${JSON.stringify(path.join(world.root, 'claude-client.jsonl'))};
+  setInterval(() => {
+    if (session) return;
+    let lines = [];
+    try { lines = fs.readFileSync(clientFile, 'utf8').split('\\n').filter(Boolean).map((l) => JSON.parse(l)); } catch (e) { lines = []; }
+    const opened = lines.some((l) => l.type === 'open' && typeof l.url === 'string' && l.url.includes('environment=' + envId));
+    const now = Date.now();
+    const message = lines.find((l) => l.type === 'message' && l.at >= started && l.at <= now);
+    if (opened && message) make('new', message.text);
+  }, 200);
+  // The session ends when its server stops (measured).
+  const stop = () => {
+    say('Environment preserved. Restart \`claude remote-control\` to reconnect existing sessions.\\n');
+    if (session) { try { session.kill('SIGTERM'); } catch (e) { /* gone */ } }
+    process.exit(0);
+  };
+  process.on('SIGTERM', stop);
+  process.on('SIGINT', stop);
+} else if (argv[0] === 'remote-control') {
+  if (how.neverConnects) {
+    say('·|· Connecting · ' + folder + '\\n');
+    if (how.lastLine) say(how.lastLine + '\\n');
+  } else {
+    const child = startSession('keep', null);
+    process.stdout.write('Session started: "Session cse_fake" (cse_fake)\\nConnected · ' + folder + '\\n');
+    if (how.disconnectAfterMs) setTimeout(disconnectLine, how.disconnectAfterMs);
+  }
   // Only the server stops: its session process stays in the process group.
   const stop = () => process.exit(0);
   process.on('SIGTERM', stop);
@@ -277,6 +438,50 @@ function killFakes(world) {
     try { process.kill(pid, 'SIGKILL'); } catch (e) { /* gone */ }
   }
 }
+
+// ---------------------------------------- the 2.1.332 profile's client
+
+// The client record the 2.1.332 profile's server reads: { type: 'open', url }
+// when a browser or the phone opens an address (the world's open writes one
+// for a claude.ai address), { type: 'message', text } when the Squire owner
+// sends a message there; each with the time it happens (at).
+const clientFile = (world) => path.join(world.root, 'claude-client.jsonl');
+const appendClient = (world, rec) => fs.appendFileSync(clientFile(world), JSON.stringify({ at: Date.now(), ...rec }) + '\n');
+// The environment id the 2.1.332 profile's server printed (null before its
+// first start).
+const environmentOf = (world) => {
+  try { return fs.readFileSync(path.join(world.root, 'fake-environment-id'), 'utf8').trim(); } catch (e) { return null; }
+};
+const environmentAddress = (world) => (environmentOf(world) ? `https://claude.ai/code?environment=${environmentOf(world)}` : null);
+// A client opens an address (the server's own environment address unless
+// another is given) and, with text, sends a first message there afterMs
+// later (the page's sign-in check takes the owner a moment).
+function clientConnects(world, { url = environmentAddress(world), text = 'hello', afterMs = 500 } = {}) {
+  appendClient(world, { type: 'open', url });
+  if (text !== null) appendClient(world, { type: 'message', text, at: Date.now() + afterMs });
+}
+const clientRecord = (world) => readJsonLines(clientFile(world));
+// The client leaves (the page or the app closed): measured on 2.1.332, the
+// server prints nothing and the session stays until the server stops.
+const clientLeaves = (world) => appendClient(world, { type: 'leave' });
+// The bridge pointers under the Squire home's Claude Code config folder:
+// { file, mtimeMs, ...pointer }.
+function bridgePointers(world) {
+  const projects = path.join(configDir(world), 'projects');
+  if (!fs.existsSync(projects)) return [];
+  const out = [];
+  for (const name of fs.readdirSync(projects)) {
+    const file = path.join(projects, name, 'bridge-pointer.json');
+    try { out.push({ file, mtimeMs: fs.statSync(file).mtimeMs, ...JSON.parse(fs.readFileSync(file, 'utf8')) }); } catch (e) { /* none */ }
+  }
+  return out;
+}
+const sessionLog = (world) => {
+  try { return fs.readFileSync(path.join(world.home, 'logs', 'session.log'), 'utf8'); } catch (e) { return ''; }
+};
+// The two measured profiles, the second first: a case run under both meets
+// the lazy session before the eager one.
+const PROFILES = ['2.1.332', '2.1.319'];
 
 // ------------------------------------------------------------ the runner
 
@@ -564,4 +769,14 @@ module.exports = {
   nowSeconds,
   launchAgents,
   launchdHas,
+  PROFILES,
+  clientFile,
+  clientConnects,
+  clientRecord,
+  clientLeaves,
+  environmentOf,
+  environmentAddress,
+  bridgePointers,
+  sessionLog,
+  readJsonLines,
 };

@@ -65,8 +65,10 @@ const readSnapshot = (world) => (fs.existsSync(snapshotFile(world)) ? JSON.parse
 // The status line JSON Claude Code gives its status line command (statusline
 // page). rateLimits: { fiveHour: { used, resetsAt }, sevenDay: { ... } }, a
 // window left out is absent, and rateLimits null leaves rate_limits out (before
-// the first API response, or a plan without it).
-function statusInput(world, { rateLimits = null, context = 41, model = 'claude-opus-5-5', sessionId = 'job-status' } = {}) {
+// the first API response, or a plan without it). version is the Claude Code
+// that gives it: 2.1.319 by default, or the second measured profile, 2.1.332,
+// whose status line JSON is taken to have the same shape (not measured).
+function statusInput(world, { rateLimits = null, context = 41, model = 'claude-opus-5-5', sessionId = 'job-status', version = '2.1.319' } = {}) {
   const input = {
     cwd: world.owner,
     session_id: sessionId,
@@ -75,7 +77,7 @@ function statusInput(world, { rateLimits = null, context = 41, model = 'claude-o
     transcript_path: world.transcript,
     model: { id: model, display_name: 'Opus' },
     workspace: { current_dir: world.owner, project_dir: world.owner, added_dirs: [] },
-    version: '2.1.319',
+    version,
     output_style: { name: 'default' },
     cost: { total_cost_usd: 0.01234, total_duration_ms: 45000, total_api_duration_ms: 2300, total_lines_added: 156, total_lines_removed: 23 },
     context_window: {
