@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:13.053Z",
-  "updatedAt": "2026-11-09T15:01:48.091Z",
+  "updatedAt": "2026-11-27T15:10:23.163Z",
   "asA": "Squire owner",
   "iWant": "to set Squire up on my Mac from one download, one step at a time, without ever opening Terminal",
   "soThat": "I can install and start using my own assistant without technical help",
@@ -32,11 +32,11 @@
     },
     {
       "id": "AC-201-3",
-      "description": "Setting Squire up and using it for the first time work end to end on a fresh Mac.",
+      "description": "Setting Squire up and using it for the first time work end to end on a fresh Mac, with the Claude Code that Claude's installer serves that day.",
       "testable": true,
-      "given": "A fresh macOS user on a Mac that meets Squire's requirements, with a Claude Pro plan or above",
+      "given": "A fresh macOS user on a Mac that meets Squire's requirements, with a Claude Pro plan or above and whichever Claude Code version Claude's installer serves that day",
       "when": "The Squire owner runs the installer from the download and opens their Squire",
-      "then": "Every step passes without Terminal, and the Squire owner gets a first reply from their Squire.",
+      "then": "Every step passes without Terminal; once Squire's session server is live, set-up opens the address where the Squire owner's first message starts the session and says what to do there, including signing in again if Claude asks to check the device; and the Squire owner gets a first reply from their Squire, whether Claude Code makes the session when its server starts or when the owner first connects.",
       "verification": "testOnly"
     },
     {
@@ -82,6 +82,42 @@
       "given": "Squire set up, with its Claude sign-in due to end within seven days, and the day it ends readable without touching the sign-in's secret",
       "when": "Squire's background run checks the sign-in, and the Squire owner says yes to signing in again",
       "then": "Squire tells the owner through its own session, at most once a day, the day the sign-in ends and the one action to take; on the owner's yes it runs the sign-in again into Squire's own Claude Code configuration, opening the browser's sign-in page, with no Terminal and nothing else.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-9",
+      "description": "From the Squire owner's first click until set-up ends, a Squire window is always on screen, naming what set-up is doing now and showing how far it has got.",
+      "testable": true,
+      "given": "A Squire owner setting Squire up from the download, through every step, every wait, download and build, and every moment between steps: after the Claude sign-in returns from the browser, after naming, after the phone step, and while waiting for the session",
+      "when": "At any moment from the first click until set-up ends or pauses",
+      "then": "A Squire window is on screen within about 3 seconds of the first click and at every moment after, with no gap longer than about 3 seconds; each window names the current activity in plain words and shows progress as step N of M at least, and during a download shows an amount that visibly changes, such as megabytes so far, wherever the Mac's own windows can show it truthfully; every window for a step that can run longer than about 10 seconds also says in plain words how long it usually takes; opening Squire again during set-up brings that window to the front and starts nothing else; when set-up pauses or ends, the paused or closing window takes its place.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-10",
+      "description": "Every window set-up shows comes to the front when it opens, the one after the Claude sign-in included.",
+      "testable": true,
+      "given": "A Squire owner setting Squire up, with the browser or another app in front",
+      "when": "Set-up shows its next window",
+      "then": "The window opens in front of every other app's window, so the Squire owner sees it without looking for it; the window before the Claude sign-in tells the Squire owner to come back to Squire afterwards.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-11",
+      "description": "On an Apple silicon Mac, set-up installs the Apple silicon builds of what it downloads, even when macOS opens Squire under Rosetta.",
+      "testable": true,
+      "given": "A Squire owner setting Squire up on an Apple silicon Mac, with macOS opening Squire's app under Rosetta, or on an Intel Mac",
+      "when": "Set-up downloads and builds what Squire needs",
+      "then": "On Apple silicon every download is the Apple silicon build and what set-up builds or runs runs as Apple silicon; on an Intel Mac the Intel builds are taken.",
+      "verification": "testOnly"
+    },
+    {
+      "id": "AC-201-12",
+      "description": "When the Claude Code on the Mac is newer than the newest version this Squire release was tested with, the health check says so in one plain line.",
+      "testable": true,
+      "given": "Squire installed, with a Claude Code newer than the newest version its release was tested with",
+      "when": "The health check runs",
+      "then": "The health check shows one plain line naming both versions and saying this Squire has not yet been tested with the newer Claude Code; Squire keeps working, pins and installs nothing, and the line goes once Claude Code is at or below the tested version.",
       "verification": "testOnly"
     }
   ]
