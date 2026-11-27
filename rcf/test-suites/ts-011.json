@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-27T15:12:43.965Z",
+  "updatedAt": "2026-11-27T19:09:11.356Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -748,6 +748,27 @@
       "description": "a failed lay-down, its rollback and a failed check each leave their reason in update.log and the mark",
       "status": "pending",
       "testPointer": "tests/acceptance/updates-live-server.test.js::a failed lay-down, the rollback after it and a failed check each leave a line in update.log naming the reason, and the mark the owner sees with no session carries the reason"
+    },
+    {
+      "id": "TC-011-the-rollback-s-line-in-update-log-names",
+      "acId": "AC-1401-8",
+      "description": "the rollback's line in update.log names both versions and why it rolled back",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::the rollback after a failed lay-down or a failed check leaves its line in update.log naming both versions and why it rolled back"
+    },
+    {
+      "id": "TC-011-with-the-teardown-lag-alone-the-lay-down",
+      "acId": "AC-1401-8",
+      "description": "with the teardown lag alone the lay-down waits, tries again and installs",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::under Claude Code 2.1.319 alone, an install whose lay-down meets launchd still tearing down the agents it booted out (bootstrap failing for 3 seconds after each bootout) waits and tries again on its own, stays on the new release with nothing rolled back, and has every agent loaded"
+    },
+    {
+      "id": "TC-011-a-rollback-whose-own-check-passes-with",
+      "acId": "AC-1401-3",
+      "description": "a rollback whose own check passes with no session marks no failed rollback",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::an update whose check fails is rolled back with no one acting, and the rollback's own check passes on a live server and a clean health check with no session, under 2.1.332 with no client as under 2.1.319: the previous version runs, every agent loaded, and no failed rollback is marked"
     }
   ],
   "status": "draft"

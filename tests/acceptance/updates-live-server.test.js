@@ -109,12 +109,12 @@ test("an install whose lay-down meets a launchd teardown longer than the bound f
     const rw = await world(t, profile, { launchd: 'model' });
     const release = R.buildRelease(rw, { version: NEXT });
     stage(rw, release);
-    L.control(rw.launchdState, { control: 'lag', ms: 45000 });
+    L.control(rw.launchdState, { control: 'lag', ms: 45000, label: 'com.stravica.squire.backup' }); // one named agent lags, the others do not
     const { sent } = await R.installAtMac(rw, release, 'Install', { within: 900000 });
     L.control(rw.launchdState, { control: 'lag', ms: 0 });
     assert.equal(updated(sent, NEXT).length, 0, `${profile}: a teardown longer than the bound must fail the lay`);
-    const lines = updateLog(rw).split('\n').filter((l) => /com\.stravica\.squire\.[a-z-]+/.test(l) && l.includes(LAUNCHD_WORDS));
-    assert.ok(lines.length >= 1, `${profile}: update.log must name the agent launchd would not load and launchd's own words ("${LAUNCHD_WORDS}"); update.log: ${JSON.stringify(updateLog(rw))}`);
+    const lines = updateLog(rw).split('\n').filter((l) => l.includes('com.stravica.squire.backup') && l.includes(LAUNCHD_WORDS));
+    assert.ok(lines.length >= 1, `${profile}: update.log must name the agent launchd would not load (com.stravica.squire.backup, the one the world's launchd lags) and launchd's own words ("${LAUNCHD_WORDS}"); update.log: ${JSON.stringify(updateLog(rw))}`);
   });
 });
 
@@ -147,5 +147,72 @@ test('a failed lay-down, the rollback after it and a failed check each leave a l
     await R.installAtMac(rw, bad);
     const log = updateLog(rw);
     assert.ok(log.split('\n').some((l) => /check/i.test(l) && l.includes(NEXT) && /runner/i.test(l)), `${profile}: update.log must have a line for the failed check naming which part failed (the runner); update.log: ${JSON.stringify(log)}`);
+  });
+});
+
+// A rollback that goes well: the new release's runner exits at once, so its
+// check fails; the previous release is healthy, and its own check after the
+// rollback needs what the install's needs, a live server and a clean health
+// check, never a session (none exists under 2.1.332 with no client).
+test("an update whose check fails is rolled back with no one acting, and the rollback's own check passes on a live server and a clean health check with no session, under 2.1.332 with no client as under 2.1.319: the previous version runs, every agent loaded, and no failed rollback is marked", LONG, async (t) => {
+  await both(async (profile) => {
+    const rw = await world(t, profile, { launchd: 'model' });
+    const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
+    stage(rw, bad);
+    const { sent } = await R.installAtMac(rw, bad);
+    assert.ok(R.coreIs(rw, rw.appCore), `${profile}: the previous version's core must be laid down again, file for file; sent ${JSON.stringify(sent)}; update.log: ${JSON.stringify(updateLog(rw))}`);
+    assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 30000, 500), `${profile}: every agent is loaded after the rollback; loaded ${JSON.stringify(R.agentsLoaded(rw))}`);
+    assert.equal((R.updateRecord(rw) || {}).rollbackFailed, undefined,
+      `${profile}: the rollback's own check must pass on a live server and a clean health check, never waiting for a session, so no failed rollback is marked; update.json: ${JSON.stringify(R.updateRecord(rw))}; sent ${JSON.stringify(sent)}; update.log: ${JSON.stringify(updateLog(rw))}`);
+  });
+});
+
+// The lag alone: under Claude Code 2.1.319 the check after the install needs
+// nothing this round changes, so this case passes only by the lay-down's own
+// wait for launchd's teardown, whatever the check does under 2.1.332.
+test("under Claude Code 2.1.319 alone, an install whose lay-down meets launchd still tearing down the agents it booted out (bootstrap failing for 3 seconds after each bootout) waits and tries again on its own, stays on the new release with nothing rolled back, and has every agent loaded", LONG, async (t) => {
+  const profile = '2.1.319';
+  const rw = await world(t, profile, { launchd: 'model' });
+  const release = R.buildRelease(rw, { version: NEXT });
+  stage(rw, release);
+  const lag = L.control(rw.launchdState, { control: 'lag', ms: 3000 });
+  assert.equal(lag.code, 0, `the world's launchd must take the lag; got ${JSON.stringify(lag)}`);
+  const { sent } = await R.installAtMac(rw, release);
+  const bootstraps = R.launchdCalls(rw).filter((c) => c.argv[0] === 'bootstrap').map((c) => ({ plist: path.basename(c.argv[2] || ''), code: c.code }));
+  assert.deepEqual(rolledBack(sent), [], `${profile}: a bootstrap refused during the teardown must be waited for and tried again, so nothing is rolled back; sent ${JSON.stringify(sent)}; update.log: ${JSON.stringify(updateLog(rw))}; bootstraps: ${JSON.stringify(bootstraps)}`);
+  assert.equal(updated(sent, NEXT).length, 1, `${profile}: the install must pass and say so; sent ${JSON.stringify(sent)}`);
+  assert.ok(R.coreIs(rw, release), `${profile}: the installed core is the release's`);
+  assert.ok(await s.waitFor(() => R.agentsLoaded(rw).length === R.AGENT_LABELS.length, 30000, 500), `${profile}: every agent is loaded after the install; loaded ${JSON.stringify(R.agentsLoaded(rw))}`);
+});
+
+// The rollback's own line says why it rolled back: after a lay-down that
+// fails for a reason of its own (Squire's Claude Code config folder cannot be
+// written, as above) and after a check that fails (the new release's runner
+// exits at once). The words accepted for the reason: the system's own words
+// for the lay-down (Permission denied, on claude-config), and the check with
+// the part that failed (the runner).
+test('the rollback after a failed lay-down or a failed check leaves its line in update.log naming both versions and why it rolled back', LONG, async (t) => {
+  const rollbackLine = (log, why) => log.split('\n').some((l) => /roll/i.test(l) && l.includes(NEXT) && l.includes(R.INSTALLED) && why(l));
+  await both(async (profile) => {
+    const rw = await world(t, profile, { launchd: 'model' });
+    const release = R.buildRelease(rw, { version: NEXT });
+    stage(rw, release);
+    const config = path.join(rw.home, 'claude-config');
+    fs.chmodSync(config, 0o500);
+    t.after(() => { try { fs.chmodSync(config, 0o700); } catch (e) { /* gone */ } });
+    await R.installAtMac(rw, release);
+    fs.chmodSync(config, 0o700);
+    const log = updateLog(rw);
+    assert.ok(rollbackLine(log, (l) => /Permission denied/.test(l) && l.includes('claude-config')),
+      `${profile}: update.log's line for the rollback must name both versions and why it rolled back (the failed lay-down: permission denied on claude-config); update.log: ${JSON.stringify(log)}`);
+  });
+  await both(async (profile) => {
+    const rw = await world(t, profile);
+    const bad = R.buildRelease(rw, { version: NEXT, shape: 'runnerExits' });
+    stage(rw, bad);
+    await R.installAtMac(rw, bad);
+    const log = updateLog(rw);
+    assert.ok(rollbackLine(log, (l) => /check/i.test(l) && /runner/i.test(l)),
+      `${profile}: update.log's line for the rollback must name both versions and why it rolled back (the failed check: the runner); update.log: ${JSON.stringify(log)}`);
   });
 });
