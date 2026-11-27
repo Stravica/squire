@@ -13,7 +13,29 @@
 //   sw_vers, sysctl, id      the Mac's version, memory and the user's groups
 //   xcode-select             Apple's command line tools: present or absent,
 //                            and what --install does (installs, or keeps
-//                            reporting that it is still installing)
+//                            reporting that it is still installing, or,
+//                            when a case sets toolsInstall 'installsAfter',
+//                            installs toolsInstallMs after it was asked, 10
+//                            seconds unless the case says, while xcode-select
+//                            -p answers absent; a world model of Apple's
+//                            installer taking some seconds, not a measured
+//                            time)
+//   xcrun, swiftc            only when a case makes the world with
+//                            mac.speechBuild ({ ms }): an xcrun that answers
+//                            --find swiftc with a fake swiftc in the tools
+//                            folder and knows no SDK, and that swiftc, which
+//                            records its arguments and the architecture the
+//                            world says it runs as (as the fake arch and
+//                            sysctl model it: under 'translated', x86_64
+//                            until arch -arm64 has run, then arm64; under an
+//                            Intel cpu, x86_64; with no cpu set,
+//                            'unmodelled'), takes ms (4 seconds unless the
+//                            case says), then writes a stand-in file where -o
+//                            names and records its end. Without the option
+//                            neither exists and the world's xcrun stays the
+//                            Mac's own link, as before. A world model, not a
+//                            measured build; no case reaches the Mac's own
+//                            Apple tools through it
 //   curl                     the download of Claude Code's installer, which
 //                            serves a fake installer (or fails, times out, is
 //                            cut short, finds no network, or is slow); and
@@ -265,7 +287,10 @@ process.stdout.write(mac().groups + '\\n');
   'xcode-select': `
 const m = mac();
 const marker = ${JSON.stringify('TOOLS_MARKER')};
-const present = () => m.toolsPresent || fs.existsSync(marker);
+// The marker holds the moment the tools are there: at once for 'installs',
+// later for 'installsAfter'.
+const readyAt = () => { try { return Number(fs.readFileSync(marker, 'utf8')) || 0; } catch (e) { return 0; } };
+const present = () => m.toolsPresent || (fs.existsSync(marker) && !(readyAt() > Date.now()));
 record({ present: present() });
 if (argv.includes('-p') || argv.includes('--print-path')) {
   if (present()) { process.stdout.write(${JSON.stringify('TOOLS_DIR')} + '\\n'); process.exit(0); }
@@ -275,6 +300,7 @@ if (argv.includes('-p') || argv.includes('--print-path')) {
 if (argv.includes('--install')) {
   if (present()) { process.stderr.write('xcode-select: error: command line tools are already installed, use "Software Update" in System Settings to install updates\\n'); process.exit(1); }
   if (m.toolsInstall === 'installs') fs.writeFileSync(marker, String(Date.now()));
+  else if (m.toolsInstall === 'installsAfter') fs.writeFileSync(marker, String(Date.now() + (Number(m.toolsInstallMs) || 10000)));
   process.stdout.write('xcode-select: note: install requested for command line developer tools\\n');
   process.exit(0);
 }
@@ -393,6 +419,34 @@ process.exit(0);
 `,
 };
 
+// Apple's xcrun and swiftc for the speech helper's build, laid only in a world
+// made with mac.speechBuild: xcrun at its system path, swiftc in the tools
+// folder xcode-select -p names.
+const SPEECH_FAKES = {
+  xcrun: `
+const how = mac().speechBuild;
+record({ speechBuild: Boolean(how) });
+if (how && argv[0] === '--find' && argv[1] === 'swiftc') { process.stdout.write(${JSON.stringify('SWIFTC')} + '\\n'); process.exit(0); }
+if (how && argv.includes('--sdk')) { process.stderr.write('xcrun: error: SDK "macosx" cannot be located\\n'); process.exit(1); }
+process.stderr.write('xcrun: error: unable to find utility "' + (argv[argv.length - 1] || '') + '", not a developer tool or in PATH\\n');
+process.exit(72);
+`,
+  swiftc: `
+const how = mac().speechBuild || {};
+const cpu = mac().cpu || null;
+const native = fs.existsSync(${JSON.stringify('ARCH_MARKER')});
+const runsAs = cpu === 'translated' ? (native ? 'arm64' : 'x86_64') : (cpu === 'intel' || cpu === 'intel-unreadable') ? 'x86_64' : 'unmodelled';
+record({ runsAs, cpu });
+const o = argv.indexOf('-o');
+const out = o >= 0 ? argv[o + 1] : null;
+setTimeout(() => {
+  if (out) { fs.writeFileSync(out, '#!/bin/sh\\necho "a stand-in for the speech helper, built by the test world"\\n'); fs.chmodSync(out, 0o755); }
+  record({ ended: true, runsAs, cpu });
+  process.exit(0);
+}, Number(how.ms) || 4000);
+`,
+};
+
 // The fake Claude Code the fake installer lays down.
 function fakeClaudeCodeScript(iw, inner) {
   return `#!${process.execPath}
@@ -505,7 +559,7 @@ fs.writeFileSync(file, JSON.stringify(data, null, 2));
 const SYSTEM_FOLDERS = ['usr/bin', 'bin', 'usr/sbin', 'sbin'];
 const FAKE_PLACES = {
   sw_vers: 'usr/bin', sysctl: 'usr/sbin', id: 'usr/bin', 'xcode-select': 'usr/bin', curl: 'usr/bin', osascript: 'usr/bin', open: 'usr/bin',
-  uname: 'usr/bin', arch: 'usr/bin',
+  uname: 'usr/bin', arch: 'usr/bin', xcrun: 'usr/bin',
 };
 
 // A world's launchctl unless the world gives its own (the launchd model's):
@@ -651,6 +705,14 @@ function makeInstallerWorld(t, { mac = {}, claude = {}, profile = '2.1.319' } = 
       .replaceAll('"DIALOGS_FILE"', JSON.stringify(iw.dialogsFile))
       .replaceAll('"ARCH_MARKER"', JSON.stringify(iw.archMarker))
       .replaceAll('"CLIENT_FILE"', JSON.stringify(iw.clientFile));
+  }
+  // The speech helper's build, only when the case asks for it.
+  if (mac.speechBuild) {
+    iw.swiftc = path.join(iw.toolsDir, 'usr', 'bin', 'swiftc');
+    fakes[`${FAKE_PLACES.xcrun}/xcrun`] = (fakeHeader(iw, 'xcrun') + SPEECH_FAKES.xcrun).replaceAll('"SWIFTC"', JSON.stringify(iw.swiftc));
+    fs.mkdirSync(path.dirname(iw.swiftc), { recursive: true });
+    fs.writeFileSync(iw.swiftc, (fakeHeader(iw, 'swiftc') + SPEECH_FAKES.swiftc).replaceAll('"ARCH_MARKER"', JSON.stringify(iw.archMarker)));
+    fs.chmodSync(iw.swiftc, 0o755);
   }
   makeSystemRoot(iw.system, fakes);
   // The fake session (session-world.js), which the fake Claude Code's

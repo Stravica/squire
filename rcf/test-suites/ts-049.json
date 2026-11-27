@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-27T15:12:39.041Z",
-  "updatedAt": "2026-11-27T15:12:46.604Z",
+  "updatedAt": "2026-11-27T19:03:43.155Z",
   "purpose": "Opens set-up's app as Finder would and reads every window it shows, with its script and the moments it opened and closed, to check that a Squire window naming the current activity and step N of M is on screen at every moment from the first click to the end, says how long a long step usually takes, comes to the front, and that set-up takes the Apple silicon builds on Apple silicon even under Rosetta and the Intel builds on an Intel Mac.",
   "testLevel": "integration",
   "acIds": [
@@ -74,6 +74,27 @@
       "description": "on an Intel Mac set-up takes the Intel builds",
       "status": "pending",
       "testPointer": "tests/acceptance/set-up-windows.test.js::on an Intel Mac, whether macOS answers it is not translated or cannot answer at all, set-up takes the Intel builds and never asks for Apple silicon"
+    },
+    {
+      "id": "TC-049-a-squire-window-stays-on-screen-while",
+      "acId": "AC-201-9",
+      "description": "a Squire window stays on screen while Apple's tools install, none drawn again until they are done",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::while Apple's own tools install, over the seconds they take, a Squire window is on screen at every moment and none is drawn again until they are done"
+    },
+    {
+      "id": "TC-049-a-squire-window-naming-the-speech-helper",
+      "acId": "AC-201-9",
+      "description": "a Squire window naming the speech helper is on screen for its whole build",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::while set-up builds the speech helper on a Mac that can build it, a Squire window naming the speech helper is on screen for the whole build"
+    },
+    {
+      "id": "TC-049-under-rosetta-on-apple-silicon-the",
+      "acId": "AC-201-11",
+      "description": "under Rosetta on Apple silicon the speech helper is built for Apple silicon",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::under Rosetta on an Apple silicon Mac, the speech helper set-up builds is an Apple silicon build"
     }
   ],
   "status": "draft"

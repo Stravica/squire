@@ -236,3 +236,47 @@ test('on an Intel Mac, whether macOS answers it is not translated or cannot answ
     assert.deepEqual(callsAt(iw, (c) => c.cmd === 'arch' && c.argv[0] === '-arm64'), [], `${cpu}: an Intel Mac is never asked to run Apple silicon`);
   }
 });
+
+// Apple's own tools take some seconds here (the world's toolsInstall
+// 'installsAfter'): its window is up for all of them, so set-up's window
+// stays on screen under it, drawn before and not drawn again until they are
+// done.
+test("while Apple's own tools install, over the seconds they take, a Squire window is on screen at every moment and none is drawn again until they are done", LONG, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { toolsPresent: false, toolsInstall: 'installsAfter', toolsInstallMs: 6000 } });
+  const { run, timeline } = await setUp(iw);
+  const tools = callsAt(iw, (c) => c.cmd === 'xcode-select' && c.argv.includes('--install'))[0];
+  const toolsDone = tools ? callsAt(iw, (c) => c.cmd === 'xcode-select' && c.at > tools.at && c.present === true)[0] : null;
+  assert.ok(tools && toolsDone && toolsDone.at - tools.at >= 5000,
+    `set-up must ask for Apple's tools and see them installed some seconds later (the world's take 6 seconds); asked ${JSON.stringify(tools)}, seen ${JSON.stringify(toolsDone)}; ${I.describeRun(run)}`);
+  const drawn = timeline.filter((x) => x.opened > tools.at + 200 && x.opened < toolsDone.at - 200);
+  assert.deepEqual(drawn.map((x) => x.title), [], `no window may be drawn while Apple's own tools window is up; drawn: ${show(drawn)}`);
+  assertNoGap(timeline, tools.at, toolsDone.at, `while Apple's own tools install, for the ${toolsDone.at - tools.at} ms they took`);
+});
+
+// The speech helper's build, on a Mac that can build it (macOS 26 and Apple's
+// tools): the world's swiftc takes 4 seconds (mac.speechBuild).
+test('while set-up builds the speech helper on a Mac that can build it, a Squire window naming the speech helper is on screen for the whole build', LONG, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { macos: '26.1', speechBuild: { ms: 4000 } } });
+  const { run, timeline } = await setUp(iw);
+  const build = callsAt(iw, (c) => c.cmd === 'swiftc' && !c.ended)[0];
+  const built = build ? callsAt(iw, (c) => c.cmd === 'swiftc' && c.ended && c.pid === build.pid)[0] : null;
+  assert.ok(build && built, `set-up must build the speech helper on macOS 26 with Apple's tools (the world's swiftc); calls: ${JSON.stringify(callsAt(iw, (c) => ['xcrun', 'swiftc'].includes(c.cmd)))}; ${I.describeRun(run)}`);
+  const up = I.windowsAt(timeline, build.at + 500);
+  assert.ok(up.some((x) => /speech/i.test(x.text)), `while the speech helper builds, the window on screen must name what set-up is doing (the speech helper); on screen: ${show(up)}`);
+  assertNoGap(timeline, build.at, built.at, 'while the speech helper builds');
+});
+
+// The evidence of an Apple silicon build this case accepts: an arm64 target
+// in swiftc's arguments (-target arm64-..., or -arch arm64), or swiftc run
+// as Apple silicon, as the world records it once set-up has run itself again
+// through arch -arm64 (installer-world.js: swiftc's runsAs).
+test('under Rosetta on an Apple silicon Mac, the speech helper set-up builds is an Apple silicon build', LONG, async (t) => {
+  const iw = I.makeInstallerWorld(t, { mac: { cpu: 'translated', macos: '26.1', speechBuild: { ms: 1000 } } });
+  const { run } = await setUp(iw);
+  const builds = callsAt(iw, (c) => c.cmd === 'swiftc' && !c.ended);
+  assert.ok(builds.length >= 1, `set-up must build the speech helper on macOS 26 with Apple's tools (the world's swiftc); calls: ${JSON.stringify(callsAt(iw, (c) => ['xcrun', 'swiftc', 'arch'].includes(c.cmd)))}; ${I.describeRun(run)}`);
+  const targetsArm64 = (argv) => argv.some((a, i) => ((a === '-target' && /^arm64-/.test(argv[i + 1] || '')) || /^-target=arm64-/.test(a) || (a === '-arch' && argv[i + 1] === 'arm64')));
+  const intel = builds.filter((c) => !(c.runsAs === 'arm64' || targetsArm64(c.argv)));
+  assert.deepEqual(intel.map((c) => ({ runsAs: c.runsAs, argv: c.argv })), [],
+    'under Rosetta on Apple silicon the speech helper must be built for Apple silicon: an arm64 target in swiftc\'s arguments, or swiftc run as Apple silicon once set-up has run itself again through arch -arm64');
+});
