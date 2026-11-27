@@ -3,11 +3,13 @@
   "path": "installer/Squire.app/Contents/MacOS/Squire#sq_main",
   "implementsAcIds": [
     "AC-201-1",
-    "AC-201-3"
+    "AC-201-3",
+    "AC-201-9",
+    "AC-201-11"
   ],
   "dependencies": [],
   "version": "0.1.0",
   "status": "draft",
   "createdAt": "2026-11-09T16:41:59.466Z",
-  "updatedAt": "2026-11-09T16:41:59.466Z"
+  "updatedAt": "2026-11-27T22:47:55.451Z"
 }

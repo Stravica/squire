@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -58,22 +59,33 @@ class Windows:
     work goes on, with one Hide button, as Squire Update's is: the next one is
     opened before the last is closed, and the paused or closing window takes
     its place, opened first, so no moment passes with no window. Hide only
-    hides it; it never answers anything."""
+    hides it; it never answers anything. Every window comes to the front when
+    it opens (activate first in its script).
+
+    The words of a progress window, as it opens, or of a window taking its
+    place, once drawn, are kept in the now file (set-up-now.txt in the Squire
+    home), with the address set-up opened on a second line where there is
+    one: the app's own half reads it to hand its last window over a second
+    later, and Squire opened again during set-up reads it to name the step."""
 
     WITHIN = 3600
     # A window is counted drawn a second after its osascript starts: the one
-    # it replaces stays up that long, so both are on screen for a moment.
+    # it replaces stays up that long, so both are on screen for a moment,
+    # while the work goes on.
     DRAWN = 1.0
     CLOSE_WITHIN = 2
 
-    def __init__(self, log):
+    def __init__(self, log, now=None):
         self.log = log
+        self.now = now
         self.up = None
+        self.pending = []
 
     @staticmethod
     def script(buttons, default, answer):
         listed = '{' + ', '.join(json.dumps(b) for b in buttons) + '}'
         return ['on run argv',
+                'activate',
                 'display dialog (item 2 of argv) with title (item 1 of argv)'
                 + (' default answer ""' if answer else '')
                 + f' buttons {listed} default button {json.dumps(default or buttons[-1])}',
@@ -94,8 +106,10 @@ class Windows:
         except OSError as e:
             self.log(f'window "{title}" could not be shown ({type(e).__name__})')
             return None
-        if takes_place and self.up is not None:
+        if takes_place:
             time.sleep(self.DRAWN)
+            self.settle()
+            self.keep_now(text)
             self.close_progress()
         try:
             out, _ = shown.communicate(timeout=self.WITHIN)
@@ -110,10 +124,10 @@ class Windows:
         out = out.decode('utf-8', 'replace')
         return out[:-1] if out.endswith('\n') else out
 
-    def progress(self, text):
+    def progress(self, text, address=None):
         """The progress window naming what set-up does now, left up while the
-        work goes on; set-up goes on once it is drawn, and the one up before
-        it closes then."""
+        work goes on, its words kept at once. The work goes on at once too;
+        once the window is counted drawn, the one up before it closes."""
         try:
             shown = subprocess.Popen(self.args(TITLES['progress'], text, ('Hide',), 'Hide', False), cwd='/',
                                      env=System.env(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -122,11 +136,52 @@ class Windows:
             self.log(f'window "{TITLES["progress"]}" could not be shown ({type(e).__name__})')
             return
         before, self.up = self.up, shown
-        time.sleep(self.DRAWN)
-        if before is not None:
-            self.close(before)
+        self.keep_now(text, address)
+        once = threading.Lock()
+
+        def drawn():
+            # Run once only: by the timer, or by settle, whichever comes first.
+            if not once.acquire(blocking=False):
+                return
+            if before is not None:
+                self.close(before)
+
+        later = threading.Timer(self.DRAWN, drawn)
+        later.daemon = True
+        self.pending.append((later, drawn))
+        later.start()
+
+    def settle(self):
+        """Every hand-over still waiting for its window to be counted drawn
+        is done now: the window before it closed."""
+        while self.pending:
+            later, drawn = self.pending.pop(0)
+            later.cancel()
+            later.join()
+            drawn()
+
+    def keep_now(self, text, address=None):
+        """The words on screen now, and the address set-up opened where there
+        is one, written whole to the now file; never a pause."""
+        if not self.now:
+            return
+        lines = [' '.join(str(text).split())] + ([address] if address else [])
+        try:
+            fd, tmp = tempfile.mkstemp(prefix='.set-up-now-', dir=os.path.dirname(self.now))
+        except OSError:
+            return
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines) + '\n')
+            os.replace(tmp, self.now)
+        except OSError:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
     def close_progress(self):
+        self.settle()
         before, self.up = self.up, None
         if before is not None:
             self.close(before)
@@ -214,7 +269,7 @@ class SetUp:
         self.owner = os.path.join(self.user_home, 'Squire')
         self.release = os.path.join(self.home, 'release', 'core')
         self.record = SetUpRecord(self.home)
-        self.windows = Windows(self.log)
+        self.windows = Windows(self.log, os.path.join(self.home, 'set-up-now.txt'))
         self.python = System.command('/usr/bin/python3')
         self.ready_lines = []
 
@@ -266,6 +321,7 @@ class SetUp:
                 continue
             if done and step != 'health' and self.holds(step) and not (step == 'layDown' and self.update_app_missing()):
                 continue
+            self.windows.progress(self.step_words(step))
             try:
                 getattr(self, 'step_' + step[0].lower() + re.sub(r'([A-Z])', lambda m: '_' + m.group(1).lower(), step[1:]))()
                 if not self.holds(step):
@@ -277,6 +333,29 @@ class SetUp:
             if not done:
                 self.record.save(done=list(STEPS[:index + 1]))
             self.log(f'{step} done')
+
+    # What the progress window says for each of these steps: every step that
+    # can run longer than about 10 seconds says how long it usually takes.
+    DOING = {
+        'naming': 'naming your Squire. Give it a name and a personality in the windows in front.',
+        'ownerFolder': 'making your Squire folder, ~/Squire, and Squire\'s settings.',
+        'layDown': 'installing Squire\'s own parts and its five background jobs. This usually takes under a minute.',
+        'backup': 'setting up the nightly backup of ~/Squire. This usually takes under a minute.',
+        'health': 'checking that everything set-up laid down works. This usually takes under a minute.',
+        'phone': 'your phone.',
+        'firstConversation': 'starting your Squire\'s session. Squire waits for its session server to start working; '
+                             'this usually takes under a minute.',
+    }
+
+    @classmethod
+    def step_words(cls, step, doing=None):
+        """Step N of M, counted over every step of set-up, both halves, and
+        what it does now."""
+        return f'{cls.step_of(step)}: {doing or cls.DOING[step]}'
+
+    @staticmethod
+    def step_of(step):
+        return f'Step {STEPS.index(step) + 1} of {len(STEPS)}'
 
     @staticmethod
     def plain(step):
@@ -406,7 +485,7 @@ class SetUp:
                                  'Describe the personality you would like your Squire to have, in up to 400 characters.')):
             text = ask
             while True:
-                answer = self.windows.typed(title, text)
+                answer = self.windows.typed(title, f'{self.step_of("naming")}: {text}')
                 if answer is None:
                     raise Paused('Set-up stopped at naming your Squire: the window closed without an answer. '
                                  'Open Squire again to carry on from there.')
@@ -522,6 +601,11 @@ class SetUp:
         from speech import SpeechHelper
 
         try:
+            # A Mac that can build it gets the window naming the build first.
+            if not SpeechHelper.ready(self.home) and SpeechHelper.why_not()[2] is None:
+                self.windows.progress(self.step_words('layDown', 'building Squire\'s speech helper, which turns your '
+                                                                 'voice notes into text on this Mac. This usually takes '
+                                                                 'a minute or two.'))
             built, why = SpeechHelper.find(self.home)
         except OSError as e:
             built, why = None, e.strerror or type(e).__name__
@@ -598,7 +682,7 @@ class SetUp:
 
     def step_phone(self):
         self.windows.button(TITLES['phone'],
-                            'Talk to your Squire from your phone too: install the Claude app from the App Store, and sign '
+                            f'{self.step_of("phone")}: talk to your Squire from your phone too: install the Claude app from the App Store, and sign '
                             'in with the same Claude account you used for Squire. Your Squire then shows in the app. '
                             'You can do this later.', ('Later', 'Done'), 'Done')
 
@@ -634,7 +718,7 @@ class SetUp:
         session = identity is not None and identity.check(None)[0] == 'ok'
         within = self.first_message_within()
         if not session:
-            self.windows.progress(self.waiting_text(within))
+            self.windows.progress(self.waiting_text(within), self.address)
         self.open_address()
         if session:
             return

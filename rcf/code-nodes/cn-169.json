@@ -2,11 +2,12 @@
   "cnId": "CN-169",
   "path": "installer/Squire.app/Contents/MacOS/Squire#sq_browser_parts",
   "implementsAcIds": [
-    "AC-1901-5"
+    "AC-1901-5",
+    "AC-201-11"
   ],
   "dependencies": [],
   "version": "0.1.0",
   "status": "draft",
   "createdAt": "2026-11-19T19:12:23.204Z",
-  "updatedAt": "2026-11-19T19:12:23.204Z"
+  "updatedAt": "2026-11-27T22:47:58.882Z"
 }
