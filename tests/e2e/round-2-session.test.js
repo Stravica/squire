@@ -23,16 +23,21 @@
 // What is observed (no surface outside a running session lists an
 // account's Remote Control sessions): Squire's runner agent loaded, one
 // session record whose process is alive and listens on the record's socket,
-// one Remote Control server, and the server's own connected state in
-// logs/session.log in the Squire home. A session is back after an event when
-// its record was written after the event and the process the record names is
-// alive and is the one listening on the record's socket (the peer process id
-// macOS reports for a local socket). Connected or Reconnected is the
-// connected word; Reconnecting or disconnected after the last of them is a
-// disconnection line (the design record's words, from Claude Code's own); a
-// "·" alone, the banner and the session's name line never count. The listing
-// in the Claude app on the phone, and putting the target to sleep or closing
-// its lid, are by-hand steps of the release Verify.
+// one Remote Control server, and that server live by evidence (the design
+// record's rule): its process running and either its bridge pointer
+// (claude-config/projects/<folder>/bridge-pointer.json in the Squire home,
+// naming its pid) written after the event, or the session record written
+// after it; Connected or Reconnected in logs/session.log with no
+// disconnection line after it is a fast path, never needed alone; Ready, a
+// "·" alone, the banner and the session's name line never count. A session
+// is back after an event when its record was written after the event and the
+// process the record names is alive and is the one listening on the record's
+// socket (the peer process id macOS reports for a local socket). Under Claude
+// Code 2.1.332 the server makes no session until a client's first message, so
+// after each event the person running the release Verify sends a message to
+// Squire from the Claude app once the server is live. That message, the
+// listing in the Claude app on the phone, and putting the target to sleep or
+// closing its lid, are by-hand steps of the release Verify.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -46,6 +51,9 @@ const HOME_ON_TARGET = '"${SQUIRE_HOME:-$HOME/Library/Application Support/Squire
 const SKIP = TARGET ? false : 'external: needs a target host (SQUIRE_TARGET_HOST, an SSH destination, or RCF_TARGET_URL)';
 const TWO_MINUTES = 120000;
 const WAKE_WAIT_MINUTES = 15;
+// How long a by-hand first message from the Claude app is waited for, once
+// the server is live again.
+const MESSAGE_WAIT_MINUTES = 10;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -117,6 +125,17 @@ for r in records:
         finally:
             sk.close()
 out['records'] = records
+# Each bridge pointer Claude Code wrote under Squire's config folder: the pid
+# it names and when it was written.
+pointers = []
+for f in sorted(glob.glob(os.path.join(home, 'claude-config', 'projects', '*', 'bridge-pointer.json'))):
+    try:
+        with open(f) as fh:
+            p = json.load(fh)
+        pointers.append({'pid': p.get('pid') if isinstance(p.get('pid'), int) else None, 'writtenAt': os.path.getmtime(f)})
+    except Exception:
+        continue
+out['pointers'] = pointers
 ps = subprocess.run(['/bin/ps', '-x', '-o', 'pid=,ppid=,command='], capture_output=True, text=True).stdout
 out['servers'] = [{'pid': int(l.split()[0]), 'ppid': int(l.split()[1])} for l in ps.splitlines()
                   if ' remote-control' in l and '--spawn' in l]
@@ -139,9 +158,11 @@ function look(offset = 0) {
 }
 
 // A disconnection line, in the design record's words (taken from Claude
-// Code 2.1.319's own strings).
+// Code 2.1.319's own strings; that 2.1.332 prints the same on a network drop
+// is not measured).
 const DISCONNECTION = /\b(reconnecting|disconnected)\b/i;
-// The connected word: Connected or Reconnected, each a whole word.
+// The connected word: Connected or Reconnected, each a whole word, a fast
+// path to live only.
 const CONNECTED = /\b(?:Connected|Reconnected)\b/g;
 
 // The last Connected or Reconnected in this output, with no disconnection
@@ -151,6 +172,17 @@ function connectedIn(text) {
   for (const m of text.matchAll(CONNECTED)) after = m.index + m[0].length;
   return after >= 0 && !DISCONNECTION.test(text.slice(after));
 }
+
+// A running server's bridge pointer, naming its pid, written after since
+// (the target's clock, in seconds).
+const pointerSince = (state, since) => state.pointers.some((p) => p.writtenAt > since && state.servers.some((x) => x.pid === p.pid));
+
+// The one server live by evidence since the event: its bridge pointer naming
+// it written after the event, or the one record written after it; or, the
+// fast path, the connected word since the event with no disconnection line
+// after it. Ready and the banner never count.
+const liveSince = (state, since) => state.servers.length === 1
+  && (pointerSince(state, since) || liveRecordSince(state, since) || connectedIn(state.logSince));
 
 const socketAccepts = (state) => state.records.length === 1 && state.records[0].socketAccepts === true;
 
@@ -176,23 +208,39 @@ function assertRunning(state, what) {
   assert.equal(state.servers.length, 1, `${what}: exactly one Remote Control server must run; found ${JSON.stringify(state.servers)}`);
 }
 
-// Within two minutes of an event, exactly one session runs again: one record,
-// written after the event, its process alive and new and the one listening on
-// the record's socket, one server, and the server's connected word written
-// after the event with no disconnection line after it.
-async function assertBackWithinTwoMinutes(before, what) {
+// Within two minutes of an event, exactly one server runs again, live by
+// evidence since the event, whatever words it printed; then exactly one
+// session: one record, written after the event, its process alive and new and
+// the one listening on the record's socket. Under 2.1.319 the server makes the
+// session at its start; under 2.1.332 on the first message the person sends
+// from the Claude app once the server is live (a by-hand step).
+async function assertBackWithinTwoMinutes(t, before, what) {
   const oldPid = before.records[0] && before.records[0].pid;
   const end = Date.now() + TWO_MINUTES;
   let state;
   for (;;) {
     state = look(before.logSize);
-    const live = state.records.filter((r) => r.alive);
-    if (state.records.length === 1 && live.length === 1 && live[0].pid !== oldPid && state.servers.length === 1
-      && liveRecordSince(state, before.now) && connectedIn(state.logSince)) return state;
-    if (Date.now() >= end) break;
+    if (liveSince(state, before.now)) break;
+    if (Date.now() >= end) {
+      assert.fail(`${what}: within two minutes exactly one Remote Control server must be running again and live by evidence (its bridge pointer naming its pid written after the event, a session record written after it, or Connected or Reconnected since the event with no disconnection line after it), never by Ready or the banner; ` +
+        `pointers ${JSON.stringify(state.pointers)}, records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
+    }
     await sleep(5000);
   }
-  assert.fail(`${what}: within two minutes exactly one Squire session must be running again, registered and connected (a session record written after the event whose process is alive and listens on its socket, Connected or Reconnected since the event, no disconnection line after it); ` +
+  const back = () => {
+    const live = state.records.filter((r) => r.alive);
+    return state.records.length === 1 && live.length === 1 && live[0].pid !== oldPid && state.servers.length === 1 && liveRecordSince(state, before.now);
+  };
+  if (back()) return state;
+  t.diagnostic(`${what}: the server is live; send a message to Squire from the Claude app now; waiting up to ${MESSAGE_WAIT_MINUTES} minutes`);
+  const byHand = Date.now() + MESSAGE_WAIT_MINUTES * 60000;
+  for (;;) {
+    await sleep(5000);
+    state = look(before.logSize);
+    if (back()) return state;
+    if (Date.now() >= byHand) break;
+  }
+  assert.fail(`${what}: once the server is live and a message is sent from the Claude app, exactly one Squire session must be running again (a session record written after the event whose process is alive and listens on its socket); ` +
     `records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
 }
 
@@ -206,13 +254,13 @@ test('the session restarted and then crashed is back within two minutes each tim
   // Restart: Squire's runner stopped and started again by launchd.
   let r = onTarget(`/bin/launchctl kickstart -k gui/$(/usr/bin/id -u)/${label}`);
   assert.equal(r.status, 0, `restarting Squire's runner on the target must succeed; got ${r.status} ${r.stderr}`);
-  const afterRestart = await assertBackWithinTwoMinutes(first, 'after a restart');
+  const afterRestart = await assertBackWithinTwoMinutes(t, first, 'after a restart');
 
   // Crash: the server killed outright.
   const server = afterRestart.servers[0].pid;
   r = onTarget(`/bin/kill -9 ${server}`);
   assert.equal(r.status, 0, `killing the server on the target must succeed; got ${r.status} ${r.stderr}`);
-  const afterCrash = await assertBackWithinTwoMinutes(afterRestart, 'after a crash');
+  const afterCrash = await assertBackWithinTwoMinutes(t, afterRestart, 'after a crash');
   assert.ok(!afterCrash.servers.some((s) => s.pid === server), 'the killed server must not be counted as running');
 
   // A wake-up fired at the restarted session arrives.
@@ -258,17 +306,17 @@ test('after the target sleeps or its lid is closed and it wakes, within two minu
   for (;;) {
     state = look(first.logSize);
     const live = state.records.filter((r) => r.alive);
-    // Connected again after the wake with no disconnection line after it, or
-    // the Connected from before the sleep standing with no disconnection line
-    // logged since (a quiet, connected server prints nothing new); either way
-    // the record's socket accepts a connection. Text from before the sleep
-    // alone never passes.
-    const connected = socketAccepts(state)
-      && (connectedIn(state.logSince) || (connectedIn(state.logTail) && !DISCONNECTION.test(state.logSince)));
+    // Live by evidence after the wake, or its evidence from before the sleep
+    // standing (its bridge pointer naming the running server, or the
+    // Connected from before with no disconnection line logged since: a quiet,
+    // live server prints nothing new); either way the record's socket accepts
+    // a connection. Text from before the sleep alone never passes.
+    const stands = pointerSince(state, 0) || (connectedIn(state.logTail) && !DISCONNECTION.test(state.logSince));
+    const connected = socketAccepts(state) && (liveSince(state, woke / 1000) || stands);
     if (state.records.length === 1 && live.length === 1 && state.servers.length === 1 && connected) break;
     if (Date.now() >= deadline) {
-      assert.fail(`within two minutes of the wake exactly one Squire session must be running and connected (Connected with no disconnection line after it, the record's socket accepting a connection), so the Squire owner can reach it; ` +
-        `records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
+      assert.fail(`within two minutes of the wake exactly one Squire session must be running and its server live by evidence (its bridge pointer, the record, or Connected with no disconnection line after it; the record's socket accepting a connection), so the Squire owner can reach it; ` +
+        `pointers ${JSON.stringify(state.pointers)}, records ${JSON.stringify(state.records)}, servers ${JSON.stringify(state.servers)}, server output since: ${JSON.stringify(state.logSince.slice(-600))}`);
     }
     await sleep(5000);
   }

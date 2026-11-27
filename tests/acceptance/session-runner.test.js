@@ -180,7 +180,8 @@ test('the runner starts one Remote Control server in the owner folder in single-
   assert.equal(fs.realpathSync(call.cwd), fs.realpathSync(world.owner), 'the session\'s working folder must be the owner\'s folder');
 
   // The server's own output, its registration and connected state, is kept
-  // in the Squire home, where the release Verify reads it.
+  // in the Squire home, where the release Verify reads it (here Claude Code
+  // 2.1.319's profile; 2.1.332's below).
   const sessionLog = path.join(world.home, 'logs', 'session.log');
   const kept = await s.waitFor(() => fs.existsSync(sessionLog) && /Session started/.test(fs.readFileSync(sessionLog, 'utf8'))
     && /Connected/.test(fs.readFileSync(sessionLog, 'utf8')), 10000);
@@ -202,6 +203,23 @@ test('the runner starts one Remote Control server in the owner folder in single-
   assert.ok(second, `a second start must start a session; output: ${runner.output().slice(-600)}`);
   assert.ok(second.argv.some((a, i) => a === '--name' && second.argv[i + 1] === 'Squire'),
     `with no squireName in the owner config the session must be called Squire; argv ${JSON.stringify(second.argv)}`);
+
+  // Under Claude Code 2.1.332's profile the same arguments, and its output
+  // (Ready and its environment address, no session yet) kept the same way.
+  const lazy = w.makeWorld();
+  t.after(() => { s.killFakes(lazy); w.cleanUp(lazy); });
+  s.layDownCore(lazy);
+  const lazyFake = s.installFakeClaudeCode(lazy, { signedIn: true, profile: '2.1.332' });
+  const lazyRunner = runnerFor(t, lazy);
+  const lazyCall = await firstSession(lazyRunner, lazyFake, 'a start under 2.1.332');
+  for (const [flag, value] of [['--spawn', 'session'], ['--permission-mode', 'bypassPermissions'], ['--name', 'Pip']]) {
+    assert.ok(lazyCall.argv.some((a, i) => a === flag && lazyCall.argv[i + 1] === value), `under 2.1.332 the server must be started with ${flag} ${value}; argv ${JSON.stringify(lazyCall.argv)}`);
+  }
+  assert.equal(lazyCall.argv[0], 'remote-control', 'under 2.1.332 the session is a Remote Control server too');
+  const lazyLog = path.join(lazy.home, 'logs', 'session.log');
+  const lazyKept = await s.waitFor(() => fs.existsSync(lazyLog) && /\bReady\b/.test(fs.readFileSync(lazyLog, 'utf8'))
+    && /claude\.ai\/code\?environment=/.test(fs.readFileSync(lazyLog, 'utf8')), 10000);
+  assert.ok(lazyKept, `under 2.1.332 the server's output (its Ready line and its environment address) must be kept in logs/session.log; got ${fs.existsSync(lazyLog) ? JSON.stringify(fs.readFileSync(lazyLog, 'utf8').slice(-400)) : 'no file'}`);
 });
 
 test('before each start the runner checks the floor: with core settings or a floor hook missing, its config folder settings changed, or no Claude sign-in, no session starts and the health check says why, never with a sign-in window', { timeout: 300000 }, async (t) => {

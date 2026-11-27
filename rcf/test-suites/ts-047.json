@@ -1,0 +1,43 @@
+{
+  "createdAt": "2026-11-27T15:12:38.461Z",
+  "updatedAt": "2026-11-27T15:12:40.488Z",
+  "purpose": "Runs Squire's runner as its launchd agent does, with Claude Code under both measured profiles, to check that a server live by evidence (its process alive, and a bridge pointer naming it or a session record since its start) is kept whatever words it prints, that a server with none of that evidence after 60 seconds or whose connection drops is replaced, and that a server stopped from outside before any client is not named a fault.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-401-1"
+  ],
+  "id": "TS-047",
+  "usId": "US-401",
+  "title": "The session kept whatever Claude Code prints",
+  "testCases": [
+    {
+      "id": "TC-047-a-server-live-by-its-bridge-pointer-with",
+      "acId": "AC-401-1",
+      "description": "a server live by its bridge pointer with no session yet, or whose client left, is kept over 75 seconds, as is a connected one",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a Remote Control server that prints Ready and an environment address, with a bridge pointer naming its own process and no session yet, is judged live and kept: the runner does not replace it over 75 seconds, nor a 2.1.332 server whose client made the session and then left, which prints nothing, and the eager server that prints Connected is kept too"
+    },
+    {
+      "id": "TC-047-a-server-with-no-evidence-it-is-live-60",
+      "acId": "AC-401-1",
+      "description": "a server with no evidence it is live 60 seconds after its start is replaced under both profiles",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a server that has shown, 60 seconds after its start, no bridge pointer naming its own process, no session record and no connected word is replaced, under both profiles, and a pointer an earlier server left does not keep it"
+    },
+    {
+      "id": "TC-047-a-server-whose-connection-drops-is",
+      "acId": "AC-401-1",
+      "description": "a server whose connection drops is replaced about a minute after the drop under both profiles",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a server whose connection drops, a disconnection line with no connected word after it, is replaced about a minute after the drop, under both profiles (the 2.1.332 words taken to be 2.1.319's)"
+    },
+    {
+      "id": "TC-047-a-live-server-stopped-from-outside",
+      "acId": "AC-401-1",
+      "description": "a live server stopped from outside before any client is not named stopped before any session",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a 2.1.332 server stopped from outside, as an update's install stops it, before any client made a session is not recorded as stopped before any session started and the health check names no fault for it; under 2.1.319 the same; a server that dies before it was ever live is still named"
+    }
+  ],
+  "status": "draft"
+}
