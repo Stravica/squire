@@ -1,0 +1,15 @@
+{
+  "cnId": "CN-184",
+  "path": "core/tools/runner.py#Evidence",
+  "implementsAcIds": [
+    "AC-401-1",
+    "AC-201-3",
+    "AC-1401-3",
+    "AC-1401-8"
+  ],
+  "dependencies": [],
+  "version": "0.1.0",
+  "status": "draft",
+  "createdAt": "2026-11-27T20:18:16.250Z",
+  "updatedAt": "2026-11-27T20:18:16.250Z"
+}

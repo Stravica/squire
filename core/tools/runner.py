@@ -24,12 +24,16 @@ again later never holds it.
 
 While the session runs it looks for a settings file every second: one
 appearing stops the session (its whole process group), is moved and named,
-and a new session starts. A server is replaced only on evidence: its process
-dies, it shows no Connected within 60 seconds of its start, or it shows a
-disconnection not followed by Connected within 60 seconds. A quiet,
-connected server is never replaced. A server that stops before any session
-started leaves its own last line in runner.json's problems, where the health
-check prints it, until a session starts.
+and a new session starts. A server is judged live by evidence, never by its
+wording alone: its process alive, and a bridge pointer written after its
+start naming its pid, or a session record written since its start; a
+connected word (Connected or Reconnected) is a fast path only. A server is
+replaced only when its process dies, when 60 seconds after its start it has
+shown none of that evidence, or when a disconnection line is not followed by
+a connected word within 60 seconds. A live server is never replaced for its
+wording. A server that stops before it was ever live leaves its own last line
+in runner.json's problems, where the health check prints it, until a session
+starts; one stopped after it was live leaves nothing.
 """
 
 import fcntl
@@ -174,6 +178,151 @@ class Claude:
             return False
 
 
+class Evidence:
+    """Whether a Remote Control server is live, by evidence alone: a bridge
+    pointer in Squire's Claude Code config folder naming the server's pid (or
+    a process in its process group), written since the server started, or a
+    session record in the Squire home written since it started. A pointer for
+    another process, one written before the start, or one that cannot be read
+    is no evidence, nor is a record an earlier server left. Read again at every
+    look, never kept."""
+
+    POINTER = 'bridge-pointer.json'
+
+    def __init__(self, home):
+        self.home = home
+        self.projects = os.path.join(home, 'claude-config', 'projects')
+
+    def pointer(self, pid, since, alive=True):
+        """The newest bridge pointer naming the server pid (a process in its
+        process group too, while alive is True), written at or after since
+        (seconds since the epoch), or None."""
+        if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+            return None
+        try:
+            names = os.listdir(self.projects)
+        except OSError:
+            return None
+        found = None
+        for name in names:
+            path = os.path.join(self.projects, name, self.POINTER)
+            try:
+                written = os.stat(path).st_mtime
+                if written < since:
+                    continue
+                with open(path, encoding='utf-8') as f:
+                    record = json.load(f)
+            except (OSError, ValueError):
+                continue
+            if not isinstance(record, dict):
+                continue
+            named = record.get('pid')
+            if isinstance(named, bool) or not isinstance(named, int):
+                continue
+            if named != pid and not (alive and self.in_group(named, pid)):
+                continue
+            if found is None or written > found[0]:
+                found = (written, record)
+        return found[1] if found else None
+
+    @staticmethod
+    def in_group(pid, server):
+        """True when the process pid is alive in the server's process group
+        (the server leads its own group)."""
+        if pid <= 0:
+            return False
+        try:
+            return os.getpgid(pid) == server
+        except OSError:
+            return False
+
+    def session_since(self, since):
+        """True when a session record was written at or after since."""
+        folder = os.path.join(self.home, 'sessions')
+        try:
+            names = [n for n in os.listdir(folder) if n.endswith('.json') and not n.startswith('.')]
+        except OSError:
+            return False
+        for name in names:
+            try:
+                with open(os.path.join(folder, name), encoding='utf-8') as f:
+                    at = json.load(f).get('recordedAt')
+            except (OSError, ValueError, AttributeError):
+                continue
+            if isinstance(at, (int, float)) and not isinstance(at, bool) and at >= since:
+                return True
+        return False
+
+    def held(self):
+        """The server runner.lock names, while that process is the one the
+        lock recorded: (pid, its start in seconds since the epoch), or None."""
+        import calendar
+        from squire import Process
+
+        try:
+            with open(os.path.join(self.home, 'runner.lock'), encoding='utf-8') as f:
+                record = json.loads(f.read() or '{}')
+        except (OSError, ValueError):
+            return None
+        if not isinstance(record, dict):
+            return None
+        pid, started = record.get('pid'), record.get('startedAt')
+        if not isinstance(started, str) or Process.started_at(pid) != started:
+            return None
+        try:
+            since = calendar.timegm(time.strptime(started, '%Y-%m-%dT%H:%M:%SZ'))
+        except ValueError:
+            return None
+        return pid, since
+
+    def live(self):
+        """The server runner.lock names, when it is alive and live by
+        evidence: {'pid', 'since', 'pointer'} (pointer the bridge pointer
+        naming it, or None when a session record is the evidence), or None."""
+        held = self.held()
+        if held is None:
+            return None
+        pid, since = held
+        pointer = self.pointer(pid, since)
+        if pointer is None and not self.session_since(since):
+            return None
+        return {'pid': pid, 'since': since, 'pointer': pointer}
+
+    def output(self):
+        """The end of the servers' output (logs/session.log), terminal
+        escapes removed; '' when it cannot be read."""
+        try:
+            with open(os.path.join(self.home, 'logs', 'session.log'), 'rb') as f:
+                size = f.seek(0, os.SEEK_END)
+                f.seek(max(0, size - Runner.TAIL))
+                return Runner.ESCAPES.sub('', f.read().decode('utf-8', 'replace'))
+        except OSError:
+            return ''
+
+    def last_line(self):
+        """The server's own last line: the last non-blank line of its output
+        that is not Claude Code's own line at a stop, control characters
+        removed, cut at 300 characters; None when there is none."""
+        lines = [line for line in self.output().splitlines() if line.strip() and not Runner.STOP_LINE.search(line)]
+        if not lines:
+            return None
+        return ''.join(c for c in lines[-1].strip() if c.isprintable())[:Runner.REASON_MOST]
+
+    ENVIRONMENT = re.compile(r'^[A-Za-z0-9_-]{1,200}$')
+    ADDRESS = re.compile(r'https://claude\.ai/code\?environment=([A-Za-z0-9_-]{1,200})')
+
+    def environment(self, live):
+        """The live server's environment id: from the bridge pointer naming
+        it, else the last environment address in the servers' output; None
+        when neither gives one."""
+        pointer = (live or {}).get('pointer') or {}
+        named = pointer.get('environmentId')
+        if isinstance(named, str) and self.ENVIRONMENT.match(named):
+            return named
+        found = self.ADDRESS.findall(self.output())
+        return found[-1] if found else None
+
+
 class Runner:
     TICK = 1.0
     GRACE = 1.5
@@ -183,6 +332,9 @@ class Runner:
     ESCAPES = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
     TAIL = 65536
     STOPPED = 'no session: Claude Code\'s Remote Control server stopped before any session started: '
+    # Claude Code's own line when its server is stopped with no session: it
+    # names no reason, so the line before it is the one kept.
+    STOP_LINE = re.compile(r'^\s*(?:\[[^\]]*\]\s*)?Environment preserved\b')
     REASON_MOST = 300
 
     def __init__(self, config):
@@ -311,25 +463,23 @@ class Runner:
 
     def session_since(self):
         """True when a session record was written after the server started."""
-        folder = os.path.join(self.home, 'sessions')
-        try:
-            names = [n for n in os.listdir(folder) if n.endswith('.json') and not n.startswith('.')]
-        except OSError:
-            return False
-        for name in names:
-            try:
-                with open(os.path.join(folder, name), encoding='utf-8') as f:
-                    at = json.load(f).get('recordedAt')
-            except (OSError, ValueError, AttributeError):
-                continue
-            if isinstance(at, (int, float)) and not isinstance(at, bool) and at >= self.started_at:
-                return True
-        return False
+        return Evidence(self.home).session_since(self.started_at)
+
+    def live(self, status, alive=True):
+        """The server judged live by evidence at this look: a connected word
+        as its last status word, a bridge pointer naming it written since its
+        start, or a session record written since its start."""
+        if status == 'connected':
+            return True
+        if self.server is not None and Evidence(self.home).pointer(self.server.pid, self.started_at, alive) is not None:
+            return True
+        return self.session_since()
 
     def record_stopped(self):
-        """The server's own last line, as the reason it stopped before any
-        session: its last non-blank line, terminal escapes and control
-        characters removed, cut at 300 characters."""
+        """The server's own last line, as the reason it stopped before it was
+        ever live: its last non-blank line that is not Claude Code's own line
+        at a stop, terminal escapes and control characters removed, cut at
+        300 characters."""
         code = self.server.poll() if self.server is not None else None
         try:
             with open(self.log, 'rb') as f:
@@ -338,7 +488,7 @@ class Runner:
                 text = self.ESCAPES.sub('', f.read().decode('utf-8', 'replace'))
         except OSError:
             text = ''
-        lines = [line for line in text.splitlines() if line.strip()]
+        lines = [line for line in text.splitlines() if line.strip() and not self.STOP_LINE.search(line)]
         if lines:
             reason = self.STOPPED + ''.join(c for c in lines[-1].strip() if c.isprintable())[:self.REASON_MOST]
         else:
@@ -434,8 +584,12 @@ class Runner:
         ClaudeCode.record_once(self.home)
 
     def watch(self):
-        """Until the session must stop: 'settings', 'replace' or 'died'."""
-        connected_once, dropped = False, None
+        """Until the session must stop: 'settings', 'replace' or 'died'. Live
+        is judged again at every look; a server is replaced when, 60 seconds
+        or more after its start, this look finds no evidence it is live, or
+        when a disconnection line has had no connected word after it for 60
+        seconds, whatever pointer stands."""
+        dropped, ever_live = None, False
         while True:
             time.sleep(self.TICK)
             if self.carried and self.session_since():
@@ -444,16 +598,18 @@ class Runner:
             if self.settings.present():
                 return 'settings'
             if self.server.poll() is not None:
-                if not self.session_since():
+                if not ever_live and not self.live(self.status(), alive=False):
                     self.record_stopped()
                 return 'died'
             now = time.monotonic()
             status = self.status()
             if status == 'connected':
-                connected_once, dropped = True, None
+                dropped = None
             elif status == 'disconnected' and dropped is None:
                 dropped = now
-            if not connected_once and now - self.started >= self.CONNECT_WITHIN:
+            live = self.live(status)
+            ever_live = ever_live or live
+            if not live and now - self.started >= self.CONNECT_WITHIN:
                 return 'replace'
             if dropped is not None and now - dropped >= self.CONNECT_WITHIN:
                 return 'replace'
