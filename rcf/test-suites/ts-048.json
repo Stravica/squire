@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-27T15:12:38.748Z",
-  "updatedAt": "2026-11-27T15:12:41.817Z",
+  "updatedAt": "2026-11-27T19:09:32.107Z",
   "purpose": "Opens set-up's app as Finder would, with Claude Code under both measured profiles, to check that once its session server is live set-up opens the address where the owner's first message starts the session, says what to do there, waits for that message with its window up, pauses naming the server's last line when the server is never live, and finishes on the session's record.",
   "testLevel": "integration",
   "acIds": [
@@ -37,6 +37,20 @@
       "description": "set-up waiting for the owner's first message keeps its window up and does not pause at 2 minutes",
       "status": "pending",
       "testPointer": "tests/acceptance/first-conversation-on-connect.test.js::while set-up waits for the owner's first message in the page it opened, it keeps its window up naming that page, and does not pause at 2 minutes or 2 and a half"
+    },
+    {
+      "id": "TC-048-at-the-end-of-the-wait-for-a-first",
+      "acId": "AC-201-3",
+      "description": "at the end of the wait for a first message the paused window names the page",
+      "status": "pending",
+      "testPointer": "tests/acceptance/first-conversation-on-connect.test.js::when the owner sends no first message within set-up's wait, shortened here by a test setting, a Squire window is up for the whole wait and the paused window takes its place at the bound, naming the page set-up opened"
+    },
+    {
+      "id": "TC-048-the-waiting-window-says-set-up-waits-30",
+      "acId": "AC-201-3",
+      "description": "the waiting window says set-up waits 30 minutes for the first message",
+      "status": "pending",
+      "testPointer": "tests/acceptance/first-conversation-on-connect.test.js::with no test setting, the window up while set-up waits for the owner's first message says how long it waits: 30 minutes"
     }
   ],
   "status": "draft"

@@ -14,7 +14,7 @@
 // Claude Code under one of the two measured profiles (session-world.js). The
 // world's open writes the client record the 2.1.332 profile's server reads:
 // the page opened and, unless a case says otherwise, the owner's first
-// message one second later.
+// message one second later. SQUIRE_FIRST_MESSAGE_WAIT_SECONDS, which the last two cases name, is a test setting, never a product bound: set-up's wait for the first message is 30 minutes.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -91,4 +91,57 @@ test("while set-up waits for the owner's first message in the page it opened, it
   const waiting = I.windowsAt(timeline, openedAt + 140000);
   assert.ok(waiting.some((x) => /first message/i.test(x.text) && /claude\.ai\/code/.test(x.text)),
     `the window up while set-up waits must say it waits for the owner's first message and name the page (claude.ai/code...); on screen: ${JSON.stringify(waiting.map((x) => x.text.slice(-300)))}`);
+});
+
+// The wait's bound. SQUIRE_FIRST_MESSAGE_WAIT_SECONDS is a test setting the
+// world hands set-up's app in its environment (runApp's env), so a case can
+// reach the bound in seconds: set-up honours it in place of its own bound,
+// which stays 30 minutes, and with it absent the waiting window says so.
+const WAIT_SETTING = 'SQUIRE_FIRST_MESSAGE_WAIT_SECONDS';
+const THIRTY_MINUTES = /\b(?:30|thirty) minutes\b|\bhalf an hour\b/i;
+
+test("when the owner sends no first message within set-up's wait, shortened here by a test setting, a Squire window is up for the whole wait and the paused window takes its place at the bound, naming the page set-up opened", LONG, async (t) => {
+  const WAIT = 20;
+  const iw = I.makeInstallerWorld(t, { profile: '2.1.332', mac: { client: { text: null } } });
+  const run = await I.runApp(iw, { timeout: RUN, env: { [WAIT_SETTING]: String(WAIT) } });
+  const paused = I.dialogsTitled(run, TITLES.paused);
+  assert.ok(paused.length >= 1, `with no first message, set-up must pause at the end of its wait; ${I.describeRun(run)}`);
+  const env = envAddressOf(iw);
+  const last = paused[paused.length - 1];
+  assert.ok(env && last.text.includes(`claude.ai/code?${env}`),
+    `the paused window must name the page set-up opened (claude.ai/code?${env || 'environment=<the id the server printed>'}), where the owner's first message still starts the session; it said: ${last.text}`);
+  const open = opens(run).find((o) => o.url.includes(env));
+  assert.ok(open, `set-up must have opened the environment's page before it paused; opened ${JSON.stringify(opens(run))}`);
+  const timeline = I.windowTimeline(iw);
+  const p = timeline.find((x) => x.pid === last.pid);
+  const after = p.opened - open.at;
+  assert.ok(after >= WAIT * 1000 - 2000 && after <= WAIT * 1000 + 15000, `the paused window must take the waiting window's place at the bound, ${WAIT} seconds after the page opened; it opened after ${after} ms`);
+  const gaps = I.gapsIn(timeline, open.at, p.opened + 500);
+  assert.deepEqual(gaps, [], `a Squire window must be on screen for the whole wait, the paused window opened before the waiting one closed; moments with none: ${JSON.stringify(gaps)}`);
+  const waiting = I.windowsAt(timeline, open.at + (WAIT * 1000) / 2);
+  assert.ok(waiting.some((x) => /first message/i.test(x.text)), `the window up during the wait must say set-up waits for the owner's first message; on screen: ${JSON.stringify(waiting.map((x) => x.text.slice(-300)))}`);
+});
+
+test("with no test setting, the window up while set-up waits for the owner's first message says how long it waits: 30 minutes", LONG, async (t) => {
+  const iw = I.makeInstallerWorld(t, { profile: '2.1.332', mac: { client: { text: null } } });
+  let openedAt = null;
+  const run = await I.runApp(iw, {
+    timeout: RUN,
+    killWhen: (x) => {
+      if (openedAt === null) {
+        const o = I.readJsonLines(x.callsFile).find((c) => c.cmd === 'open' && c.argv.some((a) => /environment=/.test(a)));
+        if (o) openedAt = o.at;
+      }
+      return openedAt !== null && Date.now() - openedAt > 10000;
+    },
+  });
+  const timeline = I.windowTimeline(iw);
+  const phone = timeline.filter((x) => x.title === TITLES.phone).pop();
+  const fromPhone = timeline.filter((x) => phone && x.opened >= phone.opened);
+  assert.ok(fromPhone.some((x) => /first message/i.test(x.text) && THIRTY_MINUTES.test(x.text)),
+    `the window up while set-up waits for the owner's first message must say how long it waits (30 minutes); windows from the phone step on: ${JSON.stringify(fromPhone.map((x) => x.text.slice(-300)))}; ${I.describeRun(run)}`);
+  assert.ok(openedAt !== null, `set-up must have opened the environment's page; ${I.describeRun(run)}`);
+  const waiting = I.windowsAt(timeline, openedAt + 5000);
+  assert.ok(waiting.some((x) => /first message/i.test(x.text) && THIRTY_MINUTES.test(x.text)),
+    `5 seconds into the wait, the window on screen must say set-up waits 30 minutes for the first message; on screen: ${JSON.stringify(waiting.map((x) => x.text.slice(-300)))}`);
 });
