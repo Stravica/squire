@@ -70,3 +70,27 @@ test('with Claude Code at or below the version this Squire release was tested wi
   const h = R.health(unnamed);
   assert.deepEqual(h.stdout.split('\n').filter((l) => NOT_TESTED.test(l)), [], `a release that names no tested version shows no line, whatever Claude Code is; the health check said: ${w.describe(h)}`);
 });
+
+// What Squire cannot read is read as a release that names no tested version:
+// no line, and no fault for it. The world's claude --version fails (exit 1)
+// or answers with no version in it; the release's claudeCodeTested is a word,
+// a number or a version with a letter in it.
+test('with a Claude Code version Squire cannot read, or a tested version in the release that Squire cannot read, the health check runs, shows no not-tested line and names no fault, and Squire keeps working', LONG, async (t) => {
+  const quiet = (h, what) => {
+    assert.equal(h.status, 0, `${what}: the health check must run and name no fault; it said: ${w.describe(h)}`);
+    assert.deepEqual(h.stdout.split('\n').filter((l) => NOT_TESTED.test(l)), [], `${what}: no not-tested line; the health check said: ${w.describe(h)}`);
+    assert.ok(!/Traceback/.test(h.stderr || ''), `${what}: the health check must not fail on it; stderr: ${h.stderr}`);
+  };
+  const named = await world(t, { claudeCodeTested: TESTED });
+  for (const how of [{ fail: true }, 'Claude Code', '', 'two point one']) {
+    R.setVersionAnswer(named, how);
+    quiet(R.health(named), `claude --version answering ${JSON.stringify(how)}`);
+    assert.ok(s.sessionRecords(named.world).some((r) => !w.processGone(r.pid)), 'Squire keeps working: its session still runs');
+  }
+  for (const tested of ['newest', 2.1, '2.1.x']) {
+    const rw = await world(t, { claudeCodeTested: tested });
+    newer(rw, NEWER);
+    quiet(R.health(rw), `a release naming ${JSON.stringify(tested)} as its tested version, with Claude Code ${NEWER}`);
+    assert.ok(s.sessionRecords(rw.world).some((r) => !w.processGone(r.pid)), 'Squire keeps working: its session still runs');
+  }
+});
