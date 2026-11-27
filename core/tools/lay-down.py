@@ -324,13 +324,58 @@ class LayDown:
             try:
                 subprocess.run([launchctl, 'bootout', f'{domain}/{label}'], cwd='/', env=System.env(),
                                stdin=subprocess.DEVNULL, capture_output=True, timeout=LayDown.WITHIN)
-                r = subprocess.run([launchctl, 'bootstrap', domain, os.path.join(folder, label + '.plist')], cwd='/',
-                                   env=System.env(), stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                                   timeout=LayDown.WITHIN)
+                LayDown.torn_down(launchctl, f'{domain}/{label}')
+                r = LayDown.bootstrap(home, launchctl, domain, label, os.path.join(folder, label + '.plist'))
             except (OSError, subprocess.SubprocessError) as e:
                 raise SquireError(f'launchd did not answer for {label} ({type(e).__name__})')
             if r.returncode != 0:
                 raise SquireError(f'launchd did not load {label} ({r.stderr.strip() or r.returncode})')
+
+    # launchd may still be tearing a job down for a while after its bootout
+    # has answered: print still finds it and bootstrap refuses it with its
+    # input/output error (exit 5). The wait for the label to be gone and the
+    # retry of that one refusal are each bounded.
+    TEARDOWN_WITHIN = 10
+    TEARDOWN_LOOK = 0.25
+    BOOTSTRAP_TRIES = 3
+    BOOTSTRAP_APART = 1
+    TEARDOWN_REFUSAL = 5
+
+    @staticmethod
+    def torn_down(launchctl, target):
+        """Waits, at most TEARDOWN_WITHIN seconds, until launchctl print no
+        longer finds the job; True once it is gone."""
+        from squire import System
+
+        end = time.monotonic() + LayDown.TEARDOWN_WITHIN
+        while True:
+            r = subprocess.run([launchctl, 'print', target], cwd='/', env=System.env(), stdin=subprocess.DEVNULL,
+                               capture_output=True, timeout=LayDown.WITHIN)
+            if r.returncode != 0:
+                return True
+            if time.monotonic() >= end:
+                return False
+            time.sleep(LayDown.TEARDOWN_LOOK)
+
+    @staticmethod
+    def bootstrap(home, launchctl, domain, label, plist):
+        """bootstrap, tried again up to BOOTSTRAP_TRIES times in all,
+        BOOTSTRAP_APART seconds apart, only while launchd refuses it for its
+        teardown; the last answer, with its stderr."""
+        from squire import System
+
+        tries = 0
+        while True:
+            tries += 1
+            r = subprocess.run([launchctl, 'bootstrap', domain, plist], cwd='/', env=System.env(),
+                               stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=LayDown.WITHIN)
+            if r.returncode != LayDown.TEARDOWN_REFUSAL or tries >= LayDown.BOOTSTRAP_TRIES:
+                break
+            time.sleep(LayDown.BOOTSTRAP_APART)
+        if tries > 1:
+            LayDown.log(home, f'launchd refused to load {label} while it was still stopping it; tried {tries} times, '
+                              + ('then it loaded' if r.returncode == 0 else 'and it never loaded'))
+        return r
 
     @staticmethod
     def replace(release, home):
