@@ -499,6 +499,32 @@ class UpdateLines:
         return lines, mark
 
 
+class TestedLine:
+    """One plain line when the Claude Code on the Mac is newer than the newest
+    version this Squire release was tested with (release.json's
+    claudeCodeTested in the installed core). A notice, never a fault: Squire
+    keeps working, and pins and installs nothing. No line when the release
+    names no tested version, when either version cannot be read, or when
+    Claude Code is at or below it."""
+
+    PREFIX = 'claude code:'
+
+    @staticmethod
+    def lines(home):
+        from squire import ClaudeCode, Records, Version
+
+        release = Records.read(os.path.join(home, 'core', 'release.json'))
+        tested = release.get('claudeCodeTested') if isinstance(release, dict) else None
+        if not Version.of(tested):
+            return []
+        installed = ClaudeCode.version(home)
+        if not Version.of(installed) or Version.of(installed) <= Version.of(tested):
+            return []
+        return [f'{TestedLine.PREFIX} the Claude Code on this Mac is {installed}, newer than {tested}, the newest version '
+                f'this Squire release was tested with; this Squire has not yet been tested with Claude Code {installed}. '
+                'Squire keeps working as it is.']
+
+
 class HealthCheck:
     STOPPED = 'no session: Claude Code\'s Remote Control server stopped before any session'
     CODES = (('floor:', 'floor'), ('runner:', 'runner'), ('no session:', 'runner'), ('sign-in:', 'sign-in'),
@@ -533,7 +559,8 @@ class HealthCheck:
             lines += HealthCheck.runner_lines(config.home)
         for line in lines:
             print(line)
-        return 1 if lines else 0
+        # A notice alone (the not-tested line) leaves Squire healthy.
+        return 1 if any(not line.startswith(TestedLine.PREFIX) for line in lines) else 0
 
     @staticmethod
     def lines(config, offers=True):
@@ -550,7 +577,8 @@ class HealthCheck:
         runner = HealthCheck.runner_lines(config.home)
         backup = BackupLines.lines(config.home)
         updates, mark = UpdateLines.lines(config.home)
-        lines += overlays + runner + fixes.lines() + CompactionWindow(config.home).lines() + backup + updates
+        lines += overlays + runner + fixes.lines() + CompactionWindow(config.home).lines() + backup + updates \
+            + TestedLine.lines(config.home)
         present = {}
         if overlays:
             present['overlay'] = ('files in the owner\'s folder that the safety floor ignores', [])

@@ -390,7 +390,7 @@ class HealthLines:
     FAULTS = (('floor:', 'floor'), ('agents:', 'agents'), ('sign-in:', 'sign-in'), ('runner:', 'runner'),
               ('release:', 'release'), ('no session:', 'runner'))
     OTHERS = ('ignored:', 'moved:', 'backup:', 'compaction window:', 'cannot confirm the compaction window:', 'update:',
-              'ticket:', 'fixed:', 'still:', 'could not try:', 'config:')
+              'ticket:', 'fixed:', 'still:', 'could not try:', 'config:', 'claude code:')
 
     @classmethod
     def run(cls, home):
