@@ -158,3 +158,53 @@ test("a 2.1.332 server stopped from outside, as an update's install stops it, be
   assert.ok(h.stdout.split('\n').some((l) => l.startsWith(STOPPED)),
     `a server that stopped before it was ever live is still named by the health check; got ${w.describe(h)}`);
 });
+
+// Weak evidence: each world's 2.1.332 server writes no bridge pointer of its
+// own and makes no session, and beside it the case plants one fault, as soon
+// as the server has started. None of them is evidence that this server is
+// live (ADR-003 point 16: a pointer written after its start naming its pid,
+// or a session record written since its start), so each server is replaced
+// as one with no evidence is. The other process is the case's own, neither
+// the server nor one of its children; the earlier server's record names that
+// process too, so only its time tells it apart. The pointer that cannot be
+// read is cut short, its pid still in its text.
+test('a server with only weak evidence beside it, a bridge pointer naming another live process, a pointer naming its pid written before it started, a pointer that cannot be read, or a session record an earlier server left, is replaced about 60 seconds after its start', { timeout: 240000 }, async (t) => {
+  const { spawn } = require('node:child_process');
+  const other = spawn('/bin/sleep', ['600'], { stdio: 'ignore', detached: true });
+  t.after(() => { try { process.kill(-other.pid, 'SIGKILL'); } catch (e) { /* gone */ } });
+  const pointerFile = (x) => {
+    const dir = path.join(s.configDir(x.world), 'projects', fs.realpathSync(x.world.owner).replace(/[^A-Za-z0-9]/g, '-'));
+    fs.mkdirSync(dir, { recursive: true });
+    return path.join(dir, 'bridge-pointer.json');
+  };
+  const before = (call) => (call.at - 120000) / 1000;
+  const faults = [
+    ['a bridge pointer naming another live process', (x) => {
+      fs.writeFileSync(pointerFile(x), JSON.stringify({ sessionId: '', environmentId: 'env_FAKEANOTHERPROCESS', source: 'standalone', pid: other.pid,
+        procStart: s.startTimeOf(other.pid) || '', dir: x.world.owner }));
+    }],
+    ['a bridge pointer naming its pid written before it started', (x, call) => {
+      const file = pointerFile(x);
+      fs.writeFileSync(file, JSON.stringify({ sessionId: '', environmentId: 'env_FAKEWRITTENBEFORE', source: 'standalone', pid: call.pid, procStart: '', dir: x.world.owner }));
+      fs.utimesSync(file, before(call), before(call));
+    }],
+    ['a bridge pointer that cannot be read', (x, call) => {
+      fs.writeFileSync(pointerFile(x), `{"sessionId": "", "environmentId": "env_FAKECUTSHORT", "source": "standalone", "pid": ${call.pid}, "dir": `);
+    }],
+    ['a session record an earlier server left', (x, call) => {
+      const record = s.seedSessionRecord(x.world, { sessionId: 'a-session-an-earlier-server-left', socket: path.join(x.world.root, 'earlier-server.sock'),
+        pid: other.pid, recordedAt: before(call) });
+      fs.utimesSync(path.join(s.sessionsDir(x.world), `${record.sessionId}.json`), before(call), before(call));
+    }],
+  ];
+  const worlds = faults.map(([what, plant]) => [what, liveWorld(t, { profile: '2.1.332', pointer: false }), plant]);
+  for (const [what, x, plant] of worlds) plant(x, await firstServer(x, `a 2.1.332 server beside ${what}`));
+  await s.waitFor(() => worlds.every(([, x]) => x.fake.serverCalls().length >= 2), 100000, 500);
+  for (const [what, x] of worlds) {
+    const calls = x.fake.serverCalls();
+    assert.ok(calls.length >= 2, `a 2.1.332 server beside ${what} has no evidence it is live, so it must be replaced about 60 seconds after its start; servers started: ${describeServers(x)}`);
+    const after = calls[1].at - calls[0].at;
+    assert.ok(after >= 55000 && after <= 95000, `a 2.1.332 server beside ${what}: it must be replaced about 60 seconds after its start, never sooner; replaced after ${after} ms`);
+    assert.ok(w.processGone(calls[0].pid), `a 2.1.332 server beside ${what}: the replaced server must be gone`);
+  }
+});

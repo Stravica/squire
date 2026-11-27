@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-27T15:12:38.461Z",
-  "updatedAt": "2026-11-27T15:12:40.488Z",
+  "updatedAt": "2026-11-27T19:03:05.298Z",
   "purpose": "Runs Squire's runner as its launchd agent does, with Claude Code under both measured profiles, to check that a server live by evidence (its process alive, and a bridge pointer naming it or a session record since its start) is kept whatever words it prints, that a server with none of that evidence after 60 seconds or whose connection drops is replaced, and that a server stopped from outside before any client is not named a fault.",
   "testLevel": "integration",
   "acIds": [
@@ -37,6 +37,13 @@
       "description": "a live server stopped from outside before any client is not named stopped before any session",
       "status": "pending",
       "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a 2.1.332 server stopped from outside, as an update's install stops it, before any client made a session is not recorded as stopped before any session started and the health check names no fault for it; under 2.1.319 the same; a server that dies before it was ever live is still named"
+    },
+    {
+      "id": "TC-047-a-server-with-only-weak-evidence-beside",
+      "acId": "AC-401-1",
+      "description": "a server with only weak evidence beside it is replaced about 60 seconds after its start",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a server with only weak evidence beside it, a bridge pointer naming another live process, a pointer naming its pid written before it started, a pointer that cannot be read, or a session record an earlier server left, is replaced about 60 seconds after its start"
     }
   ],
   "status": "draft"
