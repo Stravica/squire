@@ -85,8 +85,32 @@ test("the installer's own half of set-up, the yes, Claude Code's download and in
   assertNamesStep(timeline, tools.at, /Apple|tools/i, 'while Apple\'s tools install');
 });
 
+// Set-up's own steps, in order from naming on, as this case expects them:
+// each step's own step N of M (11 steps in all, both halves; naming is step
+// 5) and words that name its activity. The speech helper is built while
+// Squire is laid down, so its window is under laying down's step. Each step
+// runs from the moment its window opens until the next step's window opens
+// (set-up opens a step's window, then does its work), the last until the
+// window that says set-up is ready; the window in front at a moment is the
+// last opened of those on screen, as every window comes to the front.
+const OWN_STEPS = [
+  ['naming done', 'the Squire folder', 'ownerFolder', 'Step 6 of 11', /\bfolder\b/i],
+  ['ownerFolder done', 'laying Squire down', 'layDown', 'Step 7 of 11', /\bparts\b|\bspeech helper\b/i],
+  ['layDown done', 'backup', 'backup', 'Step 8 of 11', /\bbackup\b/i],
+  ['backup done', 'the health check', 'health', 'Step 9 of 11', /\bcheck/i],
+  ['health done', 'the phone', 'phone', 'Step 10 of 11', /\bphone\b/i],
+  ['phone done', 'the wait for the session', 'firstConversation', 'Step 11 of 11', /\bsession\b|\bconversation\b/i],
+];
+
+function frontAt(timeline, at) {
+  const up = I.windowsAt(timeline, at);
+  return up.length ? up[up.length - 1] : null;
+}
+
 test("set-up's own steps from naming on, the Squire folder, laying Squire down, the speech helper, backup, the health check, the phone and the wait for the session, keep a Squire window on screen at every moment, each naming its activity and showing step N of M", LONG, async (t) => {
-  const iw = I.makeInstallerWorld(t);
+  // A Mac that can build the speech helper (macOS 26 and Apple's tools; the
+  // world's swiftc takes 1.5 seconds), so its window is one of the steps'.
+  const iw = I.makeInstallerWorld(t, { mac: { macos: '26.1', speechBuild: { ms: 1500 } } });
   const { run, timeline } = await setUp(iw);
   const naming = titled(timeline, TITLES.name, 0);
   const ready = titled(timeline, TITLES.ready);
@@ -105,6 +129,44 @@ test("set-up's own steps from naming on, the Squire folder, laying Squire down, 
     // The log's time is to the second: the window up across that second.
     assertNoGap(timeline, at, at + 999, `the second set-up recorded ${step} done`);
   }
+  // Which step each window names: at each of set-up's own steps, the window
+  // in front names that step's activity and its own step N of M, never the
+  // step before it.
+  const doneAt = (line) => {
+    const log = fs.readFileSync(path.join(iw.squireHome, 'logs', 'set-up.log'), 'utf8').split('\n');
+    const found = log.find((l) => l.endsWith(`set-up: ${line}`));
+    return found ? new Date(found.slice(0, 19)).getTime() : null;
+  };
+  const after = timeline.filter((x) => x.opened >= naming.opened);
+  const firstOf = (stepOf) => after.find((x) => x.text && x.text.includes(stepOf)) || null;
+  for (const [i, [before, what, step, stepOf, words]] of OWN_STEPS.entries()) {
+    const own = firstOf(stepOf);
+    assert.ok(own && words.test(own.text),
+      `while set-up runs ${what}, a window of that step's own must be in front naming its activity (${words}) and its own step (${stepOf}); windows from naming on: ${show(after)}`);
+    // Until the first window of a later step opens, or the ready window.
+    const later = OWN_STEPS.slice(i + 1).map((x) => firstOf(x[3])).filter(Boolean).map((x) => x.opened);
+    const until = Math.min(...later, ready.opened);
+    const started = doneAt(before);
+    const finished = doneAt(`${step} done`);
+    assert.ok(started !== null && finished !== null && own.opened >= started && own.opened <= finished + 999,
+      `${what}: its window must open while set-up runs that step, after "${before}" (${started}) and by the second it records "${step} done" (${finished}); opened ${own.opened}`);
+    // Every moment the step runs, from its window's opening to the next
+    // step's: the window in front is one of this step's.
+    const moments = [own.opened, ...timeline.flatMap((x) => [x.opened, x.closed === null ? null : x.closed + 1])
+      .filter((m) => m !== null && m > own.opened && m < until)];
+    for (const m of moments) {
+      const front = frontAt(timeline, m);
+      assert.ok(front && (front.text || '').includes(stepOf) && (front === own || words.test(front.text)),
+        `while set-up runs ${what}, the window in front must name that step's activity (${words}) and its own step (${stepOf}), never the step before it; at ${m} in front: ${front ? show([front]) : 'none'}; windows from naming on: ${show(after)}`);
+    }
+  }
+  // The speech helper is built under laying Squire down: its window is in
+  // front while it builds, naming the speech helper and laying down's step.
+  const build = callsAt(iw, (c) => c.cmd === 'swiftc' && !c.ended)[0];
+  assert.ok(build, `set-up must build the speech helper on macOS 26 with Apple's tools (the world's swiftc); ${I.describeRun(run)}`);
+  const front = frontAt(timeline, build.at);
+  assert.ok(front && (front.text || '').includes('Step 7 of 11') && /\bspeech helper\b/i.test(front.text),
+    `while the speech helper builds, the window in front must name the speech helper and laying Squire down's step (Step 7 of 11); in front: ${front ? show([front]) : 'none'}`);
 });
 
 test("the moments between set-up's steps, after the Claude sign-in returns, at the hand-over from the installer to set-up's own steps, after naming and after the phone step, each show a Squire window, and every window is closed or replaced at its step's end with none left on screen after set-up ends", LONG, async (t) => {
