@@ -112,7 +112,7 @@ describe('the 60-second rule', { concurrency: true }, () => {
   });
 
   test('a server that shows Reconnected after a disconnection line counts as connected and is never replaced', { timeout: 150000 }, async (t) => {
-    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting… retrying in 5s' },
+    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting · retrying in 5s' },
       { afterMs: 3000, line: 'Reconnected · owner' }]);
     const first = await firstServer(it);
     await new Promise((resolve) => setTimeout(resolve, 75000));
@@ -121,7 +121,7 @@ describe('the 60-second rule', { concurrency: true }, () => {
   });
 
   test('a disconnection line not followed by Connected within 60 seconds replaces the server: its whole process group gone and a new server up inside two minutes', { timeout: 150000 }, async (t) => {
-    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting… retrying in 5s' }]);
+    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting · retrying in 5s' }]);
     const first = await firstServer(it);
     const second = await s.waitFor(() => it.servers()[1], 125000, 500);
     assert.ok(second, `a server disconnected for 60 seconds must be replaced within two minutes; output: ${it.runner.output().slice(-600)}`);

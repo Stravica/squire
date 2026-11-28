@@ -328,7 +328,14 @@ class Runner:
     GRACE = 1.5
     CONNECT_WITHIN = 60
     CONNECTED = re.compile(r'\b(?:Connected|Reconnected)\b')
-    DISCONNECTED = re.compile(r'\b(?:reconnecting|disconnected)\b', re.IGNORECASE)
+    # A disconnection line: Reconnecting or disconnected, in either case, only
+    # as the status word itself in the status position of a status line, the
+    # line's first field after the server's status mark (the marks, dots and
+    # spaces before its first word), ended by the dot between fields or by the
+    # line's end. The same word anywhere else in the output, within a
+    # session's title that the server prints in that position among it, is
+    # never a disconnection line.
+    DISCONNECTED = re.compile(r'^[^\w\n]*(?:reconnecting|disconnected)[ \t]*(?:·|$)', re.IGNORECASE | re.MULTILINE)
     ESCAPES = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
     TAIL = 65536
     STOPPED = 'no session: Claude Code\'s Remote Control server stopped before any session started: '
@@ -616,12 +623,15 @@ class Runner:
 
     def status(self):
         """The server's last status word since its start: 'connected',
-        'disconnected', or None when it has shown neither."""
+        'disconnected', or None when it has shown neither. A disconnection
+        word counts only as DISCONNECTED reads it, in the status position; a
+        carriage return starts a line, as a terminal redraws its status line
+        in place."""
         try:
             with open(self.log, 'rb') as f:
                 size = f.seek(0, os.SEEK_END)
                 f.seek(max(self.offset, size - self.TAIL))
-                text = self.ESCAPES.sub('', f.read().decode('utf-8', 'replace'))
+                text = self.ESCAPES.sub('', f.read().decode('utf-8', 'replace')).replace('\r', '\n')
         except OSError:
             return None
         last_up = max((m.start() for m in self.CONNECTED.finditer(text)), default=-1)
