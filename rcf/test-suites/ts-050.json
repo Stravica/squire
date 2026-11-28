@@ -1,0 +1,36 @@
+{
+  "createdAt": "2026-11-27T15:12:39.324Z",
+  "updatedAt": "2026-11-27T19:09:46.866Z",
+  "purpose": "Runs the health check of an installed Squire whose release names the Claude Code it was tested with, to check that a newer Claude Code gives one plain line naming both versions while Squire keeps working and pins and installs nothing, and that at or below that version, or with no version named, there is no line.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-201-12"
+  ],
+  "id": "TS-050",
+  "usId": "US-201",
+  "title": "The Claude Code a release was tested with",
+  "testCases": [
+    {
+      "id": "TC-050-a-claude-code-newer-than-the-tested",
+      "acId": "AC-201-12",
+      "description": "a Claude Code newer than the tested version gives one plain line naming both versions",
+      "status": "pending",
+      "testPointer": "tests/acceptance/claude-code-tested.test.js::with a Claude Code newer than the version this Squire release was tested with, the health check shows one plain line naming both versions and saying this Squire has not yet been tested with it; Squire keeps working, pins and installs nothing, and the line goes once Claude Code is back at the tested version"
+    },
+    {
+      "id": "TC-050-a-claude-code-at-or-below-the-tested",
+      "acId": "AC-201-12",
+      "description": "a Claude Code at or below the tested version, or no version named, gives no line",
+      "status": "pending",
+      "testPointer": "tests/acceptance/claude-code-tested.test.js::with Claude Code at or below the version this Squire release was tested with, or a release that names no tested version, the health check shows no not-tested line"
+    },
+    {
+      "id": "TC-050-a-claude-code-version-or-tested-version",
+      "acId": "AC-201-12",
+      "description": "a Claude Code version or tested version Squire cannot read shows no line and no fault",
+      "status": "pending",
+      "testPointer": "tests/acceptance/claude-code-tested.test.js::with a Claude Code version Squire cannot read, or a tested version in the release that Squire cannot read, the health check runs, shows no not-tested line and names no fault, and Squire keeps working"
+    }
+  ],
+  "status": "draft"
+}

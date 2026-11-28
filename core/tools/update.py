@@ -390,7 +390,7 @@ class HealthLines:
     FAULTS = (('floor:', 'floor'), ('agents:', 'agents'), ('sign-in:', 'sign-in'), ('runner:', 'runner'),
               ('release:', 'release'), ('no session:', 'runner'))
     OTHERS = ('ignored:', 'moved:', 'backup:', 'compaction window:', 'cannot confirm the compaction window:', 'update:',
-              'ticket:', 'fixed:', 'still:', 'could not try:', 'config:')
+              'ticket:', 'fixed:', 'still:', 'could not try:', 'config:', 'claude code:')
 
     @classmethod
     def run(cls, home):
@@ -597,6 +597,16 @@ class Install:
         self.router_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.router_module)
         self.router = self.router_module.WakeUpRouter(config)
+        # The runner's own reader of a server's live evidence, this release's,
+        # read now as the router is. A runner that cannot be read, or that
+        # ends as it is read, leaves no reader: every check then fails.
+        try:
+            spec = importlib.util.spec_from_file_location('squire_runner', os.path.join(CORE, 'tools', 'runner.py'))
+            runner_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(runner_module)
+            self.evidence = runner_module.Evidence(config.home)
+        except (Exception, SystemExit):
+            self.evidence = None
 
     # ------------------------------------------------------------ outside
 
@@ -658,21 +668,35 @@ class Install:
         self.step(previous, version, 'stop')
         self.stop()
         self.step(previous, version, 'lay')
-        laid = self.lay(os.path.join(releases.kept, version, 'core'))
+        laid, why = self.lay(os.path.join(releases.kept, version, 'core'))
         if laid:
             self.step(previous, version, 'switch')
             Records.write(releases.current_file, {'current': version, 'previous': previous, 'verified': True}, durable=True)
             self.step(previous, version, 'reload')
             self.reload()
             self.step(previous, version, 'check')
-        if laid and self.check(manifest['files']):
-            self.step(previous, version, 'clear')
-            self.clear(version, previous)
-            self.send(f'Squire is updated to {version}; all checks passed', 'update')
-            self.remove_record()
-            return 0
-        self.rollback(version, previous, before, previous_files)
+            failed = self.check(manifest['files'])
+            if failed is None:
+                self.step(previous, version, 'clear')
+                self.clear(version, previous)
+                self.send(f'Squire is updated to {version}; all checks passed', 'update')
+                self.remove_record()
+                return 0
+            reason = f'release {version} failed its check: {failed}'
+        else:
+            reason = f'the lay-down of release {version} failed: {why}'
+        self.log(reason)
+        self.rollback(version, previous, before, previous_files, reason)
         return 1
+
+    def log(self, text):
+        """One line in update.log, as Squire Update's own lines are."""
+        try:
+            os.makedirs(os.path.join(self.home, 'logs'), mode=0o700, exist_ok=True)
+            with open(os.path.join(self.home, 'logs', 'update.log'), 'a', encoding='utf-8') as f:
+                f.write(f'{time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())} Squire Update: {text}\n')
+        except OSError:
+            pass
 
     def start_time(self):
         started = Process.started_at(os.getpid())
@@ -804,50 +828,78 @@ class Install:
         except OSError:
             pass
 
+    REASON_MOST = 300
+
     def lay(self, folder):
-        """lay-down from a kept release's core, with that release's own lay-down."""
+        """lay-down from a kept release's core, with that release's own
+        lay-down: (True, None), or (False, the reason: lay-down's last line on
+        stderr, cut at 300 characters)."""
         try:
             r = subprocess.run([System.command(PYTHON), '-B', os.path.join(folder, 'tools', 'lay-down.py'), folder],
                                cwd='/', env=System.env(self.home), stdin=subprocess.DEVNULL, capture_output=True,
                                text=True, timeout=self.LAY_DOWN_WITHIN)
-        except (OSError, subprocess.SubprocessError):
-            return False
-        return r.returncode == 0
+        except subprocess.TimeoutExpired:
+            return False, f'lay-down did not finish within {self.LAY_DOWN_WITHIN} seconds'
+        except (OSError, subprocess.SubprocessError) as e:
+            return False, f'lay-down could not run ({type(e).__name__})'
+        if r.returncode == 0:
+            return True, None
+        said = [line.strip() for line in (r.stderr or '').splitlines() if line.strip()]
+        why = said[-1] if said else f'lay-down exited {r.returncode} with nothing on stderr'
+        return False, ''.join(c for c in why if c.isprintable())[:self.REASON_MOST]
 
     def reload(self):
-        """The agents loaded again, the account's own home only."""
+        """The agents loaded again, the account's own home only; a bootstrap
+        launchd refuses while it is still stopping the agent is tried again,
+        bounded as lay-down bounds it."""
         if not System.own_home():
             return
         folder = os.path.join(os.path.expanduser('~'), 'Library', 'LaunchAgents')
         for label in self.AGENTS:
             plist = os.path.join(folder, label + '.plist')
             if not self.launchctl('print', f'gui/{os.getuid()}/{label}') and os.path.isfile(plist):
-                self.launchctl('bootstrap', f'gui/{os.getuid()}', plist)
+                for tries in range(self.BOOTSTRAP_TRIES):
+                    if self.launchctl('bootstrap', f'gui/{os.getuid()}', plist):
+                        break
+                    if tries + 1 < self.BOOTSTRAP_TRIES:
+                        time.sleep(self.BOOTSTRAP_APART)
+
+    BOOTSTRAP_TRIES = 3
+    BOOTSTRAP_APART = 1
+    LIVE_WITHIN = 120
 
     def check(self, files):
         """The check after a lay-down: the runner holding its lock within 30
-        seconds, one live session within 2 minutes, the health check naming no
-        fault (floor, agents, sign-in, runner, release, a server stopped
-        before a session) and no line it cannot classify, every installed core
-        file against the release's files, and no process of the previous
-        release still running."""
+        seconds, its server live by the runner's own evidence within 2
+        minutes (a bridge pointer naming it, or a session record, written
+        since its start; never a session), the health check naming no fault
+        (floor, agents, sign-in, runner, release, a server stopped before a
+        session) and no line it cannot classify, every installed core file
+        against the release's files, and no process of the previous release
+        still running. None when it passes; otherwise which part failed."""
         end = time.monotonic() + self.RUNNER_WITHIN
         while not self.runner_running():
             if time.monotonic() >= end:
-                return False
+                return f'the runner did not start within {self.RUNNER_WITHIN} seconds'
             time.sleep(0.25)
-        identity = self.router_module.Identity(self.home)
-        end = time.monotonic() + self.SESSION_WITHIN
-        while identity.check(None)[0] != 'ok':
+        if self.evidence is None:
+            return 'the runner\'s reader of its server\'s evidence could not be read'
+        end = time.monotonic() + self.LIVE_WITHIN
+        while self.evidence.live() is None:
             if time.monotonic() >= end:
-                return False
+                return 'the runner\'s session server was not live within 2 minutes'
             time.sleep(0.5)
         lines = HealthLines.run(self.home)
-        if lines is None or HealthLines.faults(lines):
-            return False
+        if lines is None:
+            return 'the health check could not run'
+        faults = HealthLines.faults(lines)
+        if faults:
+            return 'the health check named a fault (' + ', '.join(faults) + ')'
         if Releases.digests(self.releases.core) != files:
-            return False
-        return not any(Process.started_at(pid) == started for pid, started in self.stopped)
+            return 'the installed core files are not the release\'s'
+        if any(Process.started_at(pid) == started for pid, started in self.stopped):
+            return 'a process of the previous release was still running'
+        return None
 
     def clear(self, version, previous):
         """Every kept release but these two removed, a half-made copy among
@@ -879,13 +931,18 @@ class Install:
         files = Releases.digests(self.releases.app_release)
         return files if files and Releases.digests(os.path.join(folder, 'core')) == files else None
 
-    def mark_failed(self, version, previous, on):
+    def mark_failed(self, version, previous, on, reason=None):
         """The mark the owner sees with no session: update.json's record of a
-        rollback that did not end checked, printed by the health check while
-        Squire stays on that release."""
-        self.releases.note(rollbackFailed={'from': version, 'to': previous, 'on': on})
+        rollback that did not end checked, with its reason, printed by the
+        health check while Squire stays on that release."""
+        mark = {'from': version, 'to': previous, 'on': on}
+        if reason:
+            mark['reason'] = reason
+        self.log(f'the return from release {version} to release {previous} did not end checked: '
+                 f'{reason or "its reason was not seen"}; Squire is on {on}')
+        self.releases.note(rollbackFailed=mark)
 
-    def rollback(self, version, previous, before, previous_files=None):
+    def rollback(self, version, previous, before, previous_files=None, reason=None):
         """The previous release laid down again, checked first; returns the
         version Squire is on. The rolled-back version is held out of the
         weekly check's offer (update.json's heldOut) until a newer one is
@@ -900,16 +957,21 @@ class Install:
             self.releases.note(heldOut=version)
         except OSError:
             pass
+        self.log(f'rolling release {version} back to release {previous}, because '
+                 f'{reason or "its install did not end checked"}')
         key_version = (before or {}).get('previous') if (before or {}).get('current') == previous else None
         files = self.recheck(previous, key_version)
         if files is None or (previous_files is not None and files != previous_files):
-            self.mark_failed(version, previous, on=self.releases.installed() or version)
+            self.mark_failed(version, previous, on=self.releases.installed() or version,
+                             reason=f'the kept release {previous} could not be checked again')
             self.reload()
             self.remove_record()
             return version
         self.stop()
-        if not self.lay(os.path.join(self.releases.kept, previous, 'core')):
-            self.mark_failed(version, previous, on=self.releases.installed() or version)
+        laid, why = self.lay(os.path.join(self.releases.kept, previous, 'core'))
+        if not laid:
+            self.mark_failed(version, previous, on=self.releases.installed() or version,
+                             reason=f'the lay-down of release {previous} failed: {why}')
             self.send(f'Squire rolled {version} back to {previous}, and the check after the rollback failed too; the '
                       'health check offers a support ticket', 'rollback')
             self.reload()
@@ -918,12 +980,13 @@ class Install:
         record = before or {'current': previous, 'previous': None, 'verified': False}
         Records.write(self.releases.current_file, record, durable=True)
         self.reload()
-        checked = self.check(files)
+        failed = self.check(files)
         self.clear(previous, record.get('previous'))
-        if checked:
+        if failed is None:
+            self.log(f'rolled release {version} back to release {previous}; all checks passed')
             self.send(f'Squire rolled {version} back to {previous}; all checks passed', 'rollback')
         else:
-            self.mark_failed(version, previous, on=previous)
+            self.mark_failed(version, previous, on=previous, reason=f'release {previous} failed its check: {failed}')
             self.send(f'Squire rolled {version} back to {previous}, and the check after the rollback failed too; the '
                       'health check offers a support ticket', 'rollback')
         self.remove_record()
@@ -1058,7 +1121,7 @@ class Recovery:
             if current.get('current') != version:
                 Records.write(self.releases.current_file, {'current': version, 'previous': previous, 'verified': True},
                               durable=True)
-            if self.install.check(files):
+            if self.install.check(files) is None:
                 return version
             return self.rollback(version, previous)
         if (self.lay or step in self.BEFORE_LAY) \
@@ -1089,7 +1152,7 @@ class Recovery:
         else:
             files = Releases.digests(self.releases.app_release)
             files = files if files and Releases.digests(self.releases.core) == files else None
-        if files is not None and self.install.check(files):
+        if files is not None and self.install.check(files) is None:
             return version
         previous = current.get('previous')
         if Version.of(previous) and os.path.isdir(os.path.join(self.releases.kept, previous, 'core')):
@@ -1238,7 +1301,7 @@ class SquireUpdate:
         # said as it is, naming the version, with a support ticket offered.
         if isinstance(mark, dict) and mark.get('on') == on:
             self.window(f'Squire is on {on}, and it did not pass its checks. Ask Squire in the chat to send a support '
-                        'ticket.')
+                        'ticket.' + self.without_chat())
         elif on == record.get('next'):
             self.window(f'Squire is on {on}. The interrupted update finished and all checks passed.')
         elif on == record.get('previous'):
@@ -1316,6 +1379,20 @@ class SquireUpdate:
         return (f'Squire Update did not install release {version}: it is not signed by Stravica, or it changed after '
                 'Squire checked it. Nothing was changed.')
 
+    SUPPORT = re.compile(r'^https?://[^\s"<>]{1,300}$')
+
+    def without_chat(self):
+        """The way to support that needs no session: the support address the
+        installed release names (release.json's intake), or nothing when it
+        names none."""
+        try:
+            address = self.releases.config().get('intake')
+        except (OSError, ValueError, AttributeError):
+            address = None
+        if not isinstance(address, str) or not self.SUPPORT.match(address):
+            return ''
+        return f' If Squire cannot chat with you now, reach Squire\'s support at {address}.'
+
     def outcome(self, version, code):
         releases = self.releases
         if code == self.INSTALLED:
@@ -1331,7 +1408,7 @@ class SquireUpdate:
         mark = record.get('rollbackFailed')
         if isinstance(mark, dict) and mark.get('from') == version and Version.of(mark.get('to')):
             return (f'Squire {version} did not pass its checks, and {mark["to"]} did not pass them again either. Ask '
-                    'Squire in the chat to send a support ticket.')
+                    'Squire in the chat to send a support ticket.' + self.without_chat())
         if record.get('heldOut') == version and Version.of(installed) and installed != version:
             return (f'Squire {version} did not pass its checks, so Squire Update put {installed} back. All checks '
                     'passed. Nothing in your Squire folder changed.')

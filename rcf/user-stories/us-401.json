@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:11.997Z",
-  "updatedAt": "2026-11-08T19:15:21.542Z",
+  "updatedAt": "2026-11-27T15:10:21.452Z",
   "asA": "Squire owner",
   "iWant": "one Squire session always running that I can reach from the Claude app on my Mac and on my phone",
   "soThat": "my Squire is there whenever I open the app, without my starting anything",
@@ -14,11 +14,11 @@
   "acceptanceCriteria": [
     {
       "id": "AC-401-1",
-      "description": "One Squire session stays running and is reachable from the Claude app on the Mac and on the phone.",
+      "description": "One Squire session stays running and is reachable from the Claude app on the Mac and on the phone, whatever words Claude Code's Remote Control server prints.",
       "testable": true,
       "given": "Squire installed on a Mac, with its session running and the Claude app signed in on the Mac and the phone",
       "when": "The session is restarted, or it crashes",
-      "then": "Within two minutes one Squire session is running again and is listed in the Claude app on both the Mac and the phone.",
+      "then": "Within two minutes Squire's Remote Control server is running again and is judged live by evidence, never by its wording alone; one Squire session is running and listed in the Claude app on both the Mac and the phone once the Squire owner opens Squire.",
       "verification": "external"
     },
     {

@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 CORE = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -40,6 +41,7 @@ TITLES = {
     'phone': 'Squire: your phone',
     'paused': 'Squire: set-up paused',
     'ready': 'Squire: ready',
+    'progress': 'Squire: setting up',
 }
 AGENTS = ('com.stravica.squire.runner', 'com.stravica.squire.wake-ups', 'com.stravica.squire.backup',
           'com.stravica.squire.pages', 'com.stravica.squire.voice-notes')
@@ -51,34 +53,148 @@ class Paused(Exception):
 
 class Windows:
     """Set-up's windows, drawn by the Mac's own osascript, each answered from
-    osascript's own result. A window that cannot be answered gives None."""
+    osascript's own result. A window that cannot be answered gives None.
+
+    The progress window ("Squire: setting up") is left on screen while the
+    work goes on, with one Hide button, as Squire Update's is: the next one is
+    opened before the last is closed, and the paused or closing window takes
+    its place, opened first, so no moment passes with no window. Hide only
+    hides it; it never answers anything. Every window comes to the front when
+    it opens (activate first in its script).
+
+    The words of a progress window, as it opens, or of a window taking its
+    place, once drawn, are kept in the now file (set-up-now.txt in the Squire
+    home), with the address set-up opened on a second line where there is
+    one: the app's own half reads it to hand its last window over a second
+    later, and Squire opened again during set-up reads it to name the step."""
 
     WITHIN = 3600
+    # A window is counted drawn a second after its osascript starts: the one
+    # it replaces stays up that long, so both are on screen for a moment,
+    # while the work goes on.
+    DRAWN = 1.0
+    CLOSE_WITHIN = 2
 
-    def __init__(self, log):
+    def __init__(self, log, now=None):
         self.log = log
+        self.now = now
+        self.up = None
+        self.pending = []
 
-    def show(self, title, text, buttons=('OK',), default=None, answer=False):
+    @staticmethod
+    def script(buttons, default, answer):
         listed = '{' + ', '.join(json.dumps(b) for b in buttons) + '}'
-        script = ['on run argv',
-                  'display dialog (item 2 of argv) with title (item 1 of argv)'
-                  + (' default answer ""' if answer else '')
-                  + f' buttons {listed} default button {json.dumps(default or buttons[-1])}',
-                  'end run']
+        return ['on run argv',
+                'activate',
+                'display dialog (item 2 of argv) with title (item 1 of argv)'
+                + (' default answer ""' if answer else '')
+                + f' buttons {listed} default button {json.dumps(default or buttons[-1])}',
+                'end run']
+
+    def args(self, title, text, buttons, default, answer):
         args = [System.command('/usr/bin/osascript')]
-        for line in script:
+        for line in self.script(buttons, default, answer):
             args += ['-e', line]
+        return args + [title, text]
+
+    def show(self, title, text, buttons=('OK',), default=None, answer=False, takes_place=False):
+        """The window, waited for; with takes_place, the progress window on
+        screen closes once this one is drawn."""
         try:
-            r = subprocess.run(args + [title, text], cwd='/', env=System.env(), stdin=subprocess.DEVNULL,
-                               capture_output=True, timeout=self.WITHIN)
-        except (OSError, subprocess.SubprocessError) as e:
+            shown = subprocess.Popen(self.args(title, text, buttons, default, answer), cwd='/', env=System.env(),
+                                     stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except OSError as e:
             self.log(f'window "{title}" could not be shown ({type(e).__name__})')
             return None
-        if r.returncode != 0:
-            self.log(f'window "{title}": osascript exited {r.returncode}')
+        if takes_place:
+            time.sleep(self.DRAWN)
+            self.settle()
+            self.keep_now(text)
+            self.close_progress()
+        try:
+            out, _ = shown.communicate(timeout=self.WITHIN)
+        except subprocess.TimeoutExpired:
+            shown.kill()
+            shown.communicate()
+            self.log(f'window "{title}" could not be shown (TimeoutExpired)')
             return None
-        out = r.stdout.decode('utf-8', 'replace')
+        if shown.returncode != 0:
+            self.log(f'window "{title}": osascript exited {shown.returncode}')
+            return None
+        out = out.decode('utf-8', 'replace')
         return out[:-1] if out.endswith('\n') else out
+
+    def progress(self, text, address=None):
+        """The progress window naming what set-up does now, left up while the
+        work goes on, its words kept at once. The work goes on at once too;
+        once the window is counted drawn, the one up before it closes."""
+        try:
+            shown = subprocess.Popen(self.args(TITLES['progress'], text, ('Hide',), 'Hide', False), cwd='/',
+                                     env=System.env(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                     stderr=subprocess.DEVNULL)
+        except OSError as e:
+            self.log(f'window "{TITLES["progress"]}" could not be shown ({type(e).__name__})')
+            return
+        before, self.up = self.up, shown
+        self.keep_now(text, address)
+        once = threading.Lock()
+
+        def drawn():
+            # Run once only: by the timer, or by settle, whichever comes first.
+            if not once.acquire(blocking=False):
+                return
+            if before is not None:
+                self.close(before)
+
+        later = threading.Timer(self.DRAWN, drawn)
+        later.daemon = True
+        self.pending.append((later, drawn))
+        later.start()
+
+    def settle(self):
+        """Every hand-over still waiting for its window to be counted drawn
+        is done now: the window before it closed."""
+        while self.pending:
+            later, drawn = self.pending.pop(0)
+            later.cancel()
+            later.join()
+            drawn()
+
+    def keep_now(self, text, address=None):
+        """The words on screen now, and the address set-up opened where there
+        is one, written whole to the now file; never a pause."""
+        if not self.now:
+            return
+        lines = [' '.join(str(text).split())] + ([address] if address else [])
+        try:
+            fd, tmp = tempfile.mkstemp(prefix='.set-up-now-', dir=os.path.dirname(self.now))
+        except OSError:
+            return
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines) + '\n')
+            os.replace(tmp, self.now)
+        except OSError:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+
+    def close_progress(self):
+        self.settle()
+        before, self.up = self.up, None
+        if before is not None:
+            self.close(before)
+
+    def close(self, shown):
+        if shown.poll() is not None:
+            return
+        shown.terminate()
+        try:
+            shown.wait(self.CLOSE_WITHIN)
+        except subprocess.TimeoutExpired:
+            shown.kill()
+            shown.wait()
 
     def button(self, title, text, buttons, default=None):
         out = self.show(title, text, buttons, default)
@@ -153,7 +269,7 @@ class SetUp:
         self.owner = os.path.join(self.user_home, 'Squire')
         self.release = os.path.join(self.home, 'release', 'core')
         self.record = SetUpRecord(self.home)
-        self.windows = Windows(self.log)
+        self.windows = Windows(self.log, os.path.join(self.home, 'set-up-now.txt'))
         self.python = System.command('/usr/bin/python3')
         self.ready_lines = []
 
@@ -172,21 +288,28 @@ class SetUp:
             return 2
         setup = SetUp(argv[0])
         try:
-            setup.record.load()
+            return setup.main_steps()
+        finally:
+            # A progress window never outlives set-up.
+            setup.windows.close_progress()
+
+    def main_steps(self):
+        try:
+            self.record.load()
         except (OSError, ValueError):
-            setup.pause('Squire could not read its own record of set-up. Open Squire again to start set-up afresh.')
+            self.pause('Squire could not read its own record of set-up. Open Squire again to start set-up afresh.')
             return 1
         try:
-            setup.run()
+            self.run()
         except Paused as e:
-            setup.pause(str(e))
+            self.pause(str(e))
             return 1
-        if setup.older():
-            setup.pause(f'This copy of Squire is release {setup.app_version()}, and the Squire already installed on this '
-                        f'Mac is newer (release {setup.installed_version()}), so set-up did not lay its parts down. The '
-                        'installed Squire keeps running; the rest of set-up ran as usual.')
+        if self.older():
+            self.pause(f'This copy of Squire is release {self.app_version()}, and the Squire already installed on this '
+                       f'Mac is newer (release {self.installed_version()}), so set-up did not lay its parts down. The '
+                       'installed Squire keeps running; the rest of set-up ran as usual.')
             return 1
-        setup.ready()
+        self.ready()
         return 0
 
     def run(self):
@@ -198,6 +321,7 @@ class SetUp:
                 continue
             if done and step != 'health' and self.holds(step) and not (step == 'layDown' and self.update_app_missing()):
                 continue
+            self.windows.progress(self.step_words(step))
             try:
                 getattr(self, 'step_' + step[0].lower() + re.sub(r'([A-Z])', lambda m: '_' + m.group(1).lower(), step[1:]))()
                 if not self.holds(step):
@@ -209,6 +333,29 @@ class SetUp:
             if not done:
                 self.record.save(done=list(STEPS[:index + 1]))
             self.log(f'{step} done')
+
+    # What the progress window says for each of these steps: every step that
+    # can run longer than about 10 seconds says how long it usually takes.
+    DOING = {
+        'naming': 'naming your Squire. Give it a name and a personality in the windows in front.',
+        'ownerFolder': 'making your Squire folder, ~/Squire, and Squire\'s settings.',
+        'layDown': 'installing Squire\'s own parts and its five background jobs. This usually takes under a minute.',
+        'backup': 'setting up the nightly backup of ~/Squire. This usually takes under a minute.',
+        'health': 'checking that everything set-up laid down works. This usually takes under a minute.',
+        'phone': 'your phone.',
+        'firstConversation': 'starting your Squire\'s session. Squire waits for its session server to start working; '
+                             'this usually takes under a minute.',
+    }
+
+    @classmethod
+    def step_words(cls, step, doing=None):
+        """Step N of M, counted over every step of set-up, both halves, and
+        what it does now."""
+        return f'{cls.step_of(step)}: {doing or cls.DOING[step]}'
+
+    @staticmethod
+    def step_of(step):
+        return f'Step {STEPS.index(step) + 1} of {len(STEPS)}'
 
     @staticmethod
     def plain(step):
@@ -338,7 +485,7 @@ class SetUp:
                                  'Describe the personality you would like your Squire to have, in up to 400 characters.')):
             text = ask
             while True:
-                answer = self.windows.typed(title, text)
+                answer = self.windows.typed(title, f'{self.step_of("naming")}: {text}')
                 if answer is None:
                     raise Paused('Set-up stopped at naming your Squire: the window closed without an answer. '
                                  'Open Squire again to carry on from there.')
@@ -454,6 +601,11 @@ class SetUp:
         from speech import SpeechHelper
 
         try:
+            # A Mac that can build it gets the window naming the build first.
+            if not SpeechHelper.ready(self.home) and SpeechHelper.why_not()[2] is None:
+                self.windows.progress(self.step_words('layDown', 'building Squire\'s speech helper, which turns your '
+                                                                 'voice notes into text on this Mac. This usually takes '
+                                                                 'a minute or two.'))
             built, why = SpeechHelper.find(self.home)
         except OSError as e:
             built, why = None, e.strerror or type(e).__name__
@@ -530,30 +682,91 @@ class SetUp:
 
     def step_phone(self):
         self.windows.button(TITLES['phone'],
-                            'Talk to your Squire from your phone too: install the Claude app from the App Store, and sign '
+                            f'{self.step_of("phone")}: talk to your Squire from your phone too: install the Claude app from the App Store, and sign '
                             'in with the same Claude account you used for Squire. Your Squire then shows in the app. '
                             'You can do this later.', ('Later', 'Done'), 'Done')
 
     def step_first_conversation(self):
+        """Once Squire's session server is live by the runner's evidence
+        (within 2 minutes), the address where the owner's first message
+        starts the session is opened, the server's own environment address
+        where it names one, and a window says what to do there; then set-up
+        waits up to 30 minutes for the session's record. A server never live
+        pauses set-up naming its own last line; no first message pauses it
+        naming the address."""
+        sys.path.insert(0, os.path.join(CORE, 'tools'))
+        from runner import Evidence
+
+        evidence = Evidence(self.home)
         identity = self.identity()
         end = time.monotonic() + self.SESSION_WITHIN
         while True:
-            if identity is not None and identity.check(None)[0] == 'ok':
+            live = evidence.live()
+            if live is not None:
                 break
             stopped = self.server_stopped()
-            if stopped or time.monotonic() >= end:
-                why = '\n'.join(stopped) or 'no session started within 2 minutes.'
-                raise Paused('Squire\'s session did not start, so the first conversation could not begin:\n' + why
-                             + '\nOpen Squire again once this is put right.')
+            if stopped:
+                raise Paused('Squire\'s session did not start, so the first conversation could not begin:\n'
+                             + '\n'.join(stopped) + '\nOpen Squire again once this is put right.')
+            if time.monotonic() >= end:
+                last = evidence.last_line() or 'it printed nothing'
+                raise Paused('Squire\'s session server did not start working within 2 minutes, so the first conversation '
+                             f'could not begin. Its own last line was:\n{last}\nOpen Squire again once this is put right.')
             time.sleep(0.5)
+        environment = evidence.environment(live)
+        self.address = f'{self.ADDRESS}?environment={environment}' if environment else self.ADDRESS
+        session = identity is not None and identity.check(None)[0] == 'ok'
+        within = self.first_message_within()
+        if not session:
+            self.windows.progress(self.waiting_text(within), self.address)
+        self.open_address()
+        if session:
+            return
+        end = time.monotonic() + within
+        while identity is None or identity.check(None)[0] != 'ok':
+            stopped = self.server_stopped()
+            if stopped:
+                raise Paused('Squire\'s session stopped before your first message reached it:\n' + '\n'.join(stopped)
+                             + '\nOpen Squire again once this is put right.')
+            if time.monotonic() >= end:
+                raise Paused(f'Squire waited {self.wait_words(within)} for your first message, and none came. Open '
+                             f'{self.address} in your browser and send your Squire a first message there (Claude may ask '
+                             'you to sign in again to check this Mac), then open Squire again.')
+            time.sleep(0.5)
+
+    FIRST_MESSAGE_WITHIN = 1800
+
+    def first_message_within(self):
+        """Set-up's wait for the owner's first message: 30 minutes, or less
+        where the test setting SQUIRE_FIRST_MESSAGE_WAIT_SECONDS asks for
+        fewer seconds."""
+        asked = os.environ.get('SQUIRE_FIRST_MESSAGE_WAIT_SECONDS', '')
+        if re.fullmatch(r'[0-9]{1,5}', asked) and 0 < int(asked) < self.FIRST_MESSAGE_WITHIN:
+            return int(asked)
+        return self.FIRST_MESSAGE_WITHIN
+
+    @staticmethod
+    def wait_words(seconds):
+        if seconds >= 60:
+            minutes = seconds // 60
+            return f'{minutes} minute' + ('' if minutes == 1 else 's')
+        return f'{seconds} second' + ('' if seconds == 1 else 's')
+
+    def waiting_text(self, within):
+        step = STEPS.index('firstConversation') + 1
+        return (f'Step {step} of {len(STEPS)}: your first conversation. Squire has opened {self.address} in your '
+                'browser. Send your Squire a first message there to start your session; Claude may ask you to sign in '
+                f'again to check this Mac. Set-up waits up to {self.wait_words(within)} for your first message.')
+
+    def open_address(self):
         try:
-            r = subprocess.run([System.command('/usr/bin/open'), self.ADDRESS], cwd='/', env=System.env(),
+            r = subprocess.run([System.command('/usr/bin/open'), self.address], cwd='/', env=System.env(),
                                stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
             opened = r.returncode == 0
         except (OSError, subprocess.SubprocessError):
             opened = False
         if not opened:
-            raise Paused(f'Squire could not open your browser at {self.ADDRESS}. Open that address in your browser, '
+            raise Paused(f'Squire could not open your browser at {self.address}. Open that address in your browser, '
                          'then open Squire again.')
 
     def identity(self):
@@ -572,16 +785,20 @@ class SetUp:
 
     def pause(self, text):
         self.log(f'paused: {text}')
-        self.windows.button(TITLES['paused'], text, ('OK',))
+        self.windows.show(TITLES['paused'], text, ('OK',), takes_place=True)
+        self.windows.close_progress()
 
     def ready(self):
         name = (Persona.of(self.owner) or {}).get('squireName', 'Your Squire')
-        text = (f'{name} is ready. Talk to {name} at claude.ai/code in your browser, or in the Claude app on your phone. '
+        address = getattr(self, 'address', None)
+        where = f'at {address} in your browser' if address and address != self.ADDRESS else 'in the Claude app on your Mac'
+        text = (f'{name} is ready. Talk to {name} {where}, or in the Claude app on your phone. '
                 f'{name} keeps running on this Mac.')
         if self.ready_lines:
             text += '\n\nThe health check also says:\n' + '\n'.join(self.ready_lines)
         self.log('ready')
-        self.windows.button(TITLES['ready'], text, ('OK',))
+        self.windows.show(TITLES['ready'], text, ('OK',), takes_place=True)
+        self.windows.close_progress()
 
 
 class Release:

@@ -1,0 +1,40 @@
+{
+  "verdictVersion": 1,
+  "stage": "review",
+  "head": "998cae17f89cbe758f81dfd73a3761f69dd25651",
+  "fbsIds": [
+    "FBS-014",
+    "FBS-002",
+    "FBS-003",
+    "FBS-004",
+    "FBS-013"
+  ],
+  "touchedAcIds": [
+    "AC-201-9",
+    "AC-201-10",
+    "AC-201-11",
+    "AC-201-12",
+    "AC-401-1",
+    "AC-201-3",
+    "AC-1401-3",
+    "AC-1401-8"
+  ],
+  "code": "FINDINGS",
+  "adequacy": "FINDINGS",
+  "findings": [
+    {
+      "id": "F-1",
+      "locus": "build",
+      "acId": "AC-401-1",
+      "text": "The runner reads a disconnection word anywhere in its server's output, the session's title included, and replaces the server 60 seconds later whatever evidence stands (core/tools/runner.py, watch and status, lines 605 to 631). Under Claude Code 2.1.332 the title the server prints is the owner's first message, so a first message holding disconnected or reconnecting has a live server, its bridge pointer naming it and its session record written, replaced about 61 seconds on and the owner's session ended, while a server whose first message is hello is kept. A red test: a live 2.1.332 server whose session title holds such a word is still the one server, with its session, 75 seconds later. Smallest fix: read status words only in the server's status field, never inside a session title."
+    },
+    {
+      "id": "F-2",
+      "locus": "test",
+      "acId": "AC-201-9",
+      "text": "The case for set-up's own steps from naming on (tests/acceptance/set-up-windows.test.js, line 88) checks only that some window is up and that each progress window shows a step N of M. With the backup step drawing no window of its own, the speech helper's window stays up through backup, naming the wrong activity and the wrong step, and all twelve set-up window cases and the set-up progress hygiene tests stay green. A red test: while each of set-up's own steps runs (the Squire folder, laying Squire down, the speech helper, backup, the health check, the phone step and the wait for the first message), the window on screen names that step's activity and its own step N of M."
+    }
+  ],
+  "recordedBy": "reviewer",
+  "recordedAt": "2026-11-28T02:15:37.593Z"
+}

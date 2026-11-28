@@ -30,6 +30,7 @@ typeset -g SQ_T_ASKPLAN='Squire: your plan'
 typeset -g SQ_T_CANNOT='Squire: cannot set up'
 typeset -g SQ_T_STOPPED='Squire: set-up stopped'
 typeset -g SQ_T_PAUSED='Squire: set-up paused'
+typeset -g SQ_T_PROGRESS='Squire: setting up'
 typeset -g SQ_INSTALL_URL='https://claude.ai/install.sh'
 typeset -ga SQ_CLAUDE_PLACES=(~/.local/bin/claude /usr/local/bin/claude /opt/homebrew/bin/claude)
 
@@ -37,6 +38,7 @@ typeset -g SQ_ROOT= SQ_BAD_ROOT= SQ_PATH= SQ_USER= SQ_UMASK=022 SQ_TMP= SQ_ERR=/
 typeset -g SQ_APP_CORE= SQ_HOME= SQ_RECORD= SQ_LEDGER= SQ_LOCK_FD= SQ_CLAUDE= SQ_PLAN= SQ_PLAN_WORD=
 typeset -g SQ_REC=none SQ_RELEASE= SQ_DECLARED= SQ_NAME= SQ_PERSONALITY=
 typeset -g SQ_HAS_RELEASE= SQ_HAS_NAME= SQ_HAS_PERSONALITY=
+typeset -g SQ_PROGRESS_PID= SQ_PROGRESS_TEXT= SQ_NOW= SQ_TAKE_AT=
 typeset -ga SQ_DONE SQ_ADDED_PATH SQ_ADDED_MADE SQ_ADDED_SAVED SQ_EXTRA SQ_LISTED
 
 # --------------------------------------------------------------- the seams
@@ -68,6 +70,12 @@ sq_bounded() {
   { umask $SQ_UMASK; exec $env "$@" } </dev/null >|$out 2>>$SQ_ERR &
   local pid=$! end=$(( EPOCHREALTIME + bound ))
   while kill -0 $pid 2>/dev/null; do
+    # A window taking the progress window's place: the progress window
+    # closes once the new one has been up for a second.
+    if [[ -n $SQ_TAKE_AT ]] && (( EPOCHREALTIME >= SQ_TAKE_AT )); then
+      SQ_TAKE_AT=
+      sq_progress_close
+    fi
     if (( EPOCHREALTIME >= end )); then
       sq_kill_tree $pid
       wait $pid 2>/dev/null
@@ -131,13 +139,16 @@ sq_tilde() {
 
 # ----------------------------------------------------------------- windows
 
+# Every window comes to the front of every other app's window when it opens:
+# activate is the first line of its script.
+
 # sq_window <title> <text> <button>...: REPLY is the button the owner chose,
 # empty when the window could not be answered.
 sq_window() {
   local title=$1 text=$2 b list=
   shift 2
   for b in "$@"; do list+="${list:+, }\"$b\""; done
-  sq_bounded 3600 $SQ_TMP/window $SQ_ROOT/usr/bin/osascript -e 'on run argv' \
+  sq_bounded 3600 $SQ_TMP/window $SQ_ROOT/usr/bin/osascript -e 'on run argv' -e 'activate' \
     -e "display dialog (item 2 of argv) with title (item 1 of argv) buttons {$list} default button \"${argv[-1]}\"" \
     -e 'end run' $title $text
   local rc=$?
@@ -150,20 +161,113 @@ sq_window() {
   fi
 }
 
+# sq_window_over <title> <text> <button>...: a window that takes the progress
+# window's place (a pause, a refusal, the end): the progress window stays up
+# for a second after this one opens, so the two overlap, then closes.
+sq_window_over() {
+  [[ -n $SQ_PROGRESS_PID ]] && SQ_TAKE_AT=$(( EPOCHREALTIME + 1 ))
+  sq_window "$@"
+  if [[ -n $SQ_TAKE_AT ]]; then
+    local -i left=$(( (SQ_TAKE_AT - EPOCHREALTIME) * 100 ))
+    (( left > 0 )) && zselect -t $left
+    SQ_TAKE_AT=
+    sq_progress_close
+  fi
+}
+
+# sq_progress <step> <words>: Squire's progress window, "Squire: setting up",
+# naming the step as step N of M and what set-up does now, left on screen
+# with one Hide button while the work goes on, as Squire Update's is. The one
+# it replaces stays up for a second after it opens, so no moment passes with
+# none. Callers draw it before the Claude sign-in or Apple's own installer
+# starts, never while either is up. Hide only hides it.
+sq_progress() {
+  local text="Step ${SQ_STEPS[(Ie)$1]} of $#SQ_STEPS: $2" before=$SQ_PROGRESS_PID
+  local -a env
+  env=($SQ_ROOT/usr/bin/env -i HOME=$HOME USER=$SQ_USER LOGNAME=$SQ_USER LANG=en_US.UTF-8 PATH=$SQ_PATH)
+  [[ -n ${TMPDIR-} ]] && env+=(TMPDIR=$TMPDIR)
+  { exec $env $SQ_ROOT/usr/bin/osascript -e 'on run argv' -e 'activate' \
+      -e 'display dialog (item 2 of argv) with title (item 1 of argv) buttons {"Hide"} default button "Hide"' \
+      -e 'end run' $SQ_T_PROGRESS $text } </dev/null >/dev/null 2>>$SQ_ERR &
+  SQ_PROGRESS_PID=$! SQ_PROGRESS_TEXT=$text
+  sq_now_write
+  if [[ -n $before ]]; then
+    zselect -t 100
+    sq_window_close $before
+  fi
+}
+
+sq_progress_close() {
+  local pid=$SQ_PROGRESS_PID
+  SQ_PROGRESS_PID=
+  [[ -n $pid ]] && sq_window_close $pid
+}
+
+# sq_window_close <pid>: a window this process started, taken away; a process
+# that is no longer this one's own child is never signalled.
+sq_window_close() {
+  local pid=$1 kid end
+  local -a kids
+  $SQ_ROOT/usr/bin/env -i PATH=$SQ_PATH $SQ_ROOT/usr/bin/pgrep -P $$ </dev/null >|$SQ_TMP/kids.$$ 2>/dev/null
+  kids=(${(f)"$(<$SQ_TMP/kids.$$)"})
+  (( ${kids[(Ie)$pid]} )) || return 0
+  kill -TERM $pid 2>/dev/null
+  end=$(( EPOCHREALTIME + 2 ))
+  while kill -0 $pid 2>/dev/null && (( EPOCHREALTIME < end )); do zselect -t 5; done
+  kill -0 $pid 2>/dev/null && kill -KILL $pid 2>/dev/null
+  wait $pid 2>/dev/null
+  return 0
+}
+
+# What set-up shows now, once the one yes is given: set-up-now.txt in the
+# Squire home holds the progress window's words (and, while set-up waits for
+# the first message, the address it opened on a second line), so Squire
+# opened again can name the step. Gone when set-up ends.
+sq_now_write() {
+  [[ -n $SQ_NOW ]] || return 0
+  { print -r -- $SQ_PROGRESS_TEXT >|$SQ_NOW } 2>/dev/null
+}
+
+sq_now_clear() {
+  [[ -n $SQ_NOW ]] && zf_rm -f -- $SQ_NOW 2>/dev/null
+  return 0
+}
+
+# Squire opened again while set-up runs: a window in front naming the step
+# set-up is at, and nothing else started. While set-up waits for the first
+# message, the address it opened is opened again.
+sq_running() {
+  local now= text="Squire's set-up is already running."
+  local -a lines
+  local file=$SQ_HOME/set-up-now.txt
+  if [[ -f $file && ! -L $file && -r $file ]]; then
+    lines=(${(f)"$(<$file)"})
+    now=${lines[1]-}
+    [[ ${#now} -le 600 && $now == 'Step '<->' of '<->': '* && $now != *[[:cntrl:]]* ]] || now=
+  fi
+  [[ -n $now ]] && text+=$'\n\n'"$now"
+  text+=$'\n\n'"Finish that set-up, or quit it, then open Squire again."
+  sq_log "opened again while set-up runs"
+  if [[ -n $now && ${lines[2]-} == https://claude.ai/code(|\?environment=[A-Za-z0-9_-]##) ]]; then
+    sq_bounded 60 /dev/null $SQ_ROOT/usr/bin/open ${lines[2]}
+  fi
+  sq_window_over $SQ_T_CANNOT $text OK
+}
+
 sq_cannot() {
   sq_log "cannot set up: $1"
-  sq_window $SQ_T_CANNOT $1 OK
+  sq_window_over $SQ_T_CANNOT $1 OK
 }
 
 sq_paused() {
   sq_log "paused: $1"
-  sq_window $SQ_T_PAUSED $1 OK
+  sq_window_over $SQ_T_PAUSED $1 OK
 }
 
 # The plan the owner declares: REPLY is the item chosen, empty when none.
 sq_plan_window() {
   local choose="choose from list {\"Pro\", \"Max\", \"Team or Enterprise\", \"Free\", \"I'm not sure\"} with title (item 1 of argv) with prompt (item 2 of argv)"
-  sq_bounded 3600 $SQ_TMP/window $SQ_ROOT/usr/bin/osascript -e 'on run argv' -e $choose -e 'end run' \
+  sq_bounded 3600 $SQ_TMP/window $SQ_ROOT/usr/bin/osascript -e 'on run argv' -e 'activate' -e $choose -e 'end run' \
     $SQ_T_PLAN 'Which Claude plan is your Claude account on? Squire needs Pro or above.'
   local rc=$?
   local out=$(<$SQ_TMP/window)
@@ -393,7 +497,7 @@ sq_lock() {
     return 1
   fi
   if ! zsystem flock -t 0 -f SQ_LOCK_FD $lock 2>/dev/null; then
-    sq_cannot "Squire's set-up is already running. Finish that set-up, or quit it, then open Squire again."
+    sq_running
     return 1
   fi
 }
@@ -559,7 +663,7 @@ sq_save_copy() {
 # at an address that names its version. reply.
 sq_browser_parts() {
   local cpu=arm64
-  if sq_out 10 $SQ_ROOT/usr/bin/uname -m && [[ $REPLY == x86_64 ]]; then
+  if sq_out 10 $SQ_ROOT/usr/bin/uname -m && [[ $REPLY == x86_64 ]] && ! sq_apple_silicon; then
     cpu=x64
   fi
   reply=(
@@ -616,7 +720,7 @@ sq_browser_unpack() {
 # address of each part in place, so a part already kept is never fetched
 # again.
 sq_browser() {
-  local dir=$SQ_HOME/browser place url file staged top rc n=0
+  local dir=$SQ_HOME/browser place url file staged top rc n=0 total=0
   local -a parts kept
   sq_browser_parts
   parts=($reply)
@@ -624,10 +728,15 @@ sq_browser() {
   [[ -f $dir/kept.txt ]] && kept=(${(f)"$(<$dir/kept.txt)"})
   for place url in $parts; do
     (( ${kept[(Ie)$url]} )) && [[ -d $dir/$place ]] && continue
+    (( ++total ))
+  done
+  for place url in $parts; do
+    (( ${kept[(Ie)$url]} )) && [[ -d $dir/$place ]] && continue
     (( ++n ))
     file=$dir/.download-$n
     staged=$dir/.unpacking-$n
     zf_rm -rf -- $file $staged 2>/dev/null
+    sq_progress claudeCode "downloading Squire's built-in browser, part $n of $total. The browser's parts usually take a few minutes in all."
     sq_log "downloading Squire's built-in browser from $url"
     sq_bounded 610 $SQ_TMP/curl $SQ_ROOT/usr/bin/curl -fsSL --proto '=https' --proto-redir '=https' --max-time 600 -o $file $url
     rc=$?
@@ -693,6 +802,7 @@ sq_step_claude_code() {
   for p in $SQ_LISTED; do before[$p]=1; done
   local file=$SQ_HOME/claude-install.sh
   zf_rm -f -- $file 2>/dev/null
+  sq_progress claudeCode "downloading Claude Code's installer from Anthropic. This usually takes a few seconds."
   sq_log "downloading Claude Code's installer"
   sq_bounded 610 $SQ_TMP/curl $SQ_ROOT/usr/bin/curl -fsSL --max-time 600 -o $file $SQ_INSTALL_URL
   rc=$?
@@ -705,6 +815,7 @@ sq_step_claude_code() {
     sq_paused "The download of Claude Code's installer did not finish, so nothing was installed. Check this Mac is online, then open Squire again."
     return 1
   fi
+  sq_progress claudeCode "installing Claude Code, Anthropic's command line tool. This usually takes about a minute."
   sq_log "running Claude Code's installer"
   sq_bounded 600 $SQ_TMP/installer $SQ_ROOT/bin/bash $file
   rc=$?
@@ -764,6 +875,7 @@ sq_step_sign_in() {
   zf_mkdir -p -m 700 $config 2>/dev/null
   sq_added_add $config created
   sq_record_write
+  sq_progress signIn "signing in to Claude. Your browser opens Claude's sign-in page: sign in there with your Claude account, then come back to Squire. This usually takes a minute or two."
   sq_log "signing in to Claude"
   SQ_EXTRA=(CLAUDE_CONFIG_DIR=$config)
   sq_bounded 900 $SQ_TMP/login $SQ_CLAUDE auth login
@@ -887,7 +999,7 @@ sq_undo() {
     text+=$'\n\n'"Squire could not finish undoing: ${(j:; :)failed}. Squire's record keeps these, so opening Squire again can finish them."
   fi
   sq_log "stopped: $text"
-  sq_window $SQ_T_STOPPED $text OK
+  sq_window_over $SQ_T_STOPPED $text OK
 }
 
 # --------------------------------------------------- step: appleTools
@@ -908,6 +1020,7 @@ sq_step_apple_tools() {
     fi
   fi
   sq_not_done appleTools
+  sq_progress appleTools "Apple's command line tools. Apple's own installer opens in a window of its own: follow it to the end. It usually takes 5 to 20 minutes, and set-up carries on by itself once it is done."
   sq_log "starting Apple's command line tools installer"
   sq_bounded 60 /dev/null $SQ_ROOT/usr/bin/xcode-select --install
   end=$(( EPOCHREALTIME + 3600 ))
@@ -932,7 +1045,59 @@ sq_python() {
   [[ -n ${TMPDIR-} ]] && env+=(TMPDIR=$TMPDIR)
   [[ -n ${SQUIRE_HOME-} ]] && env+=(SQUIRE_HOME=$SQUIRE_HOME)
   [[ -n $SQ_ROOT ]] && env+=(SQUIRE_SYSTEM_ROOT=$SQ_ROOT)
-  $env $SQ_ROOT/usr/bin/python3 -B $SQ_APP_CORE/tools/set-up.py $SQ_APP_CORE </dev/null 2>>$SQ_ERR
+  # A test setting set-up honours: a shorter wait for the first message.
+  [[ ${SQUIRE_FIRST_MESSAGE_WAIT_SECONDS-} == <1-99999> ]] && env+=(SQUIRE_FIRST_MESSAGE_WAIT_SECONDS=$SQUIRE_FIRST_MESSAGE_WAIT_SECONDS)
+  # This half's progress window stays up until core's Python has opened its
+  # own (set-up-now.txt then holds other words) and a second has passed, or
+  # until Python ends.
+  sq_now_write
+  $env $SQ_ROOT/usr/bin/python3 -B $SQ_APP_CORE/tools/set-up.py $SQ_APP_CORE </dev/null 2>>$SQ_ERR &
+  local pid=$! rc handed= now seen=
+  local -a lines
+  while kill -0 $pid 2>/dev/null; do
+    if [[ -z $handed && -z $seen && -n $SQ_PROGRESS_PID && -n $SQ_NOW && -f $SQ_NOW ]]; then
+      lines=(${(f)"$(<$SQ_NOW)"})
+      now=${lines[1]-}
+      [[ -n $now && $now != $SQ_PROGRESS_TEXT ]] && seen=$(( EPOCHREALTIME + 1 ))
+    fi
+    if [[ -z $handed && -n $seen ]] && (( EPOCHREALTIME >= seen )); then
+      handed=1
+      sq_progress_close
+    fi
+    zselect -t 20
+  done
+  [[ -n $seen ]] && handed=1
+  wait $pid
+  rc=$?
+  if [[ -z $handed && -n $SQ_PROGRESS_PID ]]; then
+    if (( rc != 0 )); then
+      sq_paused "Squire's set-up could not carry on from naming your Squire. Open Squire again to carry on from there."
+    else
+      sq_progress_close
+    fi
+  fi
+  return $rc
+}
+
+# ------------------------------------------------------- the processor
+
+# Apple silicon, on a positive reading only: hw.optional.arm64 reads 1.
+sq_apple_silicon() {
+  sq_reading 10 $SQ_ROOT/usr/sbin/sysctl -n hw.optional.arm64 && [[ $REPLY == 1 ]]
+}
+
+# On an Apple silicon Mac whose macOS opened Squire under Rosetta (a positive
+# reading: sysctl.proc_translated 1), set-up runs itself again as Apple
+# silicon, once, before it shows or downloads anything, so that everything
+# it downloads, builds and runs is Apple silicon's. Returns 1 when it did not
+# run itself again; otherwise REPLY is the status of the run as Apple silicon.
+sq_native() {
+  [[ ${1-} == --apple-silicon ]] && return 1
+  [[ -x $SQ_ROOT/usr/bin/arch && -x $SQ_ROOT/bin/zsh ]] || return 1
+  sq_reading 10 $SQ_ROOT/usr/sbin/sysctl -n sysctl.proc_translated && [[ $REPLY == 1 ]] || return 1
+  sq_apple_silicon || return 1
+  $SQ_ROOT/usr/bin/arch -arm64 $SQ_ROOT/bin/zsh -f $SQ_SELF --apple-silicon
+  REPLY=$?
 }
 
 # ------------------------------------------------------------------ main
@@ -945,11 +1110,15 @@ sq_main() {
   base=${TMPDIR:-/tmp}
   SQ_TMP=${base%%/#}/squire-set-up.$$.$EPOCHSECONDS
   zf_mkdir -m 700 $SQ_TMP 2>/dev/null || return 1
-  trap 'zf_rm -rf -- $SQ_TMP 2>/dev/null' EXIT
+  # No window outlives set-up, and set-up-now.txt goes with it.
+  trap 'sq_progress_close; sq_now_clear; zf_rm -rf -- $SQ_TMP 2>/dev/null' EXIT
   if [[ -n $SQ_BAD_ROOT ]]; then
     SQ_PATH=/usr/bin:/bin:/usr/sbin:/sbin
     sq_cannot "Squire was opened with a system folder setting it cannot use. Open Squire from Finder, then try again."
     return 1
+  fi
+  if sq_native "$@"; then
+    return $REPLY
   fi
   SQ_APP_CORE=${SQ_SELF:h:h}/Resources/core
   if [[ ! -r $SQ_APP_CORE/tools/set-up.py || ! -r $SQ_APP_CORE/tools/lay-down.py || ! -r $SQ_APP_CORE/lib/squire.py ]]; then
@@ -964,12 +1133,15 @@ sq_main() {
     SQ_LOG=$SQ_HOME/logs/set-up.log SQ_ERR=$SQ_HOME/logs/set-up.log
     zf_mkdir -p -m 700 $SQ_HOME/logs 2>/dev/null || SQ_LOG= SQ_ERR=/dev/null
   fi
+  sq_progress yes "checking this Mac, then your Claude plan and your yes to what Squire installs."
   sq_mac_check || return 1
   sq_record_read
   sq_step_yes
   rc=$?
   (( rc == 2 )) && return 0
   (( rc == 0 )) || return 1
+  SQ_NOW=$SQ_HOME/set-up-now.txt
+  sq_now_write
   sq_step_claude_code || return 1
   sq_step_sign_in || return 1
   sq_step_apple_tools || return 1

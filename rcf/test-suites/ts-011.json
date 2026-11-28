@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-07T17:40:41.398Z",
-  "updatedAt": "2026-11-26T13:45:04.083Z",
+  "updatedAt": "2026-11-27T19:09:11.356Z",
   "purpose": "Feeds the real update check releases with missing, wrong-key and bad signatures and a good one; checks the changelog and the yes before any core change; injects a failing health check and checks the rollback; hashes the Squire owner's folder through update and rollback; kills an install at every step it names and checks Squire comes back on a healthy version, and changes Claude Code outside Squire and checks it is noticed and checked. Also feeds releases the check cannot run, read or parse, an owner's folder holding entries of every kind, interrupted downloads, and Claude Code changes it cannot read.",
   "testLevel": "integration",
   "acIds": [
@@ -706,6 +706,69 @@
       "description": "finishing an interrupted install whose return cannot be checked never says all checks passed",
       "status": "pending",
       "testPointer": "tests/acceptance/updates.test.js::Squire Update finishing an interrupted install whose return to the previous release cannot be checked never says all checks passed: it names the version Squire is on, says it did not pass its checks and sends the owner to the chat for a support ticket"
+    },
+    {
+      "id": "TC-011-an-update-with-no-client-connected",
+      "acId": "AC-1401-3",
+      "description": "an update with no client connected passes its check on a live server under both profiles",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::an update from Squire Update under Claude Code 2.1.332 with no client connected installs, and its check passes on a live server and a clean health check with no session, with no rollback; under 2.1.319 the same"
+    },
+    {
+      "id": "TC-011-an-update-after-the-owner-s-session",
+      "acId": "AC-1401-3",
+      "description": "an update after the owner's session existed passes its check with no session needed",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::an update from Squire Update after the owner's session existed passes its check on a live server and a clean health check with no session needed: under 2.1.332 the server started again makes no session until the owner writes again; under 2.1.319 the session comes back"
+    },
+    {
+      "id": "TC-011-after-a-failed-install-and-rollback-the",
+      "acId": "AC-1401-3",
+      "description": "after a failed install and rollback the closing window gives a way to support with no session",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::after an install that fails its check and a rollback whose check fails too, Squire Update's closing window gives a way to support that works with no session (a web address or an email address), never only \"ask Squire in the chat\""
+    },
+    {
+      "id": "TC-011-a-lay-down-meeting-launchd-s-teardown",
+      "acId": "AC-1401-8",
+      "description": "a lay-down meeting launchd's teardown within the bound waits, tries again and installs",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::an install whose lay-down meets launchd still tearing down the agents it booted out (bootstrap failing for 3 seconds after each bootout) waits and tries again, and installs with every agent loaded"
+    },
+    {
+      "id": "TC-011-a-teardown-longer-than-the-bound-fails",
+      "acId": "AC-1401-8",
+      "description": "a teardown longer than the bound fails the lay and update.log names the label and launchd's words",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::an install whose lay-down meets a launchd teardown longer than the bound fails its lay, and update.log names the agent's label and launchd's own words"
+    },
+    {
+      "id": "TC-011-a-failed-lay-down-its-rollback-and-a",
+      "acId": "AC-1401-8",
+      "description": "a failed lay-down, its rollback and a failed check each leave their reason in update.log and the mark",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::a failed lay-down, the rollback after it and a failed check each leave a line in update.log naming the reason, and the mark the owner sees with no session carries the reason"
+    },
+    {
+      "id": "TC-011-the-rollback-s-line-in-update-log-names",
+      "acId": "AC-1401-8",
+      "description": "the rollback's line in update.log names both versions and why it rolled back",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::the rollback after a failed lay-down or a failed check leaves its line in update.log naming both versions and why it rolled back"
+    },
+    {
+      "id": "TC-011-with-the-teardown-lag-alone-the-lay-down",
+      "acId": "AC-1401-8",
+      "description": "with the teardown lag alone the lay-down waits, tries again and installs",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::under Claude Code 2.1.319 alone, an install whose lay-down meets launchd still tearing down the agents it booted out (bootstrap failing for 3 seconds after each bootout) waits and tries again on its own, stays on the new release with nothing rolled back, and has every agent loaded"
+    },
+    {
+      "id": "TC-011-a-rollback-whose-own-check-passes-with",
+      "acId": "AC-1401-3",
+      "description": "a rollback whose own check passes with no session marks no failed rollback",
+      "status": "pending",
+      "testPointer": "tests/acceptance/updates-live-server.test.js::an update whose check fails is rolled back with no one acting, and the rollback's own check passes on a live server and a clean health check with no session, under 2.1.332 with no client as under 2.1.319: the previous version runs, every agent loaded, and no failed rollback is marked"
     }
   ],
   "status": "draft"

@@ -1,0 +1,101 @@
+{
+  "createdAt": "2026-11-27T15:12:39.041Z",
+  "updatedAt": "2026-11-27T19:03:43.155Z",
+  "purpose": "Opens set-up's app as Finder would and reads every window it shows, with its script and the moments it opened and closed, to check that a Squire window naming the current activity and step N of M is on screen at every moment from the first click to the end, says how long a long step usually takes, comes to the front, and that set-up takes the Apple silicon builds on Apple silicon even under Rosetta and the Intel builds on an Intel Mac.",
+  "testLevel": "integration",
+  "acIds": [
+    "AC-201-9",
+    "AC-201-10",
+    "AC-201-11"
+  ],
+  "id": "TS-049",
+  "usId": "US-201",
+  "title": "Set-up's windows, in front, and the Mac's own builds",
+  "testCases": [
+    {
+      "id": "TC-049-the-installer-s-half-of-set-up-keeps-a",
+      "acId": "AC-201-9",
+      "description": "the installer's half of set-up keeps a Squire window on screen at every moment naming its step",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::the installer's own half of set-up, the yes, Claude Code's download and install, the Claude sign-in and the browser's parts, keeps a Squire window on screen at every moment, each naming its activity and showing step N of M"
+    },
+    {
+      "id": "TC-049-set-up-s-own-steps-keep-a-squire-window",
+      "acId": "AC-201-9",
+      "description": "set-up's own steps keep a Squire window on screen at every moment naming its step",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::set-up's own steps from naming on, the Squire folder, laying Squire down, the speech helper, backup, the health check, the phone and the wait for the session, keep a Squire window on screen at every moment, each naming its activity and showing step N of M"
+    },
+    {
+      "id": "TC-049-the-moments-between-steps-show-a-squire",
+      "acId": "AC-201-9",
+      "description": "the moments between steps show a Squire window and none is left after set-up ends",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::the moments between set-up's steps, after the Claude sign-in returns, at the hand-over from the installer to set-up's own steps, after naming and after the phone step, each show a Squire window, and every window is closed or replaced at its step's end with none left on screen after set-up ends"
+    },
+    {
+      "id": "TC-049-a-squire-window-is-on-screen-within",
+      "acId": "AC-201-9",
+      "description": "a Squire window is on screen within about 3 seconds of the first click",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::a Squire window is on screen within about 3 seconds of the first click"
+    },
+    {
+      "id": "TC-049-a-long-step-says-how-long-it-usually",
+      "acId": "AC-201-9",
+      "description": "a long step says how long it usually takes and the download windows change at each part",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::every window for a step that can run longer than about 10 seconds says how long it usually takes; during the two large downloads the window changes at each part, the browser's part N of its parts and Claude Code's download then its install; and no window is drawn while the Claude sign-in or Apple's own tools window is up"
+    },
+    {
+      "id": "TC-049-opening-squire-again-brings-the-current",
+      "acId": "AC-201-9",
+      "description": "opening Squire again brings the current step forward and starts nothing; a pause takes the window's place",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::opening Squire again while set-up runs brings a window to the front naming the current step and starts nothing; and when set-up pauses, the paused window takes the progress window's place"
+    },
+    {
+      "id": "TC-049-every-set-up-window-comes-to-the-front",
+      "acId": "AC-201-10",
+      "description": "every set-up window comes to the front and the one before the sign-in says to come back",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::every window set-up shows, from the installer's half and from set-up's own steps, comes to the front (activate first in its script), and the window before the Claude sign-in tells the owner to come back to Squire afterwards"
+    },
+    {
+      "id": "TC-049-under-rosetta-on-apple-silicon-set-up",
+      "acId": "AC-201-11",
+      "description": "under Rosetta on Apple silicon set-up runs as Apple silicon and takes the Apple silicon builds",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::on an Apple silicon Mac that opens Squire under Rosetta, set-up runs itself again as Apple silicon before it downloads anything, and every download is the Apple silicon build"
+    },
+    {
+      "id": "TC-049-on-an-intel-mac-set-up-takes-the-intel",
+      "acId": "AC-201-11",
+      "description": "on an Intel Mac set-up takes the Intel builds",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::on an Intel Mac, whether macOS answers it is not translated or cannot answer at all, set-up takes the Intel builds and never asks for Apple silicon"
+    },
+    {
+      "id": "TC-049-a-squire-window-stays-on-screen-while",
+      "acId": "AC-201-9",
+      "description": "a Squire window stays on screen while Apple's tools install, none drawn again until they are done",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::while Apple's own tools install, over the seconds they take, a Squire window is on screen at every moment and none is drawn again until they are done"
+    },
+    {
+      "id": "TC-049-a-squire-window-naming-the-speech-helper",
+      "acId": "AC-201-9",
+      "description": "a Squire window naming the speech helper is on screen for its whole build",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::while set-up builds the speech helper on a Mac that can build it, a Squire window naming the speech helper is on screen for the whole build"
+    },
+    {
+      "id": "TC-049-under-rosetta-on-apple-silicon-the",
+      "acId": "AC-201-11",
+      "description": "under Rosetta on Apple silicon the speech helper is built for Apple silicon",
+      "status": "pending",
+      "testPointer": "tests/acceptance/set-up-windows.test.js::under Rosetta on an Apple silicon Mac, the speech helper set-up builds is an Apple silicon build"
+    }
+  ],
+  "status": "draft"
+}

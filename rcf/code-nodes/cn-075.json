@@ -3,11 +3,12 @@
   "path": "installer/Squire.app/Contents/MacOS/Squire#sq_step_apple_tools",
   "implementsAcIds": [
     "AC-201-6",
-    "AC-1901-5"
+    "AC-1901-5",
+    "AC-201-9"
   ],
   "dependencies": [],
   "version": "0.1.0",
   "status": "draft",
   "createdAt": "2026-11-09T16:43:24.463Z",
-  "updatedAt": "2026-11-09T16:43:24.463Z"
+  "updatedAt": "2026-11-27T22:47:58.306Z"
 }

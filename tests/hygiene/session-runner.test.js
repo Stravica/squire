@@ -1,13 +1,18 @@
 'use strict';
 
 // Code hygiene for the session runner, through its entry point: one runner at
-// a time, and the 60-second rule (a server is replaced only on evidence, and
-// a quiet, connected server never is). Bound to no criterion.
+// a time, and the 60-second rule (a server is judged live by evidence: a
+// bridge pointer naming it written since its start, a session record written
+// since its start, or a connected word as a fast path; it is replaced only
+// when, 60 seconds after its start, it has shown none of that, or when a
+// disconnection line has had no connected word after it for 60 seconds; a
+// live server is never replaced for its wording). Bound to no criterion.
 //
 // The 60-second cases each wait out the rule's own minute, so they run side
 // by side, each in its own world with its own stub of Claude Code: a server
 // that prints the lines it is given at the times it is given, with a session
-// process in its process group that ignores SIGTERM, as Claude Code's does.
+// process in its process group that ignores SIGTERM, as Claude Code's does,
+// and, where a case asks, a bridge pointer naming its own pid.
 
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -22,8 +27,9 @@ function readLines(file) {
 
 // A world with core laid down and a stub claude at ~/.local/bin/claude whose
 // server prints `lines` ({ afterMs, line }) and records itself and its
-// session process in servers.jsonl.
-function stubWorld(t, lines) {
+// session process in servers.jsonl; with pointer, half a second after its
+// start it writes a bridge pointer naming its own pid in the config folder.
+function stubWorld(t, lines, { pointer = false } = {}) {
   const world = w.makeWorld();
   const servers = path.join(world.root, 'servers.jsonl');
   const kill = () => {
@@ -52,6 +58,11 @@ if (argv[0] !== 'remote-control') process.exit(1);
 const session = spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"], { stdio: 'ignore' });
 fs.appendFileSync(${JSON.stringify(servers)}, JSON.stringify({ pid: process.pid, session: session.pid, at: Date.now() }) + '\\n');
 for (const { afterMs, line } of ${JSON.stringify(lines)}) setTimeout(() => process.stdout.write(line + '\\n'), afterMs);
+if (${JSON.stringify(pointer)}) setTimeout(() => {
+  const dir = require('path').join(process.env.CLAUDE_CONFIG_DIR, 'projects', process.cwd().replace(/[^A-Za-z0-9]/g, '-'));
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(require('path').join(dir, 'bridge-pointer.json'), JSON.stringify({ sessionId: '', pid: process.pid, dir: process.cwd() }));
+}, 500);
 process.on('SIGTERM', () => process.exit(0));
 setInterval(() => {}, 1000);
 `, { mode: 0o755 });
@@ -101,7 +112,7 @@ describe('the 60-second rule', { concurrency: true }, () => {
   });
 
   test('a server that shows Reconnected after a disconnection line counts as connected and is never replaced', { timeout: 150000 }, async (t) => {
-    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting… retrying in 5s' },
+    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting · retrying in 5s' },
       { afterMs: 3000, line: 'Reconnected · owner' }]);
     const first = await firstServer(it);
     await new Promise((resolve) => setTimeout(resolve, 75000));
@@ -110,7 +121,7 @@ describe('the 60-second rule', { concurrency: true }, () => {
   });
 
   test('a disconnection line not followed by Connected within 60 seconds replaces the server: its whole process group gone and a new server up inside two minutes', { timeout: 150000 }, async (t) => {
-    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting… retrying in 5s' }]);
+    const it = stubWorld(t, [{ afterMs: 200, line: 'Connected · owner' }, { afterMs: 1500, line: 'Reconnecting · retrying in 5s' }]);
     const first = await firstServer(it);
     const second = await s.waitFor(() => it.servers()[1], 125000, 500);
     assert.ok(second, `a server disconnected for 60 seconds must be replaced within two minutes; output: ${it.runner.output().slice(-600)}`);
@@ -119,7 +130,16 @@ describe('the 60-second rule', { concurrency: true }, () => {
     assert.ok(w.processGone(first.pid) && w.processGone(first.session), 'the replaced server\'s whole process group must be gone, its session process too');
   });
 
-  test('a server that shows no Connected within 60 seconds of its start is replaced: its whole process group gone and a new server up inside two minutes', { timeout: 150000 }, async (t) => {
+  test('a server that writes a bridge pointer naming its own pid after its start, and prints no connected word, stays live past 60 seconds and is never replaced', { timeout: 150000 }, async (t) => {
+    const it = stubWorld(t, [{ afterMs: 200, line: 'Ready · owner' }], { pointer: true });
+    const first = await firstServer(it);
+    await new Promise((resolve) => setTimeout(resolve, 75000));
+    assert.equal(it.servers().length, 1, `a server live by its pointer must not be replaced for its wording; servers: ${JSON.stringify(it.servers())}`);
+    assert.ok(alive(first.pid) && alive(first.session), 'the server live by its pointer and its session must still run');
+    assert.equal(it.runner.exited(), null, 'the runner must keep running');
+  });
+
+  test('a server that shows, 60 seconds after its start, no connected word, no bridge pointer naming it and no session record is replaced: its whole process group gone and a new server up inside two minutes', { timeout: 150000 }, async (t) => {
     const it = stubWorld(t, [{ afterMs: 200, line: 'Session started: "Session cse_stub" (cse_stub)' }]);
     const first = await firstServer(it);
     const second = await s.waitFor(() => it.servers()[1], 125000, 500);

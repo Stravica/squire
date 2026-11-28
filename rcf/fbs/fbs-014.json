@@ -1,0 +1,27 @@
+{
+  "createdAt": "2026-11-27T15:10:28.878Z",
+  "updatedAt": "2026-11-27T15:10:28.878Z",
+  "summary": "Squire's session stays running and reachable whatever words Claude Code's Remote Control server prints: the runner judges a server live by evidence, never by its wording, and set-up opens the address where the Squire owner's first message starts the session, so setting Squire up works with the Claude Code that Claude's installer serves that day; an update's check needs a live server and a clean health check, never a session, an install waits while the Mac is still tearing down the background agents it reloads, and every failure names its reason; set-up keeps a Squire window in front naming what it is doing and how far it has got from the first click to the end; set-up takes the Apple silicon builds on Apple silicon even under Rosetta; and the health check says in one plain line when Claude Code is newer than this Squire release was tested with.",
+  "dependsOnFbsIds": [
+    "FBS-002",
+    "FBS-003",
+    "FBS-004",
+    "FBS-013"
+  ],
+  "acIds": [
+    "AC-201-9",
+    "AC-201-10",
+    "AC-201-11",
+    "AC-201-12",
+    "AC-401-1",
+    "AC-201-3",
+    "AC-1401-3",
+    "AC-1401-8"
+  ],
+  "fbsId": "FBS-014",
+  "prdId": "PRD-001",
+  "bsId": "BS-001",
+  "buildOrder": 14,
+  "executionStatus": "notStarted",
+  "title": "The session whatever Claude Code prints, a window always on screen through set-up, the Mac's own builds and the Claude Code a release was tested with"
+}

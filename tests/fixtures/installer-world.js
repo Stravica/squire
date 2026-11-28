@@ -13,7 +13,29 @@
 //   sw_vers, sysctl, id      the Mac's version, memory and the user's groups
 //   xcode-select             Apple's command line tools: present or absent,
 //                            and what --install does (installs, or keeps
-//                            reporting that it is still installing)
+//                            reporting that it is still installing, or,
+//                            when a case sets toolsInstall 'installsAfter',
+//                            installs toolsInstallMs after it was asked, 10
+//                            seconds unless the case says, while xcode-select
+//                            -p answers absent; a world model of Apple's
+//                            installer taking some seconds, not a measured
+//                            time)
+//   xcrun, swiftc            only when a case makes the world with
+//                            mac.speechBuild ({ ms }): an xcrun that answers
+//                            --find swiftc with a fake swiftc in the tools
+//                            folder and knows no SDK, and that swiftc, which
+//                            records its arguments and the architecture the
+//                            world says it runs as (as the fake arch and
+//                            sysctl model it: under 'translated', x86_64
+//                            until arch -arm64 has run, then arm64; under an
+//                            Intel cpu, x86_64; with no cpu set,
+//                            'unmodelled'), takes ms (4 seconds unless the
+//                            case says), then writes a stand-in file where -o
+//                            names and records its end. Without the option
+//                            neither exists and the world's xcrun stays the
+//                            Mac's own link, as before. A world model, not a
+//                            measured build; no case reaches the Mac's own
+//                            Apple tools through it
 //   curl                     the download of Claude Code's installer, which
 //                            serves a fake installer (or fails, times out, is
 //                            cut short, finds no network, or is slow); and
@@ -31,8 +53,50 @@
 //   osascript                set-up's own windows: each answered by its title
 //                            from the test's answers (one answer, a sequence
 //                            of answers, or an answer given once a file the
-//                            test makes appears), and recorded
-//   open                     the browser: records what it was asked to open
+//                            test makes appears), and recorded: its title,
+//                            its text, its script's lines (each -e line, so
+//                            an activate is seen), its process, the moment
+//                            its process started (opened) and, in
+//                            dialogs-closed.jsonl, the moment it ended
+//                            (closed), so a case can build set-up's window
+//                            timeline across the zsh half and the Python
+//                            half; a window ended by SIGKILL records no end,
+//                            and its end is read as its last sign of life (a
+//                            heartbeat every 50 ms) plus 100 ms, the world's
+//                            resolution. "Squire: setting up" is set-up's
+//                            progress window: it is never answered and stays
+//                            up until set-up closes it, as a window with a
+//                            Hide button left on screen does (the owner never
+//                            presses Hide in this world)
+//   open                     the browser: records what it was asked to open;
+//                            for a claude.ai address it also writes the
+//                            client record the 2.1.332 profile's server reads
+//                            (session-world.js): the page opened and, unless
+//                            the case says the owner sends nothing, the
+//                            Squire owner's first message "hello" one second
+//                            later (mac.client: { text, afterMs }, text null
+//                            for none)
+//   sysctl, uname, arch      the processor, only when a case sets mac.cpu
+//                            (otherwise the Mac's own answers pass through,
+//                            unrecorded): 'translated' (an Apple silicon Mac
+//                            opening Squire under Rosetta: uname -m answers
+//                            x86_64, sysctl.proc_translated 1 and
+//                            hw.optional.arm64 1, until the fake arch has run
+//                            a command with -arm64, after which every answer
+//                            is native: arm64, 0, 1), 'intel' (x86_64, 0,
+//                            0) or 'intel-unreadable' (x86_64, and both
+//                            sysctl names unknown, exit 1; the error's words
+//                            are the world's own). arch records each call;
+//                            with -arm64 it runs the rest of its arguments as
+//                            the command and exits with its status. These
+//                            answers are the world's model of macOS's, not
+//                            measured under Rosetta; that Rosetta passes to
+//                            set-up's children is a HYPOTHESIS a real Mac
+//                            settles
+//
+// Claude Code's profile: makeInstallerWorld's profile option ('2.1.319', the
+// default, or '2.1.332') is the Remote Control profile of the fake session
+// (session-world.js) and the version the fake Claude Code answers.
 //
 // The fake installer lays a fake Claude Code where the real one installs
 // itself (~/.local/bin/claude, a link into ~/.local/share/claude/versions/),
@@ -104,11 +168,14 @@ const TITLES = {
   stopped: 'Squire: set-up stopped',
   paused: 'Squire: set-up paused',
   ready: 'Squire: ready',
+  progress: 'Squire: setting up',
 };
 
 // What the owner answers when a test says nothing else: Pro, Install, a name,
-// a personality, Continue, Done; OK to every message.
+// a personality, Continue, Done; OK to every message; the progress window
+// never answered.
 const DEFAULT_ANSWERS = {
+  [TITLES.progress]: { hang: true },
   [TITLES.plan]: 'Pro',
   [TITLES.setUp]: 'button returned:Install',
   [TITLES.name]: 'button returned:OK, text returned:Juniper',
@@ -173,10 +240,43 @@ if (argv.includes('-buildVersion')) { process.stdout.write('24B83\\n'); process.
 process.stdout.write('ProductName:\\t\\tmacOS\\nProductVersion:\\t\\t' + m.macos + '\\nBuildVersion:\\t\\t24B83\\n');
 `,
   sysctl: `
+const cpu = mac().cpu;
+const cpuName = argv.find((a) => a === 'sysctl.proc_translated' || a === 'hw.optional.arm64');
+if (cpu && cpuName) {
+  record({ cpu });
+  const native = fs.existsSync(${JSON.stringify('ARCH_MARKER')});
+  const answers = {
+    translated: native ? { 'sysctl.proc_translated': '0', 'hw.optional.arm64': '1' } : { 'sysctl.proc_translated': '1', 'hw.optional.arm64': '1' },
+    intel: { 'sysctl.proc_translated': '0', 'hw.optional.arm64': '0' },
+    'intel-unreadable': {},
+  }[cpu] || {};
+  if (!(cpuName in answers)) { process.stderr.write('sysctl: unknown oid \\'' + cpuName + '\\'\\n'); process.exit(1); }
+  process.stdout.write((argv.includes('-n') ? answers[cpuName] : cpuName + ': ' + answers[cpuName]) + '\\n');
+  process.exit(0);
+}
 if (!argv.includes('hw.memsize')) passThrough('/usr/sbin/sysctl');
 record();
 const bytes = String(mac().memBytes);
 process.stdout.write((argv.includes('-n') ? bytes : 'hw.memsize: ' + bytes) + '\\n');
+`,
+  uname: `
+const cpu = mac().cpu;
+if (!cpu || !argv.includes('-m')) passThrough('/usr/bin/uname');
+record({ cpu });
+const native = fs.existsSync(${JSON.stringify('ARCH_MARKER')});
+process.stdout.write((cpu === 'translated' && native ? 'arm64' : 'x86_64') + '\\n');
+`,
+  arch: `
+const cpu = mac().cpu;
+if (!cpu) passThrough('/usr/bin/arch');
+record({ cpu });
+if (argv[0] === '-arm64' && argv.length > 1) {
+  if (cpu === 'intel' || cpu === 'intel-unreadable') { process.stderr.write('arch: Bad CPU type in executable\\n'); process.exit(1); }
+  fs.writeFileSync(${JSON.stringify('ARCH_MARKER')}, String(process.pid));
+  const r = spawnSync(argv[1], argv.slice(2), { stdio: 'inherit' });
+  process.exit(r.status === null ? 1 : r.status);
+}
+process.stdout.write(cpu === 'translated' && fs.existsSync(${JSON.stringify('ARCH_MARKER')}) ? 'arm64\\n' : 'i386\\n');
 `,
   id: `
 const flags = argv.filter((a) => a.startsWith('-')).join('');
@@ -187,7 +287,10 @@ process.stdout.write(mac().groups + '\\n');
   'xcode-select': `
 const m = mac();
 const marker = ${JSON.stringify('TOOLS_MARKER')};
-const present = () => m.toolsPresent || fs.existsSync(marker);
+// The marker holds the moment the tools are there: at once for 'installs',
+// later for 'installsAfter'.
+const readyAt = () => { try { return Number(fs.readFileSync(marker, 'utf8')) || 0; } catch (e) { return 0; } };
+const present = () => m.toolsPresent || (fs.existsSync(marker) && !(readyAt() > Date.now()));
 record({ present: present() });
 if (argv.includes('-p') || argv.includes('--print-path')) {
   if (present()) { process.stdout.write(${JSON.stringify('TOOLS_DIR')} + '\\n'); process.exit(0); }
@@ -197,6 +300,7 @@ if (argv.includes('-p') || argv.includes('--print-path')) {
 if (argv.includes('--install')) {
   if (present()) { process.stderr.write('xcode-select: error: command line tools are already installed, use "Software Update" in System Settings to install updates\\n'); process.exit(1); }
   if (m.toolsInstall === 'installs') fs.writeFileSync(marker, String(Date.now()));
+  else if (m.toolsInstall === 'installsAfter') fs.writeFileSync(marker, String(Date.now() + (Number(m.toolsInstallMs) || 10000)));
   process.stdout.write('xcode-select: note: install requested for command line developer tools\\n');
   process.exit(0);
 }
@@ -256,12 +360,26 @@ if (how === 'slow') { setTimeout(() => { write(script); process.exit(0); }, 6000
 else { write(script); process.exit(0); }
 `,
   osascript: `
+const opened = Date.now() - Math.round(process.uptime() * 1000);
 let stdin = '';
 try { stdin = fs.readFileSync(0, 'utf8'); } catch (e) { stdin = ''; }
 const text = argv.join(' ') + '\\n' + stdin;
+const lines = [];
+for (let i = 0; i < argv.length; i += 1) if (argv[i] === '-e' && i + 1 < argv.length) lines.push(argv[i + 1]);
 const titles = ${JSON.stringify(Object.values(TITLES))}.sort((a, b) => b.length - a.length);
 const title = titles.find((t) => text.includes(t)) || null;
-fs.appendFileSync(${JSON.stringify('DIALOGS_FILE')}, JSON.stringify({ title, text, at: Date.now() }) + '\\n');
+// The window's end: on any exit, or a signal, once; a heartbeat besides, for
+// a window ended by SIGKILL.
+const closesFile = ${JSON.stringify('DIALOGS_FILE')}.replace(/\\.jsonl$/, '-closed.jsonl');
+const beatFile = ${JSON.stringify('DIALOGS_FILE')} + '.' + process.pid + '.alive';
+let ended = false;
+const end = (how) => { if (ended) return; ended = true; try { fs.appendFileSync(closesFile, JSON.stringify({ pid: process.pid, closed: Date.now(), how }) + '\\n'); } catch (e) {} };
+process.on('exit', () => end('exit'));
+for (const sig of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(sig, () => { end(sig); process.exit(1); });
+const beat = () => { try { fs.writeFileSync(beatFile, String(Date.now())); } catch (e) {} };
+beat();
+setInterval(beat, 50).unref();
+fs.appendFileSync(${JSON.stringify('DIALOGS_FILE')}, JSON.stringify({ title, text, at: Date.now(), opened, pid: process.pid, lines }) + '\\n');
 record({ title });
 if (!title) { process.stderr.write('execution error: not one of set-up\\'s windows (-2700)\\n'); process.exit(1); }
 const answers = { ...${JSON.stringify(DEFAULT_ANSWERS)}, ...(mac().answers || {}) };
@@ -288,7 +406,44 @@ else { process.stdout.write(String(a) + '\\n'); process.exit(0); }
 `,
   open: `
 record();
+const url = argv.find((a) => /^https?:\\/\\//.test(a)) || '';
+if (/^https:\\/\\/claude\\.ai\\//.test(url)) {
+  const client = mac().client || {};
+  const now = Date.now();
+  const lines = [JSON.stringify({ at: now, type: 'open', url })];
+  const text = client.text === undefined ? 'hello' : client.text;
+  if (text !== null) lines.push(JSON.stringify({ at: now + (client.afterMs === undefined ? 1000 : client.afterMs), type: 'message', text }));
+  fs.appendFileSync(${JSON.stringify('CLIENT_FILE')}, lines.join('\\n') + '\\n');
+}
 process.exit(0);
+`,
+};
+
+// Apple's xcrun and swiftc for the speech helper's build, laid only in a world
+// made with mac.speechBuild: xcrun at its system path, swiftc in the tools
+// folder xcode-select -p names.
+const SPEECH_FAKES = {
+  xcrun: `
+const how = mac().speechBuild;
+record({ speechBuild: Boolean(how) });
+if (how && argv[0] === '--find' && argv[1] === 'swiftc') { process.stdout.write(${JSON.stringify('SWIFTC')} + '\\n'); process.exit(0); }
+if (how && argv.includes('--sdk')) { process.stderr.write('xcrun: error: SDK "macosx" cannot be located\\n'); process.exit(1); }
+process.stderr.write('xcrun: error: unable to find utility "' + (argv[argv.length - 1] || '') + '", not a developer tool or in PATH\\n');
+process.exit(72);
+`,
+  swiftc: `
+const how = mac().speechBuild || {};
+const cpu = mac().cpu || null;
+const native = fs.existsSync(${JSON.stringify('ARCH_MARKER')});
+const runsAs = cpu === 'translated' ? (native ? 'arm64' : 'x86_64') : (cpu === 'intel' || cpu === 'intel-unreadable') ? 'x86_64' : 'unmodelled';
+record({ runsAs, cpu });
+const o = argv.indexOf('-o');
+const out = o >= 0 ? argv[o + 1] : null;
+setTimeout(() => {
+  if (out) { fs.writeFileSync(out, '#!/bin/sh\\necho "a stand-in for the speech helper, built by the test world"\\n'); fs.chmodSync(out, 0o755); }
+  record({ ended: true, runsAs, cpu });
+  process.exit(0);
+}, Number(how.ms) || 4000);
 `,
 };
 
@@ -309,7 +464,7 @@ fs.appendFileSync(${JSON.stringify(iw.callsFile)}, JSON.stringify({ cmd: 'claude
 const readState = () => { try { return JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch (e) { return {}; } };
 const writeState = (s) => { fs.mkdirSync(configDir, { recursive: true }); fs.writeFileSync(stateFile, JSON.stringify(s, null, 2)); };
 const hang = () => { setInterval(() => {}, 1000); };
-if (argv[0] === '--version' || argv[0] === '-v') { process.stdout.write(${JSON.stringify(CLAUDE_VERSION + ' (Claude Code)')} + '\\n'); process.exit(0); }
+if (argv[0] === '--version' || argv[0] === '-v') { process.stdout.write(${JSON.stringify(iw.claudeVersion + ' (Claude Code)')} + '\\n'); process.exit(0); }
 if (argv[0] === 'auth' && argv[1] === 'login') {
   if (how.signIn === 'cancel') { process.stderr.write('Login cancelled.\\n'); process.exit(1); }
   if (how.signIn === 'timeout') { process.stderr.write('Login timed out waiting for the browser.\\n'); process.exit(1); }
@@ -342,7 +497,8 @@ if (argv[0] === 'auth' && argv[1] === 'login') {
     process.stdout.write('Unable to determine your organization for Remote Control eligibility\\n');
     process.exit(1);
   }
-  const child = spawn(process.execPath, [${JSON.stringify(inner)}, ...argv], { stdio: 'inherit' });
+  // The fake's bridge pointer names this process, the one Squire started.
+  const child = spawn(process.execPath, [${JSON.stringify(inner)}, ...argv], { stdio: 'inherit', env: { ...process.env, FAKE_CLAUDE_CODE_PID: String(process.pid) } });
   const forward = (sig) => () => { try { child.kill(sig); } catch (e) {} };
   process.on('SIGTERM', forward('SIGTERM'));
   process.on('SIGINT', forward('SIGINT'));
@@ -374,7 +530,7 @@ if [ -e "$HOME/.claude.json" ]; then
 else
   echo '{"installMethod":"native","autoUpdates":false}' > "$HOME/.claude.json"
 fi
-version="$HOME/.local/share/claude/versions/${CLAUDE_VERSION}"
+version="$HOME/.local/share/claude/versions/${iw.claudeVersion}"
 if [ "$how" = "incomplete" ]; then
   /usr/bin/head -c 200 ${JSON.stringify(iw.claudeScript)} > "$version"
 else
@@ -403,6 +559,7 @@ fs.writeFileSync(file, JSON.stringify(data, null, 2));
 const SYSTEM_FOLDERS = ['usr/bin', 'bin', 'usr/sbin', 'sbin'];
 const FAKE_PLACES = {
   sw_vers: 'usr/bin', sysctl: 'usr/sbin', id: 'usr/bin', 'xcode-select': 'usr/bin', curl: 'usr/bin', osascript: 'usr/bin', open: 'usr/bin',
+  uname: 'usr/bin', arch: 'usr/bin', xcrun: 'usr/bin',
 };
 
 // A world's launchctl unless the world gives its own (the launchd model's):
@@ -474,12 +631,17 @@ fs.appendFileSync(${JSON.stringify(iw.hostileFile)}, JSON.stringify({ cmd: requi
 // A fresh user's Mac, with set-up's app assembled. The assembly asserts the
 // app's entry point is in this repository: until it is, every case using the
 // world fails there first.
-function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
+function makeInstallerWorld(t, { mac = {}, claude = {}, profile = '2.1.319' } = {}) {
   const world = w.makeWorld();
   const root = world.root;
   const iw = {
     world,
     root,
+    profile,
+    claudeVersion: profile === '2.1.332' ? '2.1.332' : CLAUDE_VERSION,
+    archMarker: path.join(root, 'arch-arm64-ran'),
+    clientFile: sw.clientFile(world),
+    closesFile: path.join(root, 'dialogs-closed.jsonl'),
     userHome: world.userHome,
     squireHome: path.join(world.userHome, 'Library', 'Application Support', 'Squire'),
     ownerFolder: path.join(world.userHome, 'Squire'),
@@ -505,6 +667,14 @@ function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
   t.after(async () => {
     for (const r of iw.runners) await r.stop();
     sw.killFakes(world);
+    // A window still up (a progress window set-up left behind, its heartbeat
+    // fresh, so the process is still the world's window) is ended too.
+    for (const x of windowTimeline(iw)) {
+      if (x.closed !== null) continue;
+      let beat = 0;
+      try { beat = Number(fs.readFileSync(`${iw.dialogsFile}.${x.pid}.alive`, 'utf8')); } catch (e) { beat = 0; }
+      if (Date.now() - beat < 1000) { try { process.kill(x.pid, 'SIGKILL'); } catch (e) { /* gone */ } }
+    }
     // A case may leave the owner's folder unwritable; its write permission comes back first so the world can be removed.
     try { if (fs.lstatSync(iw.ownerFolder).isDirectory()) fs.chmodSync(iw.ownerFolder, 0o755); } catch (e) { /* none */ }
     w.cleanUp(world);
@@ -532,11 +702,22 @@ function makeInstallerWorld(t, { mac = {}, claude = {} } = {}) {
       .replaceAll('"TOOLS_MARKER"', JSON.stringify(iw.toolsMarker))
       .replaceAll('"TOOLS_DIR"', JSON.stringify(iw.toolsDir))
       .replaceAll('"INSTALLER_SCRIPT"', JSON.stringify(iw.installerScript))
-      .replaceAll('"DIALOGS_FILE"', JSON.stringify(iw.dialogsFile));
+      .replaceAll('"DIALOGS_FILE"', JSON.stringify(iw.dialogsFile))
+      .replaceAll('"ARCH_MARKER"', JSON.stringify(iw.archMarker))
+      .replaceAll('"CLIENT_FILE"', JSON.stringify(iw.clientFile));
+  }
+  // The speech helper's build, only when the case asks for it.
+  if (mac.speechBuild) {
+    iw.swiftc = path.join(iw.toolsDir, 'usr', 'bin', 'swiftc');
+    fakes[`${FAKE_PLACES.xcrun}/xcrun`] = (fakeHeader(iw, 'xcrun') + SPEECH_FAKES.xcrun).replaceAll('"SWIFTC"', JSON.stringify(iw.swiftc));
+    fs.mkdirSync(path.dirname(iw.swiftc), { recursive: true });
+    fs.writeFileSync(iw.swiftc, (fakeHeader(iw, 'swiftc') + SPEECH_FAKES.swiftc).replaceAll('"ARCH_MARKER"', JSON.stringify(iw.archMarker)));
+    fs.chmodSync(iw.swiftc, 0o755);
   }
   makeSystemRoot(iw.system, fakes);
-  // Round 2's fake session, which the fake Claude Code's remote-control runs.
-  const inner = sw.installFakeClaudeCode(world, {}, { dir: path.join(root, 'claude-code-inner') });
+  // The fake session (session-world.js), which the fake Claude Code's
+  // remote-control runs, under the world's profile.
+  const inner = sw.installFakeClaudeCode(world, profile === '2.1.319' ? {} : { profile }, { dir: path.join(root, 'claude-code-inner') });
   fs.writeFileSync(iw.claudeScript, fakeClaudeCodeScript(iw, inner.bin));
   fs.chmodSync(iw.claudeScript, 0o755);
   fs.writeFileSync(iw.installerScript, fakeInstallerScript(iw));
@@ -759,6 +940,54 @@ function ownerConfig(iw) {
 
 const hostileCalls = (iw) => readJsonLines(iw.hostileFile);
 
+// Set-up's window timeline: every window the world's osascript showed, in
+// the order it opened, each { title, text, lines, pid, opened, closed,
+// closedBy } in ms since 1970. closed is the end the window recorded; for a
+// window that recorded none (ended by SIGKILL) its last heartbeat plus 100
+// ms, the world's resolution; null while it is still up.
+const RESOLUTION_MS = 100;
+function windowTimeline(iw) {
+  const ends = new Map();
+  for (const c of readJsonLines(iw.closesFile)) if (!ends.has(c.pid)) ends.set(c.pid, c);
+  return readJsonLines(iw.dialogsFile).filter((d) => d.pid).map((d) => {
+    const end = ends.get(d.pid);
+    let closed = end ? end.closed : null;
+    let closedBy = end ? end.how : null;
+    if (closed === null) {
+      let beat = null;
+      try { beat = Number(fs.readFileSync(`${iw.dialogsFile}.${d.pid}.alive`, 'utf8')); } catch (e) { beat = null; }
+      let alive = true;
+      try { process.kill(d.pid, 0); } catch (e) { alive = false; }
+      // Alive only while its heartbeat is fresh: a process id used again by
+      // another process is not the window.
+      if (!alive || !beat || Date.now() - beat > 500) {
+        closed = (beat || d.opened) + RESOLUTION_MS;
+        closedBy = 'killed';
+      }
+    }
+    return { title: d.title, text: d.text, lines: d.lines || [], pid: d.pid, opened: d.opened || d.at, closed, closedBy };
+  }).sort((a, b) => a.opened - b.opened);
+}
+
+// The windows on screen at moment t (opened at or before it, not yet closed).
+const windowsAt = (timeline, t) => timeline.filter((x) => x.opened <= t && (x.closed === null || x.closed >= t));
+
+// The moments in [from, to] with no window on screen: [{ from, to }]. The
+// next window must open before the last one closes.
+function gapsIn(timeline, from, to) {
+  const gaps = [];
+  let covered = from;
+  for (const x of timeline) {
+    const closes = x.closed === null ? Infinity : x.closed;
+    if (closes < covered) continue;
+    if (x.opened > covered) gaps.push({ from: covered, to: Math.min(x.opened, to) });
+    covered = Math.max(covered, closes);
+    if (covered >= to) break;
+  }
+  if (covered < to) gaps.push({ from: covered, to });
+  return gaps.filter((g) => g.to > g.from);
+}
+
 module.exports = {
   makeSystemRoot,
   hostileCommands,
@@ -788,4 +1017,8 @@ module.exports = {
   healthOf,
   ownerConfig,
   readJsonLines,
+  RESOLUTION_MS,
+  windowTimeline,
+  windowsAt,
+  gapsIn,
 };

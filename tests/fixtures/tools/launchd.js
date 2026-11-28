@@ -27,6 +27,18 @@
 //   any other verb                exit 64, logged, so a new product call
 //                                 cannot slip past the model.
 //
+// A teardown lag, when a test sets one (control { control: 'lag', ms }, 0 by
+// default): for ms after a bootout of a label has answered, print of that
+// label still answers as if it were loaded (exit 0, "state = not running")
+// and bootstrap of it fails "Bootstrap failed: 5: Input/output error" (exit
+// 5). The failure's words are launchd's own, as read on a real Mac's failed
+// bootstrap; that launchd tears a job down for a while after bootout has
+// answered is a HYPOTHESIS these cases model (the likeliest reading of one
+// failed install's lay-down), not a measurement. With a label as well
+// (control { control: 'lag', ms, label }) the lag falls on that one job
+// alone and every other label is torn down at once, as without a lag; that
+// one agent can lag while the others do not is a world model, not measured.
+//
 // When a job's main process exits, the rest of its process group is ended the
 // same way (unless AbandonProcessGroup). A booted-out job is never started
 // again by the model itself. The test drives two things launchd does on its
@@ -135,6 +147,9 @@ function daemon(state) {
   const how = JSON.parse(fs.readFileSync(path.join(state, 'launchd.json'), 'utf8'));
   const domain = `gui/${how.uid}`;
   const jobs = new Map();
+  let lagMs = 0;
+  let lagLabel = null;
+  const tearingDown = (job) => Boolean(job && job.tornDownUntil && Date.now() < job.tornDownUntil);
   const append = (file, rec) => fs.appendFileSync(path.join(state, file), JSON.stringify({ at: Date.now() / 1000, ...rec }) + '\n');
   const groupOf = (pid) => {
     const r = spawnSync('/bin/ps', ['-o', 'pgid=', '-p', String(pid)], { encoding: 'utf8' });
@@ -213,6 +228,7 @@ function daemon(state) {
     if (!plist || typeof plist.Label !== 'string') return { code: 5, stderr: `Bootstrap failed: 5: Input/output error\n` };
     const known = jobs.get(plist.Label);
     if (known && known.loaded) return { code: 5, stderr: 'Bootstrap failed: 5: Input/output error\n' };
+    if (tearingDown(known)) return { code: 5, stderr: 'Bootstrap failed: 5: Input/output error\n', lag: true };
     const job = known || { label: plist.Label, runs: 0, running: null };
     Object.assign(job, { plist, file: plistFile, loaded: true, stopping: false, abandon: plist.AbandonProcessGroup === true });
     jobs.set(plist.Label, job);
@@ -228,8 +244,13 @@ function daemon(state) {
     job.stopping = true;
     append('events.jsonl', { unloaded: label });
     const running = job.running;
-    if (!running || running.exit) { job.stopping = false; reply({ code: 0 }); return; }
-    endGroup(job, running.pid, 'booted out', () => { job.stopping = false; reply({ code: 0 }); });
+    const answered = () => {
+      job.stopping = false;
+      if (lagMs > 0 && (lagLabel === null || lagLabel === label)) job.tornDownUntil = Date.now() + lagMs;
+      reply({ code: 0 });
+    };
+    if (!running || running.exit) { answered(); return; }
+    endGroup(job, running.pid, 'booted out', answered);
   }
 
   function fire(label) {
@@ -287,7 +308,7 @@ function daemon(state) {
     if (verb === 'print' && target(a1) && argv.length === 2) {
       const job = jobs.get(target(a1));
       rec.label = target(a1);
-      done(job && job.loaded ? { code: 0, stdout: `${a1} = {\n\tstate = ${job.running ? 'running' : 'not running'}\n}\n` }
+      done(job && (job.loaded || tearingDown(job)) ? { code: 0, stdout: `${a1} = {\n\tstate = ${job.running ? 'running' : 'not running'}\n}\n` }
         : { code: 113, stderr: `Could not find service "${target(a1)}" in domain for user gui: ${how.uid}\n` });
       return;
     }
@@ -309,6 +330,11 @@ function daemon(state) {
       else if (msg.control === 'logout') logout(reply);
       else if (msg.control === 'fire') reply(fire(msg.label));
       else if (msg.control === 'state') reply(snapshot());
+      else if (msg.control === 'lag') {
+        lagMs = Math.max(0, Number(msg.ms) || 0);
+        lagLabel = typeof msg.label === 'string' && msg.label ? msg.label : null;
+        reply(lagLabel === null ? { code: 0, lagMs } : { code: 0, lagMs, label: lagLabel });
+      }
       else if (msg.control === 'stop') { reply({ code: 0 }); setImmediate(endAll); }
       else launchctl(msg, reply);
     });
