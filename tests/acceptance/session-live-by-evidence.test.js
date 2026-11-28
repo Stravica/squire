@@ -124,6 +124,41 @@ test("a server whose connection drops, a disconnection line with no connected wo
   }
 });
 
+// The session's title is the Squire owner's own words: once a client's first
+// message has made the session, the 2.1.332 profile prints the session's title
+// (that message, its first letter in capitals; a HYPOTHESIS from one sample)
+// in its status line, where the status word stood. A status word inside the
+// title is the owner's text, never the server's status (ADR-003 point 16: a
+// disconnection line is a status word in the status position), so the live
+// server and its session are kept. A real drop, the status word itself in
+// that position, is the case above, which still replaces the server.
+test("a live 2.1.332 server whose session title, the owner's first message, holds the word disconnected or reconnecting is kept with its session: one server over 75 seconds, the first server and its session process still running", { timeout: 240000 }, async (t) => {
+  const messages = [
+    ['a first message holding disconnected', 'my wifi keeps showing disconnected, can you help', 'My wifi keeps showing disconnected, can you help'],
+    ['a first message holding reconnecting', 'reconnecting the printer: what do I do', 'Reconnecting the printer: what do I do'],
+  ];
+  const worlds = messages.map(([what, text, title]) => ({ what, text, title, x: liveWorld(t, { profile: '2.1.332' }) }));
+  for (const c of worlds) {
+    c.server = await firstServer(c.x, `the 2.1.332 server for ${c.what}`);
+    await s.waitFor(() => s.environmentOf(c.x.world), 10000);
+    s.clientConnects(c.x.world, { text: c.text });
+  }
+  for (const c of worlds) {
+    c.session = await s.waitFor(() => c.x.fake.sessions()[0], 15000);
+    assert.ok(c.session, `${c.what}: the client's first message must make the session (the world's profile); session.log: ${JSON.stringify(s.sessionLog(c.x.world).slice(-400))}`);
+    const shown = await s.waitFor(() => s.sessionLog(c.x.world).includes(`· ${c.title} ·`), 5000);
+    assert.ok(shown, `${c.what}: the server must print the session's title in its status line (the world's profile); session.log: ${JSON.stringify(s.sessionLog(c.x.world).slice(-400))}`);
+  }
+  await s.sleep(75000);
+  for (const c of worlds) {
+    assert.equal(c.x.fake.serverCalls().length, 1,
+      `${c.what}: a live server whose session title holds a status word must be kept: one server over 75 seconds; servers started: ${describeServers(c.x)}; ` +
+      `session.log: ${JSON.stringify(s.sessionLog(c.x.world).slice(-600))}`);
+    assert.ok(!w.processGone(c.server.pid), `${c.what}: the first server must still be running after 75 seconds`);
+    assert.ok(!w.processGone(c.session.pid), `${c.what}: the session the owner's first message made must still be running after 75 seconds`);
+  }
+});
+
 test("a 2.1.332 server stopped from outside, as an update's install stops it, before any client made a session is not recorded as stopped before any session started and the health check names no fault for it; under 2.1.319 the same; a server that dies before it was ever live is still named", { timeout: 180000 }, async (t) => {
   const stopFromOutside = async (x, what) => {
     const call = await firstServer(x, what);

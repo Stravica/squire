@@ -1,6 +1,6 @@
 {
   "createdAt": "2026-11-27T15:12:38.461Z",
-  "updatedAt": "2026-11-27T19:03:05.298Z",
+  "updatedAt": "2026-11-28T02:55:45.252Z",
   "purpose": "Runs Squire's runner as its launchd agent does, with Claude Code under both measured profiles, to check that a server live by evidence (its process alive, and a bridge pointer naming it or a session record since its start) is kept whatever words it prints, that a server with none of that evidence after 60 seconds or whose connection drops is replaced, and that a server stopped from outside before any client is not named a fault.",
   "testLevel": "integration",
   "acIds": [
@@ -44,6 +44,13 @@
       "description": "a server with only weak evidence beside it is replaced about 60 seconds after its start",
       "status": "pending",
       "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a server with only weak evidence beside it, a bridge pointer naming another live process, a pointer naming its pid written before it started, a pointer that cannot be read, or a session record an earlier server left, is replaced about 60 seconds after its start"
+    },
+    {
+      "id": "TC-047-a-live-server-whose-session-title-holds",
+      "acId": "AC-401-1",
+      "description": "a live server whose session title holds a disconnection word is kept with its session",
+      "status": "pending",
+      "testPointer": "tests/acceptance/session-live-by-evidence.test.js::a live 2.1.332 server whose session title, the owner's first message, holds the word disconnected or reconnecting is kept with its session: one server over 75 seconds, the first server and its session process still running"
     }
   ],
   "status": "draft"
